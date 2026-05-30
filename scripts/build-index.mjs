@@ -25,6 +25,12 @@ function normalizeString(s) {
   return typeof s === "string" ? s.trim() : "";
 }
 
+function isPublishedArticle(slug, data) {
+  if (data?.draft === true) return false;
+  if (slug === "taopedia") return true;
+  return Array.isArray(data?.tags) && data.tags.includes("Bittensor");
+}
+
 async function main() {
   await fs.mkdir(OUT_DIR, { recursive: true });
   const out = await fs.open(OUT_JSONL, "w");
@@ -35,6 +41,7 @@ async function main() {
 
     const raw = await fs.readFile(fp, "utf8");
     const { data } = matter(raw);
+    if (!isPublishedArticle(slug, data)) continue;
 
     const title = normalizeString(data?.title) || slug;
     const summary = normalizeString(data?.summary) || "";
