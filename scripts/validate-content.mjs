@@ -30,6 +30,7 @@ const unsafeContentPatterns = [
   { pattern: /\bclient:[a-z-]+\b/i, reason: "client directives are not allowed" },
 ];
 const wikiLinkPattern = /\[\[([^\]|]+)(?:\|[^\]]+)?\]\]/g;
+const sourceLinkPattern = /\[[^\]]+\]\(https?:\/\/[^)]+\)/i;
 
 function validateSlug(slug) {
   if (!/^[a-z0-9][a-z0-9_-]*$/.test(slug)) {
@@ -79,6 +80,11 @@ function extractWikiLinks(content) {
   return [...content.matchAll(wikiLinkPattern)].map((match) => match[1].trim());
 }
 
+function isPublishedBittensorArticle(data) {
+  if (data?.draft === true) return false;
+  return Array.isArray(data?.tags) && data.tags.includes("Bittensor");
+}
+
 async function validateArticle(slug, articleDir, knownTargets) {
   validateSlug(slug);
 
@@ -102,6 +108,11 @@ async function validateArticle(slug, articleDir, knownTargets) {
         `${articlePath}: internal link "[[${target}]]" does not resolve to an article`
       );
     }
+  }
+  if (isPublishedBittensorArticle(data) && !sourceLinkPattern.test(content)) {
+    throw new Error(
+      `${articlePath}: published Bittensor articles must include at least one source link`
+    );
   }
 
   if (Array.isArray(data.infoboxRows)) {
