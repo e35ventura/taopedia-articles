@@ -29,6 +29,7 @@ const unsafeContentPatterns = [
   { pattern: /\bset:html\b/i, reason: "raw HTML injection directives are not allowed" },
   { pattern: /\bclient:[a-z-]+\b/i, reason: "client directives are not allowed" },
 ];
+const sourceLinkPattern = /\[[^\]]+\]\(https?:\/\/[^)]+\)/i;
 
 function validateSlug(slug) {
   if (!/^[a-z0-9][a-z0-9_-]*$/.test(slug)) {
@@ -67,6 +68,11 @@ function validateTags(data, filePath) {
   }
 }
 
+function isPublishedBittensorArticle(data) {
+  if (data?.draft === true) return false;
+  return Array.isArray(data?.tags) && data.tags.includes("Bittensor");
+}
+
 async function validateArticle(slug, articleDir) {
   validateSlug(slug);
 
@@ -78,11 +84,16 @@ async function validateArticle(slug, articleDir) {
     }
   }
 
-  const { data } = matter(raw);
+  const { data, content } = matter(raw);
   validateTextField(data, "title", articlePath, 120);
   validateTextField(data, "summary", articlePath, 240);
   validateTextField(data, "category", articlePath, 60);
   validateTags(data, articlePath);
+  if (isPublishedBittensorArticle(data) && !sourceLinkPattern.test(content)) {
+    throw new Error(
+      `${articlePath}: published Bittensor articles must include at least one source link`
+    );
+  }
 
   if (Array.isArray(data.infoboxRows)) {
     for (const row of data.infoboxRows) {
