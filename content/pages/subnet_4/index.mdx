@@ -1,0 +1,112 @@
+---
+title: "Subnet 4: Targon"
+summary:
+  "Targon is a decentralized confidential compute marketplace on Bittensor, where miners provide
+  hardware-attested GPU and CPU workloads secured by Confidential Computing technology."
+category: "Subnets"
+tags: ["Bittensor", "Subnets"]
+infoboxTitle: Subnet 4 — Targon
+infoboxCaption: Confidential AI compute marketplace on Bittensor.
+infoboxRows:
+  - label: Subnet
+    value: SN4
+  - label: Operator
+    value: Manifold Inc.
+  - label: Neurons
+    value: "256"
+  - label: GitHub
+    value: manifold-inc/targon
+  - label: Site
+    value: targon.com
+---
+
+# Subnet 4: Targon
+
+Targon (netuid 4) is a decentralized confidential AI compute marketplace operated by
+[Manifold Inc.](https://targon.com) It uses the Targon Virtual Machine (TVM) to provide
+hardware-attested inference workloads secured by Confidential Computing (CC) and Protected PCIe
+(PPCIE) technology. Miners contribute hardware that runs AI inference inside isolated, verifiable
+execution environments; validators score that work; and emissions flow via an on-chain auction
+system.
+
+References: [manifold-inc/targon (GitHub)](https://github.com/manifold-inc/targon),
+[targon.com](https://targon.com)
+
+## How the Mechanism Works
+
+Targon's incentive design centers on hardware-attested confidential compute. Rather than scoring raw
+model outputs, validators verify that miner hardware can run workloads inside a hardware-enforced
+Trusted Execution Environment (TEE) — either AMD SEV-SNP (CPU) or NVIDIA Confidential Compute /
+PPCIE (GPU).
+
+Miner emissions are allocated through an **auction system**. Each hardware category (e.g.,
+`SEV-CPU-AMD-EPYC-V4`, `TDX-NVCC-NVIDIA-H200`) has its own auction slot with a configurable emission
+share and minimum cluster size. Miners bid into these slots; bids above the maximum are capped. Any
+emission share not allocated to active auctions is burned. The current auction state can be queried
+at:
+
+```
+GET https://tower.targon.com/api/v1/auctions
+```
+
+The TVM handles the full execution pipeline: secure boot, hardware root of trust, remote
+attestation, and memory isolation — ensuring validators can cryptographically verify that a miner's
+compute is running inside a genuine TEE.
+
+References: [manifold-inc/targon (GitHub)](https://github.com/manifold-inc/targon),
+[miner docs](https://github.com/manifold-inc/targon/blob/main/docs/miner/miner.md)
+
+## Participating as a Miner
+
+Targon mining requires specialized server hardware with BIOS access. Three hardware paths are
+supported:
+
+- **AMD EPYC™ 4th Gen (9xx4 Series, Genoa/Bergamo) with SEV-SNP** — CPU confidential workloads.
+  Requires Ubuntu 25.04 Server and HGX Firmware Bundle v1.7.0 or higher.
+- **Intel TDX + NVIDIA Hopper GPUs (H100, H200)** — GPU passthrough inside TDX confidential VMs. Two
+  Ubuntu variants are supported (22.04 LTS and 25.04+).
+- **Intel TDX + NVIDIA Blackwell GPUs** — Next-generation GPU passthrough, same TDX isolation model.
+
+Setup involves configuring the host OS and BIOS for the chosen TEE technology, then using the
+`tvm/install` binary to pull and launch a miner VM image from Targon's infrastructure. The
+`targon-cli` tool manages the running miner (updates, logs, container status). BIOS access is
+strongly recommended, as hardware configuration adjustments are expected during onboarding.
+
+References: [miner docs](https://github.com/manifold-inc/targon/blob/main/docs/miner/miner.md),
+[amd-cpus setup](https://github.com/manifold-inc/targon/blob/main/docs/miner/amd-cpus.md)
+
+## Participating as a Validator
+
+Validators run on standard CPU servers and do not require TEE-capable hardware. The recommended
+setup uses a [latitude.sh](https://www.latitude.sh/) `m4.metal.medium` box running Ubuntu 24.04 or
+25.04. The setup flow:
+
+1. Configure a `.env` file with hotkey phrase, MongoDB credentials, and validator IP.
+2. Use the `tvm/install` binary (with `--node-type vali-cpu`) to download and install the validator
+   VM image.
+3. Launch the VM with `sudo launch_vm.sh` from the downloaded folder.
+4. Initialize the validator with `targon-cli vali init [path to .env]`.
+
+Ongoing management (logs, updates, container listing) uses `targon-cli vali` subcommands. Weights
+are set automatically by the running validator.
+
+References:
+[validator docs](https://github.com/manifold-inc/targon/blob/main/docs/validator/validator.md)
+
+## On-Chain Identity
+
+Targon's on-chain identity is registered under owner coldkey
+[5CXGPMnq9RCCLUEvp9G2iUuabw69TSFM155UVS1S4Zmusaxv](https://taostats.io/subnets/4) with 256 neurons
+active. The registered GitHub is [manifold-inc/targon](https://github.com/manifold-inc/targon) and
+the registered website is [targon.com](https://targon.com).
+
+References: [taostats.io/subnets/4](https://taostats.io/subnets/4)
+
+## Further Reading
+
+- [manifold-inc/targon (GitHub)](https://github.com/manifold-inc/targon) — full source,
+  miner/validator docs
+- [targon.com](https://targon.com) — official site
+- [taostats.io/subnets/4](https://taostats.io/subnets/4) — live on-chain stats
+- [[Yuma Consensus]] — the weight-setting protocol used across all subnets
+- [[Dynamic TAO]] — how subnet token pools and emissions are structured
