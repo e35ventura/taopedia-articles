@@ -1,0 +1,149 @@
+---
+title: "Subnet 5: Hone"
+summary:
+  "Hone is a Bittensor subnet operated by Manifold where miners compete to solve ARC-AGI-2 abstract
+  reasoning problems; solutions run in a secure GPU sandbox and are scored by exact-match accuracy."
+category: "Subnets"
+tags: ["Bittensor", "Subnets"]
+infoboxTitle: Subnet 5 — Hone
+infoboxCaption: ARC-AGI-2 benchmarking in a secure GPU sandbox.
+infoboxRows:
+  - label: Subnet
+    value: SN5
+  - label: Operator
+    value: Manifold
+  - label: Neurons
+    value: "256"
+  - label: GitHub
+    value: manifold-inc/hone
+  - label: Site
+    value: hone.training
+---
+
+# Subnet 5: Hone
+
+Hone is Bittensor's fifth subnet (netuid 5), operated by [Manifold](https://www.hone.training/). Its
+purpose is to benchmark and advance AI reasoning by pitting miners against
+[ARC-AGI-2](https://arcprize.org/) — a suite of novel abstract reasoning tasks designed to resist
+pattern-memorisation and measure genuine general intelligence. Miners don't run solvers inside the
+validator workflow directly; instead they publish a git repository containing their solution, which
+a centralised GPU sandbox clones, builds, and executes in isolation.
+
+References: [manifold-inc/hone (GitHub)](https://github.com/manifold-inc/hone),
+[taostats.io/subnets/5](https://taostats.io/subnets/5)
+
+## How the Mechanism Works
+
+Each miner hosts a lightweight HTTP server that exposes a `/info` endpoint. When queried, this
+endpoint returns a pointer to the miner's solution repository — an owner, repository name, branch,
+and commit hash.
+
+Validators collect these pointers and submit **jobs** to a managed **Sandbox Runner** — a cluster of
+H200 GPUs operated by Manifold. The Sandbox Runner:
+
+1. Clones the miner's repository and builds a Docker image from its `Dockerfile`.
+2. Runs a **prep phase** (internet-accessible) so the solver can download model weights or other
+   assets.
+3. Runs an **inference phase** with network access fully disabled, passing a set of held-out
+   ARC-AGI-2 problems.
+4. Computes `exact_match_rate` — the fraction of problems the solver answers correctly — and returns
+   that score to the validator.
+
+Validators aggregate scores and assign on-chain weights. The reward distribution uses **exponential
+decay** (factor 0.8 per rank): only the **top 5** miners that exceed a 20% accuracy floor receive
+any emission. If no miner clears the floor in a given round, the entire emission for that round is
+burned rather than distributed. Miners with identical repo + branch + commit combinations receive a
+cached score rather than a redundant evaluation, and a daily submission limit (default: one per
+miner per day) prevents gaming through rapid re-submissions. Weights feed into [[Yuma Consensus]] to
+determine per-epoch emissions.
+
+References: [manifold-inc/hone (GitHub)](https://github.com/manifold-inc/hone)
+
+## Participating as a Miner
+
+Miners must run an HTTP server (default port 8091) that returns their solution repository pointer at
+`GET /info`. The repository must contain a `Dockerfile` that the Sandbox Runner can build; all model
+downloads and setup should happen in the prep phase (before network isolation begins).
+
+General setup flow:
+
+1. Register a hotkey on SN5:
+   ```bash
+   btcli subnet register --subtensor.network finney --netuid 5 \
+     --wallet.name <coldkey> --wallet.hotkey <hotkey>
+   ```
+2. Clone the repository and set up the miner service:
+   ```bash
+   git clone https://github.com/manifold-inc/hone.git
+   cd hone/miner
+   ```
+3. Configure `miner/.env` with wallet credentials, chain endpoint, and your solution repository
+   details, then start the miner:
+   ```bash
+   docker compose up -d
+   ```
+4. Announce your IP and port on-chain so validators can discover you:
+   ```bash
+   python tools/post_ip_chain.py --wallet-name default --hotkey miner \
+     --ip YOUR_IP --port 8091
+   ```
+
+Solution repositories can use any language or framework that builds inside Docker. The Sandbox
+Runner optionally starts a **vLLM sidecar** alongside the inference container for transformer-based
+solvers that need GPU-accelerated model inference.
+
+References: [manifold-inc/hone — Miner Setup](https://github.com/manifold-inc/hone#miner-setup),
+[miner-solution-example (GitHub)](https://github.com/manifold-inc/hone/tree/main/miner-solution-example)
+
+## Participating as a Validator
+
+Validators do not need a GPU. Their role is to query each registered miner's `/info` endpoint,
+forward the solution pointers to the Sandbox Runner API, collect the returned `exact_match_rate`
+scores, and set on-chain weights accordingly.
+
+Validator requirements (from the official README):
+
+- 4+ CPU cores
+- 8 GB+ RAM
+- 20 GB disk
+- A PostgreSQL database (provided via Docker Compose)
+- Reliable network connection
+
+Setup:
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/manifold-inc/hone.git
+   cd hone/validator
+   ```
+2. Create `validator/.env` with chain, wallet, and database credentials.
+3. Start all services:
+   ```bash
+   docker compose up -d
+   ```
+
+The validator service polls registered miners, submits jobs to the Sandbox Runner, stores results in
+PostgreSQL, and pushes weights to the chain. Because the Sandbox Runner handles all GPU work,
+validators have a low hardware bar.
+
+References:
+[manifold-inc/hone — Validator Setup](https://github.com/manifold-inc/hone#validator-setup)
+
+## On-Chain Identity
+
+Subnet 5's registered on-chain identity, verifiable via
+[taostats.io/subnets/5](https://taostats.io/subnets/5):
+
+- **Owner coldkey:** `5GurNtB3yQFCh6CSmfH7LrYJDsvzup4diHZiaYtKe274nrMX`
+  ([view on taostats](https://taostats.io/coldkey/5GurNtB3yQFCh6CSmfH7LrYJDsvzup4diHZiaYtKe274nrMX))
+- **GitHub:** [manifold-inc/hone](https://github.com/manifold-inc/hone)
+- **URL:** [hone.training](https://www.hone.training/)
+- **Neurons:** 256
+
+## Further Reading
+
+- [manifold-inc/hone (GitHub)](https://github.com/manifold-inc/hone)
+- [ARC-AGI-2 prize and dataset](https://arcprize.org/)
+- [taostats.io/subnets/5](https://taostats.io/subnets/5)
+- [[Yuma Consensus]]
+- [[Dynamic TAO]]
