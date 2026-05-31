@@ -1,0 +1,89 @@
+---
+title: "Subnet 9: iota"
+summary:
+  "iota is Bittensor's permissionless pipeline-parallel LLM pretraining network, where miners hold
+  individual model layers and validators spot-check activation outputs under token-incentivized
+  scoring."
+category: "Subnets"
+tags: ["Subnets"]
+infoboxTitle: Subnet 9 — iota
+infoboxCaption: Incentivized pipeline-parallel LLM pretraining
+infoboxRows:
+  - label: Subnet
+    value: SN9
+  - label: Operator
+    value: Macrocosmos
+  - label: Neurons
+    value: "256"
+  - label: GitHub
+    value: macrocosm-os/iota
+  - label: Site
+    value: https://iota.macrocosmos.ai/
+---
+
+Subnet 9 hosts **iota** — the Incentivized Orchestrated Training Architecture — a framework
+developed by [Macrocosmos](https://www.macrocosmos.ai/) for pretraining large language models across
+a permissionless network of heterogeneous GPU machines. Rather than concentrating compute in a
+single data center, iota distributes the model itself across independent miners, each responsible
+for a slice of the network. The project is described in the
+[iota technical primer](https://arxiv.org/abs/2507.17766) published by Macrocosmos.
+
+## How the Mechanism Works
+
+iota implements pipeline-parallel training by splitting a language model into distinct layer groups
+— a head, a body, and a tail — and assigning each group to a different set of miners. An
+orchestrator streams activations (the intermediate numerical outputs produced at each layer) from
+one group to the next, so the full forward and backward training pass completes across multiple
+machines in sequence rather than on a single device.
+
+Miners compete to process activation batches as they flow through the pipeline. Periodically, each
+miner uploads its locally computed weight updates and merges them with the rest of the network using
+a variant of Butterfly All-Reduce — a communication pattern that synchronizes parameters across
+participants without requiring all-to-all messaging ([source](https://arxiv.org/abs/2507.17766)).
+
+Validators perform spot-checks on a subset of miners to verify that activations were computed
+correctly. Honest miners who pass verification receive higher scores; those whose outputs fail the
+check are penalized. Final emissions are distributed via [[Yuma Consensus]] based on these
+validator-assigned scores. Live training metrics and miner status are visible on the
+[iota dashboard](https://iota.macrocosmos.ai/dashboard/mainnet).
+
+## Participating as a Miner
+
+Miners on SN9 hold one or more model layers and process the activation batches routed to them by the
+orchestrator. Because the pipeline distributes layers across participants, each miner handles only a
+segment of the full model rather than the whole network. Rewards scale with the volume of
+activations processed correctly and verified by validators.
+
+Participants interested in mining should review the
+[Macrocosmos documentation](https://docs.macrocosmos.ai/) and the
+[GitHub repository](https://github.com/macrocosm-os/iota) for current prerequisites and registration
+details.
+
+## Participating as a Validator
+
+Validators on SN9 sample a portion of miner work and independently verify that activations were
+computed as expected. Miners whose outputs match pass verification; those that do not have their
+scores reduced. This sampling approach keeps validation computationally tractable while maintaining
+a meaningful check against idle or fraudulent participants.
+
+Validators stake TAO on the subnet and receive emissions proportional to their influence under
+[[Yuma Consensus]]. Setup and configuration details are documented in the
+[Macrocosmos documentation](https://docs.macrocosmos.ai/).
+
+## On-Chain Identity
+
+Subnet 9 is operated under coldkey `5FsbubeciqtB5Nik3umL2iD4fG8FcC9GbT9nHJfXMj4mJJZ9` with 256
+registered neurons. Full on-chain details — including current emissions and neuron registration
+status — are available at [taostats.io/subnets/9](https://taostats.io/subnets/9).
+
+- GitHub: [macrocosm-os/iota](https://github.com/macrocosm-os/iota)
+- Website: [iota.macrocosmos.ai](https://iota.macrocosmos.ai/)
+- Operator: [macrocosmos.ai](https://www.macrocosmos.ai/)
+
+## Further Reading
+
+- [iota technical primer (ArXiv)](https://arxiv.org/abs/2507.17766)
+- [iota technical primer (PDF)](https://www.macrocosmos.ai/research/iota_primer.pdf)
+- [Live network dashboard](https://iota.macrocosmos.ai/dashboard/mainnet)
+- [Macrocosmos documentation](https://docs.macrocosmos.ai/)
+- [Taostats — Subnet 9](https://taostats.io/subnets/9)
