@@ -65,7 +65,7 @@ Reference local assets with relative paths:
 title: "Your Article Title"
 summary: "One clear sentence describing the article."
 category: "Wallets"
-tags: ["Bittensor", "Wallets"]
+tags: ["Wallets"]
 ---
 ```
 
@@ -74,7 +74,8 @@ Required fields:
 - `title`: Display title.
 - `summary`: Short description used in listings and search.
 - `category`: One primary topic. Do not use `Bittensor` as a catch-all category.
-- `tags`: Zero to three tags. Include `Bittensor` for articles that should publish to Taopedia.
+- `tags`: Zero to three specific topic tags. Do not use `Bittensor`; every published Taopedia
+  article is already Bittensor-focused.
 
 Optional fields:
 
@@ -87,13 +88,9 @@ Optional fields:
 
 ## Publication Rules
 
-Taopedia publishes articles when:
-
-- the slug is `taopedia`;
-- or `tags` includes `Bittensor`.
-
-General sample articles can remain in this repo, but they do not appear on Taopedia unless they
-match the publication rules. Categories can be added over time without changing website sync logic.
+Taopedia publishes every article that is not marked `draft: true`. Articles must be
+Bittensor-focused; general sample articles should not be added to this repository. Categories can be
+added over time without changing website sync logic.
 
 ## Source Standard
 

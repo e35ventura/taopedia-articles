@@ -52,7 +52,7 @@ content/pages/dynamic_tao/
 title: "Dynamic TAO"
 summary: "How Dynamic TAO changes subnet tokenomics and incentive allocation in Bittensor."
 category: "Tokenomics"
-tags: ["Bittensor", "TAO", "Subnets"]
+tags: ["TAO", "Subnets"]
 ---
 ```
 
@@ -61,7 +61,8 @@ Required fields:
 - `title`: Human-readable article title.
 - `summary`: One sentence, preferably under 180 characters.
 - `category`: One primary topic. Do not use `Bittensor` as a catch-all category.
-- `tags`: Zero to three tags. Include `Bittensor` for articles that should publish to Taopedia.
+- `tags`: Zero to three specific topic tags. Do not use `Bittensor`; every published Taopedia
+  article is already Bittensor-focused.
 
 Optional fields:
 
@@ -85,12 +86,9 @@ Taopedia is Bittensor-centric. Good topics include:
 - subnets and incentive mechanisms
 - Bittensor governance, emissions, and operations
 
-The Taopedia app currently publishes articles when:
-
-- the slug is `taopedia`;
-- or `tags` includes `Bittensor`.
-
-Categories can be added over time without changing the website sync logic.
+The Taopedia app publishes every article that is not marked `draft: true`. Articles must be
+Bittensor-focused; general sample articles should not be added to this repository. Categories can be
+added over time without changing the website sync logic.
 
 ## Writing Style
 
