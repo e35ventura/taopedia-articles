@@ -1,0 +1,100 @@
+---
+title: "Subnet 10: Swap"
+summary:
+  "Swap is a Bittensor subnet that incentivizes miners to provide liquidity to the TAO/USDC pool on
+  TaoFi, scoring them by the trading fees their positions earned over the previous 24 hours."
+category: "Subnets"
+tags: ["Subnets"]
+infoboxTitle: Subnet 10 — Swap
+infoboxCaption: Liquidity provision incentive network for TaoFi's TAO/USDC pool.
+infoboxRows:
+  - label: Subnet
+    value: SN10
+  - label: Operator
+    value: Swap-Subnet
+  - label: Neurons
+    value: "256"
+  - label: GitHub
+    value: Swap-Subnet/swap-subnet
+  - label: Site
+    value: taofi.com/pool
+---
+
+# Subnet 10: Swap
+
+Swap is Bittensor Subnet 10 (SN10), operated by [Swap-Subnet](https://github.com/Swap-Subnet). The
+subnet's stated goal is onboarding users and capital to the Bittensor ecosystem by directing
+token-incentivized liquidity toward [TaoFi](https://www.taofi.com/pool), a Uniswap V3-style
+decentralized exchange that hosts a TAO/USDC trading pool. Participants earn SN10 alpha emissions in
+proportion to the fees their liquidity positions generate on-chain.
+
+References: [Swap-Subnet/swap-subnet (GitHub)](https://github.com/Swap-Subnet/swap-subnet),
+[taofi.com/pool](https://www.taofi.com/pool)
+
+## How the Mechanism Works
+
+The Swap subnet connects on-chain DeFi activity to Bittensor's incentive layer. Miners deposit TAO
+and USDC into the TaoFi TAO/USDC liquidity pool, which operates under a concentrated-liquidity
+model: each position covers a price range chosen by the provider, and fees accumulate only while the
+market price is within that range. Once per day, validators measure how much fee revenue each
+registered position earned during the preceding 24-hour window and translate those figures into
+per-miner scores. A miner whose position is out of range or holds less capital earns fewer fees and
+therefore receives a lower weight.
+
+Scores flow into [[Yuma Consensus]], which converts validator weight-sets into per-block TAO
+emissions distributed through [[Dynamic TAO]]. Because the scoring metric is fee revenue rather than
+notional liquidity size, the mechanism rewards active range management and correct market
+positioning over passive capital placement.
+
+References: [Swap-Subnet/swap-subnet (GitHub)](https://github.com/Swap-Subnet/swap-subnet)
+
+## Participating as a Miner
+
+Miners on Swap interact with the TaoFi protocol using an EVM-compatible wallet (such as MetaMask)
+connected to Bittensor's EVM layer. They supply both TAO and USDC to the TAO/USDC pool on
+[TaoFi](https://www.taofi.com/pool), selecting a price range for their concentrated-liquidity
+position, and take note of the resulting position ID. Miners then link their EVM wallet to a
+registered Bittensor hotkey by committing a signed association on-chain, so that validators can
+attribute on-chain fee revenue to a specific subnet participant. Emissions are distributed to the
+miner's hotkey rather than directly to the EVM wallet when the hotkey is registered and the
+association is established.
+
+Miners whose positions remain in-range for a larger fraction of the day accumulate more fees and
+therefore earn higher emissions. Active range management — adjusting position bounds in response to
+market movement — is the primary lever available to competitive participants.
+
+References:
+[Swap-Subnet/swap-subnet — docs/taofi_lp.md](https://github.com/Swap-Subnet/swap-subnet/blob/main/docs/taofi_lp.md)
+
+## Participating as a Validator
+
+Validators on Swap run a scoring process that queries historical on-chain data to reconstruct the
+fee revenue earned by each registered miner's liquidity position over the previous 24 hours. This
+requires access to an archive subtensor node that can serve historical state at arbitrary block
+heights. Validators read on-chain commitments that associate hotkeys with EVM addresses and position
+IDs, then calculate fee revenue for each position, assign proportional scores, and submit weight
+vectors to the chain. The Weights & Biases (wandb) integration is available for monitoring validator
+output over time.
+
+Validators that submit honest, timely weight-sets earn emissions through [[Yuma Consensus]].
+
+References:
+[Swap-Subnet/swap-subnet — docs/validator.md](https://github.com/Swap-Subnet/swap-subnet/blob/main/docs/validator.md)
+
+## On-Chain Identity
+
+Swap is registered at netuid 10 on Bittensor with 256 neurons. The subnet owner coldkey is
+5GbcimKjp17QPUoS568DBSMNqV2pmDetBf3xyC15vh4bTFE1. The repository is maintained by Swap-Subnet at
+[Swap-Subnet/swap-subnet](https://github.com/Swap-Subnet/swap-subnet) and the liquidity pool is
+hosted at [taofi.com/pool](https://www.taofi.com/pool).
+
+References: [taostats.io/subnets/10](https://taostats.io/subnets/10)
+
+## Further Reading
+
+- [Swap-Subnet/swap-subnet — GitHub](https://github.com/Swap-Subnet/swap-subnet)
+- [TaoFi pool](https://www.taofi.com/pool)
+- [TaoFi swap](https://www.taofi.com/swap)
+- [taostats.io/subnets/10](https://taostats.io/subnets/10)
+- [[Yuma Consensus]]
+- [[Dynamic TAO]]
