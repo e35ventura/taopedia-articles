@@ -1,0 +1,110 @@
+---
+title: "Subnet 10: Swap"
+summary:
+  "Swap (SN10) rewards participants who supply liquidity to TaoFi's TAO/USDC pool, with miners
+  scored by the trading fees their positions earned in the preceding 24 hours."
+category: "Subnets"
+tags: ["Subnets"]
+infoboxTitle: Subnet 10 — Swap
+infoboxCaption: On-chain liquidity incentives for the TAO/USDC market.
+infoboxRows:
+  - label: Subnet
+    value: SN10
+  - label: Operator
+    value: Swap-Subnet
+  - label: Neurons
+    value: "256"
+  - label: GitHub
+    value: Swap-Subnet/swap-subnet
+  - label: Site
+    value: https://www.taofi.com/pool
+---
+
+# Subnet 10: Swap
+
+Swap is Bittensor Subnet 10, maintained by the
+[Swap-Subnet team](https://github.com/Swap-Subnet/swap-subnet). Its purpose is to channel on-chain
+incentives toward participants who provide liquidity to [TaoFi](https://www.taofi.com/pool), a
+decentralized exchange built on Bittensor's EVM layer that hosts a concentrated-liquidity TAO/USDC
+pool. Miners earn SN10 alpha in proportion to the trading fees their pool positions collect, turning
+passive market-making into an active participation layer settled by [[Yuma Consensus]].
+
+The subnet's stated goal is to onboard users to Bittensor by giving TAO holders a financially
+meaningful reason to interact with decentralized infrastructure built around the TAO token.[^1]
+
+## How the Mechanism Works
+
+TaoFi's TAO/USDC pool uses a concentrated-liquidity design: participants choose a price range and
+supply both tokens within it. When trades execute at a price that falls inside a position's range,
+that position earns a share of the swap fee. Positions whose range no longer brackets the current
+price are inactive and collect nothing.
+
+Validators measure each registered miner's contribution by pulling historical fee data from the pool
+and summing the fees that each position earned during the preceding 24 hours. A position earns a
+higher score by staying in range and capturing a larger share of trade flow. Validators emit weights
+proportional to those 24-hour fee totals, which flow into [[Yuma Consensus]] to determine SN10 alpha
+distributions for that epoch.
+
+Because the scoring window resets daily, miners whose positions drift out of range lose standing
+quickly. This creates continuous pressure to monitor market conditions and keep capital deployed at
+the active price rather than sitting idle outside the spread.[^1]
+
+## Participating as a Miner
+
+Participation starts on the liquidity side. A miner needs an EVM-compatible wallet — the Swap team
+recommends MetaMask — and enough capital to supply both TAO and USDC to the pool. The TaoFi
+interface at [taofi.com/pool](https://www.taofi.com/pool) walks through connecting a wallet,
+approving token spend, and depositing into the pool across a chosen price range.[^2]
+
+Selecting a narrow price range around the current market price tends to earn more fees per unit of
+capital when trades pass through it, but it also means the position falls out of range more often as
+the price moves. Wider ranges sacrifice fee efficiency for more consistent in-range time. Miners
+should note the numeric position ID assigned after deposit, as it is needed to claim rewards and, if
+running the optional miner software, to associate the position with a registered hotkey.
+
+Daily rewards from fee income are distributed automatically to the depositing wallet address without
+any additional steps. Running the full miner software and registering a Bittensor hotkey is
+optional; doing so routes SN10 alpha emissions to the hotkey instead of direct pool payouts. If a
+hotkey is registered, the miner must submit a miner-type commitment on-chain to link the LP position
+to that hotkey before the validator can attribute fees to the correct participant.[^2]
+
+## Participating as a Validator
+
+Validators connect to an archive subtensor node to retrieve historical pool state and calculate, for
+each miner's registered position, the cumulative fees earned over the past 24 hours. That fee total
+becomes the weight submitted to the subnet for that miner. Higher-fee positions receive
+proportionally larger weights, directly linking liquidity productivity to SN10 emissions.
+
+The Swap team strongly recommends running validators against a locally operated subtensor node
+rather than the public finney endpoint, because the scoring logic requires reliable access to
+historical blockchain data that the public endpoint may not serve consistently. Validators may also
+connect a Weights and Biases project for monitoring validator performance over time.[^3]
+
+## On-Chain Identity
+
+Subnet 10's registered on-chain identity, verifiable via
+[taostats.io/subnets/10](https://taostats.io/subnets/10):
+
+- **Owner coldkey:** `5GbcimKjp17QPUoS568DBSMNqV2pmDetBf3xyC15vh4bTFE1`
+  ([view on taostats](https://taostats.io/coldkey/5GbcimKjp17QPUoS568DBSMNqV2pmDetBf3xyC15vh4bTFE1))
+- **GitHub:** [Swap-Subnet/swap-subnet](https://github.com/Swap-Subnet/swap-subnet)
+- **URL:** [taofi.com/pool](https://www.taofi.com/pool)
+- **Neurons:** 256
+
+## Further Reading
+
+- [TaoFi Pool](https://www.taofi.com/pool) — the liquidity venue SN10 miners contribute to
+- [Swap-Subnet on GitHub](https://github.com/Swap-Subnet/swap-subnet) — source code and
+  documentation
+- [Miner guide — TaoFi LP](https://github.com/Swap-Subnet/swap-subnet/blob/main/docs/taofi_lp.md)
+- [Validator setup guide](https://github.com/Swap-Subnet/swap-subnet/blob/main/docs/validator.md)
+- [taostats.io — SN10](https://taostats.io/subnets/10) — live on-chain metrics
+- [[Yuma Consensus]]
+- [[Dynamic TAO]]
+
+[^1]: [Swap-Subnet README](https://github.com/Swap-Subnet/swap-subnet)
+
+[^2]: [TaoFi LP Miner Guide](https://github.com/Swap-Subnet/swap-subnet/blob/main/docs/taofi_lp.md)
+
+[^3]:
+    [Validator Setup Guide](https://github.com/Swap-Subnet/swap-subnet/blob/main/docs/validator.md)
