@@ -1,0 +1,117 @@
+---
+title: "Subnet 21: AdTAO"
+summary:
+  "AdTAO is a Bittensor subnet that runs a verifiable prediction market for Google Ads campaign
+  outcomes, rewarding miners who accurately forecast the causal impact of advertising interventions."
+category: "Subnets"
+tags: ["Subnets"]
+infoboxTitle: Subnet 21 — AdTAO
+infoboxCaption: Verifiable ad-impact prediction market on Bittensor
+infoboxRows:
+  - label: Subnet
+    value: SN21
+  - label: Operator
+    value: PPC Rebel
+  - label: Neurons
+    value: "256"
+  - label: GitHub
+    value: ippcteam/SN21-adtao
+  - label: Site
+    value: ppcrebel.com
+---
+
+AdTAO is Bittensor Subnet 21, operated by [PPC Rebel](https://www.ppcrebel.com/), a Google Ads
+management firm. The subnet's purpose is to turn counterfactual impact prediction for advertising
+campaigns into a competitive, verifiable market: miners submit probabilistic forecasts about how a
+given advertising intervention will affect a campaign's performance, and they are rewarded strictly
+on the accuracy of those forecasts once real outcomes are measured. Full protocol details are
+published in the
+[AdTAO whitepaper](https://github.com/ippcteam/SN21-adtao/blob/main/docs/whitepaper.md).
+
+The subnet was designed around two hard properties: predictions are cryptographically bound to the
+miner that produced them before the outcome can possibly be known, and validator scoring is
+independently reproducible by any third party with access to the chain. This architecture makes it
+impossible to backdate a prediction or silently alter a score after the fact, since every step is
+anchored by on-chain cryptographic commitments.
+
+## How the Mechanism Works
+
+The subnet operates in weekly cycles called episodes. At the start of each episode, the operator
+publishes a batch of prediction problems drawn from real Google Ads account data. Each problem is a
+structured snapshot of an ad account at a moment in time — including recent campaign performance,
+the action being applied (such as a budget change, bid strategy switch, or target adjustment), and
+60 days of prior history. The operator commits a cryptographic digest of this data on chain at the
+moment of release, so the problem set is fixed and tamper-evident.
+
+Miners receive these episodes and must submit probabilistic distributions — specifically P10, P50,
+and P90 quantile estimates — over the campaign's performance change across 7-day and 14-day
+horizons. Submissions are encrypted with AES-GCM and the encryption key is itself locked using
+timelock encryption tied to a future [drand](https://drand.love/) randomness beacon round. The
+ciphertext hash, the locked key, and the archive URL where the ciphertext lives are all committed on
+chain before the outcome is knowable. This construction guarantees that a miner cannot observe the
+outcome and then claim credit for predicting it.
+
+After the timelock expires and outcomes are measured, validators fetch miners' encrypted
+predictions, decrypt them using the released drand key, and run a standardized open-source scoring
+procedure. Scoring combines four components: quantile accuracy, measured by pinball loss and the
+Continuous Ranked Probability Score, makes up 50% of the score; calibration — whether the intervals
+produced by the miner's P10/P50/P90 actually contain outcomes at the stated rates — makes up 20%;
+directional accuracy (whether the miner correctly predicted the sign of the change in the primary
+goal metric) contributes 15%; and goal accuracy, measured as a Brier score on the probability that
+the campaign goal is met, contributes the final 15%. Predictions that are near-zero face a null
+penalty of up to 60%, and any miner whose aggregate score fails to beat a conditional-prior baseline
+receives zero emissions for that epoch.
+
+Validators commit their scoring artifacts on chain using Bittensor's commit-reveal weight mechanism.
+A shadow validator — a separate instance running identical code on a different hotkey —
+independently scores every epoch and commits its own artifacts, providing a public audit trail.
+Anyone can run the
+[verify_epoch.py](https://github.com/ippcteam/SN21-adtao/blob/main/scripts/verify_epoch.py) script
+to re-run the scoring against chain state and confirm or contradict the primary validator's claims.
+[[Yuma Consensus]] then aggregates validator weights into final emissions for the miner set.
+
+## Participating as a Miner
+
+Miners on AdTAO are forecasters. The task is to build a model that takes a structured Google Ads
+episode — account state, recent campaign history, and a description of the action being applied —
+and outputs calibrated P10/P50/P90 distributions over the resulting performance change. The subnet
+ships a reference baseline based on XGBoost, along with sample training episodes and helper scripts,
+so participants can benchmark their approach against a known starting point before committing to the
+network.
+
+Because predictions must be submitted before the timelock reveals, timing discipline matters: late
+submissions are detectable from chain state and treated as missing data. The miner quickstart guide
+is available in the
+[AdTAO repository](https://github.com/ippcteam/SN21-adtao/blob/main/docs/miner_quickstart.md). The
+subnet's hardware requirements are defined in the repository's `min_compute.yml` file.
+
+## Participating as a Validator
+
+Validators on Subnet 21 are responsible for the full scoring pipeline each epoch: fetching miner
+prediction commits from the three-tier archive system, verifying the cryptographic scoreability of
+each submission against the eight-check rule, running the scoring components, and committing the
+resulting weights via timelocked weight commits. Validators also publish pre-scoring and
+post-scoring artifact roots on chain so that any observer can verify the scoring independently.
+
+A tiered weight allocator is implemented in the codebase and governs how emissions flow between
+Elite and Standard tier miners once it is activated after a review period. Validator setup details
+are in the
+[validator setup guide](https://github.com/ippcteam/SN21-adtao/blob/main/docs/validator_setup.md).
+
+## On-Chain Identity
+
+Subnet 21 is registered on the Bittensor network under the name AdTAO, operated by PPC Rebel under
+owner coldkey `5HjCYVfrWSkzTfJM5rkWBW3qTTJqXEFUzZrKty5hodpgfjyW`. The subnet supports 256 neurons
+and its official site is [ppcrebel.com](https://www.ppcrebel.com/). Live metagraph data, neuron
+counts, and alpha token pool information are available at
+[taostats.io/subnets/21](https://taostats.io/subnets/21).
+
+## Further Reading
+
+- [AdTAO on PPC Rebel](https://www.ppcrebel.com/)
+- [SN21-adtao GitHub repository](https://github.com/ippcteam/SN21-adtao)
+- [AdTAO whitepaper](https://github.com/ippcteam/SN21-adtao/blob/main/docs/whitepaper.md)
+- [Reward mechanism spec](https://github.com/ippcteam/SN21-adtao/blob/main/docs/SN21_REWARD_MECHANISM.md)
+- [Subnet 21 on Taostats](https://taostats.io/subnets/21)
+- [[Yuma Consensus]]
+- [[Dynamic TAO]]
