@@ -1,0 +1,130 @@
+---
+title: "Subnet 7: Allways"
+summary:
+  "Allways is a trustless cross-chain transaction layer on Bittensor where miners fulfill native
+  asset swaps and validators independently verify on-chain outcomes through a
+  collateral-and-slashing smart contract."
+category: "Subnets"
+tags: ["Bittensor", "Subnets"]
+infoboxTitle: Subnet 7 — Allways
+infoboxCaption: Trustless native cross-chain swaps on Bittensor.
+infoboxRows:
+  - label: Subnet
+    value: SN7
+  - label: Operator
+    value: entrius
+  - label: Neurons
+    value: "256"
+  - label: GitHub
+    value: entrius/allways
+  - label: Site
+    value: all-ways.io
+---
+
+# Subnet 7: Allways
+
+Allways is Bittensor Subnet 7 (SN7), operated by [entrius](https://github.com/entrius/allways). It
+implements a universal transaction layer that enables trustless native asset swaps across
+independent blockchains without wrapping or bridging. Assets move natively on their home chains; the
+subnet provides the verification and enforcement layer above them. The protocol is currently live
+with BTC ↔ TAO and is designed to extend to any verifiable asset pair.
+
+References: [entrius/allways (GitHub)](https://github.com/entrius/allways),
+[all-ways.io](https://all-ways.io/)
+
+## How the Mechanism Works
+
+Allways operates through four coordinated components:
+[entrius/allways (GitHub)](https://github.com/entrius/allways)
+
+- **Miners** post exchange rate pairs and lock collateral against those rates. When a user submits a
+  swap order, a miner fulfills it by executing the native on-chain transactions on both sides.
+- **Validators** independently monitor the transactions miners claim to have executed. They verify
+  the on-chain state of both assets, then vote on whether each swap outcome is valid.
+- **Smart Contract** holds miner collateral, manages the swap lifecycle (posted → matched → verified
+  → settled), and applies slashing to miners whose claimed fulfillments are rejected by validator
+  consensus.
+- **CLI** (`alw`) provides the user-facing interface for posting rate pairs, depositing collateral,
+  and executing swaps.
+
+Because validators verify native on-chain transactions independently of the miners, the protocol
+requires no trusted custodian. Incorrect or fraudulent fulfillments are slashed from miner
+collateral, aligning miner incentives with honest execution. Validator scores flow into
+[[Yuma Consensus]], which translates them into per-block emissions.
+
+References: [entrius/allways architecture (GitHub)](https://github.com/entrius/allways#architecture)
+
+## Participating as a Miner
+
+Miners provide liquidity and order fulfillment. The general flow is:
+[entrius/allways (GitHub)](https://github.com/entrius/allways)
+
+1. Register a hotkey on SN7 using `btcli`.
+2. Install the repo (Python 3.10+, Docker, Docker Compose required).
+3. Configure a `.env` file with `PORT`, `WALLET_PATH`, and Bitcoin-related variables (`BTC_MODE`,
+   `BTC_PRIVATE_KEY`, `BTC_RPC_URL`, etc. — see `.env.example`).
+4. Start the miner container:
+   ```bash
+   docker compose -f docker-compose.miner.yml up -d
+   ```
+5. Post a rate pair and lock sufficient collateral via the `alw` CLI.
+
+Miners earn rewards by fulfilling swap orders accurately. Collateral is slashed when validators
+reject a claimed fulfillment, so miners must maintain reliable connections to both chains and price
+their rates conservatively.
+
+References: [entrius/allways (GitHub)](https://github.com/entrius/allways#getting-started)
+
+## Participating as a Validator
+
+Validators monitor miner rate commitments and verify native transaction outcomes on both chains.
+[entrius/allways (GitHub)](https://github.com/entrius/allways)
+
+1. Register a hotkey on SN7 as a validator.
+2. Configure `.env` with wallet and network settings.
+3. Start the validator container:
+   ```bash
+   docker compose -f docker-compose.vali.yml up -d
+   ```
+
+Validators read miner rate commitments approximately every three minutes and stream contract events
+every block. The Allways documentation recommends that each validator run its own Subtensor lite
+node to reduce latency and avoid congesting the public `finney` endpoint:
+
+```bash
+subtensor \
+  --chain finney \
+  --base-path /var/lib/subtensor \
+  --rpc-external --ws-external \
+  --port 30333 --rpc-port 9933 --ws-port 9944 \
+  --pruning 1000
+```
+
+Validator state is stored locally in `~/.allways/validator/state.db` (SQLite, WAL mode), with tables
+for `pending_confirms`, `rate_events`, and `swap_outcomes`. The credibility ledger in
+`swap_outcomes` persists across restarts; collateral and active-swap state is rebuilt from contract
+events on startup.
+
+References:
+[entrius/allways validator storage (GitHub)](https://github.com/entrius/allways#validator-storage-layout),
+[lite-node setup (GitHub)](https://github.com/entrius/allways#running-a-local-subtensor-lite-node-validators)
+
+## On-Chain Identity
+
+| Field   | Value                                                         |
+| ------- | ------------------------------------------------------------- |
+| Netuid  | 7                                                             |
+| Owner   | [5CAc19i…finzcx (taostats.io)](https://taostats.io/subnets/7) |
+| GitHub  | [entrius/allways](https://github.com/entrius/allways)         |
+| Website | [all-ways.io](https://all-ways.io/)                           |
+| Neurons | 256                                                           |
+
+References: [Subnet 7 on taostats.io](https://taostats.io/subnets/7)
+
+## Further Reading
+
+- [entrius/allways on GitHub](https://github.com/entrius/allways)
+- [all-ways.io](https://all-ways.io/)
+- [Subnet 7 on taostats.io](https://taostats.io/subnets/7)
+- [[Yuma Consensus]]
+- [[Dynamic TAO]]
