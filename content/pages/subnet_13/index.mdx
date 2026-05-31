@@ -1,13 +1,13 @@
 ---
 title: "Subnet 13: Data Universe"
 summary:
-  "Data Universe is a Bittensor subnet operated by Macrocosmos that incentivizes miners to scrape
-  and store real-time social media data, building a distributed open dataset that validators score
-  on volume, freshness, and diversity."
+  "Data Universe is Bittensor's decentralized social-media data-scraping subnet, operated by
+  Macrocosmos, that incentivizes miners to collect fresh, desirable data from X, Reddit, and YouTube
+  for use by other subnets and businesses."
 category: "Subnets"
 tags: ["Subnets"]
 infoboxTitle: Subnet 13 — Data Universe
-infoboxCaption: Distributed social media data collection network.
+infoboxCaption: Decentralized social media data scraping and sentiment analysis
 infoboxRows:
   - label: Subnet
     value: SN13
@@ -18,85 +18,98 @@ infoboxRows:
   - label: GitHub
     value: macrocosm-os/data-universe
   - label: Site
-    value: macrocosmos.ai/gravity
+    value: https://www.macrocosmos.ai/gravity
 ---
 
-# Subnet 13: Data Universe
+Subnet 13, Data Universe, is a decentralized data-scraping and storage network owned and operated by
+[Macrocosmos](https://www.macrocosmos.ai/). Its purpose is to continuously collect social media
+content from X (formerly Twitter), Reddit, and YouTube transcripts, and make that data available to
+downstream consumers — other Bittensor subnets and external businesses — through a queryable,
+validator-maintained index.
 
-Data Universe is Bittensor Subnet 13 (SN13), operated by
-[Macrocosmos](https://www.macrocosmos.ai/gravity). The subnet coordinates a distributed network of
-miners to scrape, store, and index real-time social media data from sources including X (Twitter),
-Reddit, and YouTube. The result is an open-source dataset distributed across the miner set rather
-than held by any single entity — enabling scale that would be impractical with a centralized
-approach. The dataset is publicly accessible and continuously refreshed, with miners adding tens of
-millions of new records daily.
+Macrocosmos describes Data Universe as the world's largest open-source social media dataset.[^1] The
+network is designed to support up to 50 petabytes of data distributed across miners while requiring
+only around 10 GB of local storage on each validator.[^1] The operator's primary consumer product,
+[Gravity](https://app.macrocosmos.ai/gravity), lets anyone submit targeted scraping jobs and receive
+sentiment analysis results without writing code.
 
-References: [macrocosm-os/data-universe (GitHub)](https://github.com/macrocosm-os/data-universe),
-[macrocosmos.ai/gravity](https://www.macrocosmos.ai/gravity)
+Macrocosmos was co-founded by Will Squires (CEO) and Steffen Cruz (CTO). Cruz previously served as
+CTO of the OpenTensor Foundation and is the original architect of [[subnet_1_apex]]'s codebase.[^1]
 
 ## How the Mechanism Works
 
-Miners store collections of data points organized by source, timestamp, and content label. Each
-miner publishes an inventory to the network so validators know what data is held where. Validators
-periodically sample each miner's stored data to verify accuracy and build a complete map of the
-distributed dataset.
+Every piece of collected content is a **DataEntity** — a single scraped item with a URI validators
+can use to independently retrieve and verify it. DataEntities are grouped into **DataEntityBuckets**
+identified by three attributes: the data source (X, Reddit, or YouTube), the time bucket when the
+content was created, and a content label such as a keyword or ticker symbol. The full set of a
+miner's buckets is its **MinerIndex**.
 
-Scoring rewards data that is fresh, diverse, and in demand. Data older than 30 days receives no
-score — freshness is the primary driver of value. The subnet uses a Dynamic Desirability List that
-reflects which data types users are actively requesting through Macrocosmos's Gravity product; data
-matching current demand scores higher than unspecified categories.
+Validators periodically fetch each miner's MinerIndex and maintain a local database giving them a
+network-wide view of what data exists and where. They also run random spot-checks, pulling sample
+DataEntities from miners and verifying them against the live source. These checks produce a
+per-miner **credibility score** that scales the miner's overall reward — failing checks degrades
+credibility and makes any inventory misrepresentation strictly worse than honest reporting.[^1]
 
-De-duplication is handled through economic incentives rather than explicit restrictions: data stored
-across many miners is worth less per copy than data held by fewer. This naturally pushes miners to
-specialize in different sources and time windows rather than duplicating the same popular content.
-Miner scores incorporate both total data value and a credibility factor that penalizes miners who
-misrepresent their inventory to validators.
+Miner scoring rests on three factors:
 
-Weight vectors from validator scoring feed into [[Yuma Consensus]], which converts them into
+**Data freshness.** Content older than 30 days receives no score. More recent data is weighted
+proportionally higher within that window.[^1]
+
+**Data desirability.** The subnet maintains a
+[Dynamic Desirability List](https://docs.macrocosmos.ai/) reflecting what Gravity users are actively
+requesting. Data matching high-demand labels scores at full value; unspecified labels receive
+roughly 30% of that value.[^1]
+
+**Duplication factor.** When many miners hold identical data, each copy is worth less. Per-copy
+value decreases proportional to the number of miners holding the same bucket, pushing participants
+toward diverse, under-replicated content.[^1]
+
+Miners also upload their stores to S3-compatible public storage, anonymized to comply with each
+platform's terms of service, enabling direct dataset access independent of validator queries.[^1]
+Weight vectors from validator scoring flow into [[Yuma Consensus]], which converts them into
 per-block TAO emissions distributed via [[Dynamic TAO]].
-
-References: [macrocosm-os/data-universe (GitHub)](https://github.com/macrocosm-os/data-universe)
 
 ## Participating as a Miner
 
-Miners on Data Universe scrape designated social media sources and store the collected data points
-locally. Their economic role is to maximize the value of their stored dataset — which means
-prioritizing fresh data from sources currently in demand, avoiding duplication of what other miners
-already hold, and accurately reporting their inventory. Miners whose data is fresh, unique, and
-matches current desirability targets earn higher emissions; stale or widely duplicated data earns
-proportionally less.
+Miners run scraping processes targeting X, Reddit, and YouTube, organizing collected content into
+DataEntityBuckets and reporting their MinerIndex to validators on request. Because duplicate data
+earns diminishing rewards, miners are encouraged to consult the
+[Data Universe dashboard](https://sn13-dashboard.api.macrocosmos.ai/) before configuring targets —
+the dashboard shows which bucket types are already saturated across the network, helping identify
+underserved niches that maximize score.[^1]
 
-Miners also upload anonymized copies of their datasets to external storage for public access, making
-their collected data available beyond the subnet itself.
-
-References: [macrocosm-os/data-universe (GitHub)](https://github.com/macrocosm-os/data-universe)
+Miners are subject to Macrocosmos's data compliance policy, which aligns with UK GDPR obligations,
+prohibits collection of illegal or copyrighted content, and requires prompt reporting of any
+personal data breaches.[^1] Detailed setup guidance, including S3 storage configuration, is
+available in the
+[miner documentation](https://github.com/macrocosm-os/data-universe/blob/main/docs/miner.md).
 
 ## Participating as a Validator
 
-Validators on Data Universe maintain a real-time map of what data the miner set collectively holds.
-They do this by querying each miner's published inventory and spot-checking samples of the reported
-data to verify correctness. From this, validators compute per-miner scores across two dimensions:
-the value of the data each miner holds (weighted by freshness, type, and demand) and the miner's
-credibility score (based on how accurately they represent their inventory).
-
-Because validators track only metadata and spot-sampled records rather than the full dataset, their
-storage requirements remain modest even as the total distributed dataset scales to petabyte range.
-Validators submit weight vectors derived from these scores to [[Yuma Consensus]].
-
-References: [macrocosm-os/data-universe (GitHub)](https://github.com/macrocosm-os/data-universe)
+Validators maintain the full MinerIndex database and run the credibility-check spot-sampling
+described above. Because validators track only metadata and spot-sampled records — rather than the
+full dataset — their storage footprint remains around 10 GB even as the network scales to petabyte
+range.[^1] Validator activity is logged anonymously to
+[Weights & Biases](https://wandb.ai/macrocosmos/data-universe-validators) for network-wide
+transparency. Detailed setup instructions are in the
+[validator documentation](https://github.com/macrocosm-os/data-universe/blob/main/docs/validator.md).
 
 ## On-Chain Identity
 
-Data Universe is registered at netuid 13 on Bittensor with 256 neurons, verifiable via
-[taostats.io/subnets/13](https://taostats.io/subnets/13). The subnet owner coldkey is
-`5HBswBt1A9Ahx6U76abXXGd7VmabmCNBGhSK2vrP71GSxtgZ`. The codebase is maintained at
-[macrocosm-os/data-universe](https://github.com/macrocosm-os/data-universe) and the associated
-product is [macrocosmos.ai/gravity](https://www.macrocosmos.ai/gravity).
+Subnet 13 is registered on-chain under coldkey `5HBswBt1A9Ahx6U76abXXGd7VmabmCNBGhSK2vrP71GSxtgZ`,
+with 256 registered neurons. Live chain data — including emission rate, neuron list, and subnet
+parameters — is available at [taostats.io/subnets/13](https://taostats.io/subnets/13).
 
 ## Further Reading
 
-- [macrocosm-os/data-universe — GitHub](https://github.com/macrocosm-os/data-universe)
-- [Macrocosmos Gravity](https://www.macrocosmos.ai/gravity)
-- [taostats.io/subnets/13](https://taostats.io/subnets/13)
+- [Data Universe GitHub repository](https://github.com/macrocosm-os/data-universe)
+- [Gravity app](https://app.macrocosmos.ai/gravity)
+- [Macrocosmos documentation](https://docs.macrocosmos.ai/)
+- [Data Universe network dashboard](https://sn13-dashboard.api.macrocosmos.ai/)
+- [Nebula visualization tool](https://nebula.macrocosmos.ai/)
+- [On-chain subnet page — taostats.io](https://taostats.io/subnets/13)
 - [[Yuma Consensus]]
 - [[Dynamic TAO]]
+
+[^1]:
+    [Data Universe README, macrocosm-os/data-universe](https://github.com/macrocosm-os/data-universe/blob/main/README.md)
