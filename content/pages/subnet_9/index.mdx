@@ -1,12 +1,12 @@
 ---
 title: "Subnet 9: iota"
 summary:
-  "iota is a Bittensor subnet that runs a permissionless, token-incentivized pipeline-parallel
-  architecture for pretraining large language models across a network of heterogeneous machines."
+  "iota is a Bittensor subnet that coordinates permissionless, pipeline-parallel pretraining of
+  large language models across a decentralized network of GPU miners."
 category: "Subnets"
 tags: ["Subnets"]
 infoboxTitle: Subnet 9 — iota
-infoboxCaption: Permissionless pipeline-parallel LLM pretraining network.
+infoboxCaption: Permissionless pipeline-parallel LLM pretraining on Bittensor.
 infoboxRows:
   - label: Subnet
     value: SN9
@@ -22,54 +22,57 @@ infoboxRows:
 
 # Subnet 9: iota
 
-iota is Bittensor Subnet 9 (SN9), operated by [Macrocosmos](https://www.macrocosmos.ai/). The subnet
-implements IOTA — Incentivized Orchestrated Training Architecture — a framework for pretraining
-large language models across a network of heterogeneous, unreliable, permissionless, and
-token-incentivized machines. Rather than requiring a single operator to own a supercomputer, iota
-distributes model layers across independent miners and orchestrates the data flow between them,
-using token emissions to reward participants who do useful work. Macrocosmos provides a public
-[dashboard](https://iota.macrocosmos.ai/dashboard/mainnet) showing live training metrics and network
-state.
+iota is Bittensor Subnet 9 (SN9), operated by [Macrocosmos](https://macrocosmos.ai/). The subnet
+implements the **I**ncentivized **O**rchestrated **T**raining **A**rchitecture — a framework for
+pretraining large language models across a network of heterogeneous, unreliable, permissionless GPU
+miners. By splitting model layers across participants and streaming activations between them, iota
+makes large-scale pretraining accessible to contributors who would otherwise lack the hardware to
+run a full training job independently.
 
-References: [macrocosm-os/iota (GitHub)](https://github.com/macrocosm-os/iota),
-[iota.macrocosmos.ai](https://iota.macrocosmos.ai/),
-[IOTA technical paper (arXiv)](https://arxiv.org/abs/2507.17766)
+The technical design is described in the Macrocosmos research primer at
+[macrocosmos.ai/research/iota_primer.pdf](https://www.macrocosmos.ai/research/iota_primer.pdf) and
+on [ArXiv](https://arxiv.org/abs/2507.17766).
 
 ## How the Mechanism Works
 
-iota uses a pipeline-parallel design in which a model is split into consecutive layer groups —
-called pipeline stages — and each stage is assigned to a different set of miners. An orchestrator
-distributes the data, passes activations forward through the pipeline, and coordinates a shared
-storage layer where layer weights and intermediate activations are held between steps. Miners
-process activations for their assigned stage and periodically merge weight updates using a variant
-of Butterfly All-Reduce, a communication primitive that reduces inter-node traffic while keeping
-weights synchronized.
+iota uses a data- and pipeline-parallel training approach. A central orchestrator partitions the
+model into discrete layer segments — a head, one or more body layers, and a tail — and assigns each
+segment to a different miner or group of miners. During a training step, the orchestrator streams
+intermediate activations from one segment to the next, assembling a forward pass and backward pass
+across the full model without any single participant needing to hold the entire model in memory.
 
-Validators spot-check miner work throughout training to verify that miners computed activations
-correctly and did not submit fraudulent updates. Only miners who pass these checks receive
-emissions. This creates an economic incentive structure where honest computation is consistently
-rewarded and shortcuts are penalized. Validator weight-sets flow into [[Yuma Consensus]], which
-distributes per-block TAO emissions through [[Dynamic TAO]].
+Miners periodically upload their local layer weights and merge them with peers using a variant of
+Butterfly All-Reduce, a communication pattern that balances the number of messages each node must
+exchange. A shared object-store bucket holds activations and weight checkpoints between stages,
+allowing asynchronous handoffs and making the pipeline resilient to individual dropouts.
 
-The full mechanism is documented in the
-[IOTA technical paper](https://www.macrocosmos.ai/research/iota_primer.pdf) published by
-Macrocosmos, and is also available on [arXiv](https://arxiv.org/abs/2507.17766).
+Validators receive gradient and weight samples from miners and run spot-check verification to
+confirm that each miner actually processed the activations assigned to them. The orchestrator
+distributes validation work across all registered validators and logs the results, ensuring that
+miners who skip or falsify computation receive no reward. Validated weight-sets flow into
+[[Yuma Consensus]], which converts them into per-block TAO emissions via [[Dynamic TAO]].
+
+A live view of the network — active miners, layer assignments, and training metrics — is available
+at the [iota dashboard](https://iota.macrocosmos.ai/dashboard/mainnet).
 
 References: [macrocosm-os/iota (GitHub)](https://github.com/macrocosm-os/iota),
-[IOTA technical paper (arXiv)](https://arxiv.org/abs/2507.17766)
+[iota primer (PDF)](https://www.macrocosmos.ai/research/iota_primer.pdf),
+[ArXiv 2507.17766](https://arxiv.org/abs/2507.17766)
 
 ## Participating as a Miner
 
-Miners on iota contribute GPU compute to one or more pipeline stages of the active training run.
-Each miner registers on netuid 9, is assigned a layer segment by the orchestrator, and processes the
-forward and backward passes for that segment as training data flows through the network. Earnings
-are proportional to how many activations a miner successfully processes — miners who process more
-activations in the training stage earn more of the emissions allocated to the subnet.
+Miners on iota contribute GPU compute to a specific layer segment of the current training run. After
+registering on netuid 9, a miner connects to the orchestrator, which assigns it one or more model
+layers based on available capacity. The miner then receives activation tensors from upstream
+participants, runs forward and backward passes over its assigned layers, and forwards the outputs
+downstream.
 
-Because the network is permissionless, miners with consumer-grade hardware can participate. The
-current training run targets a 1.5 billion parameter model with three pipeline stages, meaning the
-compute load is divided into three segments that miners can cover without needing a single very
-large GPU. Official miner documentation is maintained at
+Reward depends on the volume of activations processed and the integrity of the resulting gradients.
+Miners who drop activations, fail to upload weights on schedule, or produce incorrect gradient
+values will be down-weighted or excluded by validators. Because training is continuous, consistent
+uptime matters: a miner that disappears mid-run creates a gap in the pipeline.
+
+The Macrocosmos team maintains official setup guides for miners at
 [docs.macrocosmos.ai](https://docs.macrocosmos.ai/subnets/subnet-9-pre-training/subnet-9-iota-mining-setup-guide).
 
 References: [macrocosm-os/iota (GitHub)](https://github.com/macrocosm-os/iota),
@@ -77,14 +80,17 @@ References: [macrocosm-os/iota (GitHub)](https://github.com/macrocosm-os/iota),
 
 ## Participating as a Validator
 
-Validators on iota run the spot-checking infrastructure that samples miner outputs, re-computes
-expected activations, and flags miners whose work does not match. A validator must maintain reliable
-uptime and connectivity to the orchestrator so it can participate in the continuous verification
-cycle. Validators that submit honest weight-sets earn emissions through [[Yuma Consensus]].
+Validators on iota run gradient validation services that receive weight and activation samples from
+the orchestrator and verify that miners computed them correctly. The orchestrator distributes
+validation assignments across all registered validators; each validator tracks a subset of active
+miners and reports pass/fail results back to the network.
 
-Because validator spot-checks are the primary mechanism preventing miners from cheating, validator
-quality directly affects the integrity of the trained model. Macrocosmos provides official validator
-documentation at
+Validators do not need to hold or train the full model. They receive only the samples required for
+spot-checking, which keeps hardware requirements lower than running an equivalent training job.
+Honest, high-availability validators earn TAO emissions through [[Yuma Consensus]] proportional to
+the accuracy and consistency of their reported weight-sets.
+
+Macrocosmos provides a validator setup guide at
 [docs.macrocosmos.ai](https://docs.macrocosmos.ai/subnets/subnet-9-pre-training/subnet-9-validating).
 
 References: [macrocosm-os/iota (GitHub)](https://github.com/macrocosm-os/iota),
@@ -94,7 +100,7 @@ References: [macrocosm-os/iota (GitHub)](https://github.com/macrocosm-os/iota),
 
 iota is registered at netuid 9 on Bittensor with 256 neurons. The subnet owner coldkey is
 5FsbubeciqtB5Nik3umL2iD4fG8FcC9GbT9nHJfXMj4mJJZ9. The repository is maintained by Macrocosmos at
-[macrocosm-os/iota](https://github.com/macrocosm-os/iota) and the project site is
+[macrocosm-os/iota](https://github.com/macrocosm-os/iota) and the project website is
 [iota.macrocosmos.ai](https://iota.macrocosmos.ai/).
 
 References: [taostats.io/subnets/9](https://taostats.io/subnets/9)
@@ -102,10 +108,10 @@ References: [taostats.io/subnets/9](https://taostats.io/subnets/9)
 ## Further Reading
 
 - [macrocosm-os/iota — GitHub](https://github.com/macrocosm-os/iota)
-- [iota.macrocosmos.ai](https://iota.macrocosmos.ai/)
-- [IOTA technical paper (arXiv)](https://arxiv.org/abs/2507.17766)
-- [iota.macrocosmos.ai/dashboard/mainnet — Live training dashboard](https://iota.macrocosmos.ai/dashboard/mainnet)
-- [docs.macrocosmos.ai — Subnet 9 documentation](https://docs.macrocosmos.ai/subnets/subnet-9-pre-training/)
+- [iota.macrocosmos.ai — Project site](https://iota.macrocosmos.ai/)
+- [iota dashboard — Live training metrics](https://iota.macrocosmos.ai/dashboard/mainnet)
+- [iota primer — Macrocosmos research paper (PDF)](https://www.macrocosmos.ai/research/iota_primer.pdf)
+- [ArXiv 2507.17766](https://arxiv.org/abs/2507.17766)
 - [taostats.io/subnets/9](https://taostats.io/subnets/9)
 - [[Yuma Consensus]]
 - [[Dynamic TAO]]
