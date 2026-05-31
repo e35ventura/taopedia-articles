@@ -1,0 +1,98 @@
+---
+title: "Subnet 19: blockmachine"
+summary:
+  "blockmachine is a decentralized marketplace on Bittensor where miners earn emissions by serving
+  verifiable blockchain RPC requests routed through an incentive-aligned protocol gateway."
+category: "Subnets"
+tags: ["Subnets"]
+infoboxTitle: Subnet 19 — blockmachine
+infoboxCaption: Decentralized blockchain RPC infrastructure marketplace
+infoboxRows:
+  - label: Subnet
+    value: SN19
+  - label: Operator
+    value: taostat
+  - label: Neurons
+    value: "256"
+  - label: GitHub
+    value: taostat/blockmachine
+  - label: Site
+    value: blockmachine.io
+---
+
+blockmachine (Subnet 19) is a decentralized marketplace for blockchain RPC infrastructure built on
+Bittensor's incentive layer. Miners compete on price and service quality to serve customer RPC
+requests routed through the protocol gateway, while validators independently audit those responses
+and assign weights that determine emissions. The protocol is developed by
+[taostat](https://github.com/taostat/blockmachine) and described in the
+[blockmachine whitepaper](https://blockmachine.io/whitepaper).
+
+## How the Mechanism Works
+
+blockmachine creates a two-sided market between customers who need reliable blockchain RPC access
+and miners who operate blockchain nodes. Customer requests arrive at the protocol gateway, which
+routes them to registered miners based on their bid price and historical quality scores. Miners earn
+emissions proportional to the Compute Units (CUs) they serve at their offered price per CU, as
+detailed in the [miner documentation](https://github.com/taostat/blockmachine-miner).
+
+Validators measure miner performance by reading gateway-published logs from public storage, then
+verifying response correctness against independent reference nodes. Each epoch — approximately 72
+minutes — validators compute quality-weighted scores for every active miner and submit those scores
+as weights on chain. The [[Yuma Consensus]] mechanism converts the weight matrix into per-miner
+emissions, so miners delivering more verified work at competitive prices receive proportionally more
+TAO. Validator behavior is described in detail in the
+[validator repository](https://github.com/taostat/blockmachine-validator).
+
+The scoring model accounts for response correctness, latency, and bid price relative to competing
+miners. A miner who handles more CUs at a lower price can outcompete a higher-priced peer — but only
+if response quality holds. This alignment means improving infrastructure has a direct, quantifiable
+payoff in emissions.
+
+## Participating as a Miner
+
+Miners on Subnet 19 operate a blockchain node — either a lite or archive subtensor node — behind an
+authenticated gateway that accepts only signed requests from the Blockmachine protocol network and
+logs all traffic in a format validators can audit. Miners set their own price per Compute Unit and
+register their endpoint using the Blockmachine CLI.
+
+Lite nodes come up quickly via warp sync, while archive nodes offer full chain history at the cost
+of significantly more storage and longer initial sync times. Both types compete on the same network,
+but requests requiring historical data can only be satisfied by archive nodes. Miners earn emissions
+each epoch in proportion to the verified CUs they delivered, according to the
+[blockmachine miner documentation](https://github.com/taostat/blockmachine-miner). A live dashboard
+showing miner rankings and traffic is available at
+[blockmachine.io/miners](https://blockmachine.io/miners).
+
+## Participating as a Validator
+
+Validators must hold a registered hotkey on Subnet 19 with enough staked TAO to meet the subnet's
+minimum stake threshold. At the start of each epoch, the validator authenticates against the network
+registry using a cryptographic challenge signed by its hotkey, then downloads the gateway logs
+published to public storage.
+
+Each logged request is re-verified against one or more independent reference RPC endpoints.
+Validators compute a quality-weighted score per miner that incorporates response correctness and
+latency, then submit those scores as on-chain weights. The network registry delivers reference node
+URLs, the verification gateway address, and other network-wide parameters to the validator at
+startup, keeping manual configuration minimal. Validators may optionally persist epoch audit data to
+a local database for debugging or compliance purposes, as documented in the
+[validator repository](https://github.com/taostat/blockmachine-validator).
+
+## On-Chain Identity
+
+Subnet 19 is registered on the Bittensor mainnet with 256 active neurons. The subnet owner coldkey
+is `5FWh37LfVV5LE9dZA91STzbtebh6vxYa3MH71c621sYafo1L`. Full on-chain statistics including emission
+rates, neuron activity, and staking data are available at
+[taostats.io/subnets/19](https://taostats.io/subnets/19).
+
+## Further Reading
+
+- [blockmachine.io](https://blockmachine.io) — Official site and miner dashboard
+- [Whitepaper](https://blockmachine.io/whitepaper) — Technical design document
+- [Technology overview](https://blockmachine.io/technology) — How the protocol works
+- [Miner repository](https://github.com/taostat/blockmachine-miner) — Node setup and registration
+  guide
+- [Validator repository](https://github.com/taostat/blockmachine-validator) — Scoring logic and
+  weight submission
+- [X / Twitter](https://x.com/blockmachine_io) — Project updates
+- [taostats.io subnet page](https://taostats.io/subnets/19) — On-chain identity and live stats
