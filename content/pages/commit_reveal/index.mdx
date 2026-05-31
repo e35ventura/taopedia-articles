@@ -1,0 +1,93 @@
+---
+title: "Commit Reveal"
+summary:
+  "How Commit Reveal conceals fresh validator weights before consensus so validators cannot simply
+  copy the latest public weight matrix."
+category: "Consensus"
+tags: ["Validation", "Consensus"]
+infoboxTitle: Commit Reveal
+infoboxCaption: Delayed visibility for validator weights.
+infoboxRows:
+  - label: Protects
+    value: Validator weight submissions
+  - label: Uses
+    value: Drand time-lock encryption
+  - label: Configured by
+    value: Subnet hyperparameters
+  - label: Related
+    value: "[[yuma_consensus|Yuma Consensus]]"
+---
+
+# Commit Reveal
+
+Commit Reveal is a Bittensor mechanism that delays public visibility of fresh validator weights.
+Validators still evaluate miners and submit weights, but when the mechanism is enabled those weights
+are concealed before they become visible inputs to [[yuma_consensus|Yuma Consensus]].
+
+References: [Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
+
+## Why it exists
+
+Validator weights are public once revealed because Bittensor needs transparent consensus and
+emission accounting. That transparency also creates the weight-copying problem: a validator can copy
+recent public weights instead of independently evaluating miners. Commit Reveal reduces that
+incentive by making copied weights stale before they can be reused.
+
+References: [Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
+[The Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor)
+
+## How the flow works
+
+The normal validator action is still a weight submission. With Commit Reveal enabled, the chain
+commits an encrypted form of the submitted weights, waits through the configured concealment period,
+and then reveals the weights automatically when the required Drand beacon round is available.
+Revealed weights can then be processed by the consensus step.
+
+Reference: [Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)
+
+## Drand time-lock encryption
+
+Commit Reveal uses Drand time-lock encryption so encrypted weights cannot be decrypted before the
+target reveal round. This removes the need for validators to manually reveal their own weights and
+prevents selective reveal behavior where a validator could decide whether to reveal after seeing how
+other weights affect consensus.
+
+Reference: [Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)
+
+## Subnet configuration
+
+Subnet owners configure Commit Reveal with subnet hyperparameters. The official docs identify
+`commit_reveal_weights_enabled` as the switch that enables the mechanism and `commit_reveal_period`
+as the waiting period before weights are revealed. These values should be checked against the
+current subnet configuration before making operational decisions.
+
+References: [Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+
+## Practical implications
+
+- **For validators:** Honest, independent evaluation matters more when fresh weights are hidden from
+  competitors.
+- **For miners:** Miner performance still has to be evaluated by validators before weights can be
+  submitted.
+- **For subnet owners:** The reveal period should match how quickly the subnet's miner quality
+  signal changes. If the task is too static, stale copied weights may still be useful.
+- **For readers:** Commit Reveal is not a replacement for a strong incentive mechanism; it is a
+  protection around how validator weights become public.
+
+References: [Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
+[The Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor)
+
+## Related articles
+
+- [[yuma_consensus|Yuma Consensus]]
+- [[mining_and_validating|Mining and Validating]]
+- [[subnet_creation_mechanisms|Subnet Creation and Incentive Mechanisms]]
+
+## Further Reading
+
+- [Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)
+- [The Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor)
+- [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
+- [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
