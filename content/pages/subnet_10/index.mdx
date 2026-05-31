@@ -1,0 +1,90 @@
+---
+title: "Subnet 10: Swap"
+summary:
+  "Swap (SN10) incentivizes miners to provide liquidity to the TAO/USDC pool on TaoFi, scoring them
+  by the fee income their positions generate."
+category: "Subnets"
+tags: ["Subnets"]
+infoboxTitle: Subnet 10 — Swap
+infoboxCaption: Decentralized liquidity provision for the TAO/USDC pool on TaoFi
+infoboxRows:
+  - label: Subnet
+    value: SN10
+  - label: Operator
+    value: Swap-Subnet
+  - label: Neurons
+    value: "256"
+  - label: GitHub
+    value: Swap-Subnet/swap-subnet
+  - label: Site
+    value: https://www.taofi.com/pool
+---
+
+Swap (SN10) is a Bittensor subnet operated by [Swap-Subnet](https://github.com/Swap-Subnet) that
+channels decentralized incentives toward providing liquidity on [TaoFi](https://www.taofi.com/pool),
+the primary TAO/USDC automated market maker built on the Bittensor EVM layer. Rather than rewarding
+AI inference or data labor, Swap rewards participants for depositing capital into a Uniswap V3–style
+concentrated liquidity pool, effectively bootstrapping on-chain liquidity for the TAO token.
+
+## How the Mechanism Works
+
+Every 24 hours, validators measure the fee revenue earned by each miner's liquidity position in the
+TAO/USDC pool. Because Uniswap V3 concentrates liquidity within price ranges set by the depositor,
+miners whose positions are in-range and capturing active trading volume earn more fees — and
+therefore receive higher scores — than miners whose capital sits out-of-range and contributes
+nothing to actual trades. This design tightly aligns subnet rewards with genuine market utility: the
+miners most useful to traders are the ones most rewarded by the network.
+
+Validators independently fetch on-chain fee data for each registered miner's position, compute a
+score proportional to fee income, and submit weights through [[Yuma Consensus]] as in any other
+Bittensor subnet. Because the scoring metric (fees earned) is entirely public and verifiable
+on-chain, there is no oracle trust assumption and no off-chain data source that validators must
+agree on. Rewards flow in SN10 alpha tokens, which can be staked or sold like any other subnet token
+under [[Dynamic TAO]].
+
+## Participating as a Miner
+
+A miner's primary obligation is to hold an active, in-range liquidity position in the TaoFi TAO/USDC
+pool. The first step is setting up a compatible EVM wallet such as [MetaMask](https://metamask.io)
+and bridging or acquiring both TAO and USDC in that wallet. From the
+[TaoFi pool page](https://www.taofi.com/pool), miners deposit both tokens within a chosen price
+range and receive a position NFT whose ID they will later need to associate with their Bittensor
+hotkey.
+
+Once a position is open and earning fees, a miner registers a Bittensor hotkey on SN10 and runs the
+miner software, which links the EVM wallet address to that hotkey. From that point forward, the
+validator network tracks fee accumulation against the registered address and routes SN10 alpha
+rewards to the hotkey rather than directly to the EVM wallet. Miners who prefer passive income
+without running any software can still provide liquidity and receive pool fees directly to their EVM
+wallet; running the miner software is only necessary to earn SN10 emissions on top of those fees.
+
+The key operational skill is range management: a position that drifts out of the current TAO price
+earns zero fees and therefore zero subnet rewards. Active miners monitor the pool price on
+[TaoFi](https://www.taofi.com/pool) and rebalance their positions as needed.
+
+## Participating as a Validator
+
+Validators run the subnet's validation software, which connects to both the Bittensor network and an
+archive EVM node to reconstruct 24-hour fee histories for each miner's registered LP position.
+Because this historical query requires access to archival blockchain state, validators are expected
+to operate against an archive endpoint rather than a pruned full node.
+
+After collecting fee data, the validator converts raw on-chain fee amounts into normalized scores
+and submits weight updates for all active miners. The subnet's open-source scoring logic is
+available in the [Swap-Subnet GitHub repository](https://github.com/Swap-Subnet/swap-subnet).
+Validators are encouraged to enable Weights & Biases (wandb) logging to share transparency reports
+with the community.
+
+## On-Chain Identity
+
+SN10 is registered under coldkey `5GbcimKjp17QPUoS568DBSMNqV2pmDetBf3xyC15vh4bTFE1` with 256 active
+neurons. Full on-chain details, emission rates, and neuron listings are available on
+[TaoStats SN10](https://taostats.io/subnets/10).
+
+## Further Reading
+
+- [Swap-Subnet GitHub repository](https://github.com/Swap-Subnet/swap-subnet)
+- [TaoFi liquidity pool](https://www.taofi.com/pool)
+- [TaoFi swap interface](https://www.taofi.com/swap)
+- [TaoStats SN10 on-chain data](https://taostats.io/subnets/10)
+- [MetaMask EVM wallet](https://metamask.io)
