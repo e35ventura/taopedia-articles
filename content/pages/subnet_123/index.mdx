@@ -1,0 +1,65 @@
+---
+title: "Subnet 123: MANTIS"
+summary:
+  "MANTIS is Bittensor Subnet 123, a forecasting subnet where miners submit encrypted market-signal
+  embeddings and validators score their salience across financial prediction challenges."
+category: "Subnets"
+tags: ["Subnets"]
+---
+
+MANTIS is Bittensor Subnet 123. Its on-chain identity registers the subnet name as MANTIS and lists
+[Barbariandev/MANTIS](https://github.com/Barbariandev/MANTIS) as the subnet's GitHub repository. The
+repository describes MANTIS as a market-signal subnet in which miners publish encrypted forecast
+embeddings and validators score those submissions after the relevant market outcomes can be
+observed.
+
+## What MANTIS Provides
+
+MANTIS turns financial forecasting into a set of recurring subnet challenges. The public
+configuration includes binary direction forecasts, ETH barrier-hit forecasts, volatility-regime and
+quantile-path forecasts, range-breakout predictions, cross-sectional return ranking, funding-rate
+ranking, and trade-mix signals. These tasks cover crypto assets, selected foreign-exchange pairs,
+and precious-metal exposure through challenge-specific input formats.
+
+The subnet does not ask validators to judge free-form text or manual trade narratives. Instead,
+miners submit structured embeddings for each challenge. Validators later compare those embeddings
+with observed price or funding-rate data, then use challenge-specific scoring paths to estimate
+which miner signals were useful. The README describes the final score as per-hotkey salience that is
+aggregated across challenges before validators set weights on chain.
+
+## Miner and Validator Roles
+
+Miners generate model outputs for the configured challenges and publish them as encrypted V2
+payloads. The miner guide describes a submission loop where a miner updates a Cloudflare R2 object
+whose object key matches the miner hotkey, while the on-chain commit points validators to that
+object. The payload format carries the hotkey, encryption metadata, ciphertext, and challenge
+embeddings.
+
+Validators sample miner payloads, store raw submissions and challenge data in a SQLite ledger, and
+decrypt matured payloads using the Drand timelock path. The README describes a second owner
+decryption path, but validator scoring depends on the timelock path so predictions are not readable
+before maturation. After enough labeled data is available, validators run the model scoring code,
+smooth the resulting weights, and submit them to Bittensor. Those weights feed into
+[[Yuma Consensus]], which converts validator agreement into miner and validator incentives.
+
+## On-Chain Identity
+
+Live SN123 data is available on [TaoStats](https://taostats.io/subnets/123). Readers can reproduce
+the subnet's registered identity fields with the Bittensor CLI command documented in the
+[btcli reference](https://docs.learnbittensor.org/btcli/#btcli-subnets-get-identity):
+`btcli subnets get-identity --netuid 123 --network finney`.
+
+That Finney identity reports the subnet name as MANTIS and the GitHub repository as
+Barbariandev/MANTIS. The URL, contact, Discord, and description fields are currently blank.
+
+## Further Reading
+
+- [MANTIS repository](https://github.com/Barbariandev/MANTIS)
+- [MANTIS README source](https://raw.githubusercontent.com/Barbariandev/MANTIS/main/README.md)
+- [MANTIS miner guide source](https://raw.githubusercontent.com/Barbariandev/MANTIS/main/MINER_GUIDE.md)
+- [MANTIS config source](https://raw.githubusercontent.com/Barbariandev/MANTIS/main/config.py)
+- [MANTIS validator source](https://raw.githubusercontent.com/Barbariandev/MANTIS/main/validator.py)
+- [MANTIS model source](https://raw.githubusercontent.com/Barbariandev/MANTIS/main/model.py)
+- [Subnet 123 on TaoStats](https://taostats.io/subnets/123)
+- [[Yuma Consensus]]
+- [[Mining and Validating]]
