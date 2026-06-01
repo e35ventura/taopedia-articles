@@ -1,0 +1,57 @@
+---
+title: "Subnet 47: EvolAI"
+summary:
+  "EvolAI is Bittensor Subnet 47, a subnet that runs a continuous competition to train small
+  language models, scoring them against a reference model each round."
+category: "Subnets"
+tags: ["Subnets"]
+---
+
+EvolAI is Bittensor Subnet 47, a language-model evaluation subnet. It runs a continuous competition
+in which miners submit small language models and validators score those models each round, rewarding
+the ones that improve the most. Rather than serving live inference, the subnet's purpose is to push
+a population of models to get steadily better against a fixed reference.
+
+## What the Subnet Produces
+
+The subnet's output is trained model weights, published openly. Miners host their models on Hugging
+Face and register them to the subnet under one of the supported architecture tracks. Because every
+model is public and evaluated on a shared, openly described dataset, the competition is
+reproducible: anyone can see which samples a model is graded on and how it performed.
+
+The design favors steady improvement over one-off wins. Models are graded against a public reference
+model, and smaller models receive a parameter-efficiency bonus, so a compact model that closely
+matches the reference can outscore a larger but less efficient one.
+
+## Miner and Validator Roles
+
+Miners train and publish language models and register each new revision with the subnet. Validators
+load a miner's weights each round and score them on a few combined signals: the main one is how
+closely the model's outputs match a reference model (measured by KL divergence), with additional
+credit for models that benefit from chain-of-thought reasoning, for consistent improvement across
+rounds, and for small auxiliary arithmetic tasks.
+
+To keep the competition honest, the subnet locks a miner's exact model revision before releasing the
+next evaluation seed, so a model cannot be swapped after the challenge is set, and it applies gates
+that require each new revision to actually beat the miner's previous one without degrading general
+ability. The resulting validator scores become the weights that feed into [[Yuma Consensus]], which
+converts them into the incentive split across miners and validators.
+
+## On-Chain Identity
+
+Live SN47 data, including metagraph state and alpha token pool information, is available on
+[TaoStats](https://taostats.io/subnets/47). Readers can reproduce the subnet's registered identity
+fields with the Bittensor CLI command documented in the
+[btcli reference](https://docs.learnbittensor.org/btcli/#btcli-subnets-get-identity):
+`btcli subnets get-identity --netuid 47 --network finney`.
+
+The subnet's open-source codebase (openevolai/evolai) is the source of truth for the evaluation
+signals and scoring process described above.
+
+## Further Reading
+
+- [EvolAI README](https://raw.githubusercontent.com/openevolai/evolai/main/README.md)
+- [Subnet 47 on TaoStats](https://taostats.io/subnets/47)
+- [[Yuma Consensus]]
+- [[Dynamic TAO]]
+- [[Mining and Validating]]
