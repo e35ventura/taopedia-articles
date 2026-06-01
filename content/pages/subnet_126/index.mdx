@@ -1,0 +1,59 @@
+---
+title: "Subnet 126: Poker44"
+summary:
+  "Poker44 is Bittensor Subnet 126, a subnet that rewards miners for detecting bots in online poker
+  from hand-behavior data."
+category: "Subnets"
+tags: ["Subnets"]
+---
+
+Poker44 is Bittensor Subnet 126, a subnet focused on a single problem: detecting bots in online
+poker through objective, reproducible evaluation. As the repository puts it, Poker44 is security
+infrastructure rather than a poker room — its product is bot-risk scoring that online poker
+operators can use to spot automated players. The incentive-mechanism code is maintained in the
+[Poker44/Poker44-subnet](https://github.com/Poker44/Poker44-subnet) repository.
+
+## What the Subnet Produces
+
+The subnet's output is bot-risk predictions over poker play. Validators send miners chunks of
+poker-behavior data — each chunk a batch of hand payloads — and miners return a risk score per chunk
+indicating how likely that play came from a bot. Because bot behavior keeps evolving, the task
+rewards predictions that generalize to new live-table behavior rather than ones tuned to a fixed
+sample.
+
+A defining feature is that the evaluation data is centralized: it is produced by Poker44's platform
+infrastructure and served to validators through a canonical evaluation API, so validators do not run
+their own poker tables. This keeps every miner graded against the same reproducible material.
+
+## Miner and Validator Roles
+
+Miners build detection models and respond to detection requests, returning one risk score per chunk
+regardless of how many hands the chunk contains. A miner competes by producing scores that hold up
+on fresh, canonical batches over time rather than on a one-off test.
+
+Validators pull canonical evaluation material from the central API, query miners with it, score the
+returned predictions, and publish weights on chain. According to the repository, the competition
+runs in rolling multi-hour epochs with the evaluation material refreshed on a fixed cadence, and a
+public leaderboard is derived from signed runtime state. Those validator scores become the weights
+that feed into [[Yuma Consensus]], which converts them into the incentive split across miners and
+validators.
+
+## On-Chain Identity
+
+Live SN126 data, including metagraph state and alpha token pool information, is available on
+[TaoStats](https://taostats.io/subnets/126). Readers can reproduce the subnet's registered identity
+fields with the Bittensor CLI command documented in the
+[btcli reference](https://docs.learnbittensor.org/btcli/#btcli-subnets-get-identity):
+`btcli subnets get-identity --netuid 126 --network finney`.
+
+The Finney subnet identity for netuid 126 points to the
+[Poker44/Poker44-subnet](https://github.com/Poker44/Poker44-subnet) repository, which is the source
+of truth for the detection task and scoring process described above.
+
+## Further Reading
+
+- [Poker44 subnet repository](https://github.com/Poker44/Poker44-subnet)
+- [Subnet 126 on TaoStats](https://taostats.io/subnets/126)
+- [[Yuma Consensus]]
+- [[Dynamic TAO]]
+- [[Mining and Validating]]
