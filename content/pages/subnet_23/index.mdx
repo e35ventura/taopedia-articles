@@ -1,0 +1,111 @@
+---
+title: "Subnet 23: Trishool"
+summary:
+  "Trishool is a Bittensor subnet that builds a state-of-the-art AI alignment guard model by
+  rewarding miners who craft effective adversarial prompts and validators who score those prompts
+  against a two-agent judge pipeline."
+category: "Subnets"
+tags: ["Subnets"]
+infoboxTitle: Subnet 23 — Trishool
+infoboxCaption: AI alignment protocol — adversarial prompt evaluation on Bittensor
+infoboxRows:
+  - label: Subnet
+    value: SN23
+  - label: Operator
+    value: TrishoolAI
+  - label: Neurons
+    value: "256"
+  - label: GitHub
+    value: TrishoolAI/trishool-phase2
+  - label: Site
+    value: trishool.ai
+---
+
+Trishool is Bittensor Subnet 23, operated by [TrishoolAI](https://trishool.ai). The subnet's stated
+goal is building a state-of-the-art AI guard model — a classifier that detects when a language model
+has been successfully jailbroken — by crowdsourcing adversarial attack discovery at scale. Miners
+compete by submitting adversarial prompts designed to elicit unsafe outputs from the guard model.
+Validators run those prompts through an automated judge pipeline and return scores to the Trishool
+platform, which aggregates results and publishes incentive weights that validators commit on chain.
+The full subnet runtime is maintained in the public
+[TrishoolAI/trishool-phase2 repository](https://github.com/TrishoolAI/trishool-phase2), and live
+on-chain metrics are visible at the [Trishool dashboard](https://trishool.ai/dashboard).
+
+## How the Mechanism Works
+
+Trishool's incentive loop is structured around adversarial prompt discovery. Miners submit batches
+of prompts — called submissions — through the Trishool platform API. Each submission is keyed by
+question identifiers (Q1 through Qn, where n matches the active challenge's question count) and can
+take one of several surface-area formats: plain text prompts, prompts paired with URLs or API
+endpoints, single-turn conversations, or multi-session dialogue sequences. The platform validates
+submission format and deduplication before making prompts available to validators.
+
+Validators retrieve evaluation tasks from the platform and run each miner's prompts through a
+two-agent pipeline. The first agent, tri-claw, is an OpenClaw gateway instance that answers the
+submitted prompt as a language model would. The second agent, the judge, classifies each response on
+a three-point scale: 0 for safe output, 1 for a partial jailbreak, and 2 for a full jailbreak. The
+total score for a submission is the sum across all questions, with a maximum of two points per
+question. Validators submit their per-question scores back to the platform API, which aggregates
+scores across the validator set and derives the final weight distribution. Validators then fetch the
+consolidated weights and commit them on chain through the standard [[Yuma Consensus]] mechanism.
+
+Validator API endpoints are protected by Bittensor hotkey signatures, and only whitelisted hotkeys
+can submit scores. The platform applies duplicate-detection at upload time so miners cannot recycle
+prior submissions across challenge epochs.
+
+## Participating as a Miner
+
+Miners on Subnet 23 do not run a persistent axon. Instead, they submit prompt batches to the
+Trishool platform API using the `alignet` Python library's miner CLI, authenticated with a
+registered Bittensor hotkey and coldkey on netuid 23.
+
+Effective mining requires crafting prompts that exploit weaknesses in the current guard model.
+Prompts that consistently produce partial or full jailbreak scores earn higher cumulative rewards.
+Multiple surface-area formats are available — including structured conversation sequences and
+prompts that direct the guard to external endpoints — so miners can tailor their attack strategies
+to the challenge type active in each epoch.
+
+Because the platform deduplicates submissions, miners benefit from generating novel prompts rather
+than resubmitting previously scored material. Details on the submission schema and available
+surface-area types are documented in the
+[TrishoolAI/trishool-phase2 repository](https://github.com/TrishoolAI/trishool-phase2).
+
+## Participating as a Validator
+
+Validators on Subnet 23 operate two Docker services — the tri-claw OpenClaw gateway and the Judge —
+alongside a Python validator process and an optional auto-updater, all managed through PM2. The
+tri-claw service answers miner prompts as a language model; the judge scores each response for
+safety. The validator process polls the Trishool platform API for evaluation tasks, routes prompts
+through tri-claw and the judge, and submits scored results back to the platform. A separate
+weight-update loop fetches the platform-aggregated weights and writes them on chain.
+
+Validators require a registered hotkey on netuid 23 that has been whitelisted by the Trishool
+platform team, an API key for the Chutes inference provider (used by both the tri-claw model chain
+and the judge), and Telegram credentials for operational alerts. The platform provides the Telegram
+channel details through the project's Discord. Scoring ground-truth fixtures are generated locally
+and kept in sync between the tri-claw container and the validator process so judge scores align
+correctly with expected outputs.
+
+Full setup documentation is available in the
+[TrishoolAI/trishool-phase2 repository](https://github.com/TrishoolAI/trishool-phase2).
+
+## On-Chain Identity
+
+Subnet 23 is registered on the Bittensor mainnet under the name Trishool, operated by TrishoolAI
+under owner coldkey `5CqTRwoFmme25YAbbwovR9rEic1UY7hYBLHxSk1PSfZ2jpmN`. The subnet supports 256
+neurons. Incentive mechanism code is publicly maintained at
+[github.com/TrishoolAI/trishool-phase2](https://github.com/TrishoolAI/trishool-phase2), and the
+product site and miner dashboard are at [trishool.ai](https://trishool.ai) and
+[trishool.ai/dashboard](https://trishool.ai/dashboard). Live on-chain data including metagraph
+state, neuron counts, and alpha token pool information is available at
+[taostats.io/subnets/23](https://taostats.io/subnets/23).
+
+## Further Reading
+
+- [Trishool website](https://trishool.ai)
+- [Trishool miner/validator dashboard](https://trishool.ai/dashboard)
+- [TrishoolAI/trishool-phase2 GitHub repository](https://github.com/TrishoolAI/trishool-phase2)
+- [Subnet 23 on Taostats](https://taostats.io/subnets/23)
+- [[Yuma Consensus]]
+- [[Dynamic TAO]]
+- [[Mining and Validating]]
