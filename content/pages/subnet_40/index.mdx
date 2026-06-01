@@ -1,45 +1,79 @@
 ---
 title: "Subnet 40: Chunking"
 summary:
-  "Chunking is Bittensor Subnet 40, whose live Finney identity names the subnet but does not
-  currently expose a loadable public protocol source."
+  "Chunking is Bittensor Subnet 40, a RAG-focused subnet where miners compete to split documents
+  into semantically coherent chunks that validators score using embedding-based similarity metrics."
 category: "Subnets"
 tags: ["Subnets"]
 ---
 
-Chunking is Bittensor Subnet 40. Its live Finney identity registers the subnet name as "Chunking"
-and lists a VectorChat GitHub path, but it does not currently provide a subnet URL, contact address,
-Discord field, or public description.
+Chunking is Bittensor Subnet 40. Its on-chain identity lists
+[VectorChat/chunking_subnet](https://github.com/VectorChat/chunking_subnet) as the subnet's GitHub
+repository and VectorChat as the operating team. The subnet's goal is to produce high-quality
+document splits for retrieval-augmented generation (RAG) pipelines, where the quality of
+segmentation directly affects downstream retrieval accuracy.
 
-The registered GitHub path did not return a loadable public repository or README when checked for
-this article. Because Taopedia subnet articles should be grounded in current primary sources, this
-page treats Subnet 40 as an identified subnet whose public implementation source is not presently
-available through the live identity fields.
+## How the Mechanism Works
 
-## Current Status
+Validators send miners a text passage along with a set of constraints: a maximum chunk size (in
+tokens or characters), a target chunk count, and a response timeout. Miners must split the document
+into the requested number of chunks, each staying within the size limit, and return the result
+before the deadline.
 
-For active subnet articles, Taopedia normally describes what miners do, how validators score them,
-and which repository or documentation defines the mechanism. Subnet 40's live identity confirms the
-name Chunking, but the identity fields do not currently expose enough public source material to
-support a reader-facing mechanism description.
+The validator then scores the returned chunks using a semantic embedding model. Two properties drive
+the score: intra-chunk similarity and inter-chunk dissimilarity. For intra-chunk similarity, the
+validator samples sentence pairs from within each chunk and measures their cosine similarity using a
+sentence-embedding model — higher similarity signals that the chunk is topically tight. For
+inter-chunk dissimilarity, the validator samples sentence pairs drawn from different chunks and
+measures cosine similarity — lower similarity signals that the chunks cover distinct topics without
+overlap. The final score is proportional to the difference between these two values.
 
-Readers should therefore verify the live Finney identity before relying on any older external
-description of the subnet. If the operator restores the registered repository or publishes updated
-documentation, this page can be expanded with miner and validator roles sourced from that material.
+Miners are ranked against each other on the same input in a tournament structure, so emissions
+follow relative performance rather than absolute thresholds. When scores are comparable, faster
+valid responses receive a higher ranking.
+
+Hard constraint violations zero out or heavily penalize a response. Chunks that exceed the size
+limit, chunks with excessive cross-chunk content duplication, and responses that time out all
+receive a score of zero. Trivially splitting the document without respecting semantic boundaries
+produces high inter-chunk similarity and a near-zero or negative score. Persistent low ranking in
+the tournament erodes miner emissions over time.
+
+## Participating as a Miner
+
+A successful chunking miner must return responses that satisfy the hard constraints — correct count,
+no chunk over the size cap — while maximizing semantic coherence within each chunk and minimizing
+overlap between chunks. Approaches that split on sentence-embedding distance to find true topic
+boundaries tend to outperform fixed-window or character-count splitters. The subnet rewards miners
+that split on meaningful conceptual shifts in the source text rather than on arbitrary length.
+
+Operators should treat the
+[VectorChat/chunking_subnet](https://github.com/VectorChat/chunking_subnet) repository as the source
+of truth for current request and response formats, registered endpoints, and any scoring updates
+made after the subnet launched in July 2024.
+
+## Participating as a Validator
+
+Validators source or generate text passages, attach constraints, and submit queries to registered
+miners. They then run the embedding-based scoring routine over the returned chunks, produce
+per-miner scores, and publish the resulting weights on-chain to feed [[Yuma Consensus]]. The
+tournament ranking means that a validator's job is comparison rather than absolute grading: each
+miner's chunks are evaluated relative to the other miners that responded to the same query.
 
 ## On-Chain Identity
 
-Live SN40 data is available on [TaoStats](https://taostats.io/subnets/40). Readers can reproduce the
-subnet's registered identity fields with the Bittensor CLI command documented in the
+Live SN40 data, including metagraph state and alpha token pool information, is available on
+[TaoStats](https://taostats.io/subnets/40). Readers can reproduce the subnet's registered identity
+fields with the Bittensor CLI command documented in the
 [btcli reference](https://docs.learnbittensor.org/btcli/#btcli-subnets-get-identity):
 `btcli subnets get-identity --netuid 40 --network finney`.
 
-That Finney identity reports subnet name "Chunking" and a GitHub field naming the
-`VectorChat/chunking_subnet` path. The subnet URL, contact, Discord, description, logo, and
-additional fields are blank.
+The Finney subnet identity for netuid 40 reports the subnet name as Chunking, the operator as
+VectorChat, and the GitHub repository as VectorChat/chunking_subnet. The subnet was registered on
+the Bittensor network in July 2024 and runs with 256 registered neurons.
 
 ## Further Reading
 
+- [VectorChat/chunking_subnet repository](https://github.com/VectorChat/chunking_subnet)
 - [Subnet 40 on TaoStats](https://taostats.io/subnets/40)
-- [[Dynamic TAO]]
+- [[Yuma Consensus]]
 - [[Mining and Validating]]
