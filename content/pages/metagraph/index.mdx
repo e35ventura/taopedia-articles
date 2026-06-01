@@ -1,0 +1,106 @@
+---
+title: "Metagraph"
+summary:
+  "How Bittensor's metagraph data structure captures a subnet's neuron state — stakes, scores,
+  weights, and bonds — as of a given block."
+category: "Protocol"
+tags: ["Protocol", "Subnets"]
+infoboxTitle: Metagraph
+infoboxCaption: Per-subnet snapshot of neuron state at a block.
+infoboxRows:
+  - label: Scope
+    value: One subnet (netuid)
+  - label: Captures
+    value: Neuron state at a block
+  - label: Produced by
+    value: Yuma Consensus
+  - label: SDK access
+    value: bittensor.metagraph
+---
+
+# Metagraph
+
+The metagraph is the data structure that represents the state of a single Bittensor subnet. The
+official [Glossary](https://docs.learnbittensor.org/resources/glossary#metagraph) defines it as a
+data structure containing comprehensive information about the current state of a subnet, including
+detailed information on all the nodes (neurons) such as validator stakes and subnet weights. The
+[Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph) documentation describes it as
+representing the complete state of a subnet at a given block.
+
+Each subnet has its own metagraph, identified by the subnet's `netuid`. It is read from the chain
+layer, so it is best understood as a snapshot of on-chain state rather than a live feed.
+
+## State Of A Subnet
+
+A metagraph is tied to a specific block: it reflects the network as of the block at which it was
+synced. For each `uid` slot in the subnet, it holds the per-neuron values described below, so a
+single metagraph is the natural object for inspecting how a subnet's miners and validators stood at
+that block.
+
+Because the structure is per-subnet, the same hotkey can appear in several subnets with different
+metagraph entries. A metagraph for one subnet does not describe a neuron's standing in another.
+
+## Neuron Attributes
+
+For each neuron, the [Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)
+documentation lists the attributes the metagraph exposes, grouped by purpose:
+
+- Identity: `uid`, `hotkey`, and `coldkey`.
+- Economic: `stake` (S), and under Dynamic TAO its `alpha_stake` and `tao_stake` components, plus
+  `emission` and `dividends`.
+- Performance: `rank` (R), `trust` (T), `consensus` (C), and `incentive` (I).
+- Validator: `validator_trust` (Tv) and the boolean `validator_permit`.
+- Activity: the boolean `active` and `last_update`, the block at which the neuron last set weights.
+- Network: `axon_info`, the served endpoint metadata such as IP, port, and version.
+
+These are the same values Yuma Consensus reads and writes, which is why the metagraph is the
+reference point for a subnet's scoring and reward state.
+
+## Weights And Bonds
+
+Beyond the per-neuron attributes, the metagraph can carry two matrices that describe relationships
+between neurons. The `weights` matrix holds each validator's weights over miners, and the `bonds`
+matrix holds the validator-to-miner bonds that accumulate as validators back miners over time. The
+[Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph) documentation describes these
+as the inter-neuronal relationships validators use in consensus calculations.
+
+## Syncing The Metagraph
+
+The metagraph is retrieved with a `sync()` call, implemented in the
+[bittensor/core/metagraph.py](https://github.com/opentensor/bittensor/blob/master/bittensor/core/metagraph.py)
+module of the [Bittensor SDK](https://github.com/opentensor/bittensor), which sets the
+neuron-specific values from the latest chain data.
+
+Sync has two modes. Per the [Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)
+documentation, a lite sync (`lite=True`) is faster and excludes the `weights` and `bonds` matrices,
+matching the columns shown by the command-line tooling; a full sync (`lite=False`) additionally
+includes the complete weight and bond matrices. Code that only needs stakes, ranks, and emissions
+can use the lite form; code that reconstructs consensus needs the full form.
+
+## Relationship To Yuma Consensus
+
+The metagraph's performance and economic attributes are the output of Yuma Consensus, which runs
+on-chain. The [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) documentation
+describes the process as computing miner and validator emissions from validator rankings of miner
+performance.
+
+These values update on the subnet's tempo rather than every block. The
+[Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph) documentation gives the
+default tempo as 360 blocks, roughly 72 minutes, which sets the cadence at which the metagraph's
+consensus-derived attributes are recomputed.
+
+## Reader Boundary
+
+The metagraph is a per-subnet, per-block snapshot of neuron state, not a live status report and not
+a guide to running infrastructure. Exact attribute names, sync options, and tempo values can change
+across SDK and chain releases, so claims about the current value of any field for a specific subnet
+should be read directly from the chain or the
+[Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph) documentation and the
+[Bittensor SDK](https://github.com/opentensor/bittensor), not from this concept article.
+
+## Further Reading
+
+- [Glossary: Metagraph](https://docs.learnbittensor.org/resources/glossary#metagraph)
+- [The Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)
+- [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
+- [bittensor/core/metagraph.py (SDK)](https://github.com/opentensor/bittensor/blob/master/bittensor/core/metagraph.py)
