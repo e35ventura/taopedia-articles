@@ -1,0 +1,110 @@
+---
+title: "Weight Copying"
+summary:
+  "How weight copying lets Bittensor validators free-ride on others' evaluations, why it weakens
+  subnets, and how commit reveal and consensus-based weights discourage it."
+category: "Consensus"
+tags: ["Validation", "Consensus"]
+infoboxTitle: Weight Copying
+infoboxCaption:
+  A free-riding behavior where validators reuse others' weights instead of evaluating miners.
+infoboxRows:
+  - label: Concept
+    value: Validator free-riding
+  - label: Problem area
+    value: Independent evaluation
+  - label: Discouraged by
+    value: Commit reveal and consensus-based weights
+  - label: Related
+    value: "[[commit_reveal|Commit Reveal]]"
+---
+
+# Weight Copying
+
+Weight copying is a free-riding behavior in which a Bittensor validator reuses, or derives from,
+other validators' published weights instead of independently evaluating miners. Validators are meant
+to score miners on their own work, and those scores drive miner emissions through Yuma Consensus; a
+weight copier instead reads the public record of other validators' scores and mirrors them. The
+[Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor) docs
+describe this behavior, while the
+[anatomy of an incentive mechanism](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)
+explains the evaluation work a copier skips.
+
+## Why copying is possible
+
+In a subnet, every validator scores miners and submits a weight vector, and those vectors combine
+into a weight matrix that, through [[yuma_consensus|Yuma Consensus]], sets miner emissions. Because
+that matrix is recorded publicly on-chain, a validator can read it and submit weights derived from
+other validators rather than running its own evaluation. According to the
+[Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor) docs,
+this lets a copier skip both the computational cost of evaluating miners and the development cost of
+building a good evaluation system, while still earning validator dividends for appearing to take
+part in consensus.
+
+## Why it weakens a subnet
+
+The documentation frames weight copying as corrosive to the incentive mechanism in two ways.
+Validators are a subnet's quality-control layer, so when they copy rather than evaluate, weak miners
+can persist longer than they should and promising new miners take longer to be recognized — the
+subnet's output quality drifts down over time. Rewards also become unfair, because copiers collect
+dividends without doing the underlying work, free-riding on the validators who do. The docs warn
+that, in the worst case, most validators become copiers and genuine evaluation collapses onto a
+small honest minority, which defeats the point of distributed consensus.
+
+Underneath this is an economic problem: honest evaluation has a real cost, so if copying pays better
+than evaluating, rational validators will copy. The
+[Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor) docs
+note that copiers have historically used a stake-weighted averaging strategy — waiting for weights
+to become public and then submitting the stake-weighted consensus of other validators, as captured
+by a miner's [consensus score](https://docs.learnbittensor.org/resources/glossary#consensus-score) —
+which can out-earn any single honest validator.
+
+## How Bittensor discourages it
+
+Because of this, the documentation treats making weight copying unprofitable as a subnet owner's
+responsibility, achieved mainly through [[commit_reveal|Commit Reveal]]. Commit reveal places a
+waiting period between when validators commit their weights and when those weights become public, so
+a copier cannot simply read the current weights and mirror them before submitting its own. The
+[Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal) docs describe this delayed
+publication.
+
+A complementary mechanism is consensus-based weights, also called liquid alpha, which ties a
+validator's dividends more closely to how the miners it weights actually perform and helps honest
+validators bond quickly to good miners. The
+[Consensus-based Weights / Liquid Alpha](https://docs.learnbittensor.org/concepts/consensus-based-weights)
+docs describe this feature, and later refinements to Yuma Consensus continue to adjust how consensus
+rewards are shaped.
+
+## Careful interpretation
+
+Weight copying is a behavior and an incentive problem, not a single setting. Commit reveal and
+consensus-based weights reduce how profitable copying is; they do not by themselves certify that any
+given validator is honest, and a subnet owner still has to turn them on for a subnet. The
+article-level point is that independent evaluation is the work validators are rewarded for, and
+these features exist to keep that work worthwhile. The
+[Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor) and
+[Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal) docs define this boundary.
+
+## Relation to nearby concepts
+
+Weight copying sits among several consensus topics without replacing them.
+[[validator_weights|Validator Weights]] explains the weight vectors a copier reuses,
+[[yuma_consensus|Yuma Consensus]] explains how those weights become emissions,
+[[commit_reveal|Commit Reveal]] is the main countermeasure, and
+[[exponential_moving_averages|Exponential Moving Averages]] and
+[[mining_and_validating|Mining and Validating]] give the surrounding evaluation context.
+
+## Related articles
+
+- [[commit_reveal|Commit Reveal]]
+- [[validator_weights|Validator Weights]]
+- [[yuma_consensus|Yuma Consensus]]
+- [[exponential_moving_averages|Exponential Moving Averages]]
+
+## Further Reading
+
+- [The Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor)
+- [Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)
+- [Consensus-based Weights / Liquid Alpha](https://docs.learnbittensor.org/concepts/consensus-based-weights)
+- [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
+- [Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score)
