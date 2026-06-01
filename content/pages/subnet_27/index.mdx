@@ -1,0 +1,87 @@
+---
+title: "Subnet 27: Nodexo"
+summary:
+  "Nodexo is a decentralized GPU compute marketplace on Bittensor where miners contribute hardware
+  resources and validators benchmark their performance to allocate access to paying clients."
+category: "Subnets"
+tags: ["Subnets"]
+infoboxTitle: Subnet 27 — Nodexo
+infoboxCaption: Decentralized GPU compute marketplace powered by Bittensor
+infoboxRows:
+  - label: Subnet
+    value: SN27
+  - label: Operator
+    value: NeuralInternet
+  - label: Neurons
+    value: "256"
+  - label: GitHub
+    value: neuralinternet/SN27
+  - label: Site
+    value: nodexo.ai
+---
+
+Nodexo is a decentralized GPU compute marketplace operating on Bittensor as Subnet 27. It connects
+miners who contribute GPU hardware with clients who need on-demand compute, coordinated through a
+permissionless, trustless incentive layer built on [[Yuma Consensus]].
+
+The subnet is developed and operated by NeuralInternet, which also publishes open monitoring
+dashboards and Solana-based payout tooling for the ecosystem. Nodexo's alpha token trades under the
+ticker wSN27.
+
+## How the Mechanism Works
+
+Nodexo operates on a three-tier architecture: validators, miners, and a resource allocation API.
+
+Miners connect to the subnet's peer-to-peer network by running a Bittensor axon server and
+registering their GPU hardware. When a client needs compute capacity, the allocation API discovers
+available miners, provisions a Docker container on the selected miner's machine, and returns SSH
+credentials to the requesting client. Access is metered and revoked when the allocation ends.
+
+Validators continuously benchmark active miners using a Proof-of-GPU (PoG) process. During a
+validation cycle, a validator connects to each miner, issues GPU performance challenges, and
+measures the results against a reference dataset of known GPU performance figures. The scoring
+function — `calc_score_pog()` — converts raw benchmark results into a weight for each miner. These
+weights are committed on-chain through Bittensor's subtensor blockchain, determining each miner's
+share of subnet emissions. Validators also publish metrics externally via Prometheus and WandB so
+the network's performance can be monitored publicly.
+
+The incentive design directly ties reward to verifiable compute output. Miners that provide faster,
+more capable GPUs and respond reliably to challenges accumulate higher weights. Miners that go
+offline, fail challenges, or misrepresent their hardware receive lower weights and correspondingly
+less [[Dynamic TAO]] emission.
+
+## Participating as a Miner
+
+Miners need a machine with at least one supported GPU, a registered Bittensor hotkey, and a TAO
+stake sufficient to hold a slot on the subnet. The miner process runs Docker to manage container
+lifecycles and exposes an SSH endpoint for client sessions. Hardware that consistently scores well
+in PoG challenges earns a greater proportion of emissions relative to lower-performing peers.
+
+Prospective miners can review detailed setup guidance in
+[NeuralInternet's documentation](https://github.com/neuralinternet/docs) and track live subnet
+metrics through the [SN27-opencompute](https://github.com/neuralinternet/SN27-opencompute)
+monitoring repository.
+
+## Participating as a Validator
+
+Validators hold a registered hotkey with sufficient stake and run the validator process, which
+continuously cycles through registered miners. For each miner, the validator initiates a PoG
+challenge, records the benchmark result, and stores the outcome in a local SQLite database. After
+processing the current set of miners, it computes updated scores and submits new weight vectors to
+the chain. The cadence and hardware requirements for running a competitive validator are documented
+in the [NeuralInternet docs](https://github.com/neuralinternet/docs).
+
+## On-Chain Identity
+
+Subnet 27 is registered under coldkey `5CopvHeTZHNy6RMztuRFvViwwZbsZaVkJPA9zmRRnPAna73M` with 256
+active neurons. Full on-chain details — including neuron registration history, emission rates, and
+validator weights — are visible at [taostats.io/subnets/27](https://taostats.io/subnets/27). The
+subnet's GitHub organization is [github.com/neuralinternet](https://github.com/neuralinternet) and
+the project website is [nodexo.ai](https://nodexo.ai).
+
+## Further Reading
+
+- [NeuralInternet Documentation](https://github.com/neuralinternet/docs)
+- [SN27 Open Compute Monitoring](https://github.com/neuralinternet/SN27-opencompute)
+- [Nodexo on taostats.io](https://taostats.io/subnets/27)
+- [NeuralInternet Discord](https://discord.com/invite/nodexo)
