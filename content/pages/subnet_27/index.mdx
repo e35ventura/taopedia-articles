@@ -1,0 +1,80 @@
+---
+title: "Subnet 27: Nodexo"
+summary:
+  "Nodexo is Bittensor Subnet 27, a decentralized GPU compute marketplace where miners provide
+  verified hardware and validators benchmark performance using cryptographic Merkle proofs."
+category: "Subnets"
+tags: ["Subnets"]
+---
+
+Nodexo is Bittensor Subnet 27, a decentralized GPU compute marketplace operated by
+[Neural Internet](https://nodexo.ai). Its on-chain description reads "Decentralized AI compute
+platfrom," and the active codebase is
+[neuralinternet/SN27-opencompute](https://github.com/neuralinternet/SN27-opencompute). The subnet
+turns verified GPU capacity into a rentable network resource and exposes leased machines to external
+clients via encrypted SSH allocation.
+
+## How the Mechanism Works
+
+The subnet's incentive design solves two problems every shared-compute network faces: proving a
+miner actually owns the hardware it claims, and matching that capacity to real demand.
+
+For hardware verification, validators run a cryptographic benchmark against each miner. The
+benchmark script generates large random matrices using a deterministic seeded process, multiplies
+them on the miner's GPU, hashes every row of the result, and assembles those hashes into a Merkle
+tree. The validator then sends random challenge indices, receives the corresponding row values plus
+Merkle inclusion proofs, and verifies those proofs against the committed root. A miner that does not
+possess the claimed GPU cannot produce the correct Merkle root within the benchmark time budget,
+tying the score to actual hardware. Benchmark throughput — measured in floating-point operations per
+second at both FP16 and FP32 precision — is captured and feeds into the scoring calculation
+alongside the GPU model identification.
+
+On the demand side, validators can allocate a miner's machine to a renter. Allocation requests are
+secured with RSA keys exchanged during the benchmarking phase, and the rental server tracks active
+leases via Weights and Biases under the `neuralinternet/opencompute` project. Miners under active
+lease are scored on their demonstrated performance rather than being re-challenged during the rental
+period.
+
+Validated performance scores flow into [[Yuma Consensus]] in the standard Bittensor fashion.
+
+## Participating as a Miner
+
+Miners register on Subnet 27, configure a wallet, and run the miner software alongside a GPU capable
+of large matrix operations. The miner process listens for benchmark and allocation requests from
+validators, runs the GPU benchmark when challenged, and returns the Merkle root and proof data. It
+also publishes hardware specifications to Weights and Biases so validators and renters can compare
+miners without re-running benchmarks.
+
+GPU memory and floating-point throughput are the primary scoring factors, so miners with more
+capable hardware earn higher scores. The [Nodexo Discord](https://discord.com/invite/nodexo) and the
+repository are the recommended starting points for current setup guidance.
+
+## Participating as a Validator
+
+Validators run the benchmark pipeline against registered miners at regular intervals. For each
+miner, the validator connects via SSH, delivers the benchmark script, collects the Merkle root and
+throughput output, issues random challenge indices, verifies the Merkle proofs, and records the
+result. GPU model and throughput are parsed from the output to confirm that claimed hardware matches
+measured performance.
+
+Validators also operate the rental server, which handles allocation requests from external clients
+and updates miner lease state on Weights and Biases so that the network dashboard reflects current
+availability. Scoring weights are computed from verified benchmark results and active-rental
+history, then submitted to the chain.
+
+## On-Chain Identity
+
+Live SN27 data including emission rate, neuron count, and stake distribution is available on
+[TaoStats](https://taostats.io/subnets/27). The chain identity for Subnet 27 lists Neural Internet
+as the operator, [nodexo.ai](https://nodexo.ai) as the subnet URL, and
+[neuralinternet/SN27-opencompute](https://github.com/neuralinternet/SN27-opencompute) as the
+associated code repository. The subnet runs 256 neurons.
+
+## Further Reading
+
+- [Nodexo site](https://nodexo.ai)
+- [neuralinternet/SN27-opencompute repository](https://github.com/neuralinternet/SN27-opencompute)
+- [Subnet 27 on TaoStats](https://taostats.io/subnets/27)
+- [Nodexo Discord](https://discord.com/invite/nodexo)
+- [[Yuma Consensus]]
+- [[Mining and Validating]]
