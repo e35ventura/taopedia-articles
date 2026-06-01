@@ -1,0 +1,108 @@
+---
+title: "Subnet 24: Quasar"
+summary:
+  "Quasar is SILX Labs' competitive small-model subnet on Bittensor, where miners train and publish
+  language models that validators rank through a king-of-the-hill evaluation system."
+category: "Subnets"
+tags: ["Subnets"]
+infoboxTitle: Subnet 24 — Quasar
+infoboxCaption: Competitive language model training subnet by SILX Labs
+infoboxRows:
+  - label: Subnet
+    value: SN24
+  - label: Operator
+    value: SILX Labs
+  - label: Neurons
+    value: "256"
+  - label: GitHub
+    value: SILX-LABS/QUASAR-SUBNET
+  - label: Site
+    value: silxinc.com
+---
+
+Quasar (Subnet 24) is a competitive language model training subnet operated by
+[SILX Labs](https://silxinc.com/) on the Bittensor network. Its stated purpose is to push the
+boundary on long-context, reasoning-capable small models. Miners develop and publish fine-tuned
+language models to Hugging Face, then commit a pinned revision on-chain. Validators continuously
+evaluate all committed models and set weights entirely on the single strongest model—the reigning
+king.
+
+## How the Mechanism Works
+
+Quasar centers on a king-of-the-hill tournament. Every registered miner can submit one public
+Hugging Face model repository per hotkey. Once committed, that submission is permanent for that
+hotkey. If a model is disqualified, the miner must register a fresh hotkey to submit a different
+model.
+
+Validators score each eligible submission against the official Quasar base
+checkpoint—[silx-ai/Quasar-3B-A1B-Preview](https://huggingface.co/silx-ai/Quasar-3B-A1B-Preview)—a
+three-billion-parameter Mixture-of-Experts architecture with roughly one billion active parameters.
+Evaluation runs on a deterministic prompt set seeded by the chain's current block context,
+preventing miners from memorizing a static answer key.
+
+The composite scoring covers five broad dimensions: distribution match (KL divergence against the
+teacher model's outputs), capability (math, code, reasoning, instruction following, tool use,
+long-context handling, and robustness probes), conversational quality (chat-turn and judge probes),
+generation discipline (checks that penalize looping or non-responsive outputs), and robustness
+(block-seeded procedural prompts and prompt rewrites).
+
+Crowning a new king requires satisfying both conditions: the challenger must win a direct paired-KL
+duel against the current king and must pass the composite quality threshold. KL evidence alone
+cannot install a new king, and a composite quality lead alone cannot override a direct head-to-head
+regression. Weight assignment under [[Yuma Consensus]] is one-hot: the king receives the full
+validator weight of 1.0, and every other registered miner receives 0.0.
+
+Evaluation rounds are chain-coordinated so that all validators converge on the same winner. The
+on-chain [[commit_reveal]] mechanism can cause the visible chain weight to lag the latest local
+evaluation result until the reveal period completes.
+
+## Participating as a Miner
+
+Miners must register a Bittensor wallet on Subnet 24 and maintain a Hugging Face account for model
+hosting. The model itself must conform to the Quasar architecture and tokenizer derived from the
+canonical base checkpoint. Submissions must use full-precision safetensors weights—quantized formats
+such as GPTQ, AWQ, GGUF, and FP8 are rejected outright. The model must remain public and unchanged
+after the committed revision is pinned; altering the repo after commitment invalidates the
+submission.
+
+Before submitting on-chain, miners are expected to run local validation checks against their model
+to confirm architectural compliance, tokenizer compatibility, weight uniqueness, and KL quality.
+Tail-bucket KL must remain at or below the validator threshold (nominally 4.0 by default, though
+individual validators may configure their own value). A dry-run submission mode exists to test the
+pipeline without permanently committing a revision.
+
+Participation requires meaningful compute for fine-tuning a three-billion-parameter model. Training
+strategy is left entirely to the miner.
+
+## Participating as a Validator
+
+Validators must register on Subnet 24 with a wallet that holds sufficient stake and run hardware
+capable of evaluating 3B-parameter models under the composite evaluator. Evaluation infrastructure
+must support GPU-accelerated inference.
+
+Validators run scoring rounds in lock-step with chain-coordinated timing. Each round re-evaluates
+all eligible committed models on the current deterministic prompt set. Pre-checks run before GPU
+evaluation to filter out architecturally non-compliant, quantized, or duplicate submissions, so GPU
+cycles are spent only on valid candidates. After scoring, validators set their weights on-chain to
+the current king. Commit-reveal timing means the chain-visible weight target may briefly lag the
+local evaluation result.
+
+Validators who choose to adjust the KL disqualification threshold should note that setting it very
+high may allow low-quality models to remain eligible longer than intended.
+
+## On-Chain Identity
+
+Subnet 24 is registered on the Bittensor mainnet (Finney). Its owner coldkey is
+`5EjSHN7ZH4y21tgf8ACe5WtRQYvoWdLS6xsYvBktEycbmKYi`. The subnet operates 256 registered neurons. Live
+on-chain metrics including neuron count, emissions, and alpha token pool data are available at
+[taostats.io/subnets/24](https://taostats.io/subnets/24). The official X account for model
+announcements and king updates is [@QuasarModels](https://x.com/QuasarModels).
+
+## Further Reading
+
+- [SILX Labs website](https://silxinc.com/)
+- [QUASAR-SUBNET GitHub repository](https://github.com/SILX-LABS/QUASAR-SUBNET/)
+- [Quasar base checkpoint on Hugging Face](https://huggingface.co/silx-ai/Quasar-3B-A1B-Preview)
+- [Subnet 24 on Taostats](https://taostats.io/subnets/24)
+- [[Yuma Consensus]]
+- [[Dynamic TAO]]
