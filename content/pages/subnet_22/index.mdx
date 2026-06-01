@@ -1,104 +1,99 @@
 ---
 title: "Subnet 22: Desearch"
 summary:
-  "Desearch (SN22) is a decentralized search engine subnet on Bittensor that coordinates miners
-  serving real-time web and X/Twitter intelligence through a competitive validator-scoring
-  mechanism."
+  "Desearch (SN22) is a Bittensor subnet for live web, X/Twitter, and multi-source search data,
+  pairing miner search services with validator scoring."
 category: "Subnets"
 tags: ["Subnets"]
-infoboxTitle: Subnet 22 — Desearch
-infoboxCaption: Decentralized real-time search intelligence
+infoboxTitle: Subnet 22 - Desearch
+infoboxCaption: Real-time search intelligence on Bittensor
 infoboxRows:
   - label: Subnet
     value: SN22
-  - label: Operator
-    value: datura-ai
+  - label: Project
+    value: Desearch
   - label: Neurons
     value: "256"
   - label: GitHub
-    value: datura-ai/desearch
+    value: Desearch-ai/subnet-22
   - label: Site
-    value: https://desearch.ai
+    value: desearch.ai
 ---
 
-Desearch is the decentralized real-time intelligence subnet (netuid 22). It coordinates a
-competitive network of miners that serve live search data — spanning the open web, X/Twitter, and
-other sources — which powers the [Desearch](https://desearch.ai) API and console products. The
-subnet is built and operated by [datura-ai](https://github.com/datura-ai).
+Desearch is Bittensor Subnet 22, the subnet behind Desearch's decentralized real-time intelligence
+layer. The official repository describes SN22 as coordinating miners and validators that serve live
+web, X/Twitter, and multi-source search data for Desearch API and console products. The public
+product is [desearch.ai](https://desearch.ai), and the subnet runtime is maintained in the
+[Desearch-ai/subnet-22 repository](https://github.com/Desearch-ai/subnet-22).
 
-Rather than relying on a centralized search index, Desearch delegates search queries to a field of
-independent miner operators. Validators continuously probe miners with synthetic and organic
-queries, then score responses against independent reference providers. Miners that consistently
-return accurate, timely results earn higher weights and therefore greater [[Yuma Consensus]]
-rewards.
+The subnet's basic job is to turn search and social-data retrieval into a Bittensor incentive
+market. Miners run services that answer search requests. Validators query miners, compare returned
+results with external providers, track miner performance, and submit weights to [[Yuma Consensus]].
+For readers, the important distinction is that Desearch is not only a public search product; SN22 is
+the network layer that rewards participants for supplying and checking search data.
 
 ## How the Mechanism Works
 
-At the heart of SN22 is a challenge-response scoring loop. Validators generate queries — covering
-web search, X/Twitter search, and multi-source intelligence — and broadcast them to the miner field
-as Bittensor synapse messages. Each miner returns its best answer within a defined time window.
+The public SN22 repository breaks the system into miner, validator, validator API, and shared
+protocol components. Miners run a Bittensor axon and serve AI, X/Twitter, and web search synapses.
+Validators send synthetic and organic queries to miners, verify results with independent providers,
+store scoring windows, and write weights on chain. A protected FastAPI service runs beside
+validators so trusted Desearch services can route organic search requests through the subnet.
 
-Validators do not trust miner responses at face value. Each response is independently verified
-against external data providers, with correctness measured across dimensions such as relevance,
-freshness, and completeness. Scores are aggregated into a rolling scoring window, giving validators
-a smoothed view of each miner's reliability over time rather than reacting to individual query
-results.
+This gives SN22 both benchmark-style validator traffic and organic search traffic from the Desearch
+platform. Synthetic validator queries give validators a controlled way to measure miner behavior.
+Organic requests connect the Bittensor network to the Desearch API and console. The
+[API reference](https://github.com/Desearch-ai/subnet-22/blob/main/docs/api.md) also documents
+public miner-status routes, which expose the miner state observed by a validator without opening the
+protected search routes.
 
-Weight-setting translates these accumulated scores into on-chain validator weights. Miners with
-stronger scoring histories attract larger weight assignments, and — through [[Yuma Consensus]] —
-larger shares of the subnet's alpha token emissions.
-
-An organic-traffic pathway also exists: authorized Desearch services route live user queries through
-the validator, meaning real search traffic directly shapes the production dataset used for scoring.
-Miners that perform well on synthetic benchmarks but struggle under live query load are naturally
-penalized over time.
+The final reward path is the standard Bittensor one: validators convert their scoring view into
+weights, and [[Yuma Consensus]] uses those weights to determine how emissions are distributed inside
+the subnet.
 
 ## Participating as a Miner
 
-Miners on SN22 register a hotkey on netuid 22 and run an axon that declares search capacity and
-responds to incoming synapse queries. To be competitive, miners need the ability to serve web search
-results through a third-party search API and, optionally, real-time X/Twitter data. Response latency
-matters: queries have a hard deadline, and slow responses count against a miner's cumulative score.
+A Desearch miner runs a Bittensor axon on netuid 22 and responds to health checks plus search
+synapses. The official
+[miner guide](https://github.com/Desearch-ai/subnet-22/blob/main/docs/running_a_miner.md) describes
+a manifest file for declaring per-search-type concurrency, with web search, X/Twitter search, and AI
+search as the example capacity categories. The
+[environment reference](https://github.com/Desearch-ai/subnet-22/blob/main/docs/env_variables.md)
+lists keys used by miner processes, including SerpAPI for web search and Apify for X/Twitter
+scraping; a Twitter API bearer token is optional when the miner relies on Apify.
 
-Miners self-report their search capabilities through a manifest, which tells validators what query
-types that miner can handle. Validators use this manifest to route appropriate queries. A miner that
-claims web search capacity but returns poor results will quickly accumulate negative scoring and
-lose weight.
-
-Registering on a subnet with 256 neurons means new entrants compete against established operators
-with polished infrastructure. Prospective miners should review
-[datura-ai/desearch](https://github.com/datura-ai/desearch) for current protocol requirements before
-registering.
+For Taopedia readers, the main takeaway is that miners are data providers rather than model-training
+workers. They need reliable search infrastructure, valid Bittensor wallet and hotkey configuration,
+and enough capacity to answer validator requests consistently.
 
 ## Participating as a Validator
 
-Validators run a core scoring service that issues queries and updates on-chain weights, alongside a
-sidecar API that exposes organic search endpoints to authorized Desearch platform services.
-Validators require credentials for at least one independent verification provider so that miner
-responses can be cross-checked without relying on miner-supplied data.
+A Desearch validator runs the scoring service that queries miners and writes weights, plus a
+protected validator API used by trusted Desearch services. The official
+[validator guide](https://github.com/Desearch-ai/subnet-22/blob/main/docs/running_a_validator.md)
+describes Redis, PM2, validator hotkey registration, and provider credentials such as OpenAI, Apify,
+ScrapingDog, and Weights & Biases as part of the operator setup.
 
-Scoring windows are persisted locally, allowing validators to smooth out transient network issues
-and reward miners with consistent long-term performance rather than penalizing momentary failures.
-Public miner status endpoints expose aggregate scoring data, supporting transparency across the
-subnet.
-
-Weight updates follow the standard [[Yuma Consensus]] cadence. High uptime is important for
-validators: missed scoring windows reduce scoring fidelity and can affect a validator's own reward
-share. Full setup documentation is available in the
-[repository](https://github.com/datura-ai/desearch).
+Validators keep local miner scoring state in SQLite with rolling retention, according to the
+validator runbook. That operational detail matters at a high level because SN22 rewards are based on
+an ongoing view of miner responses rather than a single public submission. The code and docs should
+remain the source of truth for anyone preparing to operate a validator.
 
 ## On-Chain Identity
 
-SN22 can be inspected live at [taostats.io/subnets/22](https://taostats.io/subnets/22). The subnet
-owner coldkey is `5DFuaMasyQtPhXcsuoYEyJmCVSRtzKxsTKFTA4SrpcGXBxJn`. The subnet runs with 256
-registered neurons. Source code is maintained at
-[github.com/datura-ai/desearch](https://github.com/datura-ai/desearch) and the public product is
-accessible at [desearch.ai](https://desearch.ai).
+SN22 can be inspected live at
+[taostats.io/subnets/22](https://taostats.io/subnets/22/metagraph?order=incentive%3Aasc). The subnet
+is registered as Desearch, uses netuid 22, and supports 256 neurons. Its owner coldkey is
+`5DFuaMasyQtPhXcsuoYEyJmCVSRtzKxsTKFTA4SrpcGXBxJn`. The public site is
+[desearch.ai](https://desearch.ai), and the official GitHub repository currently resolves to
+[github.com/Desearch-ai/subnet-22](https://github.com/Desearch-ai/subnet-22).
 
 ## Further Reading
 
 - [Desearch website and API console](https://desearch.ai)
-- [SN22 GitHub repository — datura-ai/desearch](https://github.com/datura-ai/desearch)
-- [SN22 on TaoStats](https://taostats.io/subnets/22)
+- [SN22 GitHub repository](https://github.com/Desearch-ai/subnet-22)
+- [SN22 miner guide](https://github.com/Desearch-ai/subnet-22/blob/main/docs/running_a_miner.md)
+- [SN22 validator guide](https://github.com/Desearch-ai/subnet-22/blob/main/docs/running_a_validator.md)
+- [SN22 on TaoStats](https://taostats.io/subnets/22/metagraph?order=incentive%3Aasc)
 - [[Yuma Consensus]]
 - [[Dynamic TAO]]
