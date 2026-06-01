@@ -1,0 +1,64 @@
+---
+title: "Subnet 37: Aurelius"
+summary:
+  "Aurelius is Bittensor Subnet 37, a subnet that rewards miners for moral-reasoning scenarios that
+  are simulated and turned into alignment training data."
+category: "Subnets"
+tags: ["Subnets"]
+---
+
+Aurelius is Bittensor Subnet 37, a subnet focused on moral-reasoning alignment. Its goal is to
+produce training data that improves how language models reason about ethical dilemmas. Miners
+contribute structured ethical-dilemma scenarios, validators check and simulate the accepted ones,
+and the resulting simulation transcripts become a dataset aimed at raising model performance on
+moral-reasoning benchmarks. The incentive-mechanism code is maintained in the
+[Aurelius-Protocol/Aurelius-Protocol](https://github.com/Aurelius-Protocol/Aurelius-Protocol)
+repository.
+
+## What the Subnet Produces
+
+The subnet's product is not a live service or a model but a corpus of simulated moral-reasoning
+transcripts. A miner supplies a scenario — a structured description of an ethical dilemma — and,
+once it passes validation, the scenario is played out as a multi-agent simulation. The transcript of
+that simulation is scored and kept as training data. Because the value lies in novel, well-formed
+scenarios that survive simulation, the mechanism rewards useful new dilemmas rather than volume.
+
+## Miner and Validator Roles
+
+Miners run an axon that serves a library of operator-authored scenario configurations. When a
+validator requests one, the miner returns the next scenario from its library, signed by its hotkey
+so the work can be attributed to it. Miners do not generate scenarios on demand; they curate a
+library ahead of time.
+
+Validators put each submitted scenario through a multi-stage acceptance pipeline before it can earn
+anything. The pipeline checks the scenario's format, rejects ones that are too similar to scenarios
+already seen, applies a quality gate, and only then runs the scenario as a sandboxed
+generative-agent simulation using Google DeepMind's Concordia framework. A scenario that fails any
+stage is dropped; one that passes all of them produces a transcript that is scored and used to set
+the miner's on-chain weight. Those weights feed into [[Yuma Consensus]], which converts them into
+the incentive split across miners and validators.
+
+The subnet also uses a work-token balance to rate-limit submissions: a validator spends a token for
+each scenario it accepts for simulation, so a miner has to maintain a balance to keep earning. This
+ties the cost of evaluation to real on-chain accounting rather than letting miners flood validators
+for free.
+
+## On-Chain Identity
+
+Live SN37 data, including metagraph state and alpha token pool information, is available on
+[TaoStats](https://taostats.io/subnets/37). Readers can reproduce the subnet's registered identity
+fields with the Bittensor CLI command documented in the
+[btcli reference](https://docs.learnbittensor.org/btcli/#btcli-subnets-get-identity):
+`btcli subnets get-identity --netuid 37 --network finney`.
+
+The Finney subnet identity for netuid 37 points to the
+[Aurelius-Protocol/Aurelius-Protocol](https://github.com/Aurelius-Protocol/Aurelius-Protocol)
+repository, which is the source of truth for the validation pipeline and scoring described above.
+
+## Further Reading
+
+- [Aurelius Protocol repository](https://github.com/Aurelius-Protocol/Aurelius-Protocol)
+- [Subnet 37 on TaoStats](https://taostats.io/subnets/37)
+- [[Yuma Consensus]]
+- [[Dynamic TAO]]
+- [[Mining and Validating]]
