@@ -1,53 +1,111 @@
 ---
 title: "Subnet 26: Perturb"
 summary:
-  "Perturb is Bittensor Subnet 26, an adversarial-robustness subnet where miners return bounded
-  image perturbations for validator-created challenges."
+  "Perturb is a decentralized adversarial robustness network where miners compete to craft
+  imperceptible image perturbations that fool a fixed classifier within tight distortion bounds."
 category: "Subnets"
 tags: ["Subnets"]
+infoboxTitle: Subnet 26 — Perturb
+infoboxCaption: Decentralized adversarial image attack benchmark
+infoboxRows:
+  - label: Subnet
+    value: SN26
+  - label: Operator
+    value: 0xsigurd
+  - label: Neurons
+    value: "256"
+  - label: GitHub
+    value: 0xsigurd/Perturb
+  - label: Site
+    value: https://www.perturbai.io/
 ---
 
-Perturb is Bittensor Subnet 26, an adversarial-robustness subnet for image-model evaluation. Its
-public site is [perturbai.io](https://www.perturbai.io), and the GitHub repository listed in the
-subnet's Finney identity is [0xsigurd/Perturb](https://github.com/0xsigurd/Perturb).
+Subnet 26, known as Perturb, is a decentralized network that benchmarks adversarial robustness by
+turning deep-learning attack research into an on-chain competition. The project is maintained by
+developer 0xsigurd and hosted at [perturbai.io](https://www.perturbai.io/). Rather than training a
+model or generating text, participants in Perturb compete to craft imperceptible image perturbations
+that reliably fool a fixed image classifier—an objective that sits at the core of adversarial
+machine learning research ([source](https://github.com/0xsigurd/Perturb)).
 
-## What Perturb Provides
+## How the Mechanism Works
 
-The Perturb README describes a subnet where validators create adversarial-image challenges and
-miners return perturbed images under bounded distortion constraints. The task is not simply to
-change an image at random; miner outputs must remain close to the original image while changing how
-the target classifier responds.
+Validators select images from a curated pool of everyday subjects—animals, vehicles, food, and
+common objects—and run each image through a pre-loaded EfficientNetV2-L classifier to establish a
+ground-truth label
+([source](https://github.com/0xsigurd/Perturb/blob/main/perturbnet/constants.py)). A local language
+model service running Qwen2.5-1.5B-Instruct performs a secondary semantic verification to confirm
+the classifier's predicted label matches the original prompt, filtering out ambiguous cases before
+they become challenges
+([source](https://github.com/0xsigurd/Perturb/blob/main/neurons/validator.py)).
 
-In Bittensor terms, Perturb turns adversarial robustness testing into a competitive subnet task.
-Miners search for useful perturbations, validators verify and score the responses, and validator
-weights feed into [[Yuma Consensus]].
+Once a challenge is prepared, the validator broadcasts an `AttackChallenge` synapse to a sampled set
+of up to one hundred miners. Each challenge specifies the clean image and the true label the miner
+must cause the classifier to mis-predict. A key parameter—epsilon—defines the maximum allowable
+L-infinity distortion and is drawn deterministically from a range between 0.003 and 0.03, so all
+validators evaluate the same difficulty level for any given challenge
+([source](https://github.com/0xsigurd/Perturb/blob/main/perturbnet/constants.py)).
 
-## Miner and Validator Roles
+Miners return a perturbed version of the image. Validators then evaluate each response against
+several quality gates: the perturbation must stay within the epsilon bound; the structural
+similarity index (SSIM) between the clean and perturbed image must remain at or above 0.98; and the
+peak signal-to-noise ratio (PSNR) must reach at least 38 dB. Responses failing any gate receive a
+score of zero ([source](https://github.com/0xsigurd/Perturb/blob/main/neurons/validator.py)).
 
-Miners respond to image challenges with perturbed images. Strong miner work produces a response that
-changes the classifier result while staying inside the subnet's distortion and image-quality
-constraints.
+For responses that pass all gates, the final score reflects how efficiently the miner used its
+distortion budget. Seventy percent of the perturbation score is based on the L-infinity norm of the
+changes—a smaller norm means a more efficient, harder-to-detect attack—and thirty percent is based
+on root mean square error. The current scoring formula weights perturbation quality at one hundred
+percent, meaning response speed carries no scoring weight in the current release
+([source](https://github.com/0xsigurd/Perturb/blob/main/perturbnet/constants.py)). Scores accumulate
+across challenges, and validators use a rolling history of the fifty most recent evaluations to set
+on-chain weights via [[Yuma Consensus]].
 
-Validators run the challenge and scoring side of the subnet. The README describes validators as
-creating image challenges, checking miner responses, computing rewards, maintaining scoring history,
-and setting on-chain weights. Operators should treat the repository as the source of truth for
-current setup details.
+## Participating as a Miner
+
+Miners receive adversarial attack challenges and must return perturbed images that cause
+misclassification while staying within tight distortion constraints. The reference implementation
+ships a Projected Gradient Descent (PGD) style baseline attack, but any technique that satisfies the
+constraints is valid ([source](https://github.com/0xsigurd/Perturb/blob/main/neurons/miner.py)).
+Competitive miners invest in custom attack implementations optimized for small L-infinity norm and
+RMSE, since rewards scale inversely with distortion magnitude.
+
+A GPU is strongly recommended for competitive participation because generating high-quality
+adversarial examples within the 15-second response window requires fast gradient computation. Miners
+should study the scoring function carefully: a perturbation that fools the classifier but exceeds
+the epsilon constraint earns zero, so constraint satisfaction takes priority over raw attack
+strength. The codebase is Python-based and follows the standard Bittensor axon pattern for receiving
+and responding to synapses.
+
+## Participating as a Validator
+
+Validators orchestrate the challenge pipeline. They fetch images from the Pexels API, run each
+through EfficientNetV2-L to establish true labels, verify those labels with a locally hosted
+language model, and broadcast challenges to miners every two minutes
+([source](https://github.com/0xsigurd/Perturb/blob/main/perturbnet/constants.py)).
+
+Validators require a GPU capable of running EfficientNetV2-L inference in real time, alongside
+enough RAM and storage to host the local LLM service that handles label verification. The validator
+maintains a per-miner score history and requires each miner to complete at least fifty challenges
+before it becomes eligible for weight assignment—a warm-up period that protects against gaming from
+freshly registered neurons
+([source](https://github.com/0xsigurd/Perturb/blob/main/neurons/validator.py)).
+
+Weights are set on-chain using each eligible miner's rolling performance history, with a
+configurable gamma parameter (default 0.7) controlling how heavily past rounds influence current
+weight calculations via [[Yuma Consensus]].
 
 ## On-Chain Identity
 
-Live SN26 data is available on [TaoStats](https://taostats.io/subnets/26). Readers can also
-reproduce the chain identity fields with the Bittensor CLI command documented in the
-[btcli reference](https://docs.learnbittensor.org/btcli/#btcli-subnets-get-identity):
-`btcli subnets get-identity --netuid 26 --network finney`.
-
-That Finney identity reports the subnet name as Perturb, the subnet URL as perturbai.io, and the
-GitHub repo as 0xsigurd/Perturb.
+Subnet 26 is registered on the Bittensor mainnet under coldkey
+`5FsVAEPMpkAo3eP7xTNJYLyBndi2oT5GPxVPzFT1DzSD82qx` with 256 registered neurons. Live emission,
+price, and staking data are available at [taostats.io/subnets/26](https://taostats.io/subnets/26).
 
 ## Further Reading
 
-- [Perturb website](https://www.perturbai.io)
-- [Perturb repository](https://github.com/0xsigurd/Perturb)
-- [Perturb README source](https://raw.githubusercontent.com/0xsigurd/Perturb/main/README.md)
-- [Subnet 26 on TaoStats](https://taostats.io/subnets/26)
-- [[Yuma Consensus]]
-- [[Mining and Validating]]
+- [Perturb GitHub Repository](https://github.com/0xsigurd/Perturb) — validator, miner, and LLM
+  endpoint implementations
+- [perturbai.io](https://www.perturbai.io/) — official subnet website
+- [taostats.io/subnets/26](https://taostats.io/subnets/26) — live on-chain metrics and neuron
+  registry
+- [[Yuma Consensus]] — how validators set weights across all subnets
+- [[Dynamic TAO]] — subnet token mechanics and alpha token pools
