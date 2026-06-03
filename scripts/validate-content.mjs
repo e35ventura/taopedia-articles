@@ -105,6 +105,11 @@ async function validateArticle(slug, articleDir, knownTargets) {
   validateTextField(data, "title", articlePath, 120);
   validateTextField(data, "summary", articlePath, 240);
   validateTextField(data, "category", articlePath, 60);
+  if (data.category?.trim().toLowerCase() === "bittensor") {
+    throw new Error(
+      `${articlePath}: do not use "Bittensor" as a category; every Taopedia article is already Bittensor-focused`
+    );
+  }
   validateTags(data, articlePath);
   for (const target of extractWikiLinks(content)) {
     const normalizedTarget = slugifyWikiLink(target);
