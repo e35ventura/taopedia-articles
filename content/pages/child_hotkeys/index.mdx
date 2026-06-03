@@ -1,0 +1,114 @@
+---
+title: "Child Hotkeys"
+summary:
+  "How a parent hotkey delegates a proportion of its stake weight to child hotkeys that validate on
+  its behalf, and how childkey take works."
+category: "Staking"
+tags: ["Validators", "Staking"]
+infoboxTitle: Child Hotkeys
+infoboxCaption: Delegating stake weight from a parent hotkey to per-subnet child hotkeys.
+infoboxRows:
+  - label: Context
+    value: Validation and delegation
+  - label: Set by
+    value: Parent hotkey
+  - label: Allocated as
+    value: Stake-weight proportions
+  - label: Scope
+    value: Per subnet
+---
+
+# Child Hotkeys
+
+Child hotkeys are a Bittensor feature that lets a parent hotkey re-delegate a proportion of its
+stake weight to one or more child hotkeys, which then validate on the parent's behalf. The official
+[Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys) documentation describes
+them as a way for a subnet validator to use a separate delegate hotkey per subnet instead of
+exposing one hotkey across every subnet it validates in.
+
+The relationship moves stake weight, not ownership. The underlying stake remains with the parent and
+its stakers; the child hotkey only borrows the consensus weight needed to validate. This makes child
+hotkeys different from ordinary
+[staking and delegation](https://docs.learnbittensor.org/staking-and-delegation/delegation), where
+TAO holders delegate stake to a validator.
+
+## Parent and Child Relationship
+
+A parent allocates weight to children as proportions rather than transferred balances. In the
+implementation, each child is stored as a `u64` share of the parent's weight, and the runtime checks
+that the proportions sum within range before accepting them; see `ensure_total_proportions` and
+`do_schedule_children` in the subtensor pallet's
+[set_children.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/set_children.rs).
+Any weight not delegated stays with the parent, so a parent can split its weight across several
+children or move it to a single child while keeping none for itself. The official
+[Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys#features) documentation
+gives the concept-level version of the same rule.
+
+Once children are set, the child hotkey performs the validation work on that subnet. The parent does
+not have to run validation directly on a subnet it has delegated away through a child.
+
+## Security Benefit
+
+The documented motivation is operational security. The
+[Benefits of child hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys#benefits-of-child-hotkeys)
+section explains that if an attacker compromises a child hotkey, only the subnets that use that
+child are exposed, rather than every subnet the parent validates in. A validator can run each child
+on a different machine, keeping the high-value parent key off the validation hosts.
+
+## Childkey Take
+
+A child hotkey can keep a share of the dividends it earns while validating for the parent. The
+official
+[Get and set child hotkey take](https://docs.learnbittensor.org/validators/child-hotkeys#get-and-set-child-hotkey-take)
+documentation describes this childkey take as a per-subnet commission with a protocol-defined upper
+bound. The bound is enforced in code against the `MaxChildkeyTake` limit defined in the subtensor
+pallet ([lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/lib.rs)).
+Childkey take is conceptually separate from a validator's
+[validator take](https://docs.learnbittensor.org/resources/glossary#validator-take-): validator take
+is the parent validator's fee on delegated-stake emissions, while childkey take is the child's share
+of the dividends it produces on the subnet it validates.
+
+## Requirements and Rate Limits
+
+The official documentation lists several constraints that bound how child hotkeys can be used:
+
+- **Minimum stake**: a parent must hold at least a documented minimum total stake before it can set
+  children
+  ([Minimum stake requirement](https://docs.learnbittensor.org/validators/child-hotkeys#minimum-stake-requirement)).
+- **Children per subnet**: a parent can set only a bounded number of children on each subnet.
+- **Rate limits**: setting or revoking children, and changing childkey take, are
+  [rate limited](https://docs.learnbittensor.org/validators/child-hotkeys#rate-limits). In code, a
+  scheduled change is held in `PendingChildKeys` with a cooldown block before it takes effect; see
+  [set_children.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/set_children.rs)
+  and the
+  [rate-limiting helpers](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/rate_limiting.rs).
+
+Exact thresholds, child counts, and cooldown windows are chain parameters that can change. Treat the
+official documentation and the linked source as the references for current behavior rather than this
+page.
+
+## Managing Child Hotkeys
+
+Child hotkeys are managed through the [Bittensor CLI](https://docs.learnbittensor.org/btcli) under
+the `btcli stake child` command group, which the reference documents with subcommands to set, get,
+revoke, and adjust the take:
+
+- `btcli stake child set` — assign children and their proportions.
+- `btcli stake child get` — list the current children for a hotkey.
+- `btcli stake child revoke` — remove existing children.
+- `btcli stake child take` — get or set the childkey take on a subnet.
+
+## Reader Boundary
+
+Child hotkeys are an operational tool for validator key management, not a staking recommendation or
+a yield product. They do not increase total emissions; they redistribute who does the validation
+work and who keeps a share of the resulting dividends. Specific proportions, take percentages, stake
+minimums, and rate limits depend on current chain state and should be verified against the linked
+documentation and source rather than read from this page.
+
+## Further Reading
+
+- [Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys)
+- [Staking and delegation overview](https://docs.learnbittensor.org/staking-and-delegation/delegation)
+- [Bittensor CLI: btcli reference](https://docs.learnbittensor.org/btcli)
+- [subtensor: set_children.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/set_children.rs)
