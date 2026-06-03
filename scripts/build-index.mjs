@@ -54,16 +54,21 @@ async function main() {
 
   await out.close();
 
-  // Optional: categories.json (uncomment to enable)
-  // const cats = {};
-  // const text = await fs.readFile(OUT_JSONL, 'utf8');
-  // for (const line of text.split('\n')) {
-  //   if (!line.trim()) continue;
-  //   const { category } = JSON.parse(line);
-  //   if (!category) continue;
-  //   cats[category] = (cats[category] || 0) + 1;
-  // }
-  // await fs.writeFile(path.join(OUT_DIR, 'categories.json'), JSON.stringify(cats, null, 2));
+  const cats = {};
+  const text = await fs.readFile(OUT_JSONL, "utf8");
+  for (const line of text.split("\n")) {
+    if (!line.trim()) continue;
+    const { category } = JSON.parse(line);
+    if (!category) continue;
+    cats[category] = (cats[category] || 0) + 1;
+  }
+  const sortedCats = Object.fromEntries(
+    Object.entries(cats).sort(([, a], [, b]) => b - a)
+  );
+  await fs.writeFile(
+    path.join(OUT_DIR, "categories.json"),
+    JSON.stringify(sortedCats, null, 2)
+  );
 }
 
 main().catch((e) => {
