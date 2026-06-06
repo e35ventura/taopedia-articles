@@ -85,6 +85,15 @@ function extractWikiLinks(content) {
   return [...content.matchAll(wikiLinkPattern)].map((match) => match[1].trim());
 }
 
+function extractWikiLinksFromValue(value) {
+  if (typeof value === "string") return extractWikiLinks(value);
+  if (Array.isArray(value)) return value.flatMap((item) => extractWikiLinksFromValue(item));
+  if (value && typeof value === "object") {
+    return Object.values(value).flatMap((item) => extractWikiLinksFromValue(item));
+  }
+  return [];
+}
+
 function isPublishedArticle(slug, data) {
   if (data?.draft === true) return false;
   return slug !== "taopedia";
@@ -106,7 +115,7 @@ async function validateArticle(slug, articleDir, knownTargets) {
   validateTextField(data, "summary", articlePath, 240);
   validateTextField(data, "category", articlePath, 60);
   validateTags(data, articlePath);
-  for (const target of extractWikiLinks(content)) {
+  for (const target of [...extractWikiLinks(content), ...extractWikiLinksFromValue(data)]) {
     const normalizedTarget = slugifyWikiLink(target);
     if (!knownTargets.has(normalizedTarget)) {
       throw new Error(
