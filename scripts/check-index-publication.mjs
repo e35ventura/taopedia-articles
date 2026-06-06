@@ -1,4 +1,4 @@
-import assert from "node:assert/strict";
+import assert from "node:assert";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import matter from "gray-matter";
@@ -32,7 +32,7 @@ const records = (await fs.readFile(indexPath, "utf8"))
   .map((line) => JSON.parse(line));
 const indexedSlugs = records.map((record) => record.slug).sort();
 
-assert.deepEqual(
+assert.deepStrictEqual(
   indexedSlugs,
   expectedSlugs.sort(),
   "article index must contain exactly the pages that publish to Taopedia"
