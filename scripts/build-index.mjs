@@ -27,7 +27,7 @@ function normalizeString(s) {
 
 function isPublishedArticle(slug, data) {
   if (data?.draft === true) return false;
-  if (slug === "taopedia") return true;
+  if (slug === "taopedia") return false;
   return true;
 }
 

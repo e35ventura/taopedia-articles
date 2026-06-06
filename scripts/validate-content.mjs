@@ -4,6 +4,22 @@ import matter from "gray-matter";
 
 const root = process.cwd();
 const pagesDir = path.join(root, "content/pages");
+
+// Mirror build-index.mjs discovery: every index.mdx the indexer can reach must
+// be validated, including ones nested below the top-level article directory.
+async function* walk(dir) {
+  for (const entry of await fs.readdir(dir, { withFileTypes: true })) {
+    const fp = path.join(dir, entry.name);
+    if (entry.isDirectory()) yield* walk(fp);
+    else if (entry.isFile() && entry.name === "index.mdx") yield fp;
+  }
+}
+
+function slugFromPath(fp) {
+  const parts = fp.split(path.sep);
+  const idx = parts.indexOf("pages");
+  return idx >= 0 ? parts[idx + 1] : null;
+}
 const allowedAssetExtensions = new Set([
   ".avif",
   ".gif",
@@ -152,20 +168,19 @@ async function validateAssets(articleDir) {
 }
 
 async function main() {
-  const entries = await fs.readdir(pagesDir, { withFileTypes: true });
   const articles = [];
   const knownTargets = new Set();
 
-  for (const entry of entries) {
-    if (!entry.isDirectory()) continue;
-    const articleDir = path.join(pagesDir, entry.name);
-    const articlePath = path.join(articleDir, "index.mdx");
+  for await (const articlePath of walk(pagesDir)) {
+    const slug = slugFromPath(articlePath);
+    if (!slug) continue;
+    const articleDir = path.dirname(articlePath);
 
     try {
       const raw = await fs.readFile(articlePath, "utf8");
       const { data } = matter(raw);
-      articles.push({ slug: entry.name, articleDir });
-      knownTargets.add(entry.name);
+      articles.push({ slug, articleDir });
+      knownTargets.add(slug);
       if (typeof data.title === "string" && data.title.trim()) {
         knownTargets.add(slugifyWikiLink(data.title.trim()));
       }
