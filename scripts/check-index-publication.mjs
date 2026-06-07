@@ -1,7 +1,7 @@
 import assert from "node:assert";
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import matter from "gray-matter";
+import { parseArticleMatter } from "./article-matter.mjs";
 
 const root = process.cwd();
 const pagesDir = path.join(root, "content/pages");
@@ -19,9 +19,10 @@ for (const entry of await fs.readdir(pagesDir, { withFileTypes: true })) {
   const articlePath = path.join(pagesDir, entry.name, "index.mdx");
   try {
     const raw = await fs.readFile(articlePath, "utf8");
-    const { data } = matter(raw);
+    const { data } = parseArticleMatter(raw, articlePath);
     if (isPublishedArticle(entry.name, data)) expectedSlugs.push(entry.name);
-  } catch {
+  } catch (error) {
+    if (error.code !== "ENOENT") throw error;
     // Skip folders without article content.
   }
 }

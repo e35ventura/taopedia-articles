@@ -1,6 +1,6 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import matter from "gray-matter";
+import { parseArticleMatter } from "./article-matter.mjs";
 
 const root = process.cwd();
 const pagesDir = path.join(root, "content/pages");
@@ -47,6 +47,7 @@ const unsafeContentPatterns = [
 ];
 const wikiLinkPattern = /\[\[([^\]|]+)(?:\|[^\]]+)?\]\]/g;
 const sourceLinkPattern = /\[[^\]]+\]\(https?:\/\/[^)]+\)/i;
+const maxFrontMatterLinkScanDepth = 20;
 
 function validateSlug(slug) {
   if (!/^[a-z0-9][a-z0-9_-]*$/.test(slug)) {
@@ -101,13 +102,23 @@ function extractWikiLinks(content) {
   return [...content.matchAll(wikiLinkPattern)].map((match) => match[1].trim());
 }
 
-function extractWikiLinksFromValue(value) {
+function extractWikiLinksFromValue(value, filePath, stack = new WeakSet(), depth = 0) {
   if (typeof value === "string") return extractWikiLinks(value);
-  if (Array.isArray(value)) return value.flatMap((item) => extractWikiLinksFromValue(item));
-  if (value && typeof value === "object") {
-    return Object.values(value).flatMap((item) => extractWikiLinksFromValue(item));
+  if (!value || typeof value !== "object") return [];
+  if (depth > maxFrontMatterLinkScanDepth) {
+    throw new Error(`${filePath}: front matter is too deeply nested to scan for wiki links`);
   }
-  return [];
+  if (stack.has(value)) {
+    throw new Error(`${filePath}: front matter contains recursive aliases`);
+  }
+
+  stack.add(value);
+  try {
+    const values = Array.isArray(value) ? value : Object.values(value);
+    return values.flatMap((item) => extractWikiLinksFromValue(item, filePath, stack, depth + 1));
+  } finally {
+    stack.delete(value);
+  }
 }
 
 function isPublishedArticle(slug, data) {
@@ -126,7 +137,7 @@ async function validateArticle(slug, articleDir, knownTargets) {
     }
   }
 
-  const { data, content } = matter(raw);
+  const { data, content } = parseArticleMatter(raw, articlePath);
   validateTextField(data, "title", articlePath, 120);
   validateTextField(data, "summary", articlePath, 240);
   validateTextField(data, "category", articlePath, 60);
@@ -136,7 +147,10 @@ async function validateArticle(slug, articleDir, knownTargets) {
     );
   }
   validateTags(data, articlePath);
-  for (const target of [...extractWikiLinks(content), ...extractWikiLinksFromValue(data)]) {
+  for (const target of [
+    ...extractWikiLinks(content),
+    ...extractWikiLinksFromValue(data, articlePath),
+  ]) {
     const normalizedTarget = slugifyWikiLink(target);
     if (!knownTargets.has(normalizedTarget)) {
       throw new Error(
@@ -190,16 +204,12 @@ async function main() {
     if (!slug) continue;
     const articleDir = path.dirname(articlePath);
 
-    try {
-      const raw = await fs.readFile(articlePath, "utf8");
-      const { data } = matter(raw);
-      articles.push({ slug, articleDir });
-      knownTargets.add(slug);
-      if (typeof data.title === "string" && data.title.trim()) {
-        knownTargets.add(slugifyWikiLink(data.title.trim()));
-      }
-    } catch {
-      // Skip folders without article content.
+    const raw = await fs.readFile(articlePath, "utf8");
+    const { data } = parseArticleMatter(raw, articlePath);
+    articles.push({ slug, articleDir });
+    knownTargets.add(slug);
+    if (typeof data.title === "string" && data.title.trim()) {
+      knownTargets.add(slugifyWikiLink(data.title.trim()));
     }
   }
 

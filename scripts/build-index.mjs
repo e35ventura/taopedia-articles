@@ -1,6 +1,6 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import matter from "gray-matter";
+import { parseArticleMatter } from "./article-matter.mjs";
 
 const ROOT = process.cwd();
 const PAGES_DIR = path.join(ROOT, "content/pages");
@@ -40,7 +40,7 @@ async function main() {
     if (!slug) continue;
 
     const raw = await fs.readFile(fp, "utf8");
-    const { data } = matter(raw);
+    const { data } = parseArticleMatter(raw, fp);
     if (!isPublishedArticle(slug, data)) continue;
 
     const title = normalizeString(data?.title) || slug;
