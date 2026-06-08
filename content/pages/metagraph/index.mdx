@@ -1,0 +1,97 @@
+---
+title: Metagraph
+summary:
+  The metagraph is the per-subnet state snapshot that validators and miners query to discover active
+  participants, their stakes, and current incentive parameters.
+category: "Subnets"
+tags: ["Mining", "Validators"]
+---
+
+# Metagraph
+
+The metagraph is a per-subnet data structure that holds a snapshot of every active UID slot on a
+subnet. Validators and miners query it to discover who is registered, what stake they hold, what
+weights have been set, and what incentive values the last epoch produced. It is the primary
+interface through which a participant reads the live state of a subnet without querying raw
+[[subtensor|Subtensor]] storage directly.
+
+- **Scope:** One metagraph per subnet, indexed by netuid.
+- **Contents:** Registration metadata, [[stake|stake]] balances, weights, [[incentives|incentive]]
+  scores, [[trust|trust]] values, [[rank|rank]], and emission parameters for every UID.
+- **Access:** Read via the Bittensor Python SDK (`bittensor.metagraph`) or `btcli`.
+
+Reference:
+[Metagraph API (docs.bittensor.com)](https://docs.bittensor.com/python-api/html/autoapi/bittensor/core/metagraph/index.html)
+
+## Fields per UID
+
+Each UID slot in the metagraph exposes a fixed set of tensors and scalars populated from
+[[subtensor|Subtensor]] storage at sync time.
+
+- **hotkeys / coldkeys:** The SS58-encoded [[hotkeys|hotkey]] and [[coldkeys|coldkey]] addresses
+  registered to this UID.
+- **stake:** Total TAO staked to the hotkey, summed across all nominators.
+- **rank:** The UID's rank within the subnet, derived from the weight matrix after
+  [[yuma_consensus|Yuma Consensus]].
+- **trust:** How consistently a miner's outputs are rewarded by validators. See [[trust|trust]].
+- **consensus:** The consensus-weighted trust score for the UID.
+- **incentive:** The miner's share of subnet emissions for the last epoch.
+- **dividends:** The validator's dividend share for the last epoch.
+- **emission:** Raw TAO allocated to the UID in the last tempo.
+- **axon_info:** IP, port, and protocol version broadcast by the neuron. See [[axon|axon]].
+- **weights:** The weight vector this UID set for other UIDs (validators only).
+- **bonds:** Bond values between validators and miners, used in [[yuma_consensus|Yuma Consensus]] to
+  dampen weight oscillation.
+
+Reference:
+[Metagraph fields (docs.bittensor.com)](https://docs.bittensor.com/python-api/html/autoapi/bittensor/core/metagraph/index.html)
+
+## Syncing the Metagraph
+
+A metagraph snapshot reflects chain state at the block it was last synced. Calling `sync()`
+refreshes it against the current chain.
+
+- **Sync cost:** Each sync issues RPC calls to a [[subtensor|Subtensor]] endpoint; frequent syncing
+  increases load on the endpoint.
+- **Lite vs full sync:** A lite sync fetches only the fields needed for basic participation,
+  reducing RPC overhead.
+- **Saved state:** The metagraph can be saved to disk and reloaded, allowing participants to resume
+  from a known snapshot without a full re-sync.
+
+Reference:
+[bt.metagraph source (github.com)](https://github.com/opentensor/bittensor/blob/master/bittensor/core/metagraph.py)
+
+## Epoch Boundaries and Staleness
+
+Incentive, rank, trust, and dividend values update at each tempo boundary when
+[[yuma_consensus|Yuma Consensus]] runs. Between epochs, weight and stake fields may change as
+validators submit new weights or nominators adjust stake, but incentive scores reflect the most
+recently settled epoch.
+
+- **Tempo:** The number of blocks between consensus runs, configurable per subnet via
+  [[subnet_hyperparameters|subnet hyperparameters]].
+- **Lag:** A freshly synced metagraph shows the result of the last completed epoch; current-block
+  weight changes are visible in the weight tensors but not yet reflected in incentive scores.
+
+Reference:
+[Subnet hyperparameters (docs.bittensor.com)](https://docs.bittensor.com/subnets/subnet-hyperparameters)
+
+## Practical Use
+
+Validators and miners use the metagraph to make operational decisions each step of their run loop.
+
+- **Validators** read hotkeys and axon endpoints to discover which miners to query, and check stake
+  to verify [[validator_permit|validator permit]] thresholds.
+- **Miners** inspect incentive and rank values to monitor standing and compare against peers.
+- **Subnet creators** use metagraph snapshots to audit registration health, detect dropped UIDs, and
+  verify that weight-setting is active.
+
+Reference:
+[Metagraph API (docs.bittensor.com)](https://docs.bittensor.com/python-api/html/autoapi/bittensor/core/metagraph/index.html)
+
+## Further Reading
+
+- [Metagraph API reference (docs.bittensor.com)](https://docs.bittensor.com/python-api/html/autoapi/bittensor/core/metagraph/index.html)
+- [Subnet hyperparameters (docs.bittensor.com)](https://docs.bittensor.com/subnets/subnet-hyperparameters)
+- [Yuma Consensus (docs.bittensor.com)](https://docs.bittensor.com/yuma-consensus)
+- [bt.metagraph source (github.com)](https://github.com/opentensor/bittensor/blob/master/bittensor/core/metagraph.py)
