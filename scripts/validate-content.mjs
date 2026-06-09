@@ -47,6 +47,7 @@ const unsafeContentPatterns = [
 ];
 const wikiLinkPattern = /\[\[([^\]|]+)(?:\|[^\]]+)?\]\]/g;
 const sourceLinkPattern = /\[[^\]]+\]\(https?:\/\/[^)]+\)/i;
+const fencedCodeBlockPattern = /^[ \t]*(```|~~~)/m;
 
 function validateSlug(slug) {
   if (!/^[a-z0-9][a-z0-9_-]*$/.test(slug)) {
@@ -115,6 +116,10 @@ function isPublishedArticle(slug, data) {
   return slug !== "taopedia";
 }
 
+function hasFencedCodeBlock(content) {
+  return fencedCodeBlockPattern.test(content);
+}
+
 async function validateArticle(slug, articleDir, knownTargets) {
   validateSlug(slug);
 
@@ -146,6 +151,11 @@ async function validateArticle(slug, articleDir, knownTargets) {
   }
   if (isPublishedArticle(slug, data) && !sourceLinkPattern.test(content)) {
     throw new Error(`${articlePath}: published articles must include at least one source link`);
+  }
+  if (isPublishedArticle(slug, data) && hasFencedCodeBlock(content)) {
+    throw new Error(
+      `${articlePath}: published articles must not contain fenced code blocks; explain commands and configuration in prose`
+    );
   }
 
   if (Array.isArray(data.infoboxRows)) {
