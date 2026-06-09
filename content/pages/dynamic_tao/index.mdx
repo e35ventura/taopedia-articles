@@ -1,96 +1,111 @@
 ---
 title: Dynamic TAO (dTAO)
 summary:
-  An in-depth explanation of Dynamic TAO, Bittensor’s evolving tokenomics and governance model that
-  decentralizes emissions and decision-making across subnets.
+  How Dynamic TAO connects TAO, subnet alpha tokens, subnet pools, staking flow, and subnet-level
+  emissions in Bittensor.
 category: "Tokenomics"
-tags: ["Governance", "Tokenomics"]
+tags: ["Tokenomics", "Subnets"]
 ---
 
 # Dynamic TAO (dTAO) in Bittensor
 
-Dynamic TAO (often abbreviated as dTAO) is the evolving, integrated tokenomics and governance model
-of the Bittensor network. Its goal is to decentralize how value is measured and distributed across
-the ecosystem—removing centralized judgement and enabling subnets to price and incentivize the work
-they need.
+Dynamic TAO is Bittensor's subnet tokenomics model. It keeps TAO as the network asset while giving
+each subnet its own alpha token and liquidity relationship with TAO. That design lets subnet demand,
+staking activity, and validator evaluation influence emission allocation across the network.
 
-- **Purpose:** Replace centralized, root-level control with market-based, decentralized mechanisms
-  that align incentives for miners, validators, subnet creators, and stakers.
-- **Scope:** Governs emissions (TAO issuance), validator and miner incentives, and subnet-level
-  autonomy.
+The official [Emission](https://docs.learnbittensor.org/learn/emissions) documentation describes
+Bittensor emission as distribution of newly created TAO and subnet-specific alpha tokens. The
+[Staking Implementation](https://docs.learnbittensor.org/navigating-subtensor/swap-stake) explainer
+describes each subnet as maintaining an AMM pool with TAO and alpha reserves, where staking into a
+dynamic subnet converts TAO into that subnet's alpha stake.
 
-## Key Concepts
+## What Dynamic TAO Changes
 
-- **Subnets as markets:** Each subnet specifies the kind of digital commodity it wants (e.g., model
-  outputs, retrieval, compute). Subnet creators define incentive mechanisms and evaluation criteria.
-- **Decentralized valuation:** Rather than a central actor assigning value, validators on each
-  subnet evaluate miners and submit weights. Emissions flow according to these weights via
-  consensus.
-- **Evolving mechanism design:** Dynamic TAO is designed to be extensible—emission and governance
-  mechanisms can be upgraded to better price work, reduce capture, and improve decentralization over
-  time.
+Dynamic TAO makes subnet-level assets part of the way Bittensor represents demand and rewards useful
+work. A subnet is not only a topic area for miners and validators; it is also a tokenomics context
+with its own alpha token, liquidity pool, staking flow, and emission path.
 
-References:
-[Core Dynamic TAO Concepts (docs.bittensor.com)](https://docs.bittensor.com/dynamic-tao/dtao-guide),
-[The Bittensor Standard (bittensor.com)](https://bittensor.com/content/the-bittensor-standard)
+- **TAO remains the network asset.** TAO is the common asset used across Bittensor, including root
+  subnet staking context and TAO-side liquidity in subnet pools.
+- **Alpha tokens are subnet-specific.** Each dynamic subnet has its own alpha token, so a claim
+  about emission, stake, or pool reserves should say whether it is talking about TAO, alpha, or
+  both.
+- **Subnet pools connect staking and liquidity.** Staking into a dynamic subnet moves TAO into that
+  subnet's TAO reserve and credits alpha-denominated stake for that subnet.
+- **Emission has subnet context.** The official emissions docs split the process into injection into
+  subnet liquidity contexts and later distribution to miners, validators, stakers, and subnet
+  creators.
 
 ## Participants and Roles
 
-- **Subnet creators:** Define the incentive mechanism and evaluation tasks for a subnet. They do not
-  centrally pick winners; they design the rules by which validators evaluate miners.
-- **Validators:** Evaluate miners’ outputs using the subnet’s mechanism and submit weights that
-  determine relative emissions.
-- **Miners:** Provide the requested commodity (e.g., model outputs) and compete for higher validator
-  scores to earn emissions.
-- **Stakers:** Delegate TAO to validators. Staking can influence validator prominence and reward
-  share.
+Dynamic TAO ties token flows to the same roles that make subnets useful.
 
-Reference: [Docs Home (docs.bittensor.com)](https://docs.bittensor.com/)
+- **Subnet creators** define the work a subnet is trying to measure and the incentive mechanism used
+  to evaluate it.
+- **Miners** produce the digital commodity requested by a subnet.
+- **Validators** evaluate miners and submit weights that feed subnet reward distribution.
+- **Stakers** move TAO into validator/subnet contexts and receive exposure to the reward outcomes of
+  those choices.
+- **Subnet owners** participate in the emission distribution described by the official emissions
+  docs, so owner rewards are part of the subnet-level tokenomics picture.
 
 ## Emissions under Dynamic TAO
 
-Bittensor issues TAO over time. Emissions are allocated to participants based on subnet-level
-evaluations and network rules.
+Bittensor emissions have two useful reading levels: injection and distribution. Injection describes
+how newly created liquidity enters subnet contexts. Distribution describes how accumulated subnet
+rewards reach miners, validators, stakers, and subnet creators.
 
-- **Liquidity Injection to Subnets:** Newly emitted TAO is injected into subnet pools according to
-  network rules.
-- **Allocation via Validator Weights:** Validators score miners; emissions distribute in proportion
-  to these scores (after consensus aggregation).
-- **Stake and Validator Dividends:** Validators and their stakers receive a portion aligned with
-  their performance and stake.
+The current official emissions docs describe a flow-based model for determining subnet-level TAO
+reserve injection. Under that model, subnet emission share is based on net TAO movement into and out
+of subnet staking contexts rather than only on subnet token price. The implementation-oriented
+[Coinbase](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase) explainer ties
+that flow model to the `run_coinbase()` process that handles liquidity injection, reward
+accumulation, epoch triggering, and EMA updates.
 
-Reference: [Emission (docs.bittensor.com)](https://docs.bittensor.com/emissions)
+After injection, subnet rewards still have to be distributed. Validator weights and Yuma Consensus
+remain part of the participant-facing reward path, so flow-based emissions should not be read as a
+replacement for miner scoring, validator evaluation, or staking outcomes.
 
-## Governance Trajectory
+## Reading Dynamic TAO Claims
 
-Dynamic TAO is tied to decentralizing governance over time.
+Dynamic TAO articles can become confusing when they collapse several related concepts into "TAO
+emissions." A precise explanation should separate:
 
-- **From Foundation to Community:** Bittensor governance is designed to transition from foundation
-  guidance to community-driven decision-making.
-- **Bicameral legislature (in stages):** Proposals, review, and ratification mechanisms aim to
-  distribute control and responsibility.
-
-Reference: [Governance Overview (learnbittensor.org)](https://docs.learnbittensor.org/governance)
+- network-level TAO from subnet-specific alpha tokens;
+- TAO reserve injection from alpha reserve and alpha outstanding injection;
+- subnet-level emission allocation from participant-level reward distribution;
+- staking and unstaking flows from final miner, validator, and staker rewards.
 
 ## Why Dynamic TAO Matters
 
-- **Aligns incentives to real value:** Subnets can specialize and reward precisely the work they
-  need.
-- **Resists capture:** No single centralized authority sets value; validators and staking align
-  incentives.
-- **Supports rapid evolution:** Mechanisms (e.g., emission shares, evaluation functions) can evolve
-  as the ecosystem learns.
+- **Subnets get their own economic context.** Alpha tokens and subnet pools let Bittensor
+  distinguish network-level TAO from subnet-specific exposure.
+- **Staking becomes a demand signal.** Flow-based emissions connect subnet emission context to net
+  TAO movement from staking and unstaking activity.
+- **Work and tokenomics stay linked.** Miners and validators still operate inside subnet incentive
+  mechanisms, while Dynamic TAO supplies the token context in which those outcomes are distributed.
 
 ## Common Questions
 
-- **Is dTAO a separate token?** No. Dynamic TAO describes the policy and mechanisms governing TAO
-  emissions and governance, not a separate asset.
-- **Does the root network judge value?** The direction is to minimize centralized root judgement;
-  valuation happens at the subnet level via validators and consensus.
+- **Is dTAO a separate token?** No. Dynamic TAO is the model. TAO remains the network asset, while
+  each dynamic subnet has its own alpha token.
+- **Are alpha tokens the same as TAO?** No. Alpha tokens are subnet-specific assets used in that
+  subnet's staking, liquidity, and emission context.
+- **Are flow-based emissions final payouts?** No. Flow-based emissions describe subnet-level
+  injection context. Participant rewards are distributed later through subnet reward mechanics.
+
+## Related Articles
+
+- [[alpha_tokens|Alpha Tokens]]
+- [[bittensor_emissions|Bittensor Emissions]]
+- [[flow_based_emissions|Flow-Based Emissions]]
+- [[subnet_liquidity_pools|Subnet Liquidity Pools]]
+- [[staking_and_delegation|Staking and Delegation]]
+- [[yuma_consensus|Yuma Consensus]]
 
 ## Further Reading
 
-- [Core Dynamic TAO Concepts](https://docs.bittensor.com/dynamic-tao/dtao-guide)
-- [Emission](https://docs.bittensor.com/emissions)
-- [Bittensor Whitepaper](https://bittensor.com/whitepaper)
+- [Emission](https://docs.learnbittensor.org/learn/emissions)
+- [Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase)
+- [Staking Implementation](https://docs.learnbittensor.org/navigating-subtensor/swap-stake)
 - [The Bittensor Standard](https://bittensor.com/content/the-bittensor-standard)
