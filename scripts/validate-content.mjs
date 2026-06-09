@@ -46,7 +46,7 @@ const unsafeContentPatterns = [
   { pattern: /\bclient:[a-z-]+\b/i, reason: "client directives are not allowed" },
 ];
 const wikiLinkPattern = /\[\[([^\]|]+)(?:\|[^\]]+)?\]\]/g;
-const sourceLinkPattern = /\[[^\]]+\]\(https?:\/\/[^)]+\)/i;
+const markdownHttpLinkPattern = /!?\[[^\]]+\]\(https?:\/\/[^)]+\)/gi;
 const fencedCodeBlockPattern = /^[ \t]*(```|~~~)/m;
 
 function validateSlug(slug) {
@@ -120,6 +120,13 @@ function hasFencedCodeBlock(content) {
   return fencedCodeBlockPattern.test(content);
 }
 
+function hasSourceLink(content) {
+  for (const match of content.matchAll(markdownHttpLinkPattern)) {
+    if (!match[0].startsWith("!")) return true;
+  }
+  return false;
+}
+
 async function validateArticle(slug, articleDir, knownTargets) {
   validateSlug(slug);
 
@@ -149,7 +156,7 @@ async function validateArticle(slug, articleDir, knownTargets) {
       );
     }
   }
-  if (isPublishedArticle(slug, data) && !sourceLinkPattern.test(content)) {
+  if (isPublishedArticle(slug, data) && !hasSourceLink(content)) {
     throw new Error(`${articlePath}: published articles must include at least one source link`);
   }
   if (isPublishedArticle(slug, data) && hasFencedCodeBlock(content)) {

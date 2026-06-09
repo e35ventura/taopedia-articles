@@ -35,6 +35,19 @@ await writeArticle(
 execFileSync(process.execPath, [scriptPath], { cwd: fixtureRoot, stdio: "inherit" });
 
 await writeArticle(
+  "image_only_article",
+  '["Testing"]',
+  "This published article has only an external image.\n\n![diagram](https://example.com/a.png)\n"
+);
+
+assert.throws(
+  () => execFileSync(process.execPath, [scriptPath], { cwd: fixtureRoot, stdio: "pipe" }),
+  /published articles must include at least one source link/,
+  "validator must not count Markdown images as source links"
+);
+
+await fs.rm(path.join(pagesDir, "image_only_article"), { recursive: true, force: true });
+await writeArticle(
   "unsourced_article",
   '["Testing"]',
   "This published article has no source link.\n"
