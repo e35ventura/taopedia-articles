@@ -31,8 +31,19 @@ const allowedAssetExtensions = new Set([
 ]);
 const maxAssetBytes = 5 * 1024 * 1024;
 const unsafeContentPatterns = [
-  { pattern: /^\s*import\s/m, reason: "MDX imports are not allowed" },
-  { pattern: /^\s*export\s/m, reason: "MDX exports are not allowed" },
+  // Match real MDX/ESM `import`/`export` statements, not prose that merely
+  // begins with the words "import"/"export" (e.g. a line wrapped by Prettier's
+  // proseWrap that starts with "import the coldkey ..."). An ESM import always
+  // has a string module specifier (`import "x"` or `import ... from "x"`); an
+  // export is followed by one of a fixed set of keywords or `{`/`*`.
+  {
+    pattern: /^\s*import\s+(?:["']|[\w*{][^\n]*\bfrom\b\s*["'])/m,
+    reason: "MDX imports are not allowed",
+  },
+  {
+    pattern: /^\s*export\s+(?:default\b|const\b|let\b|var\b|function\b|class\b|async\b|\{|\*)/m,
+    reason: "MDX exports are not allowed",
+  },
   { pattern: /<\s*script[\s>]/i, reason: "script tags are not allowed" },
   { pattern: /<\s*\/\s*script\s*>/i, reason: "script tags are not allowed" },
   {
