@@ -10,6 +10,9 @@ const pagesDir = path.join(root, "content/pages");
 async function* walk(dir) {
   for (const entry of await fs.readdir(dir, { withFileTypes: true })) {
     const fp = path.join(dir, entry.name);
+    if (entry.isSymbolicLink()) {
+      throw new Error(`Symlinked article source entry is not allowed: ${fp}`);
+    }
     if (entry.isDirectory()) yield* walk(fp);
     else if (entry.isFile() && entry.name === "index.mdx") yield fp;
   }
@@ -36,7 +39,7 @@ const unsafeContentPatterns = [
   { pattern: /<\s*script[\s>]/i, reason: "script tags are not allowed" },
   { pattern: /<\s*\/\s*script\s*>/i, reason: "script tags are not allowed" },
   {
-    pattern: /<\s*(iframe|object|embed|link|meta|style)\b/i,
+    pattern: /<\s*(base|iframe|object|embed|link|meta|style)\b/i,
     reason: "active HTML elements are not allowed",
   },
   { pattern: /\son[a-z]+\s*=/i, reason: "inline event handlers are not allowed" },
@@ -45,6 +48,47 @@ const unsafeContentPatterns = [
   { pattern: /\bset:html\b/i, reason: "raw HTML injection directives are not allowed" },
   { pattern: /\bclient:[a-z-]+\b/i, reason: "client directives are not allowed" },
 ];
+
+// Dangerous URL schemes can be smuggled past the literal checks above using HTML
+// numeric/named entities, control characters, or zero-width characters that a
+// browser strips when resolving a URL (e.g. `java&#115;cript:`,
+// `javascript&colon;`, `java\tscript:`). Decode those forms and re-scan. Mirrors
+// the website sync gate (taopedia/scripts/sync-articles.js) so the two stay in step.
+const obfuscatedSchemePatterns = [
+  { pattern: /javascript\s*:/i, reason: "javascript: URLs are not allowed" },
+  { pattern: /data\s*:\s*text\/html/i, reason: "HTML data URLs are not allowed" },
+];
+
+function fromCodePoint(codePoint, fallback) {
+  return Number.isInteger(codePoint) && codePoint >= 0 && codePoint <= 0x10ffff
+    ? String.fromCodePoint(codePoint)
+    : fallback;
+}
+
+// Strip characters a browser ignores inside a URL — C0/C1 control characters
+// (including tab/newline/CR), DEL, zero-width characters and the BOM — while
+// preserving the ordinary space so plain prose such as "Java Script:" is never
+// collapsed into a false positive.
+function stripUrlObfuscationChars(value) {
+  let result = "";
+  for (const char of value) {
+    const code = char.codePointAt(0);
+    const isControl = code <= 0x1f || code === 0x7f;
+    const isZeroWidth = (code >= 0x200b && code <= 0x200d) || code === 0xfeff;
+    if (!isControl && !isZeroWidth) result += char;
+  }
+  return result;
+}
+
+function decodeForSchemeScan(content) {
+  const decoded = content
+    .replace(/&#x([0-9a-f]+);?/gi, (match, hex) => fromCodePoint(Number.parseInt(hex, 16), match))
+    .replace(/&#(\d+);?/g, (match, dec) => fromCodePoint(Number.parseInt(dec, 10), match))
+    .replace(/&colon;/gi, ":")
+    .replace(/&sol;/gi, "/")
+    .replace(/&(?:tab|newline);/gi, "");
+  return stripUrlObfuscationChars(decoded);
+}
 const wikiLinkPattern = /\[\[([^\]|]+)(?:\|[^\]]+)?\]\]/g;
 const markdownHttpLinkPattern = /!?\[[^\]]+\]\(https?:\/\/[^)]+\)/gi;
 const fencedCodeBlockPattern = /^[ \t]*(```|~~~)/m;
@@ -138,6 +182,15 @@ async function validateArticle(slug, articleDir, knownTargets) {
     }
   }
 
+  const decoded = decodeForSchemeScan(raw);
+  if (decoded !== raw) {
+    for (const { pattern, reason } of obfuscatedSchemePatterns) {
+      if (pattern.test(decoded)) {
+        throw new Error(`${articlePath}: ${reason}`);
+      }
+    }
+  }
+
   const { data, content } = matter(raw);
   validateTextField(data, "title", articlePath, 120);
   validateTextField(data, "summary", articlePath, 240);
@@ -178,6 +231,9 @@ async function validateAssets(articleDir) {
   const entries = await fs.readdir(articleDir, { withFileTypes: true });
   for (const entry of entries) {
     const entryPath = path.join(articleDir, entry.name);
+    if (entry.isSymbolicLink()) {
+      throw new Error(`Symlinked article asset is not allowed: ${entryPath}`);
+    }
     if (entry.isDirectory()) {
       await validateAssets(entryPath);
       continue;
