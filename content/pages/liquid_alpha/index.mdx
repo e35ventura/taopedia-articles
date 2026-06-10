@@ -1,0 +1,92 @@
+---
+title: "Liquid Alpha"
+summary:
+  "How the liquid alpha feature lets a Bittensor subnet vary the bonds EMA smoothing factor per
+  validator-miner pair between a low and high bound instead of using a single fixed value."
+category: "Consensus"
+tags: ["Consensus", "Validation"]
+infoboxTitle: Liquid Alpha
+infoboxCaption: Per-pair variable bonds EMA smoothing for a subnet.
+infoboxRows:
+  - label: Context
+    value: Consensus-based weights
+  - label: Affects
+    value: Validator bonds EMA
+  - label: Bounds
+    value: alpha_low <= alpha_high
+  - label: Scope
+    value: Concept only
+---
+
+# Liquid Alpha
+
+Liquid alpha is the name the documentation gives to the consensus-based weights feature that, when
+enabled, lets the protocol vary the smoothing factor used as validator bonds are updated instead of
+applying a single fixed factor across the subnet. The smoothing factor is the alpha (α) term in the
+exponential moving average that the protocol applies to each validator-miner bond from one epoch to
+the next. With liquid alpha, that α is determined for each validator-miner bond pair from the
+current consensus relationship rather than being shared uniformly across the subnet.
+
+References:
+[Consensus-based Weights / Liquid Alpha](https://docs.learnbittensor.org/concepts/consensus-based-weights),
+[Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds)
+
+## Bonds and the EMA
+
+A bond represents the investment a validator has made in evaluating a particular miner, and the
+protocol smooths each bond across epochs with an exponential moving average so that a single epoch
+does not dominate the value. In that moving average, the alpha term controls how much weight the
+current epoch carries relative to the accumulated history: a larger alpha reacts faster to the
+latest epoch, while a smaller alpha keeps more of the prior value. Liquid alpha is concerned with
+how that alpha term is chosen for each bond.
+
+References:
+[Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds),
+[Glossary: Exponential Moving Average](https://docs.learnbittensor.org/resources/glossary#exponential-moving-average-ema)
+
+## What Liquid Alpha Changes
+
+When liquid alpha is disabled, the bonds moving average uses one fixed alpha across the subnet. When
+it is enabled, the protocol instead determines a variable alpha for each validator-miner bond pair,
+based on the current consensus for that pair, so the implementation works with a matrix of per-pair
+alpha values rather than a single number. Each pair's alpha is held within the configured alpha_low
+and alpha_high bounds. The documented motivation is that a validator's dividends become better
+correlated with the performance of the specific miner it is setting weights on, which helps
+validators identify well-performing miners and bond to them more quickly.
+
+References:
+[Consensus-based Weights / Liquid Alpha](https://docs.learnbittensor.org/concepts/consensus-based-weights),
+[Subtensor: run_epoch.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/epoch/run_epoch.rs)
+
+## The alpha_low and alpha_high Bounds
+
+The feature is controlled by two subnet hyperparameters, alpha_low and alpha_high, configured
+together with an enable flag, so a subnet turns liquid alpha on before the bounds take effect. In
+the current Subtensor implementation these are stored as unsigned 16-bit integers, where the full
+16-bit range maps onto the interval from 0 to 1. The setter requires both values to be at least one
+fortieth of the maximum 16-bit value, which is 1638 and corresponds to roughly 0.025 of full scale,
+and it requires alpha_low to be less than or equal to alpha_high, so the two bounds may be set equal
+and either may reach the maximum 16-bit value. Because these are subnet hyperparameters, they are
+set through the subnet's own configuration rather than by individual validators.
+
+Reference:
+[Subtensor: do_set_alpha_values (run_epoch.rs)](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/epoch/run_epoch.rs)
+
+## A Per-Subnet Setting
+
+Liquid alpha is configured per subnet rather than network-wide: one subnet can enable it with its
+own alpha_low and alpha_high bounds while another leaves the feature off entirely, and the two
+choices are independent. This mirrors how other consensus-related hyperparameters apply to a single
+subnet at a time. Whether the feature is enabled, and the alpha_low and alpha_high values in force,
+are live per-subnet hyperparameter state that the subnet owner can change; they should be read for
+the relevant subnet with the Bittensor CLI when current data is needed rather than assumed from this
+reference.
+
+Reference: [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+
+## Further Reading
+
+- [Consensus-based Weights / Liquid Alpha](https://docs.learnbittensor.org/concepts/consensus-based-weights)
+- [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+- [Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds)
+- [Glossary: Exponential Moving Average](https://docs.learnbittensor.org/resources/glossary#exponential-moving-average-ema)
