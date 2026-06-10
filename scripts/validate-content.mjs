@@ -127,6 +127,29 @@ function hasSourceLink(content) {
   return false;
 }
 
+// YAML anchors (`&a`), aliases (`*a`), and merge keys (`<<:`) have no legitimate
+// use in article front matter, but gray-matter's js-yaml loader expands aliases —
+// so a few nested anchor/alias lines form an exponential "billion laughs" bomb
+// (e.g. 4 levels => tens of thousands of nodes) that downstream recursion such as
+// extractWikiLinksFromValue walks, exhausting CI memory/CPU. Reject those tokens
+// in the front matter block before parsing. The body is untouched, so prose like
+// `*emphasis*` or `A & B` is unaffected; quoted scalars (e.g. `"*.com"`) are also
+// safe because the token must follow start-of-line or a YAML structural char.
+const frontMatterBlockPattern = /^---\r?\n([\s\S]*?)\r?\n---/;
+const yamlAnchorAliasPattern = /(?:^|[\s,[{])[&*][\w-]+/m;
+const yamlMergeKeyPattern = /(?:^|\s)<<\s*:/m;
+
+function assertSafeFrontMatter(raw, articlePath) {
+  const match = frontMatterBlockPattern.exec(raw);
+  if (!match) return;
+  const block = match[1];
+  if (yamlAnchorAliasPattern.test(block) || yamlMergeKeyPattern.test(block)) {
+    throw new Error(
+      `${articlePath}: YAML anchors, aliases, and merge keys are not allowed in front matter`
+    );
+  }
+}
+
 async function validateArticle(slug, articleDir, knownTargets) {
   validateSlug(slug);
 
@@ -138,6 +161,7 @@ async function validateArticle(slug, articleDir, knownTargets) {
     }
   }
 
+  assertSafeFrontMatter(raw, articlePath);
   const { data, content } = matter(raw);
   validateTextField(data, "title", articlePath, 120);
   validateTextField(data, "summary", articlePath, 240);
