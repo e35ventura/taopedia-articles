@@ -1,0 +1,99 @@
+---
+title: "Child Hotkeys"
+summary:
+  "How a Bittensor validator delegates a share of its stake to child hotkeys that validate on its
+  behalf in specific subnets, and how child take works."
+category: "Staking"
+tags: ["Staking", "Validation"]
+infoboxTitle: Child Hotkeys
+infoboxCaption: Delegated validation keys scoped to a subnet.
+infoboxRows:
+  - label: Parent
+    value: Delegate hotkey
+  - label: Scope
+    value: Per subnet (netuid)
+  - label: Max per netuid
+    value: 5 children
+  - label: Child take
+    value: 0 to 18%
+---
+
+# Child Hotkeys
+
+A child hotkey is a separate validator key that a delegate validator authorizes to validate on its
+behalf in a specific subnet. The originating delegate hotkey is called the parent hotkey. Instead of
+signing every validation operation with the parent key, the validator re-delegates a portion of the
+parent's stake to one or more child hotkeys, and those children do the validating for that subnet.
+
+References: [Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys)
+
+## Parent and Child
+
+The parent hotkey is an existing delegate that holds stake. A child hotkey is a different key that
+the parent points a share of its stake toward. Once configured, the child validates in the subnet on
+behalf of the parent, so the parent does not have to be present on that subnet's validation machine.
+This is a delegation relationship between two keys, not a transfer of ownership of the underlying
+stake.
+
+References: [Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys),
+[Delegation](https://docs.learnbittensor.org/staking-and-delegation/delegation)
+
+## Configured per Subnet
+
+Child hotkeys are set per subnet, identified by netuid. A parent can assign at most five child
+hotkeys on a given netuid, and the same parent can assign a different set of children on another
+netuid. Because the configuration is independent across subnets, a validator can run a distinct
+child key for each subnet it participates in.
+
+References: [Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys)
+
+## Why Validators Use Them
+
+The main reason is key security. By validating through children, the parent delegate hotkey can stay
+in a secure location while each child signs operations on its assigned subnet, optionally from a
+different machine. If an attacker steals a child hotkey, only the subnets where that child is used
+are exposed, rather than the full parent key. This isolation limits the blast radius of a
+compromised validation key.
+
+References: [Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys)
+
+## Child Take
+
+A child hotkey earns a take, which is the share of rewards it keeps for validating on the parent's
+behalf. Child take is subnet-specific and ranges from 0 (0%) to 0.18 (18%), with a default of 0. The
+take is paid out of the dividends the parent's stake would otherwise receive on that subnet. A child
+hotkey can also hold a separate delegate take, so the child take rate and the delegate take rate are
+configured independently. Exact current take values are chain state and should be read for the
+relevant netuid.
+
+References: [Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys),
+[Validator Take](https://docs.learnbittensor.org/resources/glossary#validator-take)
+
+## How They Are Set
+
+Child hotkeys are managed with the Bittensor CLI. A validator assigns children and their stake
+proportions with `btcli stake child set`, reviews them with `btcli stake child get`, and adjusts the
+reward share with `btcli stake child take`. Each command takes the netuid and the parent hotkey, so
+the assignment always applies to one subnet at a time.
+
+References: [Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys),
+[btcli Reference](https://docs.learnbittensor.org/btcli)
+
+## Careful Interpretation
+
+Child hotkeys re-delegate validation duty and a share of dividends; they do not move the parent's
+stake to a new owner or create new stake. The numeric limits here, such as the five-child cap and
+the 18% take ceiling, are protocol rules from the documentation, while the specific children and
+take values on any subnet are live chain state. The Taopedia-level meaning is the parent-child
+delegation model that lets a validator spread subnet validation across isolated keys.
+
+References: [Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys)
+
+## Related Articles
+
+- [[subnet_validator|Subnet Validator]]
+- [[delegation|Delegation]]
+- [[delegate_stake|Delegate Stake]]
+- [[validator_take|Validator Take]]
+- [[dividends|Dividends]]
+- [[hotkeys|Hotkeys]]
