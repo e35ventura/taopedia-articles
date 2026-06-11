@@ -2,7 +2,7 @@ name: Trigger Taopedia deploy
 
 on:
   push:
-    branches: [main, test]
+    branches: [main]
     paths:
       - "content/**"
       - "scripts/build-index.mjs"
@@ -16,22 +16,13 @@ jobs:
     runs-on: ubuntu-latest
     env:
       NETLIFY_BUILD_HOOK: ${{ secrets.NETLIFY_BUILD_HOOK }}
-      NETLIFY_TEST_BUILD_HOOK: ${{ secrets.NETLIFY_TEST_BUILD_HOOK }}
     steps:
-      - name: Trigger Netlify build
+      - name: Trigger production Netlify build
         run: |
-          if [ "$GITHUB_REF_NAME" = "test" ]; then
-            hook="$NETLIFY_TEST_BUILD_HOOK"
-            context="test branch deploy"
-          else
-            hook="$NETLIFY_BUILD_HOOK"
-            context="production deploy"
-          fi
-
-          if [ -z "$hook" ]; then
-            echo "::notice::No Netlify build hook configured for $context."
+          if [ -z "$NETLIFY_BUILD_HOOK" ]; then
+            echo "::notice::No production Netlify build hook configured."
             exit 0
           fi
 
-          echo "Triggering Taopedia $context from taopedia-articles/$GITHUB_REF_NAME."
-          curl -fsS -X POST "$hook"
+          echo "Triggering Taopedia production deploy from taopedia-articles/main."
+          curl -fsS -X POST "$NETLIFY_BUILD_HOOK"
