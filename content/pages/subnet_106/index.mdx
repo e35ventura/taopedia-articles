@@ -1,59 +1,85 @@
 ---
-title: "Subnet 106: VoidAI"
+title: "Subnet 106: Nodexo"
 summary:
-  "VoidAI is Bittensor Subnet 106, a cross-chain liquidity subnet that bridges Bittensor tokens to
-  other chains and rewards miners for providing well-placed liquidity to their trading markets."
+  "Nodexo is Bittensor Subnet 106, operated by NeuralInternet, a GPU compute subnet where miners
+  expose hardware capacity for benchmarking and rental while validators verify compute with
+  proof-of-work matrix challenges."
 category: "Subnets"
 tags: ["Subnets"]
+infoboxTitle: Subnet 106 — Nodexo
+infoboxCaption: Tokenized GPU compute by NeuralInternet
+infoboxRows:
+  - label: Subnet
+    value: SN106
+  - label: Operator
+    value: NeuralInternet
+  - label: Neurons
+    value: "256"
+  - label: GitHub
+    value: neuralinternet/SN27
+  - label: Site
+    value: nodexo.ai
 ---
 
-VoidAI is Bittensor Subnet 106. Its on-chain description is "Multi-chain liquidity protocol enabling
-interoperability for Bittensor by leveraging Chainlink CCIP," and the project site is
-[voidai.com](https://voidai.com). The subnet's role is to connect Bittensor's token economy to
-outside decentralized-finance markets: it moves Bittensor tokens onto another chain so they can be
-traded there, and rewards miners for supplying the liquidity that makes those markets work. The
-codebase for the subnet is the `v0idai/SN106` repository.
+Nodexo is Bittensor Subnet 106, operated by [NeuralInternet](https://nodexo.ai). Its on-chain
+description is "tokenized ai compute." The subnet links
+[neuralinternet/SN27](https://github.com/neuralinternet) as its GitHub organization and
+[nodexo.ai](https://nodexo.ai) as its project site.
 
-## What VoidAI Rewards
+The subnet was previously registered to a different project. The current operator, NeuralInternet,
+registered the Nodexo identity and has been running a GPU compute subnet under this netuid. The
+public monitoring repository at
+[neuralinternet/SN27-opencompute](https://github.com/neuralinternet/SN27-opencompute) provides open
+dashboards and tooling for tracking miner performance, hardware specs, and validator state.
 
-For a token to trade smoothly on a decentralized exchange, someone has to supply liquidity — pools
-of the two tokens that buyers and sellers trade against. VoidAI brings Bittensor's alpha tokens and
-TAO to another chain in wrapped form, using Chainlink's cross-chain protocol to move them, and then
-rewards miners for providing liquidity to the resulting trading pairs.
+## How the Mechanism Works
 
-Rewards favor liquidity that is actually useful. A miner earns more when their liquidity is
-concentrated near the current trading price, where it can absorb real trades, and less when it sits
-far from the market or is spread too thin to matter. The amount supplied and the performance of the
-chosen Bittensor token also factor in. The aim is to build deep, well-placed markets for Bittensor
-tokens rather than simply locking up funds. Liquidity is currently provided on Solana, with the
-protocol designed to extend to additional chains.
+Nodexo is a GPU compute market. Miners expose GPU hardware — including model, VRAM, and TFLOPS
+performance — and respond to challenges and rental requests. Validators benchmark miners and track
+their capabilities through W&amp;B (Weights &amp; Biases) under the
+[neuralinternet/opencompute](https://wandb.ai/neuralinternet/opencompute) project.
 
-## Miner and Validator Roles
+The benchmark mechanism uses matrix multiplication proof-of-work challenges. A validator sends a
+challenge that specifies a deterministic matrix pair; the miner computes both products on its GPU
+and returns SHA-256 Merkle roots over the row hashes. The validator then requests proofs for
+specific rows, which the miner provides with the corresponding Merkle siblings. This lets validators
+confirm that a miner actually performed the computation on real GPU hardware without re-running the
+full matrix products themselves.
 
-Miners bridge their Bittensor tokens to the connected chain, supply them as concentrated liquidity
-to a trading pair, and lock that position to the subnet so it can be tracked and rewarded. A
-registered hotkey on netuid 106 is what ties a miner's positions back to them.
+Scoring draws on both benchmark performance and the GPU specifications that miners report and
+validators cross-check. GPU TFLOPS (FP16 and FP32) and VRAM directly influence how validators weight
+each miner's contribution through [[Yuma Consensus]].
 
-Validators read those positions directly from the connected chains rather than relying on miners to
-report them. They assess each position's quality — how concentrated it is, how close it is to the
-current market price, and whether it is actively in range — and from that set weights on the
-network, which is how reward flows through [[Yuma Consensus]]. At the article level the split is
-straightforward: miners supply the liquidity, while validators measure how useful each position is
-and weight each miner accordingly.
+## Participating as a Miner
+
+Miners register on Subnet 106 and run software that advertises their GPU hardware, responds to
+benchmark challenges, and handles compute allocation requests from validators. When challenged, a
+miner runs the matrix computation on-device and returns Merkle roots; it must then supply Merkle
+proofs for any rows the validator requests. Miners also expose a rental endpoint through which
+validators can request Docker-based compute containers for specific timelines. Operators should
+treat the current repository linked in the on-chain identity as the authoritative source for setup
+and configuration details.
+
+## Participating as a Validator
+
+Validators maintain a live view of miner GPU specs by reading W&amp;B run data and benchmarking
+miners directly. They issue matrix multiplication challenges, verify Merkle proofs, and record GPU
+benchmark scores. Validators also handle compute rental allocation — sending allocation requests to
+miners and tracking active rentals. Weights are set based on GPU capability, benchmark results, and
+availability, with the resulting weight matrix submitted on-chain for [[Yuma Consensus]] to
+distribute emissions.
 
 ## On-Chain Identity
 
-Live SN106 subnet data is available on [TaoStats](https://taostats.io/subnets/106), which identifies
-the subnet as VoidAI. Readers can reproduce the subnet identity fields directly with the Bittensor
-CLI command documented in the
-[btcli reference](https://docs.learnbittensor.org/btcli/#btcli-subnets-get-identity):
-`btcli subnets get-identity --netuid 106 --network finney`. That Finney identity is the source of
-truth for the subnet name and the GitHub repository associated with the subnet.
+Live SN106 data is available on [TaoStats](https://taostats.io/subnets/106). The on-chain identity
+field registers the subnet name as Nodexo, the description as "tokenized ai compute," and lists
+nodexo.ai as the subnet URL.
 
 ## Further Reading
 
-- [VoidAI website](https://voidai.com)
-- [VoidAI README source](https://raw.githubusercontent.com/v0idai/SN106/main/README.md)
+- [Nodexo website](https://nodexo.ai)
+- [NeuralInternet SN27-opencompute repository](https://github.com/neuralinternet/SN27-opencompute)
+- [NeuralInternet W&amp;B project](https://wandb.ai/neuralinternet/opencompute)
 - [Subnet 106 on TaoStats](https://taostats.io/subnets/106)
 - [[Yuma Consensus]]
-- [[Dynamic TAO]]
+- [[Mining and Validating]]
