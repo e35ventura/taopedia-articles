@@ -48,6 +48,7 @@ const unsafeContentPatterns = [
 const wikiLinkPattern = /\[\[([^\]|]+)(?:\|[^\]]+)?\]\]/g;
 const markdownHttpLinkPattern = /!?\[[^\]]+\]\(https?:\/\/[^)]+\)/gi;
 const fencedCodeBlockPattern = /^[ \t]*(```|~~~)/m;
+const markdownImagePattern = /!\[[^\]]*\]\(([^)]+)\)/g;
 
 function validateSlug(slug) {
   if (!/^[a-z0-9][a-z0-9_-]*$/.test(slug)) {
@@ -127,6 +128,62 @@ function hasSourceLink(content) {
   return false;
 }
 
+// Resolve the local file path of a Markdown image target, or null when the
+// target is remote (has a URI scheme or is protocol-relative), empty, or a
+// pure fragment. Mirrors how the published site would load a local asset.
+function localImageTarget(rawTarget) {
+  let target = rawTarget.trim();
+  if (target.startsWith("<") && target.endsWith(">")) {
+    target = target.slice(1, -1).trim();
+  } else {
+    // Drop an optional Markdown title: ![alt](path "title").
+    target = target.split(/\s+/)[0];
+  }
+  if (!target) return null;
+  if (/^[a-z][a-z0-9+.-]*:/i.test(target) || target.startsWith("//")) return null;
+  const pathPart = target.split("#")[0].split("?")[0];
+  if (!pathPart) return null;
+  try {
+    return decodeURIComponent(pathPart);
+  } catch {
+    return pathPart;
+  }
+}
+
+// Markdown image syntax shown inside code (e.g. a tutorial example) is not a real
+// asset reference, so ignore fenced code blocks and inline code spans before scanning.
+function stripMarkdownCode(content) {
+  return content
+    .replace(/```[\s\S]*?```/g, "")
+    .replace(/~~~[\s\S]*?~~~/g, "")
+    .replace(/`[^`\n]*`/g, "");
+}
+
+async function validateImageReferences(articlePath, articleDir, content) {
+  const articleRoot = path.resolve(articleDir);
+  for (const match of stripMarkdownCode(content).matchAll(markdownImagePattern)) {
+    const relativeTarget = localImageTarget(match[1]);
+    if (relativeTarget === null) continue;
+    const resolved = path.resolve(articleDir, relativeTarget);
+    if (resolved !== articleRoot && !resolved.startsWith(articleRoot + path.sep)) {
+      throw new Error(
+        `${articlePath}: image reference "${relativeTarget}" must stay inside the article directory`
+      );
+    }
+    let stat;
+    try {
+      stat = await fs.stat(resolved);
+    } catch {
+      throw new Error(
+        `${articlePath}: image reference "${relativeTarget}" does not resolve to a local asset`
+      );
+    }
+    if (!stat.isFile()) {
+      throw new Error(`${articlePath}: image reference "${relativeTarget}" is not a file`);
+    }
+  }
+}
+
 async function validateArticle(slug, articleDir, knownTargets) {
   validateSlug(slug);
 
@@ -156,6 +213,7 @@ async function validateArticle(slug, articleDir, knownTargets) {
       );
     }
   }
+  await validateImageReferences(articlePath, articleDir, content);
   if (isPublishedArticle(slug, data) && !hasSourceLink(content)) {
     throw new Error(`${articlePath}: published articles must include at least one source link`);
   }
