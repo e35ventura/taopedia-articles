@@ -210,7 +210,7 @@ async function main() {
     try {
       const raw = await fs.readFile(articlePath, "utf8");
       const { data } = matter(raw);
-      articles.push({ slug, articleDir });
+      articles.push({ slug, articleDir, articlePath, published: isPublishedArticle(slug, data) });
       knownTargets.add(slug);
       if (typeof data.title === "string" && data.title.trim()) {
         knownTargets.add(slugifyWikiLink(data.title.trim()));
@@ -218,6 +218,24 @@ async function main() {
     } catch {
       // Skip folders without article content.
     }
+  }
+
+  // Every published article must map to a unique published slug. build-index.mjs walks
+  // index.mdx files recursively but derives each slug from the top-level content/pages/<slug>
+  // directory, so two articles nested under the same top-level directory would emit two index
+  // records for one slug, producing duplicate Taopedia routes and ambiguous [[wiki link]]
+  // resolution. Reject that collision here, where npm run validate already runs in CI.
+  const publishedSlugSources = new Map();
+  for (const { slug, articlePath, published } of articles) {
+    if (!published) continue;
+    const previous = publishedSlugSources.get(slug);
+    if (previous) {
+      const [first, second] = [previous, articlePath].map((p) => path.relative(root, p)).sort();
+      throw new Error(
+        `Duplicate published article slug "${slug}": "${first}" and "${second}" both resolve to the same Taopedia slug. Each published article must live at content/pages/<slug>/index.mdx with a unique <slug>.`
+      );
+    }
+    publishedSlugSources.set(slug, articlePath);
   }
 
   let count = 0;
