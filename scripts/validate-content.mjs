@@ -92,6 +92,46 @@ function validateTags(data, filePath) {
   }
 }
 
+// The complete set of documented front matter fields (README "Required Front
+// Matter" / "Optional fields") and the type each must have when present. Anything
+// outside this set is almost always a typo (e.g. "tag" for "tags", "titel" for
+// "title") that would silently drop data, so it is rejected rather than ignored.
+const FRONT_MATTER_SCHEMA = {
+  title: "string",
+  summary: "string",
+  category: "string",
+  tags: "array",
+  featured: "boolean",
+  draft: "boolean",
+  infoboxTitle: "string",
+  infoboxCaption: "string",
+  infoboxImage: "string",
+  infoboxRows: "array",
+};
+
+function frontMatterType(value) {
+  return Array.isArray(value) ? "array" : value === null ? "null" : typeof value;
+}
+
+function validateFrontMatterSchema(data, filePath) {
+  for (const [key, value] of Object.entries(data)) {
+    const expectedType = FRONT_MATTER_SCHEMA[key];
+    if (!expectedType) {
+      throw new Error(
+        `${filePath}: unknown front matter field "${key}"; allowed fields are ${Object.keys(
+          FRONT_MATTER_SCHEMA
+        ).join(", ")}`
+      );
+    }
+    const actualType = frontMatterType(value);
+    if (actualType !== expectedType) {
+      throw new Error(
+        `${filePath}: front matter field "${key}" must be of type ${expectedType}, but got ${actualType}`
+      );
+    }
+  }
+}
+
 function slugifyWikiLink(value) {
   return value
     .toLowerCase()
@@ -215,6 +255,7 @@ async function validateArticle(slug, articleDir, knownTargets) {
   }
 
   const { data, content } = matter(raw);
+  validateFrontMatterSchema(data, articlePath);
   validateTextField(data, "title", articlePath, 120);
   validateTextField(data, "summary", articlePath, 240);
   validateTextField(data, "category", articlePath, 60);
