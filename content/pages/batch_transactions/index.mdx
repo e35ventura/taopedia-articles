@@ -1,0 +1,91 @@
+---
+title: "Batch Transactions"
+summary:
+  "How Bittensor lets several chain calls be submitted as one transaction, and how the batch,
+  batch_all, and force_batch variants differ in handling a failed call."
+category: "Core Concepts"
+tags: ["Subtensor", "Transactions"]
+infoboxTitle: Batch Transactions
+infoboxCaption: Submitting multiple chain calls as a single transaction.
+infoboxRows:
+  - label: Layer
+    value: Subtensor
+  - label: Pallet
+    value: Utility
+  - label: Variants
+    value: batch, batch_all, force_batch
+  - label: Common use
+    value: Multi-hotkey staking
+---
+
+# Batch Transactions
+
+Batch transactions let a user submit several chain calls together as a single on-chain transaction.
+The official [Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions) page
+describes this capability as part of the Bittensor runtime's utility pallet, which bundles multiple
+calls so they settle in one transaction rather than as separate round-trips to the chain.
+
+## Why Batching Exists
+
+The official page frames batching as a way to avoid submitting many separate transactions for
+related actions. Bundling calls reduces the number of round-trips to the chain and makes it possible
+to treat a group of actions as one unit. At a Taopedia level, the key idea is that a batch is a
+single transaction wrapping several inner calls, not simply a faster way to run unrelated actions.
+
+Reference: [Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions)
+
+## The Three Batch Variants
+
+The same source describes three batch options that differ in how they handle a failing inner call.
+The `batch` option stops at the first failure, keeps the calls that already succeeded, and emits a
+`BatchInterrupted` event. The `batch_all` option is atomic: if any call fails, every call in the
+group is reverted together. The `force_batch` option continues past failures, skipping the calls
+that fail while applying the rest. Which one fits depends on whether partial success is acceptable
+for the actions being grouped.
+
+Reference: [Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions)
+
+## Common Uses
+
+The documentation lists staking to multiple hotkeys and performing several operations atomically as
+common applications. It also notes that the Bittensor SDK's `add_stake_multiple` and
+`unstake_multiple` helpers submit one extrinsic per hotkey rather than forming a single atomic
+batch, so they are convenience methods rather than true batched transactions. The distinction
+matters when a user needs all of the grouped actions to settle together.
+
+Reference: [Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions)
+
+## Proxy and Security Considerations
+
+The official page notes that the `Staking` proxy type does not permit batch wrappers as the outer
+call, so batched staking is described using the `NonTransfer` or `NonCritical` proxy types instead.
+It also recommends operating through scoped, delayed proxy coldkeys rather than a primary coldkey,
+so that batched activity is carried out under a more limited key. Taopedia treats these as security
+context rather than as setup instructions.
+
+Reference: [Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions)
+
+## Fee Behavior
+
+The page presents batching as a way to reduce cost by settling multiple operations in one on-chain
+transaction, with the detailed fee rules covered in the Bittensor fees documentation. The
+[Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees) page explains that
+grouped actions inherit fee behavior from their component calls, so a batch that contains a
+fee-bearing call can carry a fee while a batch of only fee-free calls can remain fee-free.
+
+References: [Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions),
+[Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees)
+
+## Careful Interpretation
+
+Batch behavior, proxy requirements, and fee handling can depend on the specific calls being grouped
+and on current chain behavior. Taopedia readers should use this article as conceptual orientation,
+not as a transaction-building or operating guide. For exact extrinsic names, current limits, and
+worked examples, use the official Bittensor documentation.
+
+Reference: [Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions)
+
+## Further Reading
+
+- [Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions)
+- [Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees)
