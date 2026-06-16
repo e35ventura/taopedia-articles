@@ -42,6 +42,19 @@ const unsafeContentPatterns = [
   { pattern: /\son[a-z]+\s*=/i, reason: "inline event handlers are not allowed" },
   { pattern: /\bjavascript\s*:/i, reason: "javascript: URLs are not allowed" },
   { pattern: /\bdata\s*:\s*text\/html/i, reason: "HTML data URLs are not allowed" },
+  // Mirror the app's image-URL sanitizer (article-image-assets.js): an SVG,
+  // XHTML, or script data URL — or a vbscript: URL — executes script when a
+  // link or image source is navigated to, so reject them in source alongside
+  // javascript: and data:text/html.
+  { pattern: /\bvbscript\s*:/i, reason: "vbscript: URLs are not allowed" },
+  {
+    pattern: /\bdata\s*:\s*(?:image\/svg\+xml|application\/xhtml\+xml)/i,
+    reason: "SVG and XHTML data URLs are not allowed (they can execute script)",
+  },
+  {
+    pattern: /\bdata\s*:\s*(?:text|application)\/(?:javascript|ecmascript)/i,
+    reason: "script data URLs are not allowed",
+  },
   { pattern: /\bset:html\b/i, reason: "raw HTML injection directives are not allowed" },
   { pattern: /\bclient:[a-z-]+\b/i, reason: "client directives are not allowed" },
 ];
