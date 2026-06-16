@@ -33,8 +33,8 @@ function isPublishedArticle(slug, data) {
 
 async function main() {
   await fs.mkdir(OUT_DIR, { recursive: true });
-  const out = await fs.open(OUT_JSONL, "w");
 
+  const entries = [];
   for await (const fp of walk(PAGES_DIR)) {
     const slug = slugFromPath(fp);
     if (!slug) continue;
@@ -48,10 +48,26 @@ async function main() {
     const category = normalizeString(data?.category) || null;
     const tags = Array.isArray(data?.tags) ? data.tags.map(normalizeString).filter(Boolean) : [];
 
-    const record = { slug, title, summary, category, tags };
-    await out.appendFile(JSON.stringify(record) + "\n");
+    entries.push({ fp, record: { slug, title, summary, category, tags } });
   }
 
+  // walk() yields files in fs.readdir order, which Node does not guarantee to be
+  // stable across machines or filesystems. Because CI regenerates and commits this
+  // index on every push (.github/workflows/build-index.yml), an unordered index can
+  // reorder spuriously between runs and produce noisy "chore(index): update index"
+  // diffs. Sort by slug in pure code-point order (no locale/ICU dependency) so the
+  // generated index is byte-identical everywhere; the source path is a deterministic
+  // final tiebreak for the validation-prevented impossible case of two equal slugs.
+  entries.sort(
+    (a, b) =>
+      (a.record.slug < b.record.slug ? -1 : a.record.slug > b.record.slug ? 1 : 0) ||
+      (a.fp < b.fp ? -1 : a.fp > b.fp ? 1 : 0)
+  );
+
+  const out = await fs.open(OUT_JSONL, "w");
+  for (const { record } of entries) {
+    await out.appendFile(JSON.stringify(record) + "\n");
+  }
   await out.close();
 
   // Optional: categories.json (uncomment to enable)
