@@ -224,7 +224,10 @@ async function validateArticle(slug, articleDir, knownTargets) {
     );
   }
   validateTags(data, articlePath);
-  for (const target of [...extractWikiLinks(content), ...extractWikiLinksFromValue(data)]) {
+  for (const target of [
+    ...extractWikiLinks(stripMarkdownCode(content)),
+    ...extractWikiLinksFromValue(data),
+  ]) {
     const normalizedTarget = slugifyWikiLink(target);
     if (!knownTargets.has(normalizedTarget)) {
       throw new Error(
@@ -234,7 +237,7 @@ async function validateArticle(slug, articleDir, knownTargets) {
   }
   await validateImageReferences(articlePath, articleDir, content);
   await validateInfoboxImage(articlePath, articleDir, data);
-  if (isPublishedArticle(slug, data) && !hasSourceLink(content)) {
+  if (isPublishedArticle(slug, data) && !hasSourceLink(stripMarkdownCode(content))) {
     throw new Error(`${articlePath}: published articles must include at least one source link`);
   }
   if (isPublishedArticle(slug, data) && hasFencedCodeBlock(content)) {
