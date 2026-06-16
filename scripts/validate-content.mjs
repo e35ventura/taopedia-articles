@@ -159,29 +159,48 @@ function stripMarkdownCode(content) {
     .replace(/`[^`\n]*`/g, "");
 }
 
-async function validateImageReferences(articlePath, articleDir, content) {
+// Resolve a local asset target relative to the article directory and require it
+// to be a file that stays inside that directory. Shared by the body image-
+// reference check and the infoboxImage front matter check.
+async function ensureLocalAssetFile(articlePath, articleDir, relativeTarget, label) {
   const articleRoot = path.resolve(articleDir);
+  const resolved = path.resolve(articleDir, relativeTarget);
+  if (resolved !== articleRoot && !resolved.startsWith(articleRoot + path.sep)) {
+    throw new Error(
+      `${articlePath}: ${label} "${relativeTarget}" must stay inside the article directory`
+    );
+  }
+  let stat;
+  try {
+    stat = await fs.stat(resolved);
+  } catch {
+    throw new Error(
+      `${articlePath}: ${label} "${relativeTarget}" does not resolve to a local asset`
+    );
+  }
+  if (!stat.isFile()) {
+    throw new Error(`${articlePath}: ${label} "${relativeTarget}" is not a file`);
+  }
+}
+
+async function validateImageReferences(articlePath, articleDir, content) {
   for (const match of stripMarkdownCode(content).matchAll(markdownImagePattern)) {
     const relativeTarget = localImageTarget(match[1]);
     if (relativeTarget === null) continue;
-    const resolved = path.resolve(articleDir, relativeTarget);
-    if (resolved !== articleRoot && !resolved.startsWith(articleRoot + path.sep)) {
-      throw new Error(
-        `${articlePath}: image reference "${relativeTarget}" must stay inside the article directory`
-      );
-    }
-    let stat;
-    try {
-      stat = await fs.stat(resolved);
-    } catch {
-      throw new Error(
-        `${articlePath}: image reference "${relativeTarget}" does not resolve to a local asset`
-      );
-    }
-    if (!stat.isFile()) {
-      throw new Error(`${articlePath}: image reference "${relativeTarget}" is not a file`);
-    }
+    await ensureLocalAssetFile(articlePath, articleDir, relativeTarget, "image reference");
   }
+}
+
+// infoboxImage may be a remote URL or a local path that the published site loads
+// as an article asset (the same way body images are loaded). Body image
+// references are resolution-checked above; apply the same check to a local
+// infoboxImage so a broken local path is caught here instead of failing to load
+// on the rendered card. Remote URLs (localImageTarget returns null) are left alone.
+async function validateInfoboxImage(articlePath, articleDir, data) {
+  if (typeof data.infoboxImage !== "string") return;
+  const relativeTarget = localImageTarget(data.infoboxImage);
+  if (relativeTarget === null) return;
+  await ensureLocalAssetFile(articlePath, articleDir, relativeTarget, "infoboxImage");
 }
 
 async function validateArticle(slug, articleDir, knownTargets) {
@@ -214,6 +233,7 @@ async function validateArticle(slug, articleDir, knownTargets) {
     }
   }
   await validateImageReferences(articlePath, articleDir, content);
+  await validateInfoboxImage(articlePath, articleDir, data);
   if (isPublishedArticle(slug, data) && !hasSourceLink(content)) {
     throw new Error(`${articlePath}: published articles must include at least one source link`);
   }
