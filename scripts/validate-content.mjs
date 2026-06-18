@@ -197,7 +197,10 @@ async function validateImageReferences(articlePath, articleDir, content) {
 // infoboxImage so a broken local path is caught here instead of failing to load
 // on the rendered card. Remote URLs (localImageTarget returns null) are left alone.
 async function validateInfoboxImage(articlePath, articleDir, data) {
-  if (typeof data.infoboxImage !== "string") return;
+  if (data.infoboxImage === undefined || data.infoboxImage === null) return;
+  if (typeof data.infoboxImage !== "string") {
+    throw new Error(`${articlePath}: front matter field "infoboxImage" must be a string`);
+  }
   const relativeTarget = localImageTarget(data.infoboxImage);
   if (relativeTarget === null) return;
   await ensureLocalAssetFile(articlePath, articleDir, relativeTarget, "infoboxImage");
