@@ -183,11 +183,20 @@ async function ensureLocalAssetFile(articlePath, articleDir, relativeTarget, lab
   }
 }
 
+// Resolve a single Markdown image/asset target the way the published site loads
+// it: parse the target, skip remote/empty/fragment targets (localImageTarget
+// returns null), and verify a local target resolves to a file inside the article
+// directory. Shared by body image references and the infoboxImage field so both
+// asset-reference paths apply identical resolution logic.
+async function validateLocalAsset(articlePath, articleDir, rawTarget, label) {
+  const relativeTarget = localImageTarget(rawTarget);
+  if (relativeTarget === null) return;
+  await ensureLocalAssetFile(articlePath, articleDir, relativeTarget, label);
+}
+
 async function validateImageReferences(articlePath, articleDir, content) {
   for (const match of stripMarkdownCode(content).matchAll(markdownImagePattern)) {
-    const relativeTarget = localImageTarget(match[1]);
-    if (relativeTarget === null) continue;
-    await ensureLocalAssetFile(articlePath, articleDir, relativeTarget, "image reference");
+    await validateLocalAsset(articlePath, articleDir, match[1], "image reference");
   }
 }
 
@@ -198,9 +207,7 @@ async function validateImageReferences(articlePath, articleDir, content) {
 // on the rendered card. Remote URLs (localImageTarget returns null) are left alone.
 async function validateInfoboxImage(articlePath, articleDir, data) {
   if (typeof data.infoboxImage !== "string") return;
-  const relativeTarget = localImageTarget(data.infoboxImage);
-  if (relativeTarget === null) return;
-  await ensureLocalAssetFile(articlePath, articleDir, relativeTarget, "infoboxImage");
+  await validateLocalAsset(articlePath, articleDir, data.infoboxImage, "infoboxImage");
 }
 
 async function validateArticle(slug, articleDir, knownTargets) {
