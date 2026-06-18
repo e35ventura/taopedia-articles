@@ -78,13 +78,17 @@ function validateTags(data, filePath) {
     throw new Error(`${filePath}: use at most 3 tags`);
   }
   for (const tag of data.tags) {
-    if (typeof tag !== "string" || !tag.trim()) {
+    if (typeof tag !== "string") {
       throw new Error(`${filePath}: tags must be non-empty strings`);
     }
-    if (tag.length > 40) {
+    const normalizedTag = tag.trim();
+    if (!normalizedTag) {
+      throw new Error(`${filePath}: tags must be non-empty strings`);
+    }
+    if (normalizedTag.length > 40) {
       throw new Error(`${filePath}: tags must be 40 characters or fewer`);
     }
-    if (tag.toLowerCase() === "bittensor") {
+    if (normalizedTag.toLowerCase() === "bittensor") {
       throw new Error(
         `${filePath}: do not use "Bittensor" as a tag; every Taopedia article is already Bittensor-focused`
       );
