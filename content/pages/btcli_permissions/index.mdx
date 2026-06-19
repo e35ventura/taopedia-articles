@@ -1,0 +1,125 @@
+---
+title: "Bittensor CLI: Permissions Guide"
+summary:
+  "How BTCLI permissions map Bittensor command-line actions to permissionless reads, hotkey
+  authority, coldkey authority, balances, validator permits, and Senate roles."
+category: "Tools"
+tags: ["Tools", "Security"]
+infoboxTitle: BTCLI Permissions
+infoboxCaption: Permission model for Bittensor command-line actions.
+infoboxRows:
+  - label: Tool
+    value: BTCLI
+  - label: Lowest authority
+    value: Public-key reads
+  - label: Operational authority
+    value: Hotkey
+  - label: Highest authority
+    value: Coldkey
+  - label: Scope
+    value: Concept article
+---
+
+# Bittensor CLI: Permissions Guide
+
+The Bittensor CLI permissions guide explains why different BTCLI actions require different forms of
+authority. The official
+[Bittensor CLI: Permissions Guide](https://docs.learnbittensor.org/btcli/btcli-permissions) says
+some actions require a coldkey private key, some require a hotkey private key, and some require no
+private key at all. It also notes that some actions depend on balances, validator permits, subnet
+roles, or Senate participation.
+
+This article summarizes that permission model without reproducing the command matrix. The important
+point for readers is that "can run BTCLI" is not the same as "can perform every BTCLI action." The
+authority depends on which key is present, what role the account has, and whether the action is a
+read, a signature, or an on-chain state change.
+
+## Permission Model
+
+BTCLI permissions are easiest to read as layers. A permissionless layer uses public information and
+does not need private wallet material. A hotkey layer covers operational activity for mining,
+validation, and subnet participation. A coldkey layer covers ownership-sensitive actions such as
+balances, stake, hotkey management, subnet ownership, and some governance actions.
+
+Those layers are about authority, not just software installation. The same command-line interface
+can be used on different workstations, but a workstation with only public keys cannot sign the same
+actions as a workstation that holds hotkey or coldkey material.
+
+## Permissionless Reads
+
+Permissionless BTCLI work uses public chain data. Public keys can identify wallets, subnets,
+validators, miners, balances, and stake records without exposing a private key. That is why
+read-only inspection belongs in the lowest-risk category of the permission model.
+
+This category matters because it separates observation from action. A user can inspect public
+network state without making a transaction, changing a balance, registering a UID, setting weights,
+or casting a vote. If a task only answers "what is currently visible on chain," it should not
+require private signing authority.
+
+## Coldkey Authority
+
+Coldkey authority is the highest-risk part of the BTCLI permission model. The official guide
+describes the coldkey as the primary, fully privileged key, and the wallet docs frame it as the key
+used for sensitive operations such as transfers, staking, subnet management, governance functions,
+and hotkey management.
+
+The practical implication is that coldkey-required actions should be treated differently from
+ordinary queries. A coldkey can authorize changes that affect TAO, alpha stake, subnet ownership, or
+the relationship between coldkeys and hotkeys. Losing or leaking that authority is therefore a
+wallet-security issue, not merely a local CLI inconvenience.
+
+## Hotkey Authority
+
+Hotkeys are operational keys. The permissions guide associates hotkeys with miner and validator
+activity, including serving requests, making signed requests, setting weights, and being visible to
+stakers and network participants. A hotkey does not have the same ownership authority as a coldkey,
+but it can still affect a participant's operational reputation and subnet behavior.
+
+This distinction prevents two common mistakes. First, a hotkey leak should not be treated as
+harmless just because it cannot directly transfer the primary coldkey's balance. Second, a coldkey
+should not be placed in a hotkey workstation simply because both keys are used somewhere in BTCLI.
+
+## Balance and Resource Requirements
+
+Not every requirement is a key requirement. Some BTCLI actions depend on available TAO, alpha stake,
+registration burns, fees, or other chain resources. The permissions guide separates these resource
+requirements from key authority: an action may have the right signer and still fail if the required
+balance or resource condition is not met.
+
+For readers, this means "permission" has more than one meaning. There is cryptographic permission to
+sign, role permission to act in a particular network position, and economic capacity to pay or lock
+the required amount. A clear article should identify which kind of requirement it is describing.
+
+## Role-Based Requirements
+
+Some actions depend on network role rather than only key possession. Examples in the official guide
+include validator permits and Senate requirements. A key may be able to sign a transaction while the
+account still lacks the network status needed for a specific action.
+
+This is especially important for governance and validation topics. A senator-related action requires
+Senate eligibility, and a validator-weight action depends on validation requirements. BTCLI can
+expose the workflow, but the chain still enforces the relevant role boundary.
+
+## Workstation Context
+
+The permissions model connects directly to workstation security. A permissionless workstation can
+inspect public data. A hotkey workstation supports miner or validator operation. A coldkey
+workstation carries much higher authority. The official workstation-security guidance treats these
+as different risk environments rather than interchangeable devices.
+
+A good reader-facing summary should therefore ask two questions: what authority does this BTCLI
+action require, and where should that authority live? The safest answer is often to keep public
+inspection, hotkey operation, and coldkey custody in separate environments.
+
+## Reader Boundary
+
+This article explains the permission model. It does not list every BTCLI subcommand, duplicate the
+reference table, or provide wallet procedures. For the exact current command requirements, readers
+should use the official BTCLI permissions guide and reference documentation.
+
+## Further Reading
+
+- [Bittensor CLI: Permissions Guide](https://docs.learnbittensor.org/btcli/btcli-permissions)
+- [BTCLI Reference](https://docs.learnbittensor.org/btcli)
+- [Wallets, Coldkeys and Hotkeys in Bittensor](https://docs.learnbittensor.org/keys/wallets)
+- [Coldkey and Hotkey Workstation Security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security)
