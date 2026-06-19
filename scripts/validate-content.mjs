@@ -84,7 +84,7 @@ function validateTags(data, filePath) {
     if (tag.length > 40) {
       throw new Error(`${filePath}: tags must be 40 characters or fewer`);
     }
-    if (tag.toLowerCase() === "bittensor") {
+    if (tag.trim().toLowerCase() === "bittensor") {
       throw new Error(
         `${filePath}: do not use "Bittensor" as a tag; every Taopedia article is already Bittensor-focused`
       );
