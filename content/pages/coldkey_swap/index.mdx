@@ -82,6 +82,58 @@ of who ultimately owns the wallet.
 References: [Rotate or Swap your Coldkey](https://docs.learnbittensor.org/keys/coldkey-swap),
 [Coldkey and Hotkey Workstation Security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security)
 
+## What Happens During the Lock Period
+
+Once a coldkey swap is initiated, the wallet enters a restricted period before finalization. The
+official [Rotate or Swap your Coldkey](https://docs.learnbittensor.org/keys/coldkey-swap)
+documentation explains that initiation publishes the destination as a hash and triggers a mandatory
+waiting period during which the wallet is locked against transfers and staking.
+
+For readers, that lock is part of the design rather than an incidental delay. The owner cannot keep
+rearranging balances or stake while the migration is pending, which reduces the chance that a
+compromised key continues moving assets during recovery. The lock period also gives observers time
+to notice an unexpected swap announcement before the identity migration completes.
+
+Reference: [Rotate or Swap your Coldkey](https://docs.learnbittensor.org/keys/coldkey-swap)
+
+## Why the Dispute Window Exists
+
+The documentation describes a pending lock-out period — currently about 36,000 blocks, roughly five
+days — before the swap can finalize. During that window the swap can be disputed but not completed.
+The Subtensor
+[coldkey swap implementation](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_coldkey.rs)
+implements that staged sequence and its dispute path on chain.
+
+The dispute window matters when a swap was not authorized by the true coldkey owner. The official
+coldkey swap documentation and SDK material describe disputing as an action the coldkey with an
+active announcement can call, requiring the coldkey private key. If an attacker gained temporary
+access and announced a migration to an attacker-controlled destination, the legitimate coldkey owner
+has time to dispute the pending swap before the identity move becomes final. A coldkey swap is
+therefore not an instant key handoff; it is a deliberate recovery process with a public waiting
+period built in.
+
+References: [Rotate or Swap your Coldkey](https://docs.learnbittensor.org/keys/coldkey-swap),
+[Subtensor coldkey swap source code](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_coldkey.rs)
+
+## Coldkey Swap Versus Hotkey Swap
+
+Coldkey swap and hotkey swap solve different security problems. A coldkey swap migrates the full
+on-chain identity — balances, registrations, and ownership tied to the coldkey — to a new coldkey
+pair. A hotkey swap rotates subnet participation from one operational hotkey to another while the
+same coldkey remains in control.
+
+The security documentation recommends hotkey swap when an operational key may have leaked but the
+coldkey is still trusted. Coldkey swap is the heavier recovery path when the security-critical key
+itself may be compromised. Readers should not treat the two operations as interchangeable: one
+changes wallet identity at the coldkey layer, the other changes the operational hotkey that carries
+subnet-facing work under an unchanged coldkey owner. Choosing the wrong recovery path can either
+leave a compromised coldkey in control or trigger unnecessary identity migration when only the
+operational key needed rotation.
+
+References: [Rotate or Swap your Coldkey](https://docs.learnbittensor.org/keys/coldkey-swap),
+[Coldkey and Hotkey Workstation Security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security),
+[Wallets, Coldkeys and Hotkeys in Bittensor](https://docs.learnbittensor.org/keys/wallets)
+
 ## Reader Boundary
 
 Coldkey swap should not be read as a step-by-step command guide, a live parameter quote, or a
