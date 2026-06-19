@@ -100,6 +100,56 @@ rate-limit state at the time of the action. Those details belong to wallet and c
 The concept itself names the Bittensor operation that rotates subnet participation from one
 same-coldkey hotkey to another.
 
+## Post-Leak Recovery Workflow
+
+The security documentation frames hotkey swap as the response when a hotkey may have leaked. In that
+situation, the coldkey owner creates a replacement hotkey under the same coldkey and submits the
+swap so subnet participation continues under the fresh operational key rather than the exposed one.
+
+That workflow is intentionally narrow. It addresses compromised or outdated operational keys without
+treating the coldkey as lost and without moving wallet custody to a different owner. Operators
+should still isolate the old hotkey from further use after rotation, because the swap rehomes
+on-chain participation but does not erase the fact that the previous key was exposed. The coldkey
+remains the authority that approves the replacement and pays the documented recycling fee.
+
+References:
+[Coldkey and Hotkey Workstation Security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security),
+[Wallets, Coldkeys and Hotkeys in Bittensor](https://docs.learnbittensor.org/keys/wallets)
+
+## All-Subnet Versus Per-Subnet Rotation Scope
+
+Subtensor supports hotkey swap paths that can apply across all subnets or target a specific subnet.
+The implementation moves associated state from the old hotkey to the new one within the chosen
+scope, which matters when a participant holds roles on more than one subnet. Choosing the wrong
+scope can leave participation on the old hotkey for subnets the operator meant to rotate.
+
+A participant rotating one compromised hotkey on a single subnet may need a per-subnet swap, while a
+broader operational refresh may use the all-subnet path described in the implementation. Readers
+should match the swap scope to the subnets they actually need to rehome, because the operation is
+not automatically limited to one network unless the chosen path says so. Wallet tooling and chain
+state determine which path is available at submission time.
+
+Reference:
+[Subtensor hotkey swap implementation](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs)
+
+## Delegated Stake Continuity After Swap
+
+The security guide states that hotkey swap moves subnet registration to the replacement hotkey,
+including stake delegated by other users. That continuity matters for validators and other
+participants whose economic role is tied to a hotkey identity rather than to the coldkey name alone.
+
+Delegators who staked toward the old hotkey should read the swap as a change of operational target,
+not as an automatic unstake or transfer of coldkey authority. The coldkey owner still authorizes the
+rotation, and the documented behavior preserves delegated stake on the new hotkey within the
+same-coldkey boundary described in the official security and wallet documentation. Anyone reviewing
+delegation after a swap should confirm the new hotkey identity on chain rather than assuming the old
+operational key still receives stake. That check matters most when multiple hotkeys exist under one
+coldkey.
+
+References:
+[Coldkey and Hotkey Workstation Security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security),
+[Conviction and locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking)
+
 ## Relationship to Hotkeys
 
 Hotkey swap and the hotkey concept are inseparable in reader terms. The
