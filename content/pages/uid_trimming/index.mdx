@@ -1,0 +1,83 @@
+---
+title: "UID Trimming"
+summary:
+  "How UID trimming lets a Bittensor subnet owner reduce neuron UIDs by emission, while preserving
+  immune UIDs and compressing the rest."
+category: "Subnets"
+tags: ["Subnets"]
+infoboxTitle: UID Trimming
+infoboxCaption: Owner-side reduction of subnet neuron UIDs.
+infoboxRows:
+  - label: Context
+    value: Subnet management
+  - label: Selects by
+    value: Emission score
+  - label: Rate limit
+    value: ~30 days (216,000 blocks)
+  - label: Article scope
+    value: Concept only
+---
+
+# UID Trimming
+
+UID trimming is a Bittensor subnet-management feature that lets a subnet owner reduce the number of
+neuron UIDs registered on their subnet. The official
+[UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming) documentation describes it as a
+way to lower a subnet's UID count while compressing the remaining UIDs so indexing stays
+consecutive.
+
+## Why Subnets Trim UIDs
+
+A subnet's UID count shapes how many neuron slots exist for miners and validators. The UID trimming
+documentation frames the feature as owner-side control over that capacity, letting an owner shrink
+an oversized subnet rather than carry slots that are not earning their place.
+
+Trimming is designed to be safe for strong participants. The documentation states that high-earning
+neurons and immune neurons are preserved, so trimming targets weak slots rather than removing
+contributors indiscriminately.
+
+References: [UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming),
+[Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)
+
+## How Trimming Selects UIDs
+
+Selection is emission-based. The documentation describes sorting UIDs by emission score and removing
+from the lowest emitters upward, while skipping UIDs that are temporally immune or owned by the
+subnet owner. After removal, the remaining UIDs are compressed to the left so the index stays
+consecutive, and associated storage is migrated and cleaned up.
+
+The on-chain behavior behind this lives in the Subtensor
+[subnet UID source code](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/uids.rs).
+For readers, the key idea is that trimming is a ranked cull of the weakest non-immune slots, not a
+random reduction.
+
+References: [UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming),
+[Subtensor subnet UID source code](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/uids.rs)
+
+## Limits and Rate Limiting
+
+UID trimming is bounded. The documentation states a trim rate limit of 216,000 blocks, roughly 30
+days, so an owner can change the UID count only once in that window. It also notes configurable
+minimum and maximum UID counts, with a current minimum trim target of 64 and a cap that immune UIDs
+must not exceed a large share of the maximum count.
+
+These bounds connect UID trimming to the broader
+[Rate Limits in Bittensor](https://docs.learnbittensor.org/learn/chain-rate-limits) model, which
+spaces sensitive chain actions over time.
+
+References: [UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming),
+[Rate Limits in Bittensor](https://docs.learnbittensor.org/learn/chain-rate-limits)
+
+## Reader Boundary
+
+UID trimming should not be read as a step-by-step owner guide, a live parameter quote, or a
+recommendation about any specific subnet's size. The minimum count, rate limit, and immune-share cap
+can change on chain, so current values belong in official references and live chain state. This
+article describes the concept of reducing and compacting a subnet's UID set.
+
+## Further Reading
+
+- [UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming)
+- [Rate Limits in Bittensor](https://docs.learnbittensor.org/learn/chain-rate-limits)
+- [Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)
+- [Subtensor subnet UID source code](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/uids.rs)
