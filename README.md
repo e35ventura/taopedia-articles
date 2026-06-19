@@ -116,6 +116,21 @@ npm run validate
 npm run build:index
 ```
 
+## Creating Mergeable PR Batches
+
+Maintainers can split a source branch into a continuous batch of PRs. In the default `direct` mode,
+each generated branch cherry-picks one commit, validates it, opens a PR against `test`, enables
+auto-merge, and waits for the PR to merge before creating the next one.
+
+Local example:
+
+```bash
+SOURCE_REF=codex/upstream-test-base BASE_REF=test COUNT=100 START_AT=1 AUTO_MERGE=true WAIT_FOR_MERGE=true npm run prs:stack
+```
+
+The same flow is available from GitHub Actions as **Create mergeable PRs**. Use `start_at` to
+continue with the next batch, for example `START_AT=101` after creating the first 100 PRs.
+
 ## Contributing
 
 Read [CONTRIBUTING.md](./CONTRIBUTING.md) before opening a PR.

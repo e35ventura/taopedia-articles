@@ -1,0 +1,98 @@
+name: Create mergeable PRs
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_ref:
+        description: Branch, tag, or ref containing commits to split into stacked PRs
+        required: true
+      base_ref:
+        description: First PR base branch
+        required: true
+        default: test
+      count:
+        description: Number of stacked PRs to create
+        required: true
+        default: "100"
+      start_at:
+        description: 1-based commit offset in base_ref..source_ref
+        required: true
+        default: "1"
+      branch_prefix:
+        description: Prefix for generated branches
+        required: true
+        default: codex/mergeable
+      mode:
+        description:
+          direct targets every PR at base_ref; stacked targets each PR at the previous branch
+        required: true
+        default: direct
+      draft:
+        description: Create draft PRs
+        type: boolean
+        default: false
+      validate_each:
+        description: Run npm run validate on each generated branch
+        type: boolean
+        default: true
+      auto_merge:
+        description: Enable GitHub auto-merge for each PR
+        type: boolean
+        default: true
+      wait_for_merge:
+        description: Wait for each PR to merge before creating the next PR
+        type: boolean
+        default: true
+      merge_method:
+        description: Merge method passed to gh pr merge
+        required: true
+        default: squash
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: create-mergeable-prs-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  create:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.base_ref }}
+
+      - name: Configure git author
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create stacked PRs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SOURCE_REF: ${{ inputs.source_ref }}
+          BASE_REF: ${{ inputs.base_ref }}
+          COUNT: ${{ inputs.count }}
+          START_AT: ${{ inputs.start_at }}
+          BRANCH_PREFIX: ${{ inputs.branch_prefix }}
+          MODE: ${{ inputs.mode }}
+          DRAFT: ${{ inputs.draft }}
+          VALIDATE_EACH: ${{ inputs.validate_each }}
+          AUTO_MERGE: ${{ inputs.auto_merge }}
+          WAIT_FOR_MERGE: ${{ inputs.wait_for_merge }}
+          MERGE_METHOD: ${{ inputs.merge_method }}
+        run: bash scripts/create-stacked-prs.sh
