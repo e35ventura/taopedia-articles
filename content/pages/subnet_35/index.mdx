@@ -7,41 +7,64 @@ category: "Subnets"
 tags: ["Subnets"]
 ---
 
-OxMarkets is Bittensor Subnet 35, a liquidity-focused subnet whose registered identity describes it
-as liquidity infrastructure for the 0xMarkets perpetuals exchange. The GitHub repository listed in
-the subnet's Finney identity is
-[General-Tao-Ventures/cartha-validator](https://github.com/General-Tao-Ventures/cartha-validator),
-which the README describes as the official validator implementation for the Cartha subnet.
+OxMarkets is Bittensor Subnet 35. Public Cartha validator materials describe it as a
+liquidity-focused subnet where miner scores come from verified USDC liquidity positions and
+validators publish the resulting weights to Bittensor.
 
 ## What OxMarkets Provides
 
-The Cartha Validator README describes a validator system that scores miners from their USDC
-liquidity positions and publishes weights to the Bittensor network. In this design, miner scoring is
-based on position data such as locked amount, lock duration, pool weights, and whether positions or
-participants are still eligible for the current epoch.
+The
+[Cartha Validator README](https://raw.githubusercontent.com/General-Tao-Ventures/cartha-validator/main/README.md)
+describes a validator system that scores miners from USDC liquidity positions, computes weights, and
+publishes those weights to the Bittensor network. Miner scoring is tied to position data such as
+locked amount, lock duration, pool weights, and eligibility for the current epoch.
 
-For Bittensor readers, the important point is that Subnet 35 maps liquidity commitments into subnet
-weights. Validators replay and verify position data, compute miner scores, normalize those scores
-into weights, and submit those weights to [[Yuma Consensus]].
+Subnet 35 maps liquidity commitments into subnet weights. Validators replay and verify position
+data, compute miner scores, normalize those scores into weights, and submit those weights to
+[[Yuma Consensus]].
+
+## Weekly Epoch Context
+
+The
+[architecture guide](https://raw.githubusercontent.com/General-Tao-Ventures/cartha-validator/main/docs/ARCHITECTURE.md)
+describes the validator as operating on a weekly epoch cycle. At the start of an epoch, the
+validator fetches a frozen miner snapshot from the verifier, scores eligible positions, caches
+weights for the week, and republishes those weights during Bittensor epochs.
+
+That weekly structure matters because liquidity positions can change over time. Freezing the epoch
+snapshot gives the validator a stable scoring set, while daily expiry checks let the system remove
+expired pools or deregistered hotkeys before weights are republished.
 
 ## Miner and Validator Roles
 
 Miners participate through liquidity positions that the validator system can verify for a scoring
-epoch. The README describes miner scores as aggregating eligible positions, while filtering out
-expired pools and deregistered participants.
+epoch. The architecture guide describes each position as contributing separately to a miner's raw
+score, so multiple positions with different lock durations can each affect the final weight.
 
 Validators run the scoring and publication side of the subnet. The README describes weekly epoch
 handling, verifier-based miner queries, score calculation, weight normalization, and repeated weight
-publication across Bittensor epochs. Operators should treat the repository as the source of truth
-for current participant guidance.
+publication across Bittensor epochs.
+
+## Evaluation Context
+
+OxMarkets' evaluation context is liquidity commitment rather than model inference. The subnet is not
+asking miners to generate text, classify media, or run scientific simulations. It is measuring
+verified liquidity positions and translating those positions into on-chain weights.
+
+The architecture guide describes score construction as a combination of pool weight, locked USDC
+amount, and lock-duration boost, with expired pools and deregistered hotkeys excluded. That makes
+the scoring signal depend on capital commitment, time commitment, and current eligibility rather
+than only on wallet registration.
+
+The guide also describes a fixed incentive-pool allocation and proportional miner weighting for the
+remaining miner allocation. In practice, Subnet 35 routes rewards toward liquidity providers whose
+positions qualify under the current weekly scoring snapshot.
 
 ## On-Chain Identity
 
-Live SN35 data is available on [TaoStats](https://taostats.io/subnets/35). The live Finney identity
-for netuid 35 registers the subnet name as OxMarkets, with the description "Liquidity-as-a-Service
-subnet powering 0xMarkets - a permissionless perp DEX for FX, crypto, and commodities." The
-registered project website is [0xmarkets.io](https://www.0xmarkets.io/) and the GitHub repository is
-[General-Tao-Ventures/cartha-validator](https://github.com/General-Tao-Ventures/cartha-validator).
+Live SN35 subnet data is available on [TaoStats](https://taostats.io/subnets/35). The source-backed
+liquidity-position and validator-weighting details in this article come from public Cartha validator
+materials rather than from live identity fields.
 
 ## Further Reading
 
