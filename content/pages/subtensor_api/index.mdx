@@ -1,155 +1,119 @@
 ---
 title: "Subtensor API"
 summary:
-  "How the Bittensor Python SDK provides modular synchronous and asynchronous access to Subtensor."
+  "How the Bittensor Python SDK groups Subtensor access into a modular client interface for
+  developers."
 category: "Tools"
 tags: ["SDK", "Subtensor", "Interfaces"]
 infoboxTitle: Subtensor API
 infoboxCaption: Modular SDK access to Bittensor's blockchain layer.
 infoboxRows:
-  - label: Current class
-    value: "`SubtensorApi`"
-  - label: Package
-    value: "`bittensor.extras.subtensor_api`"
-  - label: Client modes
-    value: Synchronous and asynchronous
-  - label: Purpose
-    value: Programmatic chain access
+  - label: Layer
+    value: Bittensor Python SDK
+  - label: Accesses
+    value: "[[subtensor|Subtensor]]"
+  - label: Form
+    value: Modular client interface
+  - label: Related
+    value: "[[bittensor_tools|Bittensor Tools]]"
 ---
 
 # Subtensor API
 
-The Subtensor API is an optional interface in the Bittensor Python SDK that groups blockchain
-operations into functional modules.
+The Subtensor API is a developer-facing interface in the Bittensor Python SDK. The official
+[Subtensor API](https://docs.learnbittensor.org/sdk/subtensor-api) guide describes it as an optional
+modular entry point for reaching Subtensor features through grouped client operations instead of one
+flat method list.
 
-The official guide refers to the interface as `SubtensorAPI`, while the current SDK implementation
-exposes the Python class as `SubtensorApi`. The naming difference does not identify a separate
-protocol. `SubtensorApi` is a client-side interface used by applications to interact with
-[[Subtensor]], Bittensor's blockchain layer.
-
-Sources: [Subtensor API](https://docs.learnbittensor.org/sdk/subtensor-api),
-[current SDK implementation](https://github.com/latent-to/bittensor/blob/master/bittensor/extras/subtensor_api/__init__.py)
-
-## Unified Client Interface
-
-By default, `SubtensorApi` wraps the synchronous `Subtensor` client. When asynchronous mode is
-enabled, it wraps `AsyncSubtensor`.
-
-This gives applications one organized entry point while preserving the execution model of the
-underlying client. Asynchronous operations still require asynchronous calling and context-management
-patterns. Selecting asynchronous mode does not make ordinary synchronous code concurrent
-automatically.
+For Taopedia readers, the useful distinction is scope. [[subtensor|Subtensor]] is Bittensor's
+blockchain layer and system of record. The Subtensor API is a software access surface that helps
+applications connect to that layer. It exposes protocol operations without becoming the protocol
+rule that validates them.
 
 Sources: [Subtensor API](https://docs.learnbittensor.org/sdk/subtensor-api),
-[current SDK implementation](https://github.com/latent-to/bittensor/blob/master/bittensor/extras/subtensor_api/__init__.py)
+[Bittensor Tools](https://docs.learnbittensor.org/concepts/tools)
 
-## Module Organization
+## Interface, Not Protocol
 
-The interface groups related methods behind module properties instead of exposing every operation
-through one flat method list.
+The Subtensor API organizes related SDK operations by topic areas such as chain queries, staking,
+subnet activity, wallet access, and submitted chain actions. That grouping helps discovery in client
+code. It does not create new runtime pallets, consensus rules, subnet mechanisms, or blockchain
+services.
 
-The current implementation includes modules for:
-
-- chain interaction;
-- commitments and reveals;
-- crowdloans;
-- delegates;
-- extrinsics;
-- metagraphs;
-- MEV Shield;
-- neurons;
-- proxies;
-- queries;
-- staking;
-- subnets;
-- wallets.
-
-These modules organize SDK methods for discoverability. They do not create new runtime pallets,
-consensus rules, blockchain services, or subnet mechanisms.
+The official guide also distinguishes synchronous and asynchronous client modes. That choice affects
+how an application reaches the SDK, not how Subtensor validates a submitted action on chain.
 
 Sources: [Subtensor API](https://docs.learnbittensor.org/sdk/subtensor-api),
-[Subtensor API source directory](https://github.com/latent-to/bittensor/tree/master/bittensor/extras/subtensor_api)
-
-## Import Location and Compatibility
-
-In Bittensor SDK v10, `SubtensorApi` is provided through the optional
-`bittensor.extras.subtensor_api` package. The SDK also provides a top-level convenience import for
-the class.
-
-The `legacy_methods` setting can add methods from the traditional `Subtensor` interface to the root
-level of `SubtensorApi`. This supports applications that depend on the older method-access pattern
-while allowing newer code to use the grouped module structure.
-
-Compatibility mode changes how client code reaches SDK methods. It does not change the corresponding
-runtime rules or chain state.
-
-Sources: [Bittensor SDK v10 Migration Guide](https://docs.learnbittensor.org/sdk/migration-guide),
-[current SDK implementation](https://github.com/latent-to/bittensor/blob/master/bittensor/extras/subtensor_api/__init__.py)
-
-## Endpoint Configuration
-
-`SubtensorApi` accepts configuration for the selected network, fallback endpoints, archive
-endpoints, connection retries, verbose logging, mock operation, and asynchronous websocket shutdown
-behavior.
-
-Fallback endpoints provide alternative connections when the primary endpoint is unavailable. Archive
-endpoints can be used when an application requests historical blocks that are no longer available
-from the current node.
-
-These are client connection settings. They do not guarantee that an endpoint is available, that
-submitted extrinsics will succeed, or that returned information belongs to a different network than
-the endpoint being queried.
-
-Sources: [Subtensor API](https://docs.learnbittensor.org/sdk/subtensor-api),
-[current SDK implementation](https://github.com/latent-to/bittensor/blob/master/bittensor/extras/subtensor_api/__init__.py)
-
-## Context Management
-
-The interface supports context management for both client modes.
-
-A synchronous instance can be used with a synchronous context manager, while an asynchronous
-instance can be used with an asynchronous context manager. Mixing the synchronous instance with an
-asynchronous context manager, or the asynchronous instance with a synchronous context manager, is
-not supported.
-
-Context management matters because each underlying Subtensor client maintains a blockchain
-connection that should be closed when it is no longer needed.
-
-Sources:
-[Managing Subtensor Connections](https://docs.learnbittensor.org/sdk/managing-subtensor-connections),
-[current SDK implementation](https://github.com/latent-to/bittensor/blob/master/bittensor/extras/subtensor_api/__init__.py)
+[Managing Subtensor Connections](https://docs.learnbittensor.org/sdk/managing-subtensor-connections)
 
 ## Relationship to Bittensor Tools
 
-`SubtensorApi` belongs to the developer-library side of [[Bittensor Tools]].
+The Subtensor API belongs on the developer-library side of [[bittensor_tools|Bittensor Tools]].
+Libraries, terminal interfaces, and wallet interfaces all help people and software reach Bittensor
+features, but they sit around the protocol rather than replacing it.
 
-The distinction is:
+For readers, the Subtensor API should be read as one programmatic access surface within that tool
+family. It can support applications that query network state, prepare submissions, monitor activity,
+or integrate wallet and subnet workflows. Those uses still depend on Subtensor rules, selected
+network context, and the surrounding SDK version.
 
-- [[Subtensor]] is the blockchain layer being accessed;
-- `SubtensorApi` is a Python SDK access interface;
-- its modules organize related client operations;
-- [[Extrinsics]] are submitted chain actions available through parts of that interface;
-- command-line and wallet interfaces provide different ways to interact with the same broader
-  ecosystem.
+Sources: [Bittensor Tools](https://docs.learnbittensor.org/concepts/tools),
+[Subtensor API](https://docs.learnbittensor.org/sdk/subtensor-api)
 
-A client interface can expose protocol operations without becoming the protocol rule that validates
-those operations.
+## Relationship to Subtensor
+
+[[subtensor|Subtensor]] records transactions, rankings, and incentive-related chain activity. The
+Subtensor API helps software reach that chain layer through the SDK. A successful client call still
+depends on live network state, account permissions, and runtime rules on the connected chain.
+
+This keeps two ideas separate that can otherwise blur together. Subtensor is the blockchain layer
+being accessed. The Subtensor API is the client-side interface that helps applications interact with
+it. Network reads and submitted actions observed through the SDK still belong to Subtensor's
+reference surfaces, not to the SDK interface itself.
+
+References: [Glossary: Subtensor](https://docs.learnbittensor.org/resources/glossary#subtensor),
+[Subtensor API](https://docs.learnbittensor.org/sdk/subtensor-api)
+
+## Relationship to Extrinsics
+
+[[extrinsics|Extrinsics]] are submitted chain actions that ask the Subtensor runtime to change state
+or perform a supported operation. The Subtensor API can expose paths for preparing and submitting
+those actions, but an extrinsic remains a runtime request rather than an SDK method.
+
+For readers, the Subtensor API helps software reach extrinsic-related workflows. Whether a
+submission succeeds still depends on runtime validation, fees, account state, and the selected
+network environment.
+
+References: [Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics),
+[Subtensor API](https://docs.learnbittensor.org/sdk/subtensor-api)
+
+## Naming Note
+
+Official SDK documentation often writes the interface name as SubtensorAPI, while the current Python
+implementation exposes SubtensorApi. That difference is naming and packaging context inside the SDK.
+It does not identify a separate Bittensor protocol or chain layer.
+
+Applications should treat the official SDK guide and the installed SDK version as the authoritative
+names for the interface they are using.
+
+Sources: [Subtensor API](https://docs.learnbittensor.org/sdk/subtensor-api),
+[Bittensor SDK v10 Migration Guide](https://docs.learnbittensor.org/sdk/migration-guide)
 
 ## Reader Boundary
 
-This article explains the purpose and structure of `SubtensorApi`. It is not a complete method
-reference or a substitute for the current SDK documentation.
+This article explains the Subtensor API as a Taopedia concept within Bittensor tooling. It is not a
+method reference, migration checklist, connection guide, or substitute for the current SDK
+documentation.
 
-Exact method signatures, available module properties, connection parameters, and import paths can
-change between SDK releases. Applications should use documentation matching their installed SDK
-version and verify implementation-specific behavior against the current source.
+Exact module groupings, client modes, import paths, and supported operations can change between SDK
+releases. Detailed usage belongs in the official Subtensor API guide and related SDK references.
 
-## Further Reading
+References: [Subtensor API](https://docs.learnbittensor.org/sdk/subtensor-api),
+[Managing Subtensor Connections](https://docs.learnbittensor.org/sdk/managing-subtensor-connections),
+[Bittensor SDK v10 Migration Guide](https://docs.learnbittensor.org/sdk/migration-guide)
 
-- [Subtensor API](https://docs.learnbittensor.org/sdk/subtensor-api)
-- [Bittensor SDK v10 Migration Guide](https://docs.learnbittensor.org/sdk/migration-guide)
-- [Managing Subtensor Connections](https://docs.learnbittensor.org/sdk/managing-subtensor-connections)
-- [Current SubtensorApi implementation](https://github.com/latent-to/bittensor/blob/master/bittensor/extras/subtensor_api/__init__.py)
-- [[Bittensor Tools]]
-- [[Subtensor]]
-- [[Extrinsics]]
+## Related Articles
+
+- [[bittensor_tools|Bittensor Tools]]
+- [[subtensor|Subtensor]]
+- [[extrinsics|Extrinsics]]
