@@ -37,6 +37,45 @@ that require each new revision to actually beat the miner's previous one without
 ability. The resulting validator scores become the weights that feed into [[Yuma Consensus]], which
 converts them into the incentive split across miners and validators.
 
+## Evaluation Signal Context
+
+The [EvolAI README](https://raw.githubusercontent.com/openevolai/evolai/main/README.md) describes
+the validator score as a blend of three signals. Quality is the largest component and measures how
+closely a miner model matches the reference model on the evaluation samples, with an additional
+check for whether chain-of-thought tokens improve the model's performance. Flow rewards steady
+improvement over time, so a miner is not only measured by one isolated model snapshot. Side quests
+add a small arithmetic accuracy signal that tests whether the model can return short, direct answers
+on simple tasks.
+
+Those signals make SN47 more specific than a generic model leaderboard. A miner is competing on
+reference-model matching, usefulness of reasoning tokens, consistency of progress, and small
+auxiliary tasks at the same time. The scoring design can therefore reward a compact model that keeps
+improving and remains useful across checks, rather than only rewarding raw size or one favorable
+round.
+
+The README also separates the competition into supported architecture tracks and describes a
+parameter-efficiency bonus for smaller models. That matters because the subnet is not simply asking
+for the largest possible model. It narrows the comparison to allowed model families and gives
+compact models a way to compete when they can approach reference-model behavior efficiently.
+
+The same README also describes a timing boundary between model submission and challenge release.
+Validators lock the miner's model revision before publishing the next seed. After that point, the
+miner can see the next challenge seed, but the already locked revision is the one that will be
+evaluated for the current round. That sequence gives miners public challenge information while
+preventing a model from being changed after the validator has fixed the revision that counts.
+
+The README identifies the active evaluation dataset as
+[evolai/universal_qa](https://huggingface.co/datasets/evolai/universal_qa), whose dataset card lists
+instruction and response fields across a large training split. That second source supports the
+article's point that EvolAI evaluates models on a public question-answering dataset rather than on
+private prompts hidden from readers.
+
+For Taopedia readers, this means EvolAI's public evaluation setup should be read together with its
+revision-lock rule. Public samples and deterministic challenge selection make the contest
+inspectable, while revision locking keeps the measured model tied to a specific published state. The
+subnet is therefore about repeated, transparent model-improvement rounds rather than private
+inference service.
+
 ## On-Chain Identity
 
 Live SN47 data, including metagraph state and alpha token pool information, is available on
@@ -48,6 +87,8 @@ above.
 ## Further Reading
 
 - [EvolAI on GitHub](https://github.com/openevolai/evolai.git)
+- [EvolAI README source](https://raw.githubusercontent.com/openevolai/evolai/main/README.md)
+- [evolai/universal_qa dataset](https://huggingface.co/datasets/evolai/universal_qa)
 - [Subnet 47 on TaoStats](https://taostats.io/subnets/47)
 - [[Yuma Consensus]]
 - [[Dynamic TAO]]
