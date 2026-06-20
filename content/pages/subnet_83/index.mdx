@@ -7,41 +7,60 @@ category: "Subnets"
 tags: ["Subnets"]
 ---
 
-CliqueAI is Bittensor Subnet 83. Its on-chain identity describes CliqueAI as an AI-powered maximum
-clique solver network, lists [cliqueai.toptensor.ai](https://cliqueai.toptensor.ai/) as the subnet
-URL, and lists [toptensor/CliqueAI](https://github.com/toptensor/CliqueAI) as the subnet's GitHub
-repository.
+CliqueAI is Bittensor Subnet 83. Public CliqueAI materials describe it as a maximum-clique solving
+subnet where miners return graph solutions and validators score those solutions for validity,
+quality, and diversity.
 
 ## What CliqueAI Rewards
 
-The CliqueAI README describes the subnet as a network for solving maximum clique problems. In the
-mechanism documentation, validators select graph problems from a database, classify them by graph
-scale and time limit, and send selected problems to eligible miners.
+The [CliqueAI README](https://raw.githubusercontent.com/toptensor/CliqueAI/main/README.md) frames
+the subnet around a four-stage mechanism: problem selection, miner selection, scoring, and weight
+setting. The work target is the maximum clique problem, where a submitted answer is a set of graph
+vertices that should form a clique under the challenge constraints.
 
-Miners return candidate clique solutions for those graph problems. The mechanism documentation
-describes a submitted solution as a set of vertices, then scores it on optimality and diversity.
-Optimality rewards valid maximal cliques and compares a miner's clique size against the strongest
-solutions returned for the same problem. Diversity gives extra credit to valid solutions that are
-not identical to many other miners' submissions.
+The
+[mechanism documentation](https://raw.githubusercontent.com/toptensor/CliqueAI/main/docs/mechanism.md)
+describes submitted solutions as vertex sets and scores them on optimality and diversity. Optimality
+focuses on whether the solution is valid and how its clique size compares with other returned
+solutions for the same problem. Diversity rewards valid solutions that are not identical to many
+other miners' answers.
+
+This scoring shape matters because maximum clique solving can converge on duplicated answers. A
+subnet that rewards only size can overvalue copycat solutions once a strong clique is known.
+CliqueAI's diversity component gives miners a reason to search for strong alternative solutions
+rather than simply returning the most common answer.
 
 ## Miner and Validator Roles
 
-CliqueAI validators coordinate the challenge loop. The mechanism documentation describes four
-stages: problem selection, miner selection, scoring, and weight setting. Validators choose a problem
-type, retrieve a problem from the database, filter eligible miners, sample miners with a
-difficulty-adjusted probability, evaluate the submitted solutions, and update miner weights.
+CliqueAI validators coordinate the challenge loop. They choose problem types, retrieve problems,
+filter eligible miners, sample miners with a difficulty-adjusted probability, evaluate submitted
+solutions, and update weights from historical performance. This makes validators the layer that
+turns graph-solving results into Bittensor weights.
 
 Miners compete by producing strong clique solutions under the challenge constraints. Because the
 score combines solution quality with diversity, the subnet rewards miners that find large valid
 cliques while still leaving room for different solver approaches.
 
+## Problem Distribution Context
+
+CliqueAI's mechanism docs classify problems by graph scale and time limit. Harder problems are not
+sent to every eligible miner with the same broad reach as easier ones; the mechanism adjusts miner
+sampling by problem difficulty. That keeps challenge distribution tied to expected difficulty rather
+than treating every graph as equivalent.
+
+The same docs also describe weight setting through an exponential moving average of historical
+solution scores. That means one good answer is not the whole miner reputation. Past performance
+continues to matter, while newer challenge results can still move a miner's score over time.
+
+At the subnet level, CliqueAI is therefore a repeated graph-optimization contest. Validators select
+problems, miners submit candidate cliques, and scoring balances correctness, relative clique size,
+diversity, and performance history before weights are set.
+
 ## On-Chain Identity
 
-Live SN83 subnet data is available on [TaoStats](https://taostats.io/subnets/83). The live Finney
-identity for netuid 83 registers the subnet name as CliqueAI, with the description "CliqueAI -
-AI-Powered Maximum Clique Solver Network." The registered project website is
-[cliqueai.toptensor.ai](https://cliqueai.toptensor.ai/) and the GitHub repository is
-[toptensor/CliqueAI](https://github.com/toptensor/CliqueAI).
+Live SN83 subnet data is available on [TaoStats](https://taostats.io/subnets/83). The source-backed
+graph-solving and scoring details in this article come from public CliqueAI materials rather than
+from live identity fields.
 
 ## Further Reading
 
