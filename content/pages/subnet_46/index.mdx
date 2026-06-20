@@ -7,39 +7,70 @@ category: "Subnets"
 tags: ["Subnets"]
 ---
 
-Zipcode is Bittensor Subnet 46. Its on-chain identity describes the subnet as the Real Estate
-Intelligence Network, lists [zipcode.ai](https://zipcode.ai/) as the subnet URL, and lists
-[resi-labs-ai/RESI-models](https://github.com/resi-labs-ai/RESI-models) as the subnet's GitHub
-repository.
+Zipcode is Bittensor Subnet 46. Public RESI materials describe it as a real-estate price-prediction
+subnet where miners submit residential property models and validators evaluate those models against
+fresh sales data.
 
 ## What Zipcode Provides
 
-The RESI README describes Subnet 46 as a real estate price-prediction subnet. Miners compete by
-building models for predicting United States residential property prices, while validators evaluate
-the predictions against ground-truth sales data.
+The [RESI README](https://raw.githubusercontent.com/resi-labs-ai/RESI-models/main/README.md) frames
+the subnet around accurate United States residential property price prediction. Miners build models
+that estimate property sale prices, while validators compare those predictions with ground-truth
+sales data.
 
-At the subnet level, Zipcode turns real-estate model accuracy into a miner-scoring signal. The
-repository describes an evaluation design that separates model commitment from later sales-data
-evaluation, so submitted models are tested on property data that was not available when the model
-was committed.
+At the subnet level, Zipcode turns model generalization into a miner-scoring signal. The README
+describes a temporal separation between model commitment and evaluation: models are committed before
+the sales data used for evaluation is available, so a model has to generalize to newly listed and
+sold properties rather than memorize a static dataset.
+
+## Submission and Evaluation Flow
+
+The [miner guide](https://raw.githubusercontent.com/resi-labs-ai/RESI-models/main/docs/MINER.md)
+describes miner participation as training an ONNX model, testing it locally, uploading it to
+HuggingFace, and submitting a commitment to the Bittensor chain. Validators later download the
+model, verify that it matches the commitment, and score it based on prediction accuracy.
+
+The
+[validator guide](https://raw.githubusercontent.com/resi-labs-ai/RESI-models/main/docs/VALIDATOR.md)
+describes validator responsibility in three reader-facing steps: download miner ONNX models,
+evaluate them against daily validation data, and submit scores to the Bittensor blockchain. This
+makes the validator role a model-evaluation and weight-setting layer rather than a data-provider
+role.
+
+That flow is important because the subnet rewards a committed model artifact rather than a single
+manual prediction. The model can be independently fetched, run in validation, and compared with
+later real-estate outcomes.
 
 ## Miner and Validator Roles
 
-Miners train and submit property price-prediction models. The README describes the public model
-format as ONNX and frames the task around predicting residential property sale prices from property
-features.
+Miners train and submit property price-prediction models. The miner guide describes ONNX as the
+model format and explains that models use property features, with optional image inputs, to produce
+predicted prices. The practical miner contribution is therefore a reusable forecasting model, not a
+manual price guess for each property.
 
 Validators fetch submitted models, run inference, calculate prediction scores, rank models, and set
-weights on chain. The repository describes scoring with Mean Absolute Percentage Error, so lower
-prediction error produces a stronger score. Operators should treat the repository as the source of
-truth for current participant guidance.
+weights on chain. The README describes scoring with Mean Absolute Percentage Error, so lower
+prediction error produces a stronger score. It also describes a winner-selection design where models
+within a threshold of the best score are compared by commit timing, which is meant to preserve an
+advantage for the model that first reached the stronger performance tier.
+
+## Evaluation Context
+
+Zipcode's evaluation context is real-estate generalization. A model that performs well only on old
+or memorized examples should not be competitive when the validation set comes from properties that
+were listed and sold after the model was committed. The unseen-data gap is why the subnet emphasizes
+model commitment, validation timing, and ground-truth sales outcomes.
+
+The reward design also makes model duplication less attractive. The README says detected duplicate
+models receive no reward, while non-winning valid models share a much smaller portion of emissions.
+In practice, Subnet 46 tries to incentivize earlier, genuinely better property-price models rather
+than many near-identical copies of a current leader.
 
 ## On-Chain Identity
 
-Live SN46 data is available on [TaoStats](https://taostats.io/subnets/46). The live Finney identity
-for netuid 46 registers the subnet name as Zipcode, with the description "The Real Estate
-Intelligence Network." The GitHub repository is
-[resi-labs-ai/RESI-models](https://github.com/resi-labs-ai/RESI-models).
+Live SN46 subnet data is available on [TaoStats](https://taostats.io/subnets/46). The source-backed
+real-estate, model-submission, and evaluation details in this article come from public RESI
+materials rather than from live identity fields.
 
 ## Further Reading
 
