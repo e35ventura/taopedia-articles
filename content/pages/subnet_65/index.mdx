@@ -35,17 +35,56 @@ Because there is no benefit to registering many miners, the design steers partic
 contributing workers. Validator scoring of pools turns into the weights that feed into
 [[Yuma Consensus]], which converts them into the incentive split across miners and validators.
 
+## Worker Pool Context
+
+The [TPN README](https://raw.githubusercontent.com/taofu-labs/tpn-subnet/main/README.md) describes a
+three-role network: workers, miners, and validators. Workers provide the VPN connections and do not
+need a Bittensor neuron. Miners operate the mining pools that aggregate worker connections, receive
+subnet emissions, and decide how to distribute rewards to the workers in their pool. Validators
+validate miner work and act as the interface to end users.
+
+That split is important because TPN does not treat every VPN endpoint as its own miner. A worker can
+contribute connectivity without registering directly on Bittensor, while a mining pool is the
+Bittensor-facing aggregation point. The design therefore separates endpoint operation from the
+on-chain miner role, which lets a pool represent many worker-provided VPN connections.
+
+For readers, this is the main reason pool size and geographic uniqueness matter together. A large
+pool with many workers can increase coverage, but the README also emphasizes geographic uniqueness
+and reasonable response speed. Concentrating workers in the same kind of location is less useful
+than providing connections that widen the network's geographic reach.
+
+Reference:
+[TPN README source](https://raw.githubusercontent.com/taofu-labs/tpn-subnet/main/README.md)
+
+## Validation and Sampling Context
+
+The [TPN litepaper](https://raw.githubusercontent.com/taofu-labs/tpn-subnet/main/LITEPAPER.md)
+describes the integrity model as challenge/response tests combined with randomized sampling. In the
+bootstrapping phase, validators host challenge endpoints, miners supply challenge responses, and the
+resulting score considers geolocation uniqueness, connection type, and response speed.
+
+The public
+[scoring code](https://raw.githubusercontent.com/taofu-labs/tpn-subnet/main/federated-container/modules/scoring/score_mining_pools.js)
+shows the same pool-oriented model in implementation terms. It reads worker-broadcast metadata for a
+mining pool, retrieves live workers, calculates a sample size, and selects workers for scoring. That
+supports the article's interpretation that validator scoring is about sampled pool behavior, not
+just a miner's static registration.
+
+This also keeps the reward discussion grounded. TPN's current README says miner emissions depend on
+worker pool size, geographic uniqueness, and a slowness penalty. The litepaper adds why those
+signals matter: validators need to encourage useful locations and connection types rather than
+letting every participant cluster in the same easy-to-host environment.
+
+References:
+[TPN litepaper](https://raw.githubusercontent.com/taofu-labs/tpn-subnet/main/LITEPAPER.md),
+[TPN scoring code](https://raw.githubusercontent.com/taofu-labs/tpn-subnet/main/federated-container/modules/scoring/score_mining_pools.js)
+
 ## On-Chain Identity
 
 Live SN65 data, including metagraph state and alpha token pool information, is available on
-[TaoStats](https://taostats.io/subnets/65). Readers can reproduce the subnet's registered identity
-fields with the Bittensor CLI command documented in the
-[btcli reference](https://docs.learnbittensor.org/btcli/#btcli-subnets-get-identity):
-`btcli subnets get-identity --netuid 65 --network finney`.
-
-The Finney subnet identity for netuid 65 points to the
-[taofu-labs/tpn-subnet](https://github.com/taofu-labs/tpn-subnet) repository, which is the source of
-truth for the roles and reward algorithm described above.
+[TaoStats](https://taostats.io/subnets/65). The source-backed role and reward details in this
+article come from the public [taofu-labs/tpn-subnet](https://github.com/taofu-labs/tpn-subnet)
+repository rather than from live index pages.
 
 ## Further Reading
 
