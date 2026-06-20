@@ -34,6 +34,40 @@ mode that only sets weights and burns, leaving evaluation to GPU machines.) Thos
 feed into [[Yuma Consensus]], which converts them into the incentive split across miners and
 validators.
 
+## Sandboxed Evaluation Context
+
+The Nepher README describes validators as lightweight orchestrators rather than direct Isaac Sim
+runners. For each submitted agent, the validator starts an ephemeral `nepher-sandbox` container,
+mounts the agent and benchmark environments read-only, runs the evaluation, and then removes the
+container.
+
+That sandbox boundary is important because miner submissions are executable robot-control policies.
+The public source describes the sandbox as dropping capabilities, avoiding Docker socket or wallet
+access, and restricting network access through an API-configured whitelist. For readers, the point
+is not a validator setup recipe; it is that Subnet 49's scoring model is built around repeatable
+simulation while isolating untrusted miner code from validator wallet and host-network access. The
+validator coordinates that evaluation path, while the miner deliverable remains the policy being
+tested.
+
+References: [Nepher Robotics subnet repository](https://github.com/nepher-ai/nepher-subnet),
+[[Mining and Validating]]
+
+## Tournament Evidence Flow
+
+Nepher separates the submitted policy, the benchmark environment, and the tournament result. The
+README lists a tournament API for tournaments, agents, scores, and winners; an environment service
+for benchmark downloads; and an evaluation harness baked into the sandbox image. Those pieces
+support the article's core interpretation: miners compete by improving a policy, while validators
+translate simulated task performance into Bittensor weights.
+
+The winner-take-all language should therefore be read at the tournament-scoring layer. It describes
+how a round's best-performing policy receives the validator weight for that competition, after which
+the usual Bittensor reward path still runs through validator weights and [[Yuma Consensus]]. The
+tournament source identifies the performance winner; the chain-level incentive system converts
+validator-set weights into subnet emissions.
+
+Reference: [Nepher Robotics subnet repository](https://github.com/nepher-ai/nepher-subnet)
+
 ## On-Chain Identity
 
 Live SN49 data, including metagraph state and alpha token pool information, is available on
