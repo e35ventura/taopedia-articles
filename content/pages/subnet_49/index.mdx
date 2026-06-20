@@ -34,6 +34,53 @@ mode that only sets weights and burns, leaving evaluation to GPU machines.) Thos
 feed into [[Yuma Consensus]], which converts them into the incentive split across miners and
 validators.
 
+## Sandboxed Evaluation Context
+
+The [Nepher README](https://github.com/nepher-ai/nepher-subnet) describes validators as lightweight
+orchestrators rather than direct Isaac Sim runners. For each submitted agent, the validator starts
+an ephemeral sandbox container, mounts the agent and benchmark environments read-only, runs the
+evaluation, and then removes the container.
+
+That sandbox boundary is important because miner submissions are executable robot-control policies.
+The public source describes the sandbox as dropping Linux capabilities, avoiding Docker socket or
+wallet access, using read-only mounts for agent and environment inputs, and restricting network
+access through an API-configured whitelist. For readers, the point is not a validator setup recipe;
+it is that Subnet 49's scoring model is built around repeatable simulation while isolating untrusted
+miner code from validator wallet and host-network access.
+
+This keeps the miner and validator roles distinct. Miners submit trained policies for benchmark
+tasks; validators coordinate isolated evaluation of those policies. The GPU-heavy simulation work
+belongs to the sandboxed evaluation path, while the validator process remains the organizer that
+launches evaluations and records the resulting scores.
+
+Reference: [Nepher Robotics subnet repository](https://github.com/nepher-ai/nepher-subnet)
+
+## Tournament Evidence Context
+
+The [validator guide](https://github.com/nepher-ai/nepher-subnet/blob/main/docs/validator-guide.md)
+describes the validator lifecycle as agent evaluation, on-chain weight setting, and burn. It also
+describes the validator as downloading miner agents, setting weights on-chain, and spawning the GPU
+sandbox container on demand to evaluate untrusted agent code in isolation.
+
+Nepher separates the submitted policy, the benchmark environment, and the tournament result. The
+README lists a tournament API for tournaments, agents, scores, and winners; an environment service
+for benchmark downloads; and an evaluation harness baked into the sandbox image. Those pieces
+support the article's core interpretation: miners compete by improving a policy, while validators
+compare those policies through standardized simulation.
+
+The winner-take-all language should therefore be read at the tournament-scoring layer. It describes
+how a round identifies the best-performing policy and assigns validator weight for that competition.
+The linked sources support the tournament, score, winner, sandbox, and weight-setting workflow; they
+do not need to be read as setup guides for ordinary readers.
+
+For readers comparing Nepher with other subnets, the important distinction is the type of evidence
+being evaluated. The subnet is not measuring response volume or service uptime. It is ranking robot
+control policies by simulated task performance under a repeated benchmark process.
+
+References:
+[Nepher validator guide](https://github.com/nepher-ai/nepher-subnet/blob/main/docs/validator-guide.md),
+[Nepher miner guide](https://github.com/nepher-ai/nepher-subnet/blob/main/docs/miner-guide.md)
+
 ## On-Chain Identity
 
 Live SN49 data, including metagraph state and alpha token pool information, is available on
