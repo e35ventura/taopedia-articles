@@ -7,30 +7,73 @@ category: "Subnets"
 tags: ["Subnets"]
 ---
 
-Beam is Bittensor Subnet 105. The live Finney identity lists its subnet name as Beam, its GitHub
-source as the Beam-Network organization repositories page, its subnet URL as https://b1m.ai, and its
-description as "Decentralized bandwidth. A global network. Powering the open internet."
+Beam is Bittensor Subnet 105. Public Beam materials describe participant software for coordinating
+bandwidth work across orchestrators, worker gateways, workers, and validators.
 
-The Beam README describes the project as an open coordination layer for bandwidth and
-machine-to-machine data transfer. It says Beam aggregates distributed bandwidth, coordinates data
-transfers across participants, and uses Proof-of-Bandwidth to measure delivery performance during
-transfers.
+The Beam README describes participant software for the subnet's orchestrator, worker gateway,
+worker, and validator processes. It says participants contribute bandwidth, execute transfer chunks,
+and set Bittensor weights from BeamCore's verified performance data.
 
 ## What Beam Provides
 
-Beam provides a coordination layer for moving data between sources and destinations. The README
-describes transfer patterns that include one-to-one movement, fan-out from one source to multiple
-destinations, aggregation from multiple sources, and mesh-style transfers.
+Beam provides software for coordinating data movement between storage endpoints. The README's
+runtime flow places BeamCore, the orchestrator gateway, the orchestrator, the worker gateway, and
+the worker in the coordination path, while workers move data directly between storage sources and
+destinations.
 
 BeamCore is the coordination stack behind this workflow. The public BeamCore transparency README
 identifies reference code for transfer assignment and PRISM scoring, including orchestrator
 selection, chunk allocation, stale reassignment, score computation, and scheduled metrics refresh.
 
+## Participant Flow Context
+
+The [Beam README source](https://raw.githubusercontent.com/Beam-Network/beam/main/README.md)
+describes Beam participant software around orchestrator, worker gateway, worker, and validator
+processes. The orchestrator maintains the gateway connection, advertises the worker gateway, routes
+task offers to workers, and reports worker decisions and results. Workers register with BeamCore,
+connect through the worker gateway, execute assigned transfer chunks, and post payment evidence.
+
+That role split is useful for understanding the subnet without turning the article into an operator
+guide. BeamCore coordinates the transfer lifecycle and scoring services, while the byte movement
+happens outside BeamCore. The source says object bytes do not pass through BeamCore; workers receive
+task-scoped source and destination URLs for the chunk they are assigned.
+
+For readers, the key boundary is therefore between coordination and execution. BeamCore organizes
+tasks, gateways, evidence, and validator-facing summaries. Workers perform the transfer work against
+the assigned storage endpoints. Validators then read BeamCore epoch summaries, set subnet weights,
+and post weight proofs.
+
+Reference:
+[Beam participant README](https://raw.githubusercontent.com/Beam-Network/beam/main/README.md)
+
+## Assignment and Scoring Context
+
+The
+[BeamCore transparency README](https://raw.githubusercontent.com/Beam-Network/beam-core-public/main/README.md)
+identifies public reference code for two specific pieces of BeamCore: transfer assignment and PRISM
+scoring. Its file list describes assignment code for orchestrator selection, chunk allocation, and
+stale reassignment, plus PRISM code for score computation and scheduled metric refresh.
+
+Those public copies make the article's scoring boundary more precise. Beam's participant README
+describes workers posting payment evidence after chunk work, while the BeamCore transparency source
+shows where assignment and scoring logic are documented for review. The validator-facing output is
+not a raw bandwidth claim by itself; it is the result of BeamCore's assignment, evidence, and
+scoring path.
+
+This also explains why Beam is best read as a coordinated transfer subnet rather than a generic VPN
+or endpoint-uptime network. The source-backed workflow starts with assigned transfer work, records
+payment evidence from workers, computes PRISM-related scores, and exposes epoch summaries that
+validators can use when setting weights.
+
+References:
+[Beam README source](https://raw.githubusercontent.com/Beam-Network/beam/main/README.md),
+[BeamCore transparency README source](https://raw.githubusercontent.com/Beam-Network/beam-core-public/main/README.md)
+
 ## Miner and Validator Roles
 
 Beam's public materials describe miners as orchestrators and workers. Orchestrators coordinate
-bandwidth work through BeamCore, while workers move data directly between source and destination
-connectors and submit Proof-of-Bandwidth evidence.
+bandwidth work through BeamCore, while workers execute assigned transfer chunks and post payment
+evidence.
 
 Validators read BeamCore scores and PRISM inputs and set weights on Bittensor. This maps Beam's
 bandwidth-transfer workflow onto the broader [[Mining and Validating]] pattern, with validator
@@ -38,13 +81,9 @@ weights ultimately flowing through [[Yuma Consensus]].
 
 ## On-Chain Identity
 
-Readers can reproduce the live identity fields with the Bittensor CLI command documented in the
-[btcli reference](https://docs.learnbittensor.org/btcli/#btcli-subnets-get-identity):
-`btcli subnets get-identity --netuid 105 --network finney`.
-
-That Finney identity reports the subnet name as Beam, the GitHub source as the Beam-Network
-repositories page, the subnet URL as https://b1m.ai, and the description "Decentralized bandwidth. A
-global network. Powering the open internet."
+Live SN105 subnet data is available on [TaoStats](https://taostats.io/subnets/105). The mechanism
+details in this article are tied to Beam's participant README and BeamCore transparency README
+rather than to live identity fields.
 
 ## Further Reading
 
