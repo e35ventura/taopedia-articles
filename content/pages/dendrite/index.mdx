@@ -55,6 +55,54 @@ dendrite queries multiple axons, it receives back a list of synapse responses â€
 per axon queried. Synapse objects are therefore the shared message format used on both sides of the
 exchange.
 
+## Multi-Axon Query Batches
+
+The neurons documentation shows dendrites querying multiple axon endpoints and receiving one synapse
+response per axon contacted. That batch pattern matters when validators sample miner work across
+several UID slots inside one netuid rather than contacting a single endpoint in isolation.
+
+Readers should treat dendrite as the client-side component that orchestrates those outbound
+requests, while axon names each miner-side endpoint that receives a synapse. Query batching,
+timeouts, and partial failures belong in official API and validating references rather than in a
+static article quote. The number of axons queried in one batch can differ by subnet task and
+validator workflow. Failed responses in one batch do not automatically imply poor miner performance
+across every UID contacted.
+
+References: [Learn: Neurons](https://docs.learnbittensor.org/learn/neurons),
+[Dendrite reference](https://docs.learnbittensor.org/python-api/html/autoapi/bittensor/core/dendrite/)
+
+## Client Initiation Versus Server Handling
+
+Dendrite starts the Axon-dendrite exchange by sending requests to axon endpoints and processing
+responses, while axon services the incoming synapse on the server side. That split keeps initiation
+vocabulary separate from endpoint vocabulary in subnet communication documentation.
+
+Mixing the two roles makes debugging harder. A failed query may reflect dendrite client behavior,
+network reachability, or axon serving logic independently. Readers should name which side of the
+exchange they mean before attributing communication failures to miner quality or validator scoring.
+Subnet protocol rules still define which synapse payloads are valid for evaluation. A dendrite
+timeout on one axon does not by itself describe consensus outcome for the whole subnet epoch.
+
+References: [Glossary: Dendrite](https://docs.learnbittensor.org/resources/glossary#dendrite),
+[Glossary: Axon](https://docs.learnbittensor.org/resources/glossary#axon)
+
+## Evaluation Path Before On-Chain Weights
+
+Dendrite communication gathers task-specific information validators later use when forming weight
+submissions, but dendrite itself does not commit weights on chain. Validator weights, epochs, and
+Yuma aggregation remain separate consensus vocabulary described in official validating
+documentation.
+
+The distinction keeps transport separate from incentive outcomes. Dendrite queries can succeed or
+fail while weight submission follows its own tempo and permit context on chain. Readers should not
+read a successful dendrite response as automatic confirmation of final emission allocation. Weight
+commits and dividend outcomes remain downstream of the communication step described here. Permit and
+stake context on chain still govern whether submitted weights participate in consensus.
+Communication success is therefore necessary but not sufficient for final reward allocation.
+
+References: [Learn: Neurons](https://docs.learnbittensor.org/learn/neurons),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
+
 ## Relationship to Multiple Mechanisms
 
 Subnets can run more than one incentive mechanism in parallel. The
