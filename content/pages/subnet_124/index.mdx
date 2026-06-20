@@ -26,6 +26,39 @@ open terrain — so success reflects general navigation skill rather than memori
 The stated aim is to give autonomous-drone research a standard, public way to compare flight
 policies.
 
+## Evaluation Context
+
+Swarm's benchmark is designed around generalization rather than route replay. The repository says
+each benchmark run generates unique worlds, including city, mountain, warehouse, forest, and open
+terrain settings. That variety makes the task a test of whether a policy can transfer its navigation
+behavior across layouts with different obstacle shapes, corridors, heights, and open spaces.
+
+Different environment types emphasize different flight problems, from constrained streets and indoor
+routes to terrain changes, tree cover, and open-air precision.
+
+This context matters for interpreting miner output. A miner is not submitting a hand-authored flight
+path through one known map; it is submitting a learned policy that receives a depth image and flight
+state, then produces velocity commands. Because the task omits waypoints, GPS, and obstacle
+coordinates, the policy has to turn limited sensor input into control decisions during the simulated
+flight.
+
+The repository's 50 Hz observation loop also makes the benchmark a continuous-control problem. A
+policy repeatedly receives the current sensor view and state, then emits direction, speed, and yaw
+commands for the next moment of flight. That keeps evaluation centered on behavior under changing
+conditions, rather than on whether a miner can script a route through a known scene. Stable command
+choices over many small steps are what produce a safe landing.
+
+The validator side follows from that design. Validators run submitted policies in simulation and
+compare the resulting flights across generated seeds. The repository describes ranking by average
+score across 1,000 seeds, so a single lucky landing is not enough to make a policy competitive. The
+screening gate also keeps the full benchmark focused on models that are already close to the current
+leader.
+
+The scoring components show what the benchmark treats as useful flight behavior. Success and speed
+carry the largest weights, while safety captures obstacle clearance during the run. A strong model
+therefore needs to land, land quickly, and avoid unsafe paths; optimizing for only one of those
+outcomes would not match the subnet's stated evaluation.
+
 ## Miner and Validator Roles
 
 Miners develop and submit the flight policy. A miner improves its standing by training a model that
