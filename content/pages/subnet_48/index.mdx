@@ -63,6 +63,40 @@ ability to execute and return quantum-circuit results in a way validators can ve
 to users. Validator weights then flow through [[Yuma Consensus]] to connect that measured service
 quality to subnet rewards.
 
+## Request Routing Context
+
+The
+[validator documentation](https://raw.githubusercontent.com/qbittensor-labs/quantum-compute/main/qbittensor/validator/validator.md)
+describes validators as fetching quantum-computing requests and distributing them to miners that are
+active and available. That routing step is important because the work item is a real circuit
+execution request, not a prompt that every miner can answer independently at the same time.
+
+For readers, this means Quantum Compute has a service-coordination layer in addition to miner
+quality scoring. Validators need to know which miners can receive work, send a circuit to an
+appropriate miner, and wait for a usable result. The miner contribution is therefore tied to
+availability and successful execution as much as to the raw presence of quantum hardware.
+
+The same source describes result handling after a miner responds. A successful job returns result
+data to the request flow, while failed or missing responses are marked for retry. That retry
+boundary helps explain why validator quality assurance includes completion and success rates: a
+miner that cannot return valid results reliably is less useful even if it advertises access to a
+capable device.
+
+That distinction keeps the reader-facing reward target concrete. A miner's value is not only that a
+quantum processor exists somewhere behind the subnet; the value is that the miner can accept a
+specific circuit, execute it, and return complete result data through the validator-coordinated
+flow.
+
+This routing model also separates Quantum Compute from a simple benchmark leaderboard. The subnet is
+trying to move user circuit requests through a distributed network of miners, so validators have to
+coordinate work, verify completed responses, and keep failed jobs from disappearing silently. Those
+service-flow checks are part of how quantum execution can become a Bittensor reward market rather
+than only a list of available devices.
+
+References:
+[Quantum Compute validator documentation](https://raw.githubusercontent.com/qbittensor-labs/quantum-compute/main/qbittensor/validator/validator.md),
+[Quantum Compute miner documentation](https://raw.githubusercontent.com/qbittensor-labs/quantum-compute/main/qbittensor/miner/miner.md)
+
 ## On-Chain Identity
 
 Live SN48 subnet data is available on [TaoStats](https://taostats.io/subnets/48). The source-backed
