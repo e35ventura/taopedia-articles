@@ -273,6 +273,31 @@ names the smoothed metric that feeds that mechanism's decision logic.
 References: [Subnet Deregistration](https://docs.learnbittensor.org/subnets/subnet-deregistration),
 [Glossary: Exponential Moving Average (EMA)](https://docs.learnbittensor.org/resources/glossary#exponential-moving-average-ema)
 
+## Relationship to Coinbase
+
+Exponential moving averages and coinbase interact at two different points in the Bittensor
+emission-and-consensus pipeline. Coinbase is the per-block Subtensor mechanism that accumulates
+pending emissions and triggers the Yuma Consensus epoch round when a subnet reaches its epoch
+boundary, as described by the
+[Coinbase Implementation](https://docs.learnbittensor.org/subtensor-api/extrinsics#coinbase). EMA
+smoothing appears inside the round that coinbase triggers: validator-miner bonds are updated using
+an exponential moving average each time an epoch round fires, so the bond EMA is applied during the
+same step that coinbase schedules. EMA smoothing also appears in subnet deregistration context,
+where the EMA of a subnet's alpha price is the selection criterion coinbase-participating subnets
+are ranked against when the subnet limit is full. The
+[Glossary: Exponential Moving Average (EMA)](https://docs.learnbittensor.org/resources/glossary#exponential-moving-average-ema)
+describes EMA smoothing in bond updates and subnet flow contexts.
+
+Coinbase controls when bond EMA updates happen — it is the trigger that fires the epoch round where
+bond smoothing is applied. The EMA values themselves are inputs to, and outputs of, the Yuma
+Consensus work that coinbase schedules. For the subnet deregistration use case, coinbase accumulates
+emission cycles for each subnet, and the EMA of that subnet's alpha price is what deregistration
+selection compares when a new registration attempt triggers the removal logic.
+
+References:
+[Coinbase Implementation](https://docs.learnbittensor.org/subtensor-api/extrinsics#coinbase),
+[Glossary: Exponential Moving Average (EMA)](https://docs.learnbittensor.org/resources/glossary#exponential-moving-average-ema)
+
 ## Related articles
 
 - [[dynamic_tao|Dynamic TAO]]
@@ -287,3 +312,4 @@ References: [Subnet Deregistration](https://docs.learnbittensor.org/subnets/subn
 - [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
 - [Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)
 - [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+- [Coinbase Implementation](https://docs.learnbittensor.org/subtensor-api/extrinsics#coinbase)
