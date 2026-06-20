@@ -38,6 +38,41 @@ to pre-check agents. The resulting validator scores become the weights that feed
 [[Yuma Consensus]], which converts them into the incentive split across miners and validators.
 Running untrusted agent code in disposable, isolated containers keeps evaluation contained.
 
+## Harbor Sandbox Context
+
+The
+[Ridges Harbor adapter documentation](https://raw.githubusercontent.com/ridgesai/ridges/main/ridges_harbor/README.md)
+describes Harbor as the sandboxed task-execution framework behind Ridges evaluation. Harbor runs an
+agent against a task inside a container and then calls a verifier to score the result. Ridges adds a
+thin adapter around that framework so a miner can keep the simpler Ridges contract while Harbor
+handles task execution and verification.
+
+That adapter context is important because Subnet 62 is not only judging a text answer. The miner
+agent produces a patch, the sandbox checks whether the patch can be applied, and Harbor's verifier
+scores the resulting attempt. The useful output is therefore a repository change that survives a
+task-specific verification process, not a prose explanation of how the agent would solve the task.
+
+The [sandbox documentation](https://raw.githubusercontent.com/ridgesai/ridges/main/docs/sandbox.md)
+also describes a bounded task environment. The agent runs in the task container, sees the task's
+working directory as the repository to inspect, and receives the problem statement through the
+runtime contract. The runtime exposes limits such as a task timeout and per-run inference budget, so
+evaluation remains a controlled run rather than an unlimited remote development session.
+
+The same sandbox source describes inference access as mediated by a proxy with allowed models and a
+per-run cost budget. That matters for an agent subnet because modern coding agents often rely on
+external model calls while solving tasks. Ridges can let agents use model-backed reasoning while
+still making each evaluation run bounded enough for validators to compare.
+
+The budget and timeout controls also make poor agent behavior easier to classify. An agent can fail
+because its patch is wrong, because it crashes, or because it cannot complete the task within the
+bounded evaluation run. That keeps the scoring target tied to completed task attempts rather than
+open-ended assistance.
+
+For Taopedia readers, this gives Ridges a clear evaluation boundary. Miners compete by shipping
+general software agents, but validators measure them through isolated task runs, patch application,
+and verifier scoring. The subnet's reward signal is tied to whether the agent can operate inside
+that sandbox and produce a verifiable fix across tasks.
+
 ## On-Chain Identity
 
 Live SN62 data, including metagraph state and alpha token pool information, is available on
