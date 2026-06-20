@@ -7,38 +7,76 @@ category: "Subnets"
 tags: ["Subnets"]
 ---
 
-BitMind is Bittensor Subnet 34, also described by its repository as GAS, the Generative Adversarial
-Subnet. The GitHub repository listed in the subnet's Finney identity is
-[BitMind-AI/bitmind-subnet](https://github.com/BitMind-AI/bitmind-subnet).
+BitMind is Bittensor Subnet 34. Public BitMind materials also describe it as GAS, the Generative
+Adversarial Subnet, where synthetic-media detectors and synthetic-media generators compete in a
+shared evaluation loop.
 
 ## What BitMind Provides
 
-The BitMind README describes GAS as an adversarial subnet for synthetic media. The subnet has two
-parallel competition tracks: discriminative mining, where miners submit detection models for
-AI-generated content, and generative mining, where miners return synthetic media for validator
-challenges.
+The [BitMind README](https://raw.githubusercontent.com/BitMind-AI/bitmind-subnet/main/README.md)
+frames GAS as a Bittensor subnet inspired by generative adversarial networks. Detectors improve by
+learning to identify synthetic media, while generators improve by producing synthetic media that is
+harder for detectors to catch.
 
 This design makes the subnet a Bittensor-native competition between detection and generation.
-Detection miners improve models that identify synthetic image, video, and audio content, while
-generation miners try to produce convincing synthetic outputs that pass validation and challenge the
-detectors. Validator weights from those evaluations feed into [[Yuma Consensus]].
+Detection miners submit models that classify real versus synthetic content across supported media
+types, while generation miners create synthetic media in response to validator challenges. Validator
+weights from those evaluations feed into [[Yuma Consensus]].
+
+## Two Mining Tracks
+
+The
+[discriminative mining guide](https://raw.githubusercontent.com/BitMind-AI/bitmind-subnet/main/docs/Discriminative-Mining.md)
+describes discriminative miners as submitting binary classifiers for image, video, and audio media.
+For each sample, a model returns a probability distribution over real and synthetic classes, and
+semisynthetic media is treated as synthetic for scoring.
+
+The
+[generative mining guide](https://raw.githubusercontent.com/BitMind-AI/bitmind-subnet/main/docs/Generative-Mining.md)
+describes generative miners as services that create synthetic images or videos from validator
+prompts. Those outputs must pass validation checks, and stronger adversarial performance comes from
+creating valid media that fools discriminative miners.
+
+The two tracks are linked rather than independent. Generators provide fresh synthetic examples that
+challenge detectors, and detector performance creates pressure for generators to produce more
+convincing but still valid media.
 
 ## Miner and Validator Roles
 
-Discriminative miners submit detection models for evaluation across the supported media modalities.
-The README describes these models as being benchmarked by validators, with rewards tied to detection
-accuracy and calibration.
+Discriminative miners contribute detection models. The discriminative guide says those models are
+evaluated on cloud infrastructure, so a discriminative miner's main contribution is the submitted
+model rather than hosting inference hardware.
 
-Generative miners run services that create synthetic media in response to validator prompts.
-Validators check those outputs, evaluate detection models against real and synthetic media, and set
-weights according to the subnet's incentive mechanism. Operators should treat the repository as the
-source of truth for current participant guidance.
+Generative miners contribute synthetic-media generation capacity. The generative guide describes a
+base reward for passing data-validation checks, a multiplier for adversarial performance against
+discriminators, and a sample-volume component that rewards broader participation in evaluations.
+
+Validators challenge and score both miner types. The README describes validators as checking
+generated media, evaluating detection models against real and synthetic media, and setting weights
+from those evaluations.
+
+## Evaluation Context
+
+The
+[incentive documentation](https://raw.githubusercontent.com/BitMind-AI/bitmind-subnet/main/docs/Incentive.md)
+describes discriminator scoring with `sn34_score`, which combines discrimination accuracy with
+calibration quality. This matters because a detector should not only separate real from synthetic
+media; it should also express confidence in a way that matches the observed outcomes.
+
+The same incentive document describes benchmark data as a mix of real, synthetic, and semisynthetic
+content, with regularly refreshed GAS-Station data and holdout data used to discourage overfitting.
+At the subnet level, that makes BitMind a moving target: a model that only memorizes public
+benchmarks should be less useful than one that generalizes to newer and withheld media.
+
+For generation, the incentive document combines validation pass rate with adversarial performance.
+That keeps the generator side from being rewarded only for producing any output; useful generator
+work has to pass validation while still challenging the detector side of the subnet.
 
 ## On-Chain Identity
 
-Live SN34 data is available on [TaoStats](https://taostats.io/subnets/34). The live Finney identity
-for netuid 34 registers the subnet name as BitMind, and the GitHub repository is
-[BitMind-AI/bitmind-subnet](https://github.com/BitMind-AI/bitmind-subnet).
+Live SN34 subnet data is available on [TaoStats](https://taostats.io/subnets/34). The source-backed
+detector, generator, and incentive details in this article come from public BitMind materials rather
+than from live identity fields.
 
 ## Further Reading
 
