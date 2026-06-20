@@ -52,6 +52,41 @@ That keeps the subnet aligned with the practical goal of AI detection: identify 
 preserving confidence that real human writing will not be mislabeled. This framing explains why the
 source treats false positives as a first-order quality concern.
 
+## Validation Data Context
+
+The
+[ItsAI incentive documentation](https://raw.githubusercontent.com/It-s-AI/llm-detection/main/docs/incentive.md)
+describes validation data as balanced between human-written samples and AI-generated samples. That
+balance matters because the subnet is not only asking whether a detector can recognize generated
+text. It is also asking whether the detector can preserve human-authored text as human when both
+classes appear in the same evaluation process.
+
+For the human side, the incentive documentation names the Pile as the source of validation text. For
+the generated side, it describes creating prompts from the same source context and asking language
+models to complete them. This makes the comparison more useful than mixing unrelated human and AI
+datasets: the intended difference between the two classes is authorship, not topic, formatting, or
+source domain.
+
+The same source says validators vary generation parameters and use many model sources when creating
+AI-generated samples. For readers, the important point is diversity of generated text. A miner that
+only recognizes one generator's style should be less useful than a detector that handles a wider
+range of generated completions.
+
+ItsAI also uses small data augmentations on both human-written and AI-generated samples. The
+incentive documentation gives examples such as selecting sentence spans and applying minor text
+changes. This is a validation-quality detail rather than a user-facing product feature: it helps
+reduce memorization and overfitting so miners are rewarded for detection behavior instead of lookup
+against a known corpus.
+
+The reward components follow that same boundary. F1 score captures binary classification quality,
+false-positive scoring protects human-written samples from being wrongly flagged, and average
+precision evaluates ranking quality across thresholds. Together, those metrics describe a detector
+that should be accurate, careful with human text, and useful when scores are interpreted as rankings
+rather than only as yes-or-no labels.
+
+References:
+[ItsAI incentive documentation](https://raw.githubusercontent.com/It-s-AI/llm-detection/main/docs/incentive.md)
+
 ## Miner and Validator Roles
 
 Subnet 32 operates under the standard Bittensor two-role structure. Miners supply a capability —
