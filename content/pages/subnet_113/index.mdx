@@ -28,7 +28,40 @@ The second job is supplying an accurate price feed. The system needs a trustwort
 know when collateral is healthy, so miners act as a price oracle by submitting market prices on a
 regular interval. Submissions that stay close to the agreed reference price are rewarded, while
 inaccurate or absent submissions are not. Together these two roles give the stablecoin both a way to
-manage bad collateral and a dependable source of truth for prices.
+manage bad collateral and a dependable price reference.
+
+## Mechanism Context
+
+The [TensorUSD subnet README](https://raw.githubusercontent.com/TensorUSD/subnet/main/README.md)
+describes SN113 as two linked mechanisms: liquidation auctions and a price oracle. The connection
+between them is important for understanding why the subnet is not only a price feed and not only an
+auction market. The stablecoin needs current prices to decide when collateral has become risky, and
+it needs an auction process to clear that risk once a vault falls below the required backing.
+
+In the liquidation mechanism, miners watch for liquidation events and compete to take on the
+undercollateralized position. The README describes validators as listening for finalized auction
+events, identifying the winning miner hotkey from the bid metadata, and turning the winning auction
+result into subnet weights. That makes the useful work the successful clearing of bad collateral,
+not merely detecting that a vault is unhealthy.
+
+In the oracle mechanism, miners submit TAO/USD prices into consensus rounds. The same README
+describes validators as collecting completed round submissions, comparing them with the round's
+price reference, and rewarding accurate submissions while giving little or no credit to far-off or
+missing submissions. For readers, the key point is that oracle rewards are about price accuracy
+inside the subnet's round structure, while liquidation rewards are about winning auctions that
+resolve unhealthy collateral.
+
+The public [TensorUSD subnet documentation](https://docs.tensorusd.com/components/subnet) places
+these mechanisms inside the broader TensorUSD system rather than presenting them as separate
+operator scripts. Read together, the docs and README show Subnet 113 as the Bittensor incentive
+layer that pays miners for maintaining two pieces of stablecoin infrastructure: market-price
+reporting and collateral cleanup.
+
+That split also explains why the validator role is mostly observational. Validators do not need to
+judge a free-form answer or inspect an off-chain model output. They can watch completed auction
+events, completed oracle rounds, and the miner hotkeys associated with each successful action. The
+result is a subnet where reward evidence is anchored in recorded stablecoin-system activity, while
+[[Yuma Consensus]] handles how those validator weights become emissions.
 
 ## Miner and Validator Roles
 
