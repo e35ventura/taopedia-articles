@@ -7,40 +7,58 @@ category: "Subnets"
 tags: ["Subnets"]
 ---
 
-Leoma is Bittensor Subnet 99. Its on-chain identity describes the subnet as a decentralized video
-generation platform, lists [leoma.ai](https://leoma.ai/) as the subnet URL, and lists
-[RendixNetwork/leoma](https://github.com/RendixNetwork/leoma) as the subnet's GitHub repository.
+Leoma is Bittensor Subnet 99. Public Leoma materials describe it as an AI video subnet where miners
+produce short videos from image-and-text challenges and validators rank the outputs for on-chain
+weights.
 
 ## What Leoma Provides
 
-The Leoma README describes the subnet as an AI video network on Bittensor. In its current form,
-miners run Text-Image to Video (TI2V) models: validators send a first frame and a text prompt, and
-miners return a short generated video. The README notes that Text-to-Video and Image-to-Video
-support are planned.
+The [Leoma documentation](https://docs.leoma.ai/readme.md) frames the subnet around Text-Image to
+Video work. Validators sample a first frame and a prompt from source clips, miners return generated
+video clips, and the resulting outputs are compared against the challenge rather than against a
+generic video-quality score alone.
 
-According to the README, validators score each generated video against a multi-aspect benchmark
-covering first-frame fidelity, prompt adherence, temporal quality, and visual artifacts, recording
-pass or fail results. Ranking is winner-take-all: the top miner receives full weight for the round
-and earns the subnet's emissions for that round.
+That task shape matters because the first frame anchors the generated clip. A strong miner output
+has to preserve the input frame, follow the prompt, keep motion coherent over time, and avoid visual
+artifacts. The [Leoma README](https://raw.githubusercontent.com/RendixNetwork/leoma/main/README.md)
+describes this as a multi-aspect evaluation with pass or fail results, followed by winner-take-all
+ranking for the round.
+
+Leoma therefore evaluates conditional video generation rather than open-ended media creation. The
+subnet's current scope is TI2V, while the public docs describe text-only video and image-only video
+modes as planned extensions rather than the current production task.
 
 ## Miner and Validator Roles
 
-The README describes miners as publishing a TI2V model and exposing it through a callable inference
-endpoint, then committing that reference on-chain so validators can evaluate it. Miners receive
-generation challenges, and the strongest outputs win each round.
+The README describes miners as making a TI2V model available for challenge evaluation. The miner's
+useful contribution is the model's ability to turn a frame and prompt into a short video that
+survives the subnet's evaluation criteria. The mechanism rewards outputs that win the current
+comparison, not simply the act of appearing on the subnet.
 
-Validators run an evaluator and a weight-setter. The README describes them as polling the Leoma API
-for the latest task, downloading the task data, scoring miner videos with a GPT-4o-based evaluation,
-and submitting the results. Each epoch, validators read the computed ranking and set winner-take-all
-weights on-chain. The subnet owner runs a separate sampler that creates tasks and an API that
-computes the ranking and serves the weight vector. Operators should treat the repository as the
-source of truth for current participant guidance.
+Validators supply the challenge context, evaluate the returned clips, and use the current ranking to
+set subnet weights. The public docs describe ranking as pass-based and winner-take-all, so a round
+is about selecting the strongest valid video output for the sampled task rather than distributing
+weight across many partially successful miners.
+
+## Evaluation Context
+
+Leoma's evaluation context is deliberately narrow. The docs say the active task type is Text-Image
+to Video, so the subnet's current production task is conditional video generation from both image
+and text inputs. The same challenge can test several qualities at once: whether the first frame
+remains recognizable, whether the prompt is followed, whether motion is temporally plausible, and
+whether obvious visual defects appear.
+
+The README also describes a model reference and serving target being recorded on-chain. That detail
+matters because validators need a stable way to know which miner model they are challenging, while
+the scoring process still depends on the generated clips themselves. The model reference identifies
+the participant's candidate system; evaluation decides whether that system produced the best video
+for the round.
 
 ## On-Chain Identity
 
-Live SN99 data is available on [TaoStats](https://taostats.io/subnets/99). The live Finney identity
-for netuid 99 reports the subnet name as Leoma, the subnet URL as [leoma.ai](https://leoma.ai/), and
-the GitHub repository as [RendixNetwork/leoma](https://github.com/RendixNetwork/leoma).
+Live SN99 data is available on [TaoStats](https://taostats.io/subnets/99). The source-backed video
+generation and evaluation details in this article come from the public Leoma repository and
+documentation rather than from live identity fields.
 
 ## Further Reading
 
