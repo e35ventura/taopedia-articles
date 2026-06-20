@@ -7,48 +7,62 @@ category: "Subnets"
 tags: ["Subnets"]
 ---
 
-StreetVision by NATIX is Bittensor Subnet 72. Its on-chain description notes that, powered by
-NATIX's "Internet of Cameras," StreetVision is advancing autonomous driving, Physical AI, and
-map-making, and the project site is [natix.network](https://www.natix.network). The subnet applies
-Bittensor's incentives to street-level computer vision: it rewards miners for building AI models
-that look at road imagery and pull useful information out of it, starting with detecting
-construction and roadwork sites. The codebase for the subnet is
-[natixnetwork/streetvision-subnet](https://github.com/natixnetwork/streetvision-subnet).
+StreetVision by NATIX is Bittensor Subnet 72. Public StreetVision materials describe a
+street-imagery computer-vision subnet where miners submit detection models and validators score
+those models on roadwork and construction-site imagery.
 
 ## What StreetVision Rewards
 
-The current task on the subnet is image classification: given a street image, decide whether it
-shows roadwork. Miners build models that make that call, and they are rewarded according to how
-accurately their model classifies the images the network puts in front of it. Detecting features
-like roadwork reliably is the kind of building block that feeds larger uses such as keeping maps
-current and supporting driving systems.
+The
+[StreetVision README](https://raw.githubusercontent.com/natixnetwork/streetvision-subnet/main/README.md)
+frames the subnet around image classification and object detection. The initial task is detecting
+construction or roadwork features in street imagery, with miners returning prediction scores that
+indicate whether a presented image contains the target feature.
 
-A distinctive part of the design is that rewards favor models that stay current. Miners publish
-their classification models to a public model repository, and a submission counts at full strength
-only for a limited window before its reward gradually decays. That decay pushes miners to keep
-improving their models and resubmitting rather than relying indefinitely on an old one, which
-steadily raises the quality of detection across the network.
+The
+[incentive documentation](https://raw.githubusercontent.com/natixnetwork/streetvision-subnet/main/docs/incentive.md)
+describes miner ranking as accuracy-based. Validators assess miner models using a mix of tasks,
+including tasks with known outcomes, so the scoring signal is tied to model performance rather than
+only to participation.
+
+This task is narrower than general computer vision. The subnet is focused on extracting useful
+street-level signals from road imagery. Reliable roadwork detection can support downstream uses such
+as map freshness, infrastructure monitoring, and driving-related perception, but the subnet-level
+work being scored is the model's classification performance on the provided imagery.
 
 ## Miner and Validator Roles
 
-Miners build and publish the image-classification models. Each model takes a street image and
-predicts whether it contains the target feature, and a registered hotkey on netuid 72 is what ties a
-miner's model and its results back to them. Keeping a model fresh through periodic resubmission is
-part of staying competitive.
+Miners build and publish image-classification models. Each model takes street imagery and predicts
+whether it contains the target feature. The incentive documentation describes miner ranking as
+accuracy-based, so miner competitiveness is tied to prediction quality rather than registration
+alone.
 
 Validators test those models. They challenge miners with a balanced mix of real and synthetically
 generated images drawn from a range of sources, so a model has to generalize rather than memorize,
 and they score each miner on how accurately it classifies that mix. From those scores they set
-weights on the network, which is how reward flows through [[Yuma Consensus]]. At the article level
-the split is straightforward: miners supply the detection models, while validators measure their
-accuracy and weight each miner accordingly.
+weights on the network, which is how reward flows through [[Yuma Consensus]].
+
+## Evaluation Context
+
+StreetVision's evaluation context is task accuracy plus validator challenge composition. The
+incentive docs describe miner rank as based on accuracy across organic tasks and tasks with known
+outcomes, while the validator side measures prediction quality on mixed task scenarios. This keeps
+the incentive pointed at detection quality instead of only rewarding participation.
+
+The README also notes that validators use real and synthetic media from diverse sources. That
+matters because a roadwork detector should generalize across lighting, location, camera angle, and
+scene variation. A model that works only on a narrow image source would be less useful than one that
+holds up across the broader challenge mix.
+
+At the subnet level, StreetVision is therefore a repeated image-classification competition. Miners
+submit models, validators challenge them with road-imagery tasks, and ranking follows the accuracy
+of those models under the current evaluation set.
 
 ## On-Chain Identity
 
-Live SN72 subnet data is available on [TaoStats](https://taostats.io/subnets/72), which identifies
-the subnet as StreetVision by NATIX. The live Finney identity for netuid 72 registers the subnet
-name as StreetVision by NATIX and the GitHub repository as
-[natixnetwork/streetvision-subnet](https://github.com/natixnetwork/streetvision-subnet).
+Live SN72 subnet data is available on [TaoStats](https://taostats.io/subnets/72). The source-backed
+street-imagery and scoring details in this article come from public StreetVision materials rather
+than from live identity fields.
 
 ## Further Reading
 
