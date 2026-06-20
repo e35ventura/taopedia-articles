@@ -48,6 +48,54 @@ Unsafe handling ignores the price-protection guardrail. The key distinction is t
 client syntax. The [Price Protection](https://docs.learnbittensor.org/learn/price-protection) docs
 define these choices and their high-level outcomes.
 
+## Submission Price Versus Execution Price
+
+Price protection compares the market price at execution against the price when the staking or
+unstaking action was submitted. The
+[Price Protection](https://docs.learnbittensor.org/learn/price-protection) documentation describes
+strict and partial modes in terms of how far final execution can move from that submission reference
+before the action is rejected or limited. Readers should treat the submission moment as the baseline
+for tolerance checks rather than as a guarantee that pool conditions will stay fixed while the
+action is pending.
+
+That pending window matters because subnet pool prices can change before execution completes. Price
+protection is therefore a guardrail around movement during staking-related processing, not a
+separate token type or wallet feature.
+
+References: [Price Protection](https://docs.learnbittensor.org/learn/price-protection),
+[Understanding Slippage](https://docs.learnbittensor.org/learn/slippage)
+
+## Strict Rejection Versus Partial Fill
+
+Strict protection rejects the entire action when execution would move the final price beyond the
+selected tolerance from the submission price. Partial protection still executes, but only up to the
+maximum amount that keeps the final price inside that tolerance band. The
+[Price Protection](https://docs.learnbittensor.org/learn/price-protection) docs contrast these
+outcomes when a full unstake would push the market farther than the tolerance allows.
+
+Readers choosing between the two modes should decide whether a failed action is preferable to a
+partially filled one. Strict mode protects the full requested amount or nothing; partial mode
+accepts a smaller executed amount so some of the action can complete inside the tolerance boundary.
+
+References: [Price Protection](https://docs.learnbittensor.org/learn/price-protection),
+[Understanding Slippage](https://docs.learnbittensor.org/learn/slippage)
+
+## Unsafe Mode and Complementary Protections
+
+Unsafe mode proceeds without the price-protection guardrail, which the official documentation treats
+as convenient for development and testing but inadvisable when moving real-value liquidity on
+mainnet. Price protection therefore names a user-selected response to adverse movement, while
+[MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield/) addresses a different part of the
+risk area by hiding sensitive pre-inclusion details.
+
+Readers should not treat unsafe execution, strict tolerance, partial fill, and MEV Shield as
+interchangeable substitutes. Price protection decides how much adverse movement an action may
+tolerate; MEV Shield reduces exposure of pending transaction details. Both can matter around staking
+and unstaking, but they answer different questions.
+
+References: [Price Protection](https://docs.learnbittensor.org/learn/price-protection),
+[MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield/)
+
 ## Relationship to slippage
 
 Slippage is the difference between an expected amount and the amount actually received through a
