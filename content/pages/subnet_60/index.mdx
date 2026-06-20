@@ -7,22 +7,47 @@ category: "Subnets"
 tags: ["Subnets"]
 ---
 
-Bitsec.ai is Bittensor Subnet 60, a security-focused subnet. Miners build autonomous security agents
-that analyze software projects for vulnerabilities, and validators run those agents in a sandboxed
-environment and score them on how well they perform. The incentive-mechanism code is maintained in
-the [Bitsec-AI/sandbox](https://github.com/Bitsec-AI/sandbox) repository.
+Bitsec.ai is Bittensor Subnet 60, a security-focused subnet. The
+[Bitsec sandbox README source](https://raw.githubusercontent.com/Bitsec-AI/sandbox/main/README.md)
+describes miners as building AI security agents that analyze codebases and produce vulnerability
+reports. Validators run those agents in sandboxed environments, score their findings against
+benchmark ground truth, and submit results back to the platform.
 
 ## What the Subnet Produces
 
-The subnet's output is the work of security agents — programs that examine a target codebase and
-report findings. In the repository's design, an agent is run against project source files; the
-example target referenced in the code is a real audit subject from a competitive-audit context,
-which indicates the intended task is finding vulnerabilities in actual projects rather than
-answering toy prompts. Framing security analysis as a competition lets the network reward agents
-that surface genuine issues.
+The subnet's output is the work of security agents: programs that examine a target codebase and
+report findings. The [Bitsec docs](https://docs.bitsec.ai/incentive-mechanism/) describe the contest
+as rewarding miners who build better AI agents for finding and fixing exploits in software. That
+makes the useful output a vulnerability report from an autonomous agent, not a generic chat answer
+or a checklist.
 
-The current repository is an MVP-stage design, and it points readers to the project's documentation
-for the latest details, so specifics of the agent interface and scoring are expected to evolve.
+The same docs say the goal is to improve performance in security products, bug-bounty submissions,
+and audit challenges. For Taopedia readers, that ties the subnet to applied software security: the
+agent is valuable when it finds high-impact vulnerabilities in realistic codebases.
+
+## Round Context
+
+Bitsec's incentive documentation describes a round structure with submission, evaluation, and
+feedback phases. During submission, miners submit their agents privately and each submission is
+screened. During evaluation, agents that pass screening are evaluated by validators on SCA-Bench
+codebases against ground truth from human auditors. Afterward, agent code, scores, and evaluation
+logs become public.
+
+This structure gives the subnet two useful boundaries. First, miner agents compete during a defined
+round rather than through a continuous stream of ad hoc reports. Second, the benchmark and public
+post-round artifacts make performance review more transparent after the private submission phase
+ends.
+
+## Scoring Context
+
+The incentive docs describe Bitsec as a hard benchmark where agents need to match critical and high
+findings while performing reliably under sandbox resource constraints. The winner is the top-scoring
+agent, and tie-breakers favor the number of confirmed vulnerabilities found.
+
+That scoring frame is narrower than "find anything suspicious." The subnet rewards agents that
+surface benchmarked security findings and survive the screening and validator evaluation process. It
+also means a miner's best strategy is to improve the agent's actual vulnerability discovery
+performance, not simply to produce longer reports.
 
 ## Miner and Validator Roles
 
@@ -31,24 +56,22 @@ competes: a miner improves its standing by writing an agent that produces better
 the assigned projects.
 
 Validators evaluate the submitted agents by running each one inside an isolated Docker container
-with resource and time limits, capturing its output, and scoring it against the task. The repository
-describes scoring on a 0–100 scale based on how the agent performs and ranking agents to determine
-rewards. Running agents in disposable, resource-limited containers keeps untrusted miner code
-contained during evaluation. Those validator scores become the weights that feed into
-[[Yuma Consensus]], which converts them into the incentive split across miners and validators.
+with resource and time limits, capturing its output, and scoring it against the benchmark task.
+Running agents in disposable, resource-limited containers keeps untrusted miner code contained
+during evaluation.
 
-## On-Chain Identity
+## Source and Live Data
 
-Live SN60 data, including metagraph state and alpha token pool information, is available on
-[TaoStats](https://taostats.io/subnets/60). The Finney subnet identity for netuid 60 registers the
-name as Bitsec.ai, with the description "find and fix exploits in codebases"; it links to the
-[Bitsec-AI/sandbox](https://github.com/Bitsec-AI/sandbox) repository and lists the project website
-at [bitsec.ai](https://bitsec.ai).
+Live SN60 data is available on [TaoStats](https://taostats.io/subnets/60). The mechanism details in
+this article are tied to the Bitsec sandbox README and incentive documentation rather than to live
+identity fields.
 
 ## Further Reading
 
 - [Bitsec.ai website](https://bitsec.ai)
 - [Bitsec.ai subnet repository](https://github.com/Bitsec-AI/sandbox)
+- [Bitsec sandbox README source](https://raw.githubusercontent.com/Bitsec-AI/sandbox/main/README.md)
+- [Bitsec incentive mechanism docs](https://docs.bitsec.ai/incentive-mechanism/)
 - [Subnet 60 on TaoStats](https://taostats.io/subnets/60)
 - [[Yuma Consensus]]
 - [[Dynamic TAO]]
