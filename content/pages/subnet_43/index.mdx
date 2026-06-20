@@ -8,50 +8,65 @@ tags: ["Subnets"]
 ---
 
 Graphite is Bittensor Subnet 43, a decentralized network for solving graph optimization problems.
-Its current focus is the Traveling Salesman Problem (TSP) — finding the shortest route that visits a
-set of points once and returns to the start — a problem whose difficulty grows sharply with the
-number of points. The subnet turns that computation into a rewarded service: validators pose
-problems, miners return solutions, and the closest-to-optimal solutions earn the most. The
-incentive-mechanism code is maintained in the
-[GraphiteAI/Graphite-Subnet](https://github.com/GraphiteAI/Graphite-Subnet) repository.
+The
+[Graphite README source](https://raw.githubusercontent.com/GraphiteAI/Graphite-Subnet/main/README.md)
+describes its current focus as the Traveling Salesman Problem (TSP): finding the shortest route that
+visits a set of points and returns to the start. The subnet turns that computation into a rewarded
+service: validators pose TSP problems, miners return routes, and stronger solutions earn better
+rewards.
 
 ## What the Subnet Produces
 
 The subnet's output is solved routes for graph problems. Because the optimal answer to a hard TSP
 instance is expensive to compute, there is room for miners to compete on both solution quality and
 speed. Problems can be expressed as coordinate inputs for undirected graphs or as edge inputs for
-directed graphs, so a range of routing and ordering problems can be mapped onto the same task.
+directed graphs, so both documented input forms can feed the same TSP-style evaluation task.
 
-The repository ships several reference solvers — including a nearest-neighbour heuristic, an exact
-dynamic-programming method, a beam search, and a learning-based hybrid pointer network — so a new
-miner can participate without writing a solver from scratch. Operators are encouraged to bring
-better algorithms, since the reward mechanism is designed to pay out more to solvers that beat the
-bundled ones.
+The [README](https://raw.githubusercontent.com/GraphiteAI/Graphite-Subnet/main/README.md) says
+Graphite supports both coordinate inputs for undirected graphs and edge inputs for directed graphs.
+That matters because a TSP subnet needs a common problem format before miners can compete on solver
+quality. Different input styles can represent different route and ordering cases while still leaving
+validators with comparable submitted routes.
+
+## Solver Context
+
+Graphite's README lists several reference solver approaches: a nearest-neighbour heuristic, a
+dynamic-programming method, beam search, and a hybrid pointer-network approach. Those examples are
+not the only possible strategies; they show the shape of the competition. Miners can bring
+heuristic, exact, search-based, or learning-assisted approaches to the same TSP-style route task.
+
+That solver diversity is the point of making the problem competitive. A miner can improve by finding
+better tours, finding them faster, or adapting to problem cases where simple heuristics fall short.
+The subnet's useful output is therefore not a single model checkpoint or dataset, but a stream of
+candidate graph routes that validators can compare.
+
+## Reward Context
+
+The README frames miner rewards around solution quality within a time limit. It says submitted
+solutions are evaluated relative to the best solution in the cohort and a benchmark solution, with
+validators penalizing solutions that fall short of the benchmark. This keeps the reward target tied
+to useful route improvement rather than to returning any valid path.
+
+For readers, the important distinction is that Graphite scoring is comparative. A route can be valid
+but still weak if it is much worse than the cohort leader or fails to beat the benchmark heuristic.
+That makes the subnet closer to an optimization contest than a binary correctness check.
 
 ## Miner and Validator Roles
 
 Validators currently generate synthetic graph problems and send them to miners. Each miner solves
 the problem with whatever algorithm it runs and returns a route, within a time limit. Validators
-then evaluate the returned solutions.
+then evaluate the returned solutions. Miners compete by improving the route quality and speed of the
+solutions they return for those validator-generated problems.
 
-Scoring is comparative rather than absolute. According to the repository, a miner's reward depends
-on how its solution compares both to the best solution in the cohort for that problem and to a
-benchmark greedy heuristic; solutions that fail to beat the benchmark are penalized. This rewards
-miners for genuinely better routes instead of for merely returning something. The resulting
-validator scores become the weights that feed into [[Yuma Consensus]], which converts them into the
-incentive split across miners and validators.
+## Source and Live Data
 
-## On-Chain Identity
-
-Live SN43 data, including metagraph state and alpha token pool information, is available on
-[TaoStats](https://taostats.io/subnets/43). The live Finney identity for netuid 43 registers the
-subnet name as Graphite, and points to the
-[GraphiteAI/Graphite-Subnet](https://github.com/GraphiteAI/Graphite-Subnet) repository, which is the
-source of truth for the algorithms and reward mechanism described above.
+Live SN43 data is available on [TaoStats](https://taostats.io/subnets/43). The mechanism details in
+this article are tied to the Graphite README rather than to live identity fields.
 
 ## Further Reading
 
 - [Graphite subnet repository](https://github.com/GraphiteAI/Graphite-Subnet)
+- [Graphite README source](https://raw.githubusercontent.com/GraphiteAI/Graphite-Subnet/main/README.md)
 - [Subnet 43 on TaoStats](https://taostats.io/subnets/43)
 - [[Yuma Consensus]]
 - [[Dynamic TAO]]
