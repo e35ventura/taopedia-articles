@@ -38,6 +38,51 @@ run in backend services, while the validator service fetches the latest normaliz
 the burn mechanism, and submits weights to Bittensor. This is the subnet-specific form of the
 broader [[Mining and Validating]] pattern in Bittensor.
 
+## Challenger Queue Context
+
+The [Affine README](https://raw.githubusercontent.com/AffineFoundation/affine-cortex/main/README.md)
+describes the subnet around a current champion and a queue of pending challengers. The
+validator-side scheduler walks that queue in first-block order, and each challenger faces the
+current champion across every evaluation environment in a single back-to-back contest.
+
+That structure makes Affine different from a leaderboard that simply accumulates scores over time. A
+challenger has to win across all environments by the required per-environment margin before it can
+replace the champion. If it does not dethrone the champion, the queue advances to the next miner
+instead of keeping the failed challenger in place.
+
+The README also says the environment task-id pool refreshes on a roughly daily cadence and the
+current champion is re-sampled before the queue continues. For readers, the important point is that
+Affine's evaluation is framed as repeated champion defense rather than isolated one-off model tests.
+The live champion remains the model receiving winner-take-all weight until another challenger passes
+the full contest condition.
+
+Reference:
+[Affine README source](https://raw.githubusercontent.com/AffineFoundation/affine-cortex/main/README.md)
+
+## Commit and Validation Boundary
+
+The
+[miner guide](https://raw.githubusercontent.com/AffineFoundation/affine-cortex/main/docs/MINER.md)
+describes miner participation as committing a Hugging Face model and revision on chain. The miner
+does not operate the validator's backend services; the validator-side scheduler deploys the
+committed weights when the miner's queue slot comes up.
+
+The
+[validator guide](https://raw.githubusercontent.com/AffineFoundation/affine-cortex/main/docs/VALIDATOR.md)
+keeps another boundary clear: evaluation and scoring run in backend services, while the validator
+service reads the resulting normalized weights, applies the configured burn mechanism, and submits
+weights to Bittensor. This separates model improvement, challenge evaluation, and on-chain
+weight-setting into distinct parts of the subnet.
+
+That division helps explain why Affine articles should treat public model commitments and validator
+weights as connected but not identical. The committed model revision is the miner's candidate
+artifact; the backend contest determines whether it beats the champion; the validator-facing output
+is the normalized weight state that can be submitted on chain.
+
+References:
+[Affine miner guide source](https://raw.githubusercontent.com/AffineFoundation/affine-cortex/main/docs/MINER.md),
+[Affine validator guide source](https://raw.githubusercontent.com/AffineFoundation/affine-cortex/main/docs/VALIDATOR.md)
+
 ## On-Chain Identity
 
 Live SN120 data is available on [TaoStats](https://taostats.io/subnets/120). Readers can also
