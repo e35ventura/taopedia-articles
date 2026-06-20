@@ -8,45 +8,59 @@ category: "Subnets"
 tags: ["Subnets"]
 ---
 
-Verathos is Bittensor Subnet 96. Its on-chain identity describes the subnet as a verified AI
-inference and training subnet, lists [verathos.ai](https://verathos.ai) as the subnet URL, and lists
-[verathos-ai/verathos](https://github.com/verathos-ai/verathos) as the subnet's GitHub repository.
+Verathos is Bittensor Subnet 96. Public Verathos materials describe it as a verified AI compute
+network where miners return AI outputs with cryptographic proof material that validators can check
+without rerunning the full model.
 
 ## What Verathos Provides
 
-The Verathos README describes the subnet as a network for cryptographically verified AI compute.
-Rather than trusting that a miner ran the model it claims, Verathos lets each computation be proven:
-miners attach a succinct cryptographic proof to their results, and validators check those proofs
-before assigning rewards. The README describes the underlying scheme as a zero-knowledge-inspired,
-sumcheck-based verification over model weights committed on-chain, and notes that validators can
-verify the proofs on ordinary processors in milliseconds — keeping the cost of checking work far
-below the cost of doing it.
+The [Verathos overview](https://raw.githubusercontent.com/verathos-ai/verathos/main/docs/intro.md)
+frames the subnet around cryptographically verified AI compute. Instead of asking validators to
+trust that a miner ran the claimed model, Verathos makes the returned work carry proof evidence tied
+to the model weights and computation being checked.
 
-According to the README, verified inference is live today while verified training is in development.
-For inference, a proof accompanies each generation and the network exposes an interface compatible
-with common AI clients that routes requests across miners by score. The same approach is being
-extended to training, where a job can prove that a stated base model was fine-tuned with the claimed
-data and method.
+The proof system is designed to make verification cheaper than reproduction. A validator should not
+need the miner's GPU or a full rerun of the model to reject dishonest work. The overview describes
+sumcheck-style proofs over Merkle-committed weights, with validators checking proofs on ordinary
+processors before weights are assigned.
 
-The README lists what the proofs are meant to establish: that a miner used the weights it committed
-to, that the underlying computation was carried out correctly, and that the returned output was not
-altered afterward. Because only a random subset of a model's layers is challenged on each request,
-confidence that a dishonest miner is caught rises toward certainty over repeated queries.
+Verathos also distinguishes current and future work. The source describes verified inference as the
+live focus, while verified training is still described as in testing or development. That boundary
+matters because the same verification idea can apply to both serving and training, but the active
+subnet behavior is more precise as verified inference with verified training as a stated extension.
+
+## Proof Context
+
+The
+[inference verification protocol](https://raw.githubusercontent.com/verathos-ai/verathos/main/docs/inference_protocol.md)
+describes a probabilistic verification system for large-language-model inference. A miner returns an
+output together with commitments and proof data; the validator checks the proof against on-chain
+weight commitments and a request-specific challenge. The point is not to hide the model, but to make
+dishonest substitutions or partial computation detectable.
+
+The proof guarantees cover several separate questions. Weight checks address whether the claimed
+model weights match committed roots. Computation checks address whether challenged tensor operations
+were carried out correctly. Output binding addresses whether the final response was altered after
+proof generation. Probabilistic coverage addresses the fact that only sampled layers are challenged
+on a given request, with detection confidence increasing across repeated checks.
+
+This gives Verathos a different shape from a normal inference marketplace. Miner quality is not only
+about speed or model usefulness; it also depends on whether the returned work can survive proof
+verification. A proof failure is therefore a direct signal that the miner's work should not be
+trusted for subnet scoring.
 
 ## Miner and Validator Roles
 
-The README describes miners as serving models on GPUs and producing a verification proof alongside
-every result. Validators run without a GPU: they periodically probe miners, verify the submitted
-proofs, and score miners on speed and proof validity, with a failed proof immediately dropping a
-miner's score to zero. Validators then set weights on-chain according to those scores. Operators
-should treat the repository as the source of truth for current participant guidance.
+Miners provide AI compute and attach proof evidence to returned results. Validators check those
+proofs, combine proof validity with performance signals, and set subnet weights from the verified
+work. The important role split is that miners perform the expensive computation, while validators
+perform cheaper verification and scoring before rewards flow through the subnet.
 
 ## On-Chain Identity
 
-Live SN96 data is available on [TaoStats](https://taostats.io/subnets/96). The live Finney identity
-for netuid 96 registers the subnet name as Verathos, with the description "Verified AI inference and
-training subnet." The registered project website is [verathos.ai](https://verathos.ai) and the
-GitHub repository is [verathos-ai/verathos](https://github.com/verathos-ai/verathos).
+Live SN96 data is available on [TaoStats](https://taostats.io/subnets/96). The source-backed
+verification and subnet-role details in this article come from the public Verathos repository and
+documentation rather than from live identity fields.
 
 ## Further Reading
 
