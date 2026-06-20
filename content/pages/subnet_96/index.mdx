@@ -49,6 +49,40 @@ about speed or model usefulness; it also depends on whether the returned work ca
 verification. A proof failure is therefore a direct signal that the miner's work should not be
 trusted for subnet scoring.
 
+## Detection and Probation Context
+
+The inference protocol describes Verathos as a cryptoeconomic verification system rather than a
+claim that every tensor operation is rechecked on every request. A validator samples proof targets,
+and the miner has to make the sampled computation agree with committed model weights, activations,
+prompt binding, sampler settings, and output commitments. The per-request check is probabilistic,
+but repeated checks raise the chance of detecting dishonest serving.
+
+The same source presents sampling as an efficiency tradeoff, not as a weaker trust model. Validators
+can verify selected proof targets on ordinary CPUs instead of rerunning the whole model on a GPU.
+That keeps validator work lightweight while still making repeated dishonest serving increasingly
+hard to hide.
+
+That matters for how the subnet discourages cheaper-than-honest behavior. The protocol's threat
+model focuses on miners that try to save compute while still collecting emissions. If a miner serves
+the wrong model, skips layers, substitutes prompts, changes sampling parameters, or fabricates
+intermediate work, the sampled proof path is designed to expose that mismatch. Detection then
+affects rewards instead of remaining a purely diagnostic event.
+
+The same source describes probation as the economic response to proof failure. A detected failure
+can remove reward eligibility until the miner demonstrates clean behavior again. This makes the
+verification loop part of subnet scoring: proofs are not only technical receipts attached to
+responses, but evidence validators can use when deciding whether a miner should continue receiving
+weight.
+
+The protocol also explains why request binding is important. Validators provide a nonce, and the
+challenge is derived from that nonce and the miner's output commitment, so a miner cannot pick the
+layers that will be checked before finishing the inference. This keeps the proof sample tied to the
+specific request and response rather than to a reusable certificate created in advance.
+
+References:
+[Verathos overview](https://raw.githubusercontent.com/verathos-ai/verathos/main/docs/intro.md),
+[Verathos inference protocol](https://raw.githubusercontent.com/verathos-ai/verathos/main/docs/inference_protocol.md)
+
 ## Miner and Validator Roles
 
 Miners provide AI compute and attach proof evidence to returned results. Validators check those
