@@ -43,6 +43,41 @@ describes message severity. The
 [Logging](https://docs.learnbittensor.org/concepts/bt-logging-levels) page identifies both custom
 levels.
 
+## Visibility and filtering
+
+Logging levels also act as a visibility filter. The official
+[Logging](https://docs.learnbittensor.org/concepts/bt-logging-levels) page explains that messages at
+or above the selected logging level are emitted. That means a quiet log view is not the same thing
+as a quiet system: lower-severity messages may simply be below the active threshold.
+
+This boundary matters when reading Bittensor diagnostics. A `WARNING` or `ERROR` message is more
+likely to demand attention than an `INFO` message, but the absence of `TRACE` or `DEBUG` output does
+not prove that the underlying detail was unavailable. It may only mean the process was configured to
+show a less verbose level.
+
+## Message context
+
+Bittensor logging messages can carry extra context through prefix and suffix fields. The
+[Logging](https://docs.learnbittensor.org/concepts/bt-logging-levels) page presents those fields as
+ways to add context around a message, and that makes them useful for scanning a stream of diagnostic
+output.
+
+Prefixes and suffixes should be read as message annotations rather than separate protocol facts.
+They can make a line easier to interpret, especially when a tool emits many similar messages, but
+they do not replace the message body, the selected log level, or the source of the action being
+diagnosed.
+
+## Presentation cues
+
+The logging documentation also describes color and emoji support for console output. Those cues can
+make a log easier to scan by visually distinguishing levels such as `TRACE`, `DEBUG`, `INFO`,
+`SUCCESS`, `WARNING`, `ERROR`, and `CRITICAL`.
+
+Presentation cues do not change the severity model. A red error line, a green success line, or an
+emoji marker may help a reader notice a message quickly, but the diagnostic meaning still comes from
+the level, text, and surrounding Bittensor action. This keeps display formatting separate from
+chain-layer evidence.
+
 ## Diagnostic context
 
 A log level is a clue about message importance, not a complete explanation of what happened. For
@@ -50,6 +85,11 @@ example, an error-level message can point a reader toward a failure area, but th
 message, interface, and source context still matter. Bittensor's
 [Subtensor Error Codes](https://docs.learnbittensor.org/errors) overview makes the same distinction
 for chain-layer errors by grouping failures into standard, custom, and inherited error categories.
+
+The same overview notes that Subtensor errors can surface through interfaces such as the Bittensor
+CLI, the Bittensor Python SDK, and extrinsic transaction interfaces. Logging levels therefore sit
+one step away from the chain rejection itself: they help a reader inspect how software reported a
+condition, while error-code references help identify the chain-layer failure family.
 
 ## Boundary with error codes
 
@@ -59,6 +99,25 @@ by the Subtensor layer. Reading them together can be useful, but a log level alo
 treated as the full source of truth for a failed network action. The
 [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor) reference shows how
 specific chain-layer failure names sit behind short error messages.
+
+For readers, this means a severe log line should start a source check rather than end it. If a
+message describes a failed staking, subnet, wallet, or validator action, the next question is which
+interface produced the message and whether the underlying response maps to a documented Subtensor
+error. The log level explains urgency; the error reference explains the rejection category.
+
+## Troubleshooting boundaries
+
+Logging levels are especially useful when comparing ordinary progress messages with failure signals.
+`INFO` and `SUCCESS` lines can confirm that a process reached an expected point, while `WARNING`,
+`ERROR`, and `CRITICAL` lines can narrow attention to conditions that may require follow-up. The
+level names and descriptions in the official
+[Logging](https://docs.learnbittensor.org/concepts/bt-logging-levels) page provide that reading
+frame.
+
+They are less useful when treated as a complete troubleshooting guide. A level does not identify a
+subnet, account, extrinsic, balance, or runtime rule on its own. It must be read with the message
+text and, when a chain action failed, with the relevant Subtensor error documentation or interface
+output.
 
 ## Relation to nearby concepts
 
@@ -75,6 +134,7 @@ message levels.
 
 - [[mining_and_validating|Mining and Validating]]
 - [[subnet_creation_mechanisms|Subnet Creation and Incentive Mechanisms]]
+- [[subtensor_error_codes|Subtensor Error Codes]]
 
 ## Further Reading
 
