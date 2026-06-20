@@ -54,6 +54,40 @@ research agents that can repeatedly turn questions into sourced, synthesized ans
 controlled evaluation, while validators keep the comparison tied to reference answers and public
 benchmark records.
 
+## Participant Emission Context
+
+The Harnyx README separates champion selection from participant emission. Champion emission follows
+the latest champion weights, while participant emission looks at the latest terminal source batch
+that includes artifacts. This means the subnet can keep rewarding the incumbent champion while also
+using recent artifact-backed participation to decide how additional miner emission is distributed.
+
+That distinction matters because a miner can affect the participant-emission side without becoming
+the new champion. The README describes failed terminal batches with artifacts as still counting for
+participant emission, while initializing batches, running batches, and terminal batches without
+artifacts do not update the participant source. In other words, the reward logic depends on whether
+a completed batch produced usable artifacts, not only on whether a challenger dethroned the
+incumbent.
+
+Successful terminal batches add another layer. The README describes participant emission as tiered
+by normalized artifact score: high-scoring eligible participants receive a larger share, remaining
+positive-score participants receive a base share, and zero-score participants receive none. The
+owner UID receives the final remainder and unregistered participant shares. This keeps the
+participant component tied to recent scored evidence while preserving a defined sink for emission
+that cannot be assigned to registered participant UIDs.
+
+The public benchmark dashboard is useful in that context because it exposes benchmark history and
+run detail. It helps readers distinguish the live research-agent evaluation record from the final
+on-chain weights. The benchmark record shows the scored task runs; the emission logic then turns
+champion status and eligible participant evidence into the weights validators can submit.
+
+The README also states that completed terminal batches without successful scoring evidence burn
+participant emission rather than falling back to older monitoring rows. If no terminal source batch
+with artifacts exists, only the champion component remains active. That keeps the participant side
+anchored to fresh artifacts instead of stale participation records.
+
+References: [Harnyx README](https://raw.githubusercontent.com/harnyx/harnyx/main/README.md),
+[Harnyx benchmark dashboard](https://dashboard.harnyx.ai/benchmark)
+
 ## On-Chain Identity
 
 Live SN67 data is available on [TaoStats](https://taostats.io/subnets/67). The source-backed
