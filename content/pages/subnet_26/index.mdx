@@ -7,50 +7,71 @@ category: "Subnets"
 tags: ["Subnets"]
 ---
 
-Perturb is Bittensor Subnet 26, an adversarial-robustness subnet for image-model evaluation. Its
-public site is [perturbai.io](https://www.perturbai.io), and the GitHub repository listed in the
-subnet's Finney identity is [0xsigurd/Perturb](https://github.com/0xsigurd/Perturb).
+Perturb is Bittensor Subnet 26. Public Perturb materials describe it as an adversarial robustness
+network where miners search for image perturbations that make a fixed classifier fail, while
+validators verify whether those perturbations satisfy the challenge constraints.
 
 ## What Perturb Provides
 
-The Perturb README describes a subnet where validators create adversarial-image challenges and
-miners return perturbed images under bounded distortion constraints. The task is not simply to
-change an image at random; miner outputs must remain close to the original image while changing how
-the target classifier responds.
+The [Perturb README](https://raw.githubusercontent.com/0xsigurd/Perturb/main/README.md) frames the
+subnet around adversarial examples: small input changes that can cause image classifiers to
+misclassify. In the subnet task, validators construct challenges from real images and miners return
+perturbed versions intended to change the classifier result.
 
-In Bittensor terms, Perturb turns adversarial robustness testing into a competitive subnet task.
-Miners search for useful perturbations, validators verify and score the responses, and validator
-weights feed into [[Yuma Consensus]].
+The [Perturb whitepaper](https://www.perturbai.io/whitepaper) expands the project vision around
+continuous adversarial testing. At the subnet level, the important distinction is that Perturb is
+not asking miners for arbitrary image edits; it is turning bounded adversarial search into a
+competitive Bittensor task.
+
+## Challenge and Verification Flow
+
+The README describes validators as sampling images, running a fixed classifier, building attack
+challenges, broadcasting those challenges to miners, and verifying miner responses. A miner response
+must change the classifier's label while staying inside distortion and image-quality constraints.
+
+That verification asymmetry is central to Perturb. Finding a strong adversarial example can be
+computationally difficult, but checking a submitted example is comparatively cheap: run the target
+model, compare the predicted label, and measure whether the perturbation remains within the allowed
+limits.
 
 ## Miner and Validator Roles
 
 Miners respond to image challenges with perturbed images. Strong miner work produces a response that
-changes the classifier result while staying inside the subnet's distortion and image-quality
-constraints.
+changes the classifier result while preserving enough similarity to the original image to satisfy
+the subnet's bounds.
 
 Validators run the challenge and scoring side of the subnet. The README describes validators as
 creating image challenges, checking miner responses, computing rewards, maintaining scoring history,
-and setting on-chain weights. Operators should treat the repository as the source of truth for
-current setup details.
+and setting on-chain weights. Those weights then flow through [[Yuma Consensus]].
+
+## Evaluation Context
+
+Perturb's evaluation context is adversarial robustness, not ordinary image classification. A normal
+classifier accuracy benchmark asks whether a model gets clean examples right; Perturb asks whether
+miners can find constrained changes that make the classifier fail while keeping the image close to
+the original.
+
+The README describes two intended outputs from that process: a growing adversarial training dataset
+and auditable robustness certificates. The dataset framing matters because verified adversarial
+examples can be used to train stronger models, while the certificate framing explains why on-chain
+evidence of evaluation can matter beyond the immediate miner reward.
 
 ## On-Chain Identity
 
-Live SN26 data is available on [TaoStats](https://taostats.io/subnets/26). The live Finney identity
-for netuid 26 registers the subnet name as Perturb, with the description "Decentralized adversarial
-robustness network." The GitHub repository is
-[0xsigurd/Perturb](https://github.com/0xsigurd/Perturb).
+Live SN26 subnet data is available on [TaoStats](https://taostats.io/subnets/26). The source-backed
+adversarial-challenge and robustness details in this article come from public Perturb materials
+rather than from live identity fields.
 
 ## Relationship to Multiple Mechanisms
 
 Perturb validators create adversarial-image challenges and score miner responses off chain before
-submitting weights. The
-[Glossary](https://docs.learnbittensor.org/resources/glossary#subnet-scoring-model) and
-[Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets)
-docs note that each incentive mechanism has its own subnet scoring model.
-
-For readers, challenge design and distortion scoring belong to this subnet's evaluation pipeline. A
-parallel mechanism on the same netuid would need its own scoring model rather than reusing Perturb's
-adversarial challenge rules by default.
+submitting weights. The Bittensor
+[glossary](https://docs.learnbittensor.org/resources/glossary#subnet-scoring-model) describes a
+subnet scoring model as the mechanism that calculates miner scores, while the documentation on
+[multiple incentive mechanisms](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets)
+describes separate mechanisms as having separate scoring models. Perturb's image-attack rules should
+therefore be read as the scoring model for this adversarial-robustness task, not as a generic rule
+for every possible mechanism on the same netuid.
 
 ## Further Reading
 
