@@ -51,6 +51,42 @@ For readers, that means TalkHead does not reward model submission volume by itse
 container that can survive the shared evaluation path, produce acceptable talking-head output, and
 do so efficiently enough to beat the other eligible submissions.
 
+## Executor Evidence Boundary
+
+The
+[TalkHead subnet README](https://raw.githubusercontent.com/talkheadai/talkhead-subnet/main/README.md)
+describes miners submitting model image digests rather than finished videos. That detail changes how
+evidence should be read: the competitive object is a runnable model container that can be evaluated
+again, not a demonstration clip selected by the miner.
+
+The
+[TalkHead executor README](https://raw.githubusercontent.com/talkheadai/talkhead-executor/main/README.md)
+describes the executor as maintaining miner submissions, evaluating miners continuously, and
+exposing scores. This places the executor between miner submissions and validator weight setting.
+Validators can use executor results, while miners still have to provide containers that work inside
+the shared scoring path.
+
+The executor source also frames scoring as quality-first with an efficiency modifier. That means a
+fast model is not enough by itself if the generated talking-head output fails the quality checks,
+and a high-quality model can still be compared on resource use or latency once quality is
+acceptable. The reward signal is therefore a combined evaluation of output quality and practical
+execution cost.
+
+This boundary also explains the importance of standardized challenges. If every miner's container is
+run through the same executor process and challenge set, the comparison is less about marketing
+claims and more about observed behavior under shared conditions. A miner submission is strongest
+when the executor can run it, measure it, and compare it with other eligible submissions in the same
+round context.
+
+For readers, TalkHead is best understood as an evaluated model-submission subnet. The miner supplies
+the model runtime, the executor produces comparable evidence, and validators use that evidence when
+setting weights. A manually selected sample video or off-path benchmark is therefore not the same
+kind of evidence as an executor-scored subnet submission.
+
+References:
+[TalkHead subnet README source](https://raw.githubusercontent.com/talkheadai/talkhead-subnet/main/README.md),
+[TalkHead executor README source](https://raw.githubusercontent.com/talkheadai/talkhead-executor/main/README.md)
+
 ## Miner and Validator Roles
 
 Miners are the model builders. A miner trains a talking-head model, publishes it as a container
