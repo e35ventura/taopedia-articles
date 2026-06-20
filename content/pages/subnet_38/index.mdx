@@ -18,6 +18,41 @@ objective, and the network rewards the strongest results. The codebase is the
 [chronollm/sn38](https://github.com/chronollm/sn38) repository, which defines the training task in
 more detail than the on-chain identity alone.
 
+## Temporal Consistency Context
+
+The [ChronoLLM README](https://raw.githubusercontent.com/chronollm/sn38/main/README.md) explains the
+subnet's target problem as lookahead bias. A standard language model trained on data from many time
+periods can accidentally use knowledge from the future when answering a question about an earlier
+period. That is especially important for historical analysis and financial backtesting, where a
+model that "knows" later events can look accurate while failing the actual time-bounded task.
+
+ChronoLLM addresses that problem by making time boundaries part of the miner task. The README
+describes miners training a collection of models, one per year, where each model is limited to data
+available up to its cutoff year. A model intended for an earlier year should not rely on later
+information. The subnet therefore measures whether language-model capability can be made
+chronologically disciplined, not only whether a model gives fluent answers.
+
+This makes ChronoLLM different from a general language-model leaderboard. The useful output is a set
+of models that preserve temporal boundaries across a range of years. A strong miner contribution is
+not just a capable model; it is a model collection that can reason within the information horizon it
+is supposed to have.
+
+## Evaluation Context
+
+The README describes evaluation in two broad stages. First, validators test submitted models for
+chronological consistency against private evaluation data. The privacy of that evaluation set
+matters because public test questions would let miners overfit to the checks rather than train
+models that genuinely respect the cutoff year.
+
+Second, qualified models are compared for answer quality. The source describes open-ended questions
+and pairwise judging among the strongest submissions. Together, the validation problem has two
+parts: reject time-leaking models, then compare the quality of models that pass the temporal
+boundary test.
+
+Those stages explain why validators are central to the subnet's task. They are not only scoring
+generic language-model output; they are checking whether the model could have known the information
+it uses. The resulting scores become validator weights that flow through [[Yuma Consensus]].
+
 ## Miner and Validator Roles
 
 Subnet 38 operates under the standard Bittensor two-role structure. Miners supply a capability —
@@ -35,6 +70,7 @@ identity; no project website URL is set. Live subnet data is available on
 ## Further Reading
 
 - [ChronoLLM on GitHub](https://github.com/chronollm/sn38)
+- [ChronoLLM README source](https://raw.githubusercontent.com/chronollm/sn38/main/README.md)
 - [Subnet 38 on TaoStats](https://taostats.io/subnets/38)
 - [[Yuma Consensus]]
 - [[Dynamic TAO]]
