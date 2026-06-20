@@ -15,11 +15,10 @@ evaluate those agents in a standardized sandbox. The incentive-mechanism code is
 ## What the Subnet Produces
 
 The subnet's output is working software agents — programs that can resolve real coding tasks on
-their own. According to the repository, a miner's agent is a single `agent.py`: given a task, it
-treats the task container's working directory as the repository it needs to inspect and patch, and
-it returns the changes that solve the task. This is the same shape as automated bug-fixing and
-software-engineering benchmarks, where success is measured by whether the produced patch actually
-resolves the problem.
+their own. The public Ridges repository describes the miner deliverable as an agent that receives a
+task, examines the relevant repository, and returns changes intended to solve the problem. This is
+the same shape as automated bug-fixing and software-engineering benchmarks, where success is
+measured by whether the produced change actually resolves the task.
 
 Because the deliverable is an agent rather than a one-off answer, the competition rewards general
 problem-solving capability: a better agent is one that resolves more tasks across repositories it
@@ -27,9 +26,9 @@ has not seen before.
 
 ## Miner and Validator Roles
 
-Miners develop and submit the agent. The repository provides a miner CLI and toolkit so an operator
-can test `agent.py` locally — wiring in an inference provider and running tasks under the same
-contract the subnet uses — before shipping it to the network.
+Miners develop and submit the software agent. The agent is the competing artifact: it has to
+generalize across tasks rather than answer one known prompt or solve one known repository ahead of
+time.
 
 Validators run submitted agents inside Harbor, the sandboxed task environment where every agent
 executes. Each agent runs in an isolated task container, attempts the assigned task, and is scored
@@ -37,6 +36,33 @@ on the outcome. The repository also describes a "Screener" role alongside the fu
 to pre-check agents. The resulting validator scores become the weights that feed into
 [[Yuma Consensus]], which converts them into the incentive split across miners and validators.
 Running untrusted agent code in disposable, isolated containers keeps evaluation contained.
+
+## Evaluation Boundary
+
+The
+[Ridges Harbor documentation](https://raw.githubusercontent.com/ridgesai/ridges/main/ridges_harbor/README.md)
+describes Harbor as the framework that runs an agent against a task and calls a verifier to score
+the result. In article terms, that makes Subnet 62 a measured task-execution competition, not a
+discussion forum for proposed fixes. The miner's useful output is the attempted repository change
+and the verifier outcome attached to that attempt.
+
+The
+[Ridges sandbox documentation](https://raw.githubusercontent.com/ridgesai/ridges/main/docs/sandbox.md)
+adds the evaluation boundary around that work. Agents run in the task environment, receive the task
+statement, and operate under bounded run conditions. Those boundaries are part of why validators can
+compare agent results: each submission is tested inside a controlled task run rather than judged as
+an open-ended development session.
+
+This also clarifies the role of isolation. Ridges needs to evaluate untrusted software agents, so
+the validator side must keep the task attempt contained while still letting the agent inspect the
+repository it is meant to repair. The sandbox is therefore not a decorative implementation detail;
+it is the mechanism that lets a coding-agent subnet compare autonomous attempts without handing
+unbounded control to the submitted program.
+
+For readers, the key distinction is between a software agent and a software answer. A software
+answer can describe a fix in prose. A Ridges miner agent has to produce a change that can be run
+through the task-and-verifier loop. That makes the subnet's reward signal closer to benchmarked
+software repair than to ordinary question answering.
 
 ## On-Chain Identity
 
@@ -49,6 +75,8 @@ contract and evaluation sandbox described above.
 ## Further Reading
 
 - [Ridges subnet repository](https://github.com/ridgesai/ridges)
+- [Ridges Harbor adapter source](https://raw.githubusercontent.com/ridgesai/ridges/main/ridges_harbor/README.md)
+- [Ridges sandbox source](https://raw.githubusercontent.com/ridgesai/ridges/main/docs/sandbox.md)
 - [Subnet 62 on TaoStats](https://taostats.io/subnets/62)
 - [[Yuma Consensus]]
 - [[Dynamic TAO]]
