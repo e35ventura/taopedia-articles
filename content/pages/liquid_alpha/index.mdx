@@ -268,9 +268,34 @@ adjustment that operates inside consensus work across that cadence.
 References: [Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo),
 [Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)
 
+## Relationship to Coinbase
+
+Liquid alpha and coinbase address related but different parts of subnet epoch processing. Coinbase
+is the per-block Subtensor mechanism that accumulates pending emissions and detects when a subnet
+reaches its epoch boundary — at that point coinbase triggers the Yuma Consensus round that evaluates
+validator weights and distributes miner incentives and validator dividends. Liquid alpha is a
+subnet-level bond-smoothing feature that operates inside the Yuma Consensus round coinbase fires.
+The [Coinbase Implementation](https://docs.learnbittensor.org/subtensor-api/extrinsics#coinbase)
+describes the per-block emission and epoch-trigger mechanism, and the
+[Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)
+documentation describes liquid alpha as adjusting the bond EMA smoothing factor per validator-miner
+pair based on consensus alignment within that round.
+
+The interaction is sequential: coinbase determines when the epoch round fires by monitoring block
+count against the subnet tempo, and once coinbase triggers the round, the per-pair alpha values that
+liquid alpha computes are applied to update each validator-miner bond. A subnet without liquid alpha
+still runs that coinbase-triggered round with a fixed alpha; a subnet with liquid alpha runs the
+same coinbase-triggered round but with a per-pair smoothing factor. Coinbase controls the schedule;
+liquid alpha shapes what the bond-smoothing step computes inside each triggered round.
+
+References:
+[Coinbase Implementation](https://docs.learnbittensor.org/subtensor-api/extrinsics#coinbase),
+[Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)
+
 ## Further Reading
 
 - [Consensus-based Weights / Liquid Alpha](https://docs.learnbittensor.org/concepts/consensus-based-weights)
 - [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
 - [Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds)
 - [Glossary: Exponential Moving Average](https://docs.learnbittensor.org/resources/glossary#exponential-moving-average-ema)
+- [Coinbase Implementation](https://docs.learnbittensor.org/subtensor-api/extrinsics#coinbase)
