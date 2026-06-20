@@ -7,10 +7,8 @@ category: "Subnets"
 tags: ["Subnets"]
 ---
 
-8 Ball is Bittensor Subnet 125. Its live Finney identity currently registers the subnet name as 8
-Ball while leaving the GitHub, URL, contact, Discord, and description fields blank. Public project
-materials describe 8BALL as prediction markets on Bittensor, with a website at
-[8ball125.com](https://8ball125.com/) and a miner-support repository at
+8 Ball is Bittensor Subnet 125. Public project materials describe 8BALL as prediction markets on
+Bittensor, with a website at [8ball125.com](https://8ball125.com/) and a miner-support repository at
 [Barbariandev/8Ball_miner](https://github.com/Barbariandev/8Ball_miner).
 
 ## What 8 Ball Provides
@@ -44,17 +42,53 @@ convex optimization problem that allocates liquidity across bid and ask price le
 budget and spread constraints, then distributes maker rewards according to the useful flow those
 resting orders support.
 
+## Wallet Binding Context
+
+The [8Ball miner README](https://raw.githubusercontent.com/Barbariandev/8Ball_miner/main/README.md)
+describes the subnet's identity bridge between Ethereum liquidity wallets and Bittensor hotkeys. The
+Ethereum wallet is the account that creates limit orders on the prediction-market orderbook, while
+the Bittensor hotkey is the identity that receives subnet emissions after validator scoring.
+
+The binding process matters because validators need to know which hotkey should receive credit for a
+wallet's market-making activity. The README describes an EIP-191 signature bundle: the Ethereum
+wallet signs a message naming the hotkey, the bundle is published at a stable public URL, and that
+URL is committed on chain for validators to read. That makes the off-chain market wallet and the
+Bittensor miner identity auditable without sending Ethereum private keys to validators.
+
+For readers, this explains why 8 Ball is not a normal miner-server task. The miner contribution is
+resting orderbook liquidity from linked Ethereum wallets, and the subnet-specific validator job is
+to map that liquidity back to Bittensor identities before weights are assigned.
+
+Reference:
+[8Ball miner README source](https://raw.githubusercontent.com/Barbariandev/8Ball_miner/main/README.md)
+
+## Liquidity Scoring Context
+
+The [8BALL website](https://8ball125.com/) describes the market system around an orderbook,
+conditional tokens, and a reward engine. The miner README describes the current liquidity-mining
+program as scoring recent resting orders by spread tightness, notional size, and duration. Orders
+nearer to the market midpoint, larger orders, and orders that remain resting longer receive more
+credit.
+
+That scoring model makes liquidity quality different from simple trading volume. Filled orders stop
+accumulating duration, and orders outside the qualifying spread range do not receive the same reward
+treatment. The README also states that all active markets and directions are weighted equally for
+the launch program, so market makers are rewarded for useful quoted liquidity across YES bids, YES
+asks, NO bids, and NO asks.
+
+The article's reward discussion should therefore be read as a market-making incentive loop: Ethereum
+wallets place and maintain useful orderbook liquidity, validators score that activity over recent
+windows, and the wallet-to-hotkey binding tells the subnet which Bittensor identity should receive
+credit.
+
+References: [8BALL website](https://8ball125.com/),
+[8Ball miner README source](https://raw.githubusercontent.com/Barbariandev/8Ball_miner/main/README.md)
+
 ## On-Chain Identity
 
-Live SN125 data is available on [TaoStats](https://taostats.io/subnets/125). Readers can reproduce
-the subnet's registered identity fields with the Bittensor CLI command documented in the
-[btcli reference](https://docs.learnbittensor.org/btcli/#btcli-subnets-get-identity):
-`btcli subnets get-identity --netuid 125 --network finney`.
-
-That Finney identity reports the subnet name as 8 Ball and no registered GitHub repository, website
-URL, contact, Discord, or description. The public 8BALL website and miner repository should
-therefore be read as public project materials rather than as currently registered on-chain identity
-fields.
+Live SN125 data is available on [TaoStats](https://taostats.io/subnets/125). The source-backed
+prediction-market and liquidity-mining details in this article come from the public 8BALL website
+and miner repository rather than from live identity fields.
 
 ## Further Reading
 
