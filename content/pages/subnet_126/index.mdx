@@ -38,19 +38,57 @@ public leaderboard is derived from signed runtime state. Those validator scores 
 that feed into [[Yuma Consensus]], which converts them into the incentive split across miners and
 validators.
 
+## Production Evaluation Boundary
+
+The [Poker44 README](https://raw.githubusercontent.com/Poker44/Poker44-subnet/main/README.md)
+describes the current production model as centralized evaluation data produced by Poker44 platform
+infrastructure. Validators do not run their own poker tables in that production path. Instead, they
+consume canonical evaluation material from the central evaluation API, query miners, score the
+responses, and set weights on chain.
+
+That boundary is important because Poker44 is not asking every validator to recreate the poker
+runtime locally. The platform infrastructure owns live benchmark tables, bots seated at those
+tables, persistence of hands and events, and publication of canonical chunks. The validator side is
+the consumer of that material and the Bittensor-facing scorer.
+
+For readers, this keeps the evidence chain clear. Miner outputs are judged against centrally
+prepared evaluation batches, not against arbitrary validator-local poker sessions. The article's
+claim that Poker44 is security infrastructure rather than a poker room follows from the same
+boundary: the subnet produces bot-risk evaluation, not a user-facing poker venue.
+
+Reference:
+[Poker44 README source](https://raw.githubusercontent.com/Poker44/Poker44-subnet/main/README.md)
+
+## Chunk and Competition Context
+
+The [miner guide](https://raw.githubusercontent.com/Poker44/Poker44-subnet/main/docs/miner.md)
+describes the live miner contract as `DetectionSynapse(chunks=...)`. Each chunk is a list of poker
+hand payloads, may contain one or many hands, and requires one risk score from the miner. Miners do
+not receive ground-truth labels in the live production path.
+
+The
+[validator guide](https://raw.githubusercontent.com/Poker44/Poker44-subnet/main/docs/validator.md)
+describes the same production path from the validator side: validators fetch active canonical batch
+sets, convert them into detection chunks, query miners, score responses chunk by chunk, and update
+weights on chain. It also describes public competition surfaces as derived from signed validator and
+network state.
+
+This explains why Poker44 scoring should be read as continuous chunk-level evaluation rather than a
+single static test file. The public benchmark can help miners iterate, but the production path uses
+canonical live batches and rolling competition windows. The stable task for miners is to return
+well-calibrated bot-risk scores for the chunks they receive.
+
+References:
+[Poker44 miner guide](https://raw.githubusercontent.com/Poker44/Poker44-subnet/main/docs/miner.md),
+[Poker44 validator guide](https://raw.githubusercontent.com/Poker44/Poker44-subnet/main/docs/validator.md)
+
 ## On-Chain Identity
 
 Live SN126 data, including metagraph state and alpha token pool information, is available on
-[TaoStats](https://taostats.io/subnets/126). Readers can reproduce the subnet's registered identity
-fields with the Bittensor CLI command documented in the
-[btcli reference](https://docs.learnbittensor.org/btcli/#btcli-subnets-get-identity):
-`btcli subnets get-identity --netuid 126 --network finney`.
-
-The Finney subnet identity for netuid 126 reports the subnet name as Poker44, the subnet URL as
-[poker44.net](https://poker44.net), the on-chain description as "Decentralized Poker Platform with
-Bot Detection," and the GitHub repository as
-[Poker44/Poker44-subnet](https://github.com/Poker44/Poker44-subnet), which is the source of truth
-for the detection task and scoring process described above.
+[TaoStats](https://taostats.io/subnets/126). The source-backed detection-task and scoring details in
+this article come from the public
+[Poker44 subnet repository](https://github.com/Poker44/Poker44-subnet) and its miner and validator
+documentation rather than from live identity fields.
 
 ## Further Reading
 
