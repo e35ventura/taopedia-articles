@@ -26,6 +26,44 @@ BeamCore is the coordination stack behind this workflow. The public BeamCore tra
 identifies reference code for transfer assignment and PRISM scoring, including orchestrator
 selection, chunk allocation, stale reassignment, score computation, and scheduled metrics refresh.
 
+## Transfer Lifecycle Context
+
+Beam's public README separates BeamCore coordination from the actual data path. BeamCore manages the
+HTTP API, orchestrator gateway, transfer lifecycle, payment evidence, and PRISM scoring services,
+but object bytes do not pass through BeamCore. Workers receive task-scoped source and destination
+URLs for the chunks assigned to them, so the bandwidth work happens between the storage endpoints
+involved in a task.
+
+That boundary is useful when reading Beam as a subnet. Beam is not only measuring whether a miner is
+online or publishing a claimed capacity number. Its workflow is organized around assigned transfer
+work, chunk execution, and evidence returned from workers after the work is attempted. The transfer
+patterns listed in the README explain why this can cover more than a single sender and receiver:
+tasks may move data one-to-one, fan out from one source, aggregate from multiple sources, or use a
+mesh-style pattern.
+
+This also clarifies the role of the orchestrator. In Beam's participant model, an orchestrator
+maintains the connection to BeamCore, advertises a worker gateway, routes task offers to workers,
+and reports worker decisions and results. The worker gateway and worker processes are the execution
+side of the subnet, while BeamCore supplies the coordination and scoring context that validators
+later consume.
+
+## Proof and Weight Context
+
+Beam's validator path is described as reading BeamCore epoch summaries, setting subnet weights, and
+posting weight proofs. The practical result is a two-step evidence chain: workers produce
+Proof-of-Bandwidth evidence for assigned transfer work, and validators use BeamCore and PRISM
+outputs to decide how miners should be weighted.
+
+The public BeamCore transparency repository helps show what belongs in that middle layer. Its
+assignment code covers orchestrator selection, chunk allocation, and stale reassignment, while its
+PRISM files cover score computation and scheduled metric refresh. Those pieces describe how transfer
+observations are prepared for validator use without turning the article into a node-running guide.
+
+For readers comparing Beam with other subnets, the important distinction is that the incentive
+signal is tied to completed transfer work and scored performance evidence, not merely to a static
+bandwidth claim. On-chain weights remain the Bittensor-facing output, but the Beam-specific evidence
+comes from the off-chain transfer lifecycle and PRISM scoring path.
+
 ## Miner and Validator Roles
 
 Beam's public materials describe miners as orchestrators and workers. Orchestrators coordinate
