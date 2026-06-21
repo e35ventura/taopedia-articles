@@ -26,6 +26,12 @@ Each element represents a weight assigned to a subnet miner according to that va
 The key boundary is scope. A single vector is one validator's signal before aggregation, not the
 whole subnet result.
 
+This makes the term useful for describing the input side of subnet consensus. A weight vector says
+how one validator has evaluated miners; it does not, by itself, state final rank, incentive
+allocation, or subnet-wide agreement
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
+[Glossary: Rank](https://docs.learnbittensor.org/resources/glossary#rank)).
+
 ## Per-Validator Signal
 
 A weight vector comes from one validator's evaluation process. It expresses how that validator
@@ -35,6 +41,11 @@ scores miners under the relevant subnet task and incentive mechanism
 
 That keeps the term narrower than final rank or reward allocation. Consensus can use many vectors,
 but each vector remains a per-validator input.
+
+The vector also preserves attribution. It belongs to the validator that produced it, while the
+subnet-level consensus process decides how many such signals are filtered, weighted, and aggregated
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
+[Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score)).
 
 ## Task and Mechanism Context
 
@@ -46,6 +57,11 @@ work, and the vector records one validator's evaluation relative to that definit
 This prevents cross-subnet overreach. A vector from one subnet's task does not automatically
 describe performance under another subnet's task or scoring method.
 
+The task boundary is important because validators are evaluating miners against the work requested
+by that subnet. A vector can be meaningful inside that subnet's incentive design while still being a
+poor shortcut for comparing unrelated subnet tasks
+([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
+
 ## Validator-Weights Boundary
 
 Weight vector and validator weights describe closely related ideas. The vector is the per-validator
@@ -55,6 +71,10 @@ structure, while validator weights are the evaluation signals inside that struct
 
 For readers, the useful distinction is that a vector organizes one validator's evaluations. The
 weights are the values that carry miner-scoring information.
+
+This is a structure-versus-value distinction. A vector is the container for the submitted
+evaluation, while validator weights are the scored entries that make up that container
+([Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#validator-weights)).
 
 ## Consensus Score Boundary
 
@@ -67,6 +87,19 @@ results
 That makes consensus score downstream of validator weight signals. A vector supplies input; the
 consensus score helps constrain how submitted signals can influence the final result.
 
+The distinction also explains why a vector can be valid consensus input without being the final
+consensus answer. The score filters and constrains submitted signals before rank is finalized
+([Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score),
+[Glossary: Rank](https://docs.learnbittensor.org/resources/glossary#rank)).
+
+Rank is downstream of weight vectors. A vector supplies one validator's miner evaluations, while
+rank is the consensus-adjusted miner-side result after submitted signals are filtered and aggregated
+([Glossary: Rank](https://docs.learnbittensor.org/resources/glossary#rank),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+That distinction helps readers avoid treating a single vector as the final subnet outcome. A vector
+is input terminology; rank is result terminology.
+
 ## Stake-Weight Context
 
 Weight vectors are interpreted inside a stake-weighted consensus process. Stake weight helps
@@ -76,16 +109,6 @@ determine how much influence a validator's vector carries after it is submitted
 
 This keeps evaluation and influence separate. The vector records miner evaluations; stake weight
 helps determine how strongly that validator signal is counted.
-
-## Rank Context
-
-Rank is downstream of weight vectors. A vector supplies one validator's miner evaluations, while
-rank is the consensus-adjusted miner-side result after submitted signals are filtered and aggregated
-([Glossary: Rank](https://docs.learnbittensor.org/resources/glossary#rank),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-That distinction helps readers avoid treating a single vector as the final subnet outcome. A vector
-is input vocabulary; rank is result vocabulary.
 
 ## Visibility Context
 
@@ -97,41 +120,36 @@ weakens that purpose when validators rely on visible public weights instead of f
 Commit Reveal can add a timing layer by concealing fresh weight submissions until a reveal period.
 That protects timing around the information, but it does not change the definition of a vector.
 
-## Reader Boundary
+## Interpretation Boundary
 
-Weight vector should be read as per-validator consensus-input vocabulary. The stable point is that a
-vector represents one validator's miner evaluations before those signals are organized and
+Weight vector should be read as per-validator consensus-input terminology. The stable point is that
+a vector represents one validator's miner evaluations before those signals are organized and
 aggregated
 ([Glossary: Weight Vector](https://docs.learnbittensor.org/resources/glossary#weight-vector),
 [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
-This article does not provide validator recommendations, miner-performance claims, or cross-subnet
-rankings. Exact interpretation belongs to the subnet task and incentive mechanism being discussed.
-
-## Development Stage Context
-
-The
-[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from localnet to testnet and then mainnet. The weight vector
-concept applies across the Bittensor lifecycle: per-validator miner evaluations can be submitted and
-tested in localnet for isolated consensus evaluation, observed on testnet for shared non-production
-conditions, and relied upon on mainnet for live operation with real emissions.
-
-The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
-separates mainnet, testnet, and localnet. Weight vector examples or consensus input outcomes from
-one environment should not be read as representing production subnet performance in another
-environment.
-
-## Submission Scope
-
-A weight vector should be read as validator-submitted mechanism input, not as the final consensus
-result by itself. Yuma Consensus describes validators assigning weights, while Commit Reveal changes
-when submitted weights become visible
+A weight vector should also be read as validator-submitted mechanism input, not as the final
+consensus result by itself. In Yuma Consensus, validators assign weights; Commit Reveal changes when
+submitted weights become visible
 ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
 [Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)).
 
-For readers, the vector is an input into a larger mechanism. Claims about final ranking, incentives,
-or dividends need the surrounding consensus and emission context rather than the vector alone.
+This article does not provide validator recommendations, miner-performance assertions, or
+cross-subnet rankings. Statements about final ranking, incentives, or dividends need the surrounding
+consensus and emission context rather than the vector alone.
+
+## Environment Boundary
+
+The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
+separates mainnet, testnet, and localnet. Weight vectors keep the same per-validator-input meaning
+across those environments, but a concrete vector belongs to the network environment and subnet task
+where it was produced.
+
+The
+[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
+places subnet development across localnet, testnet, and mainnet. A weight-vector example is clearest
+when the validator role, subnet task, incentive mechanism, and network environment are kept
+attached.
 
 ## Further Reading
 
