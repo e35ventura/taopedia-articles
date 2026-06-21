@@ -21,286 +21,90 @@ infoboxRows:
 # Tempo
 
 A tempo is a block-based timing interval used by Bittensor subnets. Rewards accumulate during a
-tempo and are distributed at the end of that interval through [[yuma_consensus|Yuma Consensus]]. As
-a subnet hyperparameter, `tempo` specifies the number of blocks between epoch transitions.
+tempo and are distributed at the end of that interval through [[yuma_consensus|Yuma Consensus]]
+([Emission](https://docs.learnbittensor.org/learn/emissions)).
 
-References: [Emission](https://docs.learnbittensor.org/learn/emissions),
-[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+As a subnet hyperparameter, `tempo` gives subnet processes a cadence measured in blocks. It is a
+timing concept rather than a definition of what useful subnet work means
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
-## What a tempo controls
+## Block-Based Cadence
 
-Tempo gives subnet processes a shared cadence. It does not define what useful work means on a
-subnet; that comes from the subnet's incentive mechanism. Instead, tempo helps determine when
-periodic subnet work is grouped, processed, and paid out. This is why tempo sits near both
-[[subnet_creation_mechanisms|subnet mechanism design]] and [[dynamic_tao|emission allocation]].
+Tempo names a cadence, not a task. A subnet's incentive mechanism defines the work being evaluated;
+tempo defines the block interval over which periodic subnet processes are grouped
+([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
 
-References:
-[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
-[Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)
+That distinction keeps timing vocabulary separate from evaluation vocabulary. Tempo helps determine
+when subnet work is processed, while the incentive mechanism explains what validators are evaluating
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
-## Emission timing
+## Emission Timing Context
 
-Bittensor emission has a two-stage flow: rewards are injected into subnet pools over blocks, and
-then distribution happens at the end of each tempo. Yuma Consensus is the aggregation step that uses
-validator-submitted evaluations to determine how those rewards are allocated inside the subnet.
+Bittensor emission has an accumulation-and-distribution rhythm. Rewards accumulate during a tempo
+and are distributed through consensus at the interval boundary
+([Emission](https://docs.learnbittensor.org/learn/emissions)).
 
-References: [Emission](https://docs.learnbittensor.org/learn/emissions),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
+Yuma Consensus is the aggregation step that uses validator-submitted signals to determine how those
+rewards are allocated inside the subnet. Tempo supplies the cadence for that periodic process
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
-## Hyperparameter context
+## Hyperparameter Boundary
 
-Tempo is also a subnet hyperparameter, so articles should not treat one timing value as a universal
-property of every subnet. Exact timing claims belong next to the source that supports them, and
-operational decisions should use the relevant subnet's parameter value rather than a generic
-description.
+Tempo is a subnet hyperparameter, so it should not be read as one universal value for every subnet.
+The stable concept is block-based cadence; exact values belong with the relevant subnet parameter
+source ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
-Reference: [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+This also means a tempo claim needs context. A statement about cadence should say whether it is
+explaining the concept or referring to a specific subnet setting
+([Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo)).
 
-## Commit Reveal timing
+## Epoch Boundary
 
-Commit Reveal uses tempo-based timing as part of delayed weight visibility. Its
-`commit_reveal_period` value is measured in tempos, and converting the reveal interval to blocks
-requires multiplying that period by the subnet tempo. This is one practical reason tempo matters
-beyond ordinary reward distribution.
+Tempo and epoch are related but distinct timing terms. Tempo is the subnet-specific cadence for
+epoch transitions, while an epoch is the consensus period produced by that cadence
+([Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo)).
 
-References: [Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
-[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+For readers, tempo names the interval; epoch names the period in which consensus work is carried
+out. A tempo should not be treated as the full consensus process
+([Glossary: Epoch](https://docs.learnbittensor.org/resources/glossary#epoch)).
 
-## How to read tempo claims
+## Commit Reveal Context
 
-A tempo claim should make clear whether it is describing the concept, a hyperparameter, or a process
-that depends on tempo. The stable concept is the block-based cadence. Claims about exact length,
-reward timing, or reveal timing need the specific protocol documentation or subnet parameter source
-that supports them.
+Commit Reveal can use tempo-based timing for delayed weight visibility. Its reveal period is
+expressed in tempos, which makes tempo relevant to when concealed validator weights become usable
+([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)).
 
-References: [Emission](https://docs.learnbittensor.org/learn/emissions),
-[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+This is a timing relationship, not a new definition of tempo. Tempo remains the block-based cadence;
+Commit Reveal uses that cadence as part of delayed weight submission and reveal timing
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
-## Development Stage Context
+## Multiple Mechanisms Context
 
-The
-[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from local testing to testchain and then mainchain. For
-tempo, that sequence changes how readers should interpret evidence about block-based subnet cadence.
+When a subnet has multiple incentive mechanisms, tempo still names the shared subnet cadence. The
+mechanisms can have separate weight and consensus paths, but that does not require treating tempo as
+a separate schedule for each mechanism
+([Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets)).
 
-In local testing, tempo can show whether a subnet's periodic flow reaches epoch boundaries in an
-isolated environment. That is useful for checking timing structure, but it remains local development
-evidence rather than public network behavior.
+This keeps cadence and mechanism boundaries separate. Multiple mechanisms clarify how evaluation is
+organized; tempo clarifies when periodic processing occurs
+([Glossary: Weight Matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix)).
 
-On testchain, tempo behavior can be observed in a shared testing network. This gives stronger
-evidence about repeated cadence, reward grouping, and validator-signal timing than a private local
-run, while still keeping the result separate from production mainchain incentives.
+## Reader Boundary
 
-On mainchain, tempo is part of the live subnet timing path. The
-[Emission](https://docs.learnbittensor.org/learn/emissions) documentation describes rewards
-accumulating during a tempo and being distributed through consensus at the interval boundary, so
-production tempo context is tied to live reward allocation.
+Tempo should be read as a block-count cadence for subnet processes. It is not a wall-clock promise,
+a subnet quality signal, or a substitute for Yuma Consensus. It tells readers how timing is grouped
+for rewards, epochs, and related subnet processes
+([Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo)).
 
-The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
-separates mainnet, testnet, and localnet. A tempo observed in one environment should not be read as
-identical evidence about subnet cadence in another environment.
-
-This distinction is especially important because tempo is measured in blocks. A local block history,
-a testchain block history, and a mainchain block history can each express cadence, but they describe
-different network conditions.
-
-For readers, this keeps tempo examples from sounding stronger than their environment supports.
-Local, testchain, and mainchain contexts can all describe block-based cadence, but they do not carry
-the same interpretive weight.
-
-## Relationship to Epoch
-
-Tempo and epoch refer to related but different parts of subnet timing. The
-[Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo) describes tempo as the
-subnet-specific cadence for epochs, and the
-[Glossary: Epoch](https://docs.learnbittensor.org/resources/glossary#epoch) defines an epoch as the
-period during which a subnet executes its consensus mechanism.
-
-For readers, tempo names the block-based cadence that determines when epochs run, while epoch names
-the consensus period that cadence produces. A tempo should not be read as the epoch itself, only as
-the interval that marks epoch transitions.
-
-References: [Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo),
-[Glossary: Epoch](https://docs.learnbittensor.org/resources/glossary#epoch)
-
-## Relationship to Multiple Mechanisms
-
-Tempo is usually discussed alongside one incentive mechanism at a time, but subnets can also run
-multiple mechanisms in parallel. The
-[Glossary](https://docs.learnbittensor.org/resources/glossary#weight-matrix) notes that each
-mechanism has its own weight matrix for independent consensus calculations.
-
-For readers, tempo still names the subnet's block-based epoch cadence. Multiple mechanisms add
-separate weight and consensus paths within that shared timing, rather than separate tempo schedules
-per mechanism.
-
-References:
-[Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets),
-[Glossary: Weight Matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix)
-
-## Relationship to Netuid
-
-A tempo and a netuid are related but different parts of Bittensor subnet vocabulary. A netuid
-selects which subnet context is in scope, while a tempo names the block-based cadence that governs
-epoch timing inside that subnet. The
-[Glossary: Netuid](https://docs.learnbittensor.org/resources/glossary#netuid) places netuid at the
-subnet level, and the [Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo)
-describes tempo as the subnet-specific cadence for epochs.
-
-For readers, netuid answers which subnet market is being discussed, while tempo answers which
-block-based timing cadence applies inside that subnet. Tempo language should stay paired with the
-netuid that selects the subnet context.
-
-References: [Glossary: Netuid](https://docs.learnbittensor.org/resources/glossary#netuid),
-[Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo)
-
-## Relationship to Block
-
-A tempo and a block are related through subnet timing measurement. Tempo is expressed in blocks
-rather than clock time alone, and each new block advances the cadence that subnet processes use for
-epoch transitions. The [Glossary: Block](https://docs.learnbittensor.org/resources/glossary#block)
-describes a block as a unit of chain data on Subtensor, and the
-[Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo) describes tempo as a
-block-based interval for subnet timing.
-
-For readers, blocks mark chain progression that tempo counts toward epoch boundaries. Tempo should
-be read as a block-count cadence rather than as a fixed wall-clock duration unless network block
-timing is also in view.
-
-References: [Glossary: Block](https://docs.learnbittensor.org/resources/glossary#block),
-[Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo)
-
-## Relationship to Subnet Hyperparameters
-
-A tempo and subnet hyperparameters are related but different parts of subnet timing vocabulary.
-Tempo names the block-based cadence itself, while subnet hyperparameters include the configurable
-setting that defines that cadence for a selected subnet. The
-[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters) reference
-lists tempo among subnet-specific settings.
-
-For readers, subnet hyperparameters are the configurable inputs, while tempo is the cadence concept
-those settings express. Different netuids can use different tempo values and therefore different
-epoch timing.
-
-References: [Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo),
-[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
-
-## Relationship to Yuma Consensus
-
-A tempo and Yuma Consensus address related but different parts of subnet reward timing. Tempo names
-the block-based interval that groups subnet periodic work, while
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) describes how validator
-evaluation signals are aggregated into subnet outcomes at the end of that interval. The
-[Emission](https://docs.learnbittensor.org/learn/emissions) documentation describes rewards
-accumulating during a tempo and being distributed through consensus at the interval boundary.
-
-For readers, tempo names the timing cadence, while Yuma Consensus names the aggregation process that
-uses validator signals when that cadence completes. Tempo language should not be read as a
-substitute for the full Yuma documentation.
-
-References: [Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
-[Emission](https://docs.learnbittensor.org/learn/emissions)
-
-## Relationship to Commit Reveal
-
-A tempo and Commit Reveal address related but different parts of validator-weight timing. Tempo
-names the block-based cadence that groups subnet periodic work, while Commit Reveal can conceal
-validator weight evaluations until a later reveal time before consensus uses them publicly. The
-[Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo) describes tempo as the
-subnet-specific cadence for epochs, and the
-[Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal) documentation describes
-concealed weight submission and delayed reveal.
-
-For readers, tempo names the periodic cadence, while Commit Reveal names a visibility and timing
-layer that can protect fresh weight information across part of that cadence.
-
-References: [Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo),
-[Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)
-
-## Relationship to Drand Time-Lock Encryption
-
-A tempo and Drand time-lock encryption address related but different parts of delayed weight
-visibility. Tempo names the block-based interval that groups subnet periodic work, while Drand
-time-lock encryption provides the timing source that prevents concealed weights from being decrypted
-before the target reveal round inside Commit Reveal. The
-[Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo) describes the
-subnet-specific cadence for epochs, and the
-[Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal) documentation describes
-Drand as the reveal timing mechanism.
-
-For readers, tempo names the subnet's periodic cadence, while Drand time-lock encryption names the
-timing layer behind when concealed weight information becomes available within that cadence.
-
-References: [Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo),
-[Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)
-
-## Relationship to Weight Copying
-
-A tempo and weight copying address related but different parts of subnet timing and evaluation
-quality. Tempo names the block-based cadence that governs epoch transitions inside a subnet, while
-weight copying describes when a validator relies on public weight information instead of producing
-an independent evaluation. The
-[Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo) describes tempo as the
-subnet-specific cadence for epochs, and the
-[The Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor)
-documentation describes copied or derived weights as the problem behavior.
-
-For readers, tempo names the subnet's periodic cadence, while weight copying names an evaluation
-quality problem that timing defenses can make harder to exploit within that cadence.
-
-References: [Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo),
-[The Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor)
-
-## Relationship to Rank
-
-A tempo and rank address related but different parts of Yuma Consensus timing vocabulary. Tempo
-names the block-based interval that groups subnet periodic work, while rank names the final
-aggregate judgment produced for a miner after validator signals are filtered and aggregated at the
-end of that work. The [Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo)
-describes the subnet-specific cadence for epochs, and the
-[Glossary: Rank](https://docs.learnbittensor.org/resources/glossary#rank) describes the final
-aggregate judgment from validator ratings.
-
-For readers, tempo names the timing cadence, while rank names one miner-side consensus outcome
-produced when that cadence completes.
-
-References: [Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo),
-[Glossary: Rank](https://docs.learnbittensor.org/resources/glossary#rank)
-
-## Relationship to Coinbase
-
-Tempo and coinbase address related but different aspects of Bittensor subnet timing. Tempo is the
-block-based cadence that specifies how many blocks fall between a subnet's epoch transitions, while
-coinbase is the per-block process that accumulates pending emissions, injects liquidity into subnet
-pools, and triggers each subnet's Yuma Consensus epoch. The
-[Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase)
-documentation describes coinbase as running every block to handle those emission and epoch steps,
-while the [Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo) describes
-tempo as the subnet-specific cadence for epochs measured in blocks.
-
-Each subnet's tempo sets the block-count interval between its epochs; coinbase runs every block and
-triggers the Yuma Consensus epoch when a subnet's interval completes. Tempo is the timing
-configuration that determines how often epochs occur; coinbase is the per-block process that carries
-out emission injection and epoch triggering using that configuration.
-
-References:
-[Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase),
-[Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo)
-
-## Related articles
-
-- [[yuma_consensus|Yuma Consensus]]
-- [[dynamic_tao|Dynamic TAO]]
-- [[mining_and_validating|Mining and Validating]]
-- [[subnet_creation_mechanisms|Subnet Creation and Incentive Mechanisms]]
+The article-level point is stable even when specific values differ by subnet: tempo is the cadence
+that helps turn block progression into periodic subnet consensus and emission timing
+([Emission](https://docs.learnbittensor.org/learn/emissions)).
 
 ## Further Reading
 
+- [Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo)
 - [Emission](https://docs.learnbittensor.org/learn/emissions)
 - [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
 - [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
-- [Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)
+- [Glossary: Epoch](https://docs.learnbittensor.org/resources/glossary#epoch)
 - [Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)
-- [Introduction to Bittensor: Subnet development](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-- [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)
