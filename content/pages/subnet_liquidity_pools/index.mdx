@@ -1,6 +1,8 @@
 ---
 title: "Subnet Liquidity Pools"
-summary: "How Bittensor subnet pools connect TAO reserves, alpha reserves, staking, and emissions."
+summary:
+  "How Bittensor subnet pools connect TAO reserves, alpha reserves, staking, unstaking, and
+  emissions."
 category: "Tokenomics"
 tags: ["Tokenomics", "Subnets"]
 infoboxTitle: Subnet Liquidity Pools
@@ -12,166 +14,119 @@ infoboxRows:
     value: TAO and alpha tokens
   - label: Used in
     value: Staking and emissions
-  - label: Related
-    value: "[[dynamic_tao|Dynamic TAO]]"
+  - label: Boundary
+    value: Not an exact amount source
 ---
 
 # Subnet Liquidity Pools
 
-The [Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets) and
-[Understanding Slippage](https://docs.learnbittensor.org/learn/slippage) docs frame subnet liquidity
-pools as reserve context for subnet tokenomics in Bittensor. A subnet pool connects network-level
-TAO with the subnet's own alpha token, so pool context matters when reading claims about
-[[dynamic_tao|Dynamic TAO]], staking, unstaking, and emissions.
+Subnet liquidity pools are the reserve context for subnet tokenomics in Bittensor. Each pool
+connects a TAO reserve with the subnet's alpha-token reserve.
 
-## What a subnet pool holds
+Pool context matters when reading staking, unstaking, slippage, emission, and protocol-alpha claims
+([Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets),
+[Understanding Slippage](https://docs.learnbittensor.org/learn/slippage)).
 
-A subnet pool has a TAO reserve and an alpha reserve, as described in
-[Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets) and the
-[Emission](https://docs.learnbittensor.org/learn/emissions) docs. The TAO reserve reflects TAO
-staked into the subnet, while the alpha reserve reflects alpha available in the pool. The same
-subnet economy also tracks alpha outstanding, which is alpha held outside the reserve context and
-should not be read as the same thing as pool liquidity.
+The term should be read as reserve vocabulary. It names the pool structure and the reserve
+relationship, not a static report of exact balances or a complete explanation of every tokenomics
+mechanism connected to the pool.
 
-## Constant Product Pool Mechanics
+## Reserve Context
 
-Official slippage documentation describes each Bittensor subnet pool as a constant product automated
-market maker. The product of TAO in reserve and alpha in reserve stays conserved across a swap, so
-staking and unstaking move through paired reserve math rather than through a fixed one-token quote.
+A subnet pool has a TAO reserve and an alpha reserve. The TAO side connects the subnet to
+network-level TAO, while the alpha side connects the pool to the subnet-specific token context
+([Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets),
+[Emission](https://docs.learnbittensor.org/learn/emissions)).
 
-That model is why subnet liquidity pool claims should name both reserves together. A staking move
-changes the pool relationship because it updates the paired reserve state, not because it edits a
-single balance in isolation.
+Those reserves should be kept separate from alpha outstanding. Pool reserves describe what sits in
+the pool, while alpha outstanding describes alpha outside that reserve context. Mixing those terms
+can make a subnet-token claim sound more precise than the source supports.
 
-References: [Understanding Slippage](https://docs.learnbittensor.org/learn/slippage),
-[Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)
+## Constant Product Context
 
-## Staking Converts TAO Through the Pool
+The slippage documentation describes Bittensor subnet pools as constant product automated market
+maker pools. In that model, staking and unstaking pass through paired reserve math rather than a
+fixed one-sided conversion
+([Understanding Slippage](https://docs.learnbittensor.org/learn/slippage)).
 
-When TAO is staked into a subnet, the official
-[Staking and Delegation](https://docs.learnbittensor.org/staking-and-delegation/delegation) and
-[Understanding Slippage](https://docs.learnbittensor.org/learn/slippage) documentation show the move
-passing through the subnet pool reserves. TAO enters the pool context and the participant receives
-alpha-denominated stake sized by the reserve relationship at the time of the action.
+That is why pool claims should name both reserve sides together. A change involving one side of the
+pool is interpreted through the paired TAO and alpha reserve relationship.
 
-For readers, staking therefore depends on pool state even when the user starts with network-level
-TAO. The pool is the conversion layer between TAO and subnet alpha stake, not just a passive balance
-display.
+## Staking and Unstaking Context
 
-References:
-[Staking and Delegation](https://docs.learnbittensor.org/staking-and-delegation/delegation),
-[Understanding Slippage](https://docs.learnbittensor.org/learn/slippage)
+When TAO is staked into a subnet, the staking flow passes through the subnet pool reserve context
+and produces alpha-denominated stake. When stake is removed, alpha-denominated stake is converted
+back through the same reserve system
+([Staking and Delegation](https://docs.learnbittensor.org/staking-and-delegation/delegation),
+[Glossary: Unstaking](https://docs.learnbittensor.org/resources/glossary#unstaking)).
 
-## Unstaking Reverses the Pool Conversion
+This keeps staking and unstaking connected without making them identical. Staking begins from
+network-level TAO and creates subnet alpha stake, while unstaking moves in the opposite direction
+through the pool context.
 
-Unstaking follows the same pool path in the opposite direction. The
-[Glossary: Unstaking](https://docs.learnbittensor.org/resources/glossary#unstaking) describes
-withdrawing staked TAO by converting subnet-specific alpha back to TAO through the subnet automated
-market maker, and slippage documentation notes that pool reserves participate in that exchange.
+## Slippage Boundary
 
-Readers comparing staking and unstaking should keep the same pool context attached to both
-directions. The reserves that shaped alpha-denominated stake on the way in also shape the TAO
-received on the way out.
+Slippage is the difference between a simple expected conversion and the result produced by the pool
+context used for the action
+([Understanding Slippage](https://docs.learnbittensor.org/learn/slippage)). For Taopedia, the
+important point is conceptual: pool reserves affect the resulting TAO or alpha amount.
 
-References: [Glossary: Unstaking](https://docs.learnbittensor.org/resources/glossary#unstaking),
-[Understanding Slippage](https://docs.learnbittensor.org/learn/slippage)
+Exact results need the source values and context being used. A static article should not treat one
+example as a general pool rule, because the pool relationship is part of the calculation.
 
-## Relationship to alpha tokens
+## Emissions and Reserve Injection
 
-Subnet pools are one reason alpha tokens need separate wording from TAO. The
-[Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets) and
-[Emission](https://docs.learnbittensor.org/learn/emissions) docs distinguish network-level TAO from
-subnet-level alpha accounting. A pool claim should therefore say whether it is describing TAO
-reserves, alpha reserves, or alpha outside the pool.
+Bittensor emission documentation connects subnet pools to reserve injection. Emission flow can add
+TAO into subnet pool context, while the surrounding mechanism also separates TAO reserve, alpha
+reserve, and alpha-outstanding concepts
+([Emission](https://docs.learnbittensor.org/learn/emissions),
+[Emission: TAO reserve injection](https://docs.learnbittensor.org/learn/emissions#tao-reserve-injection)).
 
-## Staking and unstaking context
+This means pool liquidity and reward distribution are related, but they are not interchangeable. The
+pool names reserve structure; the emission documentation explains how protocol processes can feed
+that structure.
 
-When TAO is staked into a subnet, the
-[Staking/Delegation Overview](https://docs.learnbittensor.org/staking-and-delegation/delegation) and
-[Understanding Slippage](https://docs.learnbittensor.org/learn/slippage) docs show why pool context
-determines the alpha-denominated stake received. When stake is removed, the pool context is used
-again to express alpha-denominated stake back into TAO terms. This is why
-[[staking_and_delegation|Staking and Delegation]] discussions need to distinguish TAO,
-alpha-denominated stake, and pool conversion context.
+## Protocol Alpha Boundary
 
-## Slippage context
+Protocol alpha is related to subnet pools but not the same term. The glossary defines protocol alpha
+as protocol-owned alpha cached per subnet, while the emission documentation describes reserve
+injection as the process that can generate that protocol-owned alpha context
+([Glossary: Protocol Alpha](https://docs.learnbittensor.org/resources/glossary#protocol-alpha),
+[Emission: TAO reserve injection](https://docs.learnbittensor.org/learn/emissions#tao-reserve-injection)).
 
-[Understanding Slippage](https://docs.learnbittensor.org/learn/slippage) describes the difference
-between a simple expected exchange and the result produced by the pool context at the time of the
-action. For Taopedia purposes, the important point is conceptual: staking and unstaking interact
-with reserves, so pool state can affect the TAO or alpha amount received. Exact amounts need a
-direct source for the values being used.
+A subnet liquidity pool names the paired reserve structure. Protocol alpha names a protocol-held
+alpha balance produced inside the broader pool and emission system. The two terms answer different
+questions even when the same mechanism connects them.
 
-## Emissions context
+## Coinbase Context
 
-Bittensor emissions also connect to subnet pools. The official
-[Emission](https://docs.learnbittensor.org/learn/emissions) and
-[Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets) docs describe
-new liquidity entering subnet pools and separate TAO reserve, alpha reserve, and alpha-outstanding
-contexts. This means pool liquidity, subnet alpha tokens, and reward distribution are related, but
-they are not interchangeable claims.
+Coinbase is another adjacent term. The coinbase documentation describes a per-block protocol process
+that drives TAO emission, pending-emission accounting, and epoch-boundary activity
+([Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase)).
 
-## How to read pool claims
+The pool is the reserve structure that can be affected by emission flow. Coinbase is a process that
+can update that structure over time. Keeping those terms separate prevents the pool from being read
+as the process itself.
 
-A subnet-pool claim should identify the asset and scope. The
-[Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets),
-[Understanding Slippage](https://docs.learnbittensor.org/learn/slippage), and
-[Staking/Delegation Overview](https://docs.learnbittensor.org/staking-and-delegation/delegation)
-docs separate TAO-reserve context, alpha-reserve context, and staking conversion context. Claims
-about exact balances, rates, timing, or subnet examples need the specific source that reports those
-values.
+## Reader Boundary
 
-## Relationship to Protocol Alpha
+Subnet liquidity pools should be read as reserve and conversion vocabulary. They help explain why
+TAO reserves, alpha reserves, staking, unstaking, slippage, emissions, and protocol alpha need
+separate wording
+([Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets),
+[Understanding Slippage](https://docs.learnbittensor.org/learn/slippage)).
 
-Subnet liquidity pools and protocol alpha address related but different parts of Bittensor subnet
-pool vocabulary. A subnet liquidity pool is the automated market maker pool that holds a TAO reserve
-and a subnet-specific alpha reserve for each subnet, enabling staking, unstaking, and alpha-token
-conversion — while protocol alpha is the protocol-owned alpha cached per subnet from chain-side TAO
-buys during reserve injection, distinct from the alpha held by users or distributed as emissions.
-The [Glossary: Protocol Alpha](https://docs.learnbittensor.org/resources/glossary#protocol-alpha)
-defines protocol alpha as the per-subnet protocol-owned alpha balance, and the
-[Emission: TAO reserve injection](https://docs.learnbittensor.org/learn/emissions#tao-reserve-injection)
-documentation describes the reserve injection process that adds TAO to the subnet pool and generates
-the protocol-owned alpha balance that protocol alpha tracks.
-
-During reserve injection, chain-side TAO purchases shift the subnet pool's TAO and alpha reserves —
-the pool balances that the liquidity pool holds — while producing protocol-owned alpha that is
-cached per subnet rather than distributed. A subnet liquidity pool names the two-sided AMM structure
-and the pool-level dynamics of staking and conversion; protocol alpha names a specific
-protocol-owned balance that reserve injection activity creates inside that pool system. The two are
-connected through reserve injection, but they answer different questions: one describes the pool
-itself, the other describes a protocol-held alpha position within it.
-
-References:
-[Glossary: Protocol Alpha](https://docs.learnbittensor.org/resources/glossary#protocol-alpha),
-[Emission: TAO reserve injection](https://docs.learnbittensor.org/learn/emissions#tao-reserve-injection)
-
-## Related articles
-
-- [[dynamic_tao|Dynamic TAO]]
-- [[staking_and_delegation|Staking and Delegation]]
-- [[subnet_creation_mechanisms|Subnet Creation and Incentive Mechanisms]]
-
-## Relationship to Coinbase
-
-A subnet liquidity pool and coinbase are related but different: one is the standing reserve state,
-the other is a process that updates it. A subnet liquidity pool is the automated market maker
-structure holding a subnet's TAO and alpha reserves for staking and conversion. The
-[Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase)
-documentation describes coinbase as the per-block protocol mechanism that drives TAO emission,
-accumulates pending emissions, and triggers Yuma Consensus rounds at epoch boundaries, while the
-[Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets) documentation
-describes the pool's reserves.
-
-As part of the per-block emission process, coinbase injects TAO into eligible subnets' pool
-reserves, which shifts the balances the pool holds. The pool describes the reserves at any moment;
-coinbase is one of the recurring processes that changes them. A liquidity pool answers what reserves
-exist, while coinbase answers how the emission flow feeds into those reserves over time.
+The stable article-level point is that a subnet liquidity pool names the paired TAO and alpha
+reserve context for a subnet. Claims about exact values, timing, or examples need the specific
+source that reports those values.
 
 ## Further Reading
 
 - [Understanding Slippage](https://docs.learnbittensor.org/learn/slippage)
 - [Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)
 - [Emission](https://docs.learnbittensor.org/learn/emissions)
-- [Staking/Delegation Overview](https://docs.learnbittensor.org/staking-and-delegation/delegation)
+- [Emission: TAO reserve injection](https://docs.learnbittensor.org/learn/emissions#tao-reserve-injection)
+- [Staking and Delegation](https://docs.learnbittensor.org/staking-and-delegation/delegation)
+- [Glossary: Unstaking](https://docs.learnbittensor.org/resources/glossary#unstaking)
+- [Glossary: Protocol Alpha](https://docs.learnbittensor.org/resources/glossary#protocol-alpha)
 - [Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase)
