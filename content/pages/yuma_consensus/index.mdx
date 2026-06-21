@@ -1,221 +1,117 @@
 ---
 title: Yuma Consensus
 summary:
-  An in-depth explanation of Yuma Consensus, the mechanism that aggregates validator weights to
-  translate evaluations into incentive allocations across miners and validators.
+  An explanation of Yuma Consensus, the Bittensor mechanism that aggregates validator weights into
+  miner incentives and validator dividends.
 category: "Consensus"
 tags: ["Incentives"]
 ---
 
-# Yuma Consensus in Bittensor
+# Yuma Consensus
 
-Yuma Consensus (YC) is Bittensor’s mechanism for aggregating validator-submitted weights into final
-incentives for miners and dividends for validators. Validators evaluate miners’ outputs on a subnet,
-submit weights that reflect relative performance, and Yuma Consensus combines these signals into a
-robust outcome that resists manipulation and rewards honest, high-quality work.
+Yuma Consensus is the Bittensor consensus mechanism that turns validator weight signals into miner
+incentives and validator dividends. Validators evaluate miner work inside a subnet, submit weights,
+and Yuma Consensus aggregates those weights into the reward outcomes used by the subnet
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
+[Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#validator-weights)).
 
-- **Role:** Translates validator evaluations into emissions (TAO) distribution and validator
-  dividends.
-- **Scope:** Operates per subnet, using weights that validators submit after running the subnet’s
-  incentive mechanism.
+The term belongs to the consensus layer of subnet incentives. It does not describe the off-chain
+scoring system that produced the weights, and it does not replace the emission process that later
+allocates value through Bittensor tokenomics
+([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism),
+[Emissions](https://docs.learnbittensor.org/learn/emissions)).
 
-References:
-[Yuma Consensus (learnbittensor.org)](https://docs.learnbittensor.org/learn/yuma-consensus),
-[Yuma overview (taostats.io docs)](https://docs.taostats.io/docs/consensus)
+## Validator Weight Inputs
 
-## Inputs to Yuma
+Validator weights are the main input vocabulary for Yuma Consensus. They are per-validator
+evaluation signals for miners, formed after subnet-specific scoring and then used by consensus to
+calculate outcomes
+([Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#validator-weights),
+[Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
 
-- **Validator weights:** Each validator derives a vector of weights for miners after evaluating
-  their performance per the subnet’s mechanism.
-- **Mechanism independence:** Subnets can define their own incentive mechanisms; YC is agnostic to
-  how validators score miners, focusing instead on reliably aggregating the submitted weights.
+This keeps Yuma Consensus separate from subnet scoring itself. A subnet's incentive mechanism
+defines how miner work is measured, while Yuma Consensus combines the resulting validator weights
+after they are available to the consensus process
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
-Reference:
-[Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)
+## Aggregation and Outcomes
 
-## Desired Properties
+Yuma Consensus aggregates validator evaluations into miner incentives and validator dividends.
+Incentives are the miner-side reward outcome, while dividends are the validator-side reward outcome
+inside the same consensus flow
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
+[Glossary: Incentives](https://docs.learnbittensor.org/resources/glossary#incentives),
+[Glossary: Dividends](https://docs.learnbittensor.org/resources/glossary#dividends)).
 
-- **Robustness:** Downweights inconsistent or adversarial validators; rewards validators whose
-  evaluations trend with the cohort.
-- **Convergence:** Encourages validators to produce timely, consistent evaluations that predict the
-  eventual consensus outcome.
-- **Alignment:** Incentivizes miners to produce outputs that score well across honest evaluators,
-  not just a single party.
+That makes Yuma Consensus an allocation mechanism rather than a general performance label. It
+answers how many validator signals are combined into reward outcomes, not what task a subnet asks
+miners to perform or how a validator produced each score
+([Glossary: Incentive Mechanism](https://docs.learnbittensor.org/resources/glossary#incentive-mechanism)).
 
-Reference:
-[Yuma Consensus (learnbittensor.org)](https://docs.learnbittensor.org/learn/yuma-consensus)
+## Bonds and Alignment
 
-## Outcomes of YC
+Validator-miner bonds are part of the Yuma Consensus reward path. Bond values represent smoothed
+relationships between validators and miners and help connect validator-side outcomes to evaluation
+quality over time
+([Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
-- **Miner incentives:** A miner’s emissions share is proportional to their aggregate weight after
-  YC.
-- **Validator dividends:** Validators receive dividends based on their contribution and (in some
-  archetypes) their stake, encouraging accurate and timely evaluations.
-- **Subnet autonomy:** Each subnet’s consensus is computed per its submitted weights, enabling
-  specialization and local optimization.
+YC3 belongs near this context because it refines validator-miner bond scaling. The base term Yuma
+Consensus names the broader aggregation process, while Yuma Consensus 3 names a later refinement
+around bond responsiveness
+([How Yuma Consensus 3 Makes Bittensor More Fair](https://docs.learnbittensor.org/learn/yc3-blog)).
 
-Reference: [Consensus summary (taostats docs)](https://docs.taostats.io/docs/consensus)
+## Timing and Visibility Context
 
-## Interaction with Dynamic TAO
+Yuma Consensus runs across subnet timing concepts such as tempo and epoch. Tempo is the block-based
+cadence for subnet epochs, and an epoch is the consensus period in which submitted weights are
+processed into outcomes
+([Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo),
+[Glossary: Epoch](https://docs.learnbittensor.org/resources/glossary#epoch)).
 
-Dynamic TAO (dTAO) provides the broader tokenomics and governance model. YC fits within that model
-as the method for converting evaluations to payouts, while dTAO defines how emissions are injected
-and how governance evolves.
+Commit Reveal is a related visibility layer. It can conceal validator weight information until a
+later reveal time, while Yuma Consensus is the aggregation layer that uses available weights for
+reward outcomes ([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
-- **dTAO governs emission policy and decentralization trajectory.**
-- **YC aggregates evaluation signals to allocate those emissions.**
+## Mechanism and Network Context
 
-References:
-[Understanding Subnets: Validator stake weight](https://docs.learnbittensor.org/subnets/understanding-subnets#validator-stake-weight),
-[Emission](https://docs.learnbittensor.org/learn/emissions)
+Some subnets can run multiple incentive mechanisms, each with its own evaluation context and bond
+pool for Yuma Consensus calculations. A Yuma Consensus statement should therefore keep the relevant
+mechanism context visible when a subnet has more than one mechanism
+([Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets),
+[Glossary: Multiple Incentive Mechanisms](https://docs.learnbittensor.org/resources/glossary#multiple-incentive-mechanisms)).
 
-## Practical Implications
+Network environment matters as well. Localnet, testnet, and mainnet are separate contexts, so a Yuma
+Consensus example from one environment is evidence about that environment rather than a universal
+result for every Bittensor network
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks),
+[Introduction to Bittensor: Subnet development](https://docs.learnbittensor.org/learn/introduction#subnet-development)).
 
-- **For miners:** Optimize for evaluation criteria defined by the subnet; consistent performance
-  across validators improves your YC outcome.
-- **For validators:** Provide honest, consistent, timely evaluations; YC rewards validators whose
-  weights align with the eventual consensus trend.
-- **For subnet creators:** Design mechanisms that are measurable, evaluable, and hard to game; YC
-  will then aggregate validator signals effectively.
+## Coinbase and Emission Context
 
-## Development Stage Context
+Coinbase is the per-block mechanism that advances emission processing and triggers epoch-boundary
+activity. Yuma Consensus is the aggregation process that runs when the relevant subnet epoch is
+processed
+([Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
-The
-[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from local testing to testchain and then mainchain. For Yuma
-Consensus, that sequence changes how readers should interpret examples of validator-weight
-aggregation.
+Emission is the broader value-creation and allocation flow around those outcomes. Yuma Consensus
+shapes miner incentives and validator dividends, while emission names the tokenomics process in
+which those outcomes are allocated ([Emissions](https://docs.learnbittensor.org/learn/emissions)).
 
-In local testing, Yuma Consensus can show how submitted weights are aggregated inside an isolated
-subnet environment. That is useful for checking incentive logic, but it does not show live public
-miner incentives or validator dividends.
+## Reader Boundary
 
-On testchain, Yuma Consensus behavior can be observed in a shared testing network. This gives
-stronger evidence about how validator weights, miner scores, epochs, and subnet rules interact than
-a private local run, while still keeping the result separate from production mainchain activity.
-
-On mainchain, Yuma Consensus belongs to live subnet emission state. The
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) documentation describes how
-validator weights become miner incentives and validator dividends, so production readings should
-keep the selected subnet, epoch context, weight inputs, and block timing attached.
-
-The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
-separates mainnet, testnet, and localnet. A Yuma Consensus example in one environment should not be
-read as identical evidence about incentive outcomes in another environment.
-
-This distinction matters because Yuma Consensus is subnet-scoped. The network environment explains
-what kind of evidence the example provides, while the selected subnet and epoch explain which
-validator weights and miner outcomes are being aggregated.
-
-For readers, this keeps Yuma Consensus examples from sounding stronger than their environment
-supports. Local, testchain, and mainchain contexts can all contain Yuma Consensus language, but they
-do not carry the same interpretive weight.
-
-## Relationship to Multiple Mechanisms
-
-Yuma Consensus is usually discussed for one incentive mechanism at a time, but subnets can also run
-multiple mechanisms in parallel. The
-[Glossary](https://docs.learnbittensor.org/resources/glossary#multiple-incentive-mechanisms) defines
-multiple incentive mechanisms as independent evaluation systems, each with its own bond pool for
-Yuma Consensus calculations.
-
-For readers, Yuma Consensus still turns validator weights into miner incentives and validator
-dividends, but the mechanism context matters. Consensus inputs and outcomes for one mechanism should
-be read separately when a subnet uses more than one evaluation system.
-
-References:
-[Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets),
-[Glossary: Multiple Incentive Mechanisms](https://docs.learnbittensor.org/resources/glossary#multiple-incentive-mechanisms)
-
-## Relationship to Validator Weights
-
-Yuma Consensus and validator weights address related but different parts of Bittensor subnet
-incentive flow. Validator weights are the evaluation signals validators submit after judging miner
-work, while Yuma Consensus aggregates those submitted signals into miner incentives and validator
-dividends. The
-[Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#validator-weights)
-describes the per-validator evaluation inputs, and
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) describes how those inputs
-become consensus outcomes.
-
-For readers, validator weights name the subnet-specific evaluation submissions, while Yuma Consensus
-names the aggregation step that turns many validator submissions into shared incentive results.
-
-References:
-[Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#validator-weights),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
-
-## Relationship to Commit Reveal
-
-Yuma Consensus and Commit Reveal address related but different parts of validator-weight processing.
-Commit Reveal can delay when fresh validator weights become publicly visible before consensus uses
-them, while Yuma Consensus combines the revealed weight signals into incentive allocations. The
-[Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal) documentation describes
-concealed weight submission and delayed reveal, and
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) describes aggregation after
-validators submit weights.
-
-For readers, Commit Reveal names a visibility and timing layer around weight submission, while Yuma
-Consensus names the aggregation layer that consumes those weights for emissions.
-
-References: [Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
-
-## Relationship to Tempo
-
-Yuma Consensus and tempo are related but different parts of subnet timing vocabulary. Tempo names
-the block-based cadence that governs epoch transitions inside a subnet, while Yuma Consensus runs on
-the validator-weight inputs collected during that subnet's periodic work. The
-[Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo) describes tempo as the
-subnet-specific cadence for epochs, and
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) describes how submitted
-weights feed consensus outcomes within subnet operation.
-
-For readers, tempo names the subnet's periodic cadence, while Yuma Consensus names how validator
-evaluations are combined into incentives across that cadence.
-
-References: [Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
-
-## Relationship to Epoch
-
-Yuma Consensus and an epoch address related but different parts of subnet consensus timing. An epoch
-names the consensus period inside a subnet, while Yuma Consensus describes how validator weights
-submitted during that period are aggregated into miner and validator reward outcomes. The
-[Glossary: Epoch](https://docs.learnbittensor.org/resources/glossary#epoch) describes the subnet
-consensus period, and [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
-describes the weight-aggregation step that turns evaluations into emissions within that period.
-
-For readers, an epoch names the time window for subnet consensus work, while Yuma Consensus names
-the mechanism that converts validator evaluations into incentive results inside that window.
-
-References: [Glossary: Epoch](https://docs.learnbittensor.org/resources/glossary#epoch),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
-
-## Relationship to Coinbase
-
-Yuma Consensus and coinbase address related but different parts of Bittensor subnet emission timing.
-Yuma Consensus describes how validator weight signals inside a subnet are aggregated into miner
-incentives and validator dividends, while coinbase is the per-block process that accumulates pending
-emissions, injects liquidity into subnet pools, and triggers each subnet's Yuma Consensus epoch. The
-[Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase)
-documentation describes coinbase as running every block to handle emission accumulation and epoch
-triggering, while [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) describes
-the aggregation step that turns validator evaluations into incentive results when that epoch runs.
-
-For readers, coinbase names the per-block scheduling and injection process that determines when a
-subnet's Yuma Consensus epoch is triggered; Yuma Consensus names the aggregation algorithm that
-processes validator weights into outcomes once coinbase triggers the epoch.
-
-References:
-[Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
+Yuma Consensus is a reference term for Bittensor's validator-weight aggregation process. It is not a
+validator strategy, a subnet ranking table, a live reward report, or a guide to changing subnet
+behavior. Concrete examples require the selected subnet, mechanism context, network environment, and
+relevant official source ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
 
 ## Further Reading
 
-- [Yuma Consensus (learnbittensor.org)](https://docs.learnbittensor.org/learn/yuma-consensus)
+- [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
 - [Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)
-- [Introduction to Bittensor: Subnet development](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-- [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)
-- [Emission](https://docs.learnbittensor.org/learn/emissions)
-- [Understanding Subnets: Validator stake weight](https://docs.learnbittensor.org/subnets/understanding-subnets#validator-stake-weight)
+- [Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)
+- [How Yuma Consensus 3 Makes Bittensor More Fair](https://docs.learnbittensor.org/learn/yc3-blog)
+- [Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase)
