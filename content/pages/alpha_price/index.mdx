@@ -35,12 +35,20 @@ Alpha price belongs to a subnet liquidity pool. Each subnet has a TAO side and a
 alpha side, and alpha price is read from the ratio between those two reserves
 ([Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)).
 
-That makes alpha price different from a user balance, an exchange ticker, or a fixed protocol
-constant. The stable concept is the pool ratio; exact values belong to the reserve state being
-observed at the time
+That makes alpha price different from an exchange ticker or a fixed protocol constant. The stable
+concept is the pool ratio; exact values belong to the reserve state being observed at the time
 ([Emission: Alpha reserve injection](https://docs.learnbittensor.org/learn/emissions#alpha-reserve-injection)).
 
-## Per-Subnet Boundary
+The formula is plain: alpha price is TAO reserve divided by alpha reserve, so it is quoted as TAO
+per alpha. Alpha reserve supplies the alpha side of that ratio, while TAO reserve supplies the TAO
+side.
+
+Alpha outstanding sits outside this reserve ratio. It can matter for stake or supply context, but
+the alpha-price calculation described in the subnet overview uses alpha in reserve, not every unit
+of subnet alpha associated with the subnet
+([Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)).
+
+## Subnet Scope
 
 Alpha tokens are subnet-specific, so alpha price is subnet-specific too. Two subnets can have
 different TAO and alpha reserves, which means they can have different alpha prices even when they
@@ -52,7 +60,15 @@ automatically transfer to another subnet's pool, because each subnet has its own
 its own reserve history
 ([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
 
-## Reserve Ratio Boundary
+Bittensor documentation also separates localnet, testnet, and mainnet environments. An alpha price
+figure from one environment is not evidence for another environment's reserve state
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+The environment label matters because the same tokenomics vocabulary can appear in examples,
+testing, and network operation. The concept transfers across those contexts, but a reserve-derived
+number does not.
+
+## Reserve and Slippage Context
 
 Alpha price and reserve ratio are closely related, but they are not the same phrase. The reserve
 ratio compares the TAO and alpha sides of the pool; alpha price reads that comparison as TAO per
@@ -63,19 +79,20 @@ That distinction keeps tokenomics claims precise. A reserve claim says something
 inputs. An alpha-price claim says something about the TAO-denominated quote implied by those inputs
 ([Emission](https://docs.learnbittensor.org/learn/emissions)).
 
-## Conversion and Slippage Context
-
 Alpha price is an ideal reserve-based price, not a promise about the exact result of a conversion.
 Staking and unstaking interact with subnet reserves, and slippage accounts for the difference
 between a static pool quote and the amount received after a pool interaction
 ([Understanding Slippage](https://docs.learnbittensor.org/learn/slippage)).
 
-For readers, alpha price names the quoted pool relationship, while slippage explains why interacting
-with that pool can produce a different received amount. The two concepts should be read together
-when a page discusses reserve-based conversions
+Before a pool interaction, alpha price gives the reserve quote. Slippage explains the realized
+effect of an interaction that changes the reserves, which is why the received amount can differ from
+the static quote
 ([Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)).
 
-## Emission Injection Context
+That framing keeps the reserve quote separate from the conversion result. Alpha price describes the
+visible pool relationship; slippage describes the reserve movement caused by the conversion.
+
+## Emissions and Deregistration
 
 Alpha price also appears in emission mechanics. When TAO is injected into a subnet reserve, alpha is
 injected into the alpha reserve in proportion to the price so the pool can grow without the
@@ -86,7 +103,9 @@ This connects alpha price to reserve growth without making it identical to rewar
 Alpha price is the reserve-derived quote; emissions and reserve injections are mechanisms that can
 change the reserves around that quote ([Emission](https://docs.learnbittensor.org/learn/emissions)).
 
-## Deregistration Context
+The same distinction separates reserve growth from alpha outstanding. Reserve injection affects the
+pool side of the model, while alpha outstanding covers alpha set aside outside that pool for
+outside-pool distribution ([Emission](https://docs.learnbittensor.org/learn/emissions)).
 
 Alpha price can also matter outside ordinary pool interpretation. Subnet deregistration uses a
 smoothed alpha-price signal when selecting among eligible subnets after the subnet limit is reached,
@@ -98,40 +117,16 @@ selection signal uses an exponential moving average of alpha price and applies o
 eligibility rules for deregistration
 ([Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema)).
 
-## Reader Boundary
+## Practical Limits
 
-Alpha price should be read as a pool-derived tokenomics concept. It is not a recommendation, a
-guaranteed execution amount, or a universal comparison across all subnets. It tells readers how TAO
-reserve and alpha reserve combine into a subnet-specific TAO-denominated quote
+Alpha price is a pool-derived tokenomics concept. It is not a recommendation, a guaranteed execution
+amount, or a universal comparison across all subnets. It tells readers how TAO reserve and alpha
+reserve combine into a subnet-specific TAO-denominated quote
 ([Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)).
 
-That boundary keeps the article useful without pretending to be a price feed. Reserve-derived
-concepts explain how the system interprets pool state; tools and chain queries are where specific
-values belong at the time of use ([BTCLI](https://docs.learnbittensor.org/btcli/)).
-
-## Development Stage Context
-
-The
-[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from localnet to testnet and then mainnet. For alpha price,
-that sequence changes how readers should interpret examples of subnet reserve ratios and
-TAO-denominated alpha quotes.
-
-In localnet, alpha price mechanics can be observed in an isolated environment. Localnet reserve
-ratios and alpha price quotes reflect local chain settings and do not represent production subnet
-pool state.
-
-On testnet, alpha price can be observed in a shared, non-production network. Testnet reserve-derived
-alpha price figures are separate from mainnet subnet pool state.
-
-On mainnet, alpha price is the live TAO-denominated measure derived from a subnet's TAO reserve and
-alpha reserve in production Bittensor subnet operations. The
-[Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets) documentation
-describes the subnet reserve context that applies on the production network.
-
-The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
-separates mainnet, testnet, and localnet. An alpha price figure from one environment should not be
-read as representing pool state or reserve ratios in another environment.
+Reserve-derived concepts explain how the system interprets pool state. Specific values belong to the
+network, block, subnet, and reserve state being observed, while the article explains the vocabulary
+used to interpret those values.
 
 ## Further Reading
 
@@ -141,5 +136,4 @@ read as representing pool state or reserve ratios in another environment.
 - [Understanding Slippage](https://docs.learnbittensor.org/learn/slippage)
 - [Subnet Deregistration](https://docs.learnbittensor.org/subnets/subnet-deregistration)
 - [Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema)
-- [Introduction to Bittensor: Subnet development](https://docs.learnbittensor.org/learn/introduction#subnet-development)
 - [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)
