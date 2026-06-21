@@ -1,7 +1,7 @@
 ---
 title: "Drand Time-Lock Encryption"
 summary:
-  "How Drand time-lock encryption helps Bittensor delay fresh validator-weight visibility in Commit
+  "How Drand time-lock encryption supports delayed validator-weight visibility in Bittensor Commit
   Reveal."
 category: "Consensus"
 tags: ["Consensus", "Cryptography"]
@@ -14,198 +14,67 @@ infoboxRows:
     value: Fresh validator weights
   - label: Timing source
     value: Drand rounds
-  - label: Related
-    value: "[[yuma_consensus|Yuma Consensus]]"
+  - label: Scope
+    value: Delayed visibility
 ---
 
 # Drand Time-Lock Encryption
 
-Drand time-lock encryption is the timing mechanism Bittensor uses around Commit Reveal to delay
-access to fresh validator weights. The goal is not to hide weights forever. It is to keep recently
-submitted weights concealed until the reveal time, so public weight information is less useful for
-copying. The [Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal) page explains
-the delayed reveal flow, and the
-[glossary](https://docs.learnbittensor.org/resources/glossary#drandtime-lock-encryption) defines
-Drand time-lock encryption as data that can only be decrypted after a future Drand round.
+Drand time-lock encryption helps Bittensor Commit Reveal keep newly submitted validator weights
+concealed until a later reveal round. In
+[Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal), validators commit weight
+information before it becomes readable, reducing the usefulness of copied public weights.
 
-## Why delayed access matters
+## Delayed Visibility
 
-Validator weights become part of Bittensor's consensus process, so freshly visible weights can be
-valuable information. Weight copying happens when a validator copies or derives from public weights
-instead of independently evaluating miners. Delaying access to fresh weights reduces that
-free-riding window. The
+Delayed visibility matters because validator weights are valuable consensus inputs. A validator that
+can simply reuse public weight signals adds less independent evaluation to a subnet. The
 [Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor)
-source explains the copying risk, while
-[Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal) explains the concealment
-period.
+centers on that free-riding risk, and Commit Reveal reduces the window in which fresh weight signals
+can be copied.
 
-## Time-lock idea
+## Drand Round Boundary
 
-Time-lock encryption means encrypted data is not meant to be decryptable until a future time or
-round. In the Bittensor documentation, Drand provides the timing source for that delayed access. The
-useful Taopedia-level idea is simple: the reveal depends on a later Drand round rather than on
-someone choosing to reveal early. The
-[glossary](https://docs.learnbittensor.org/resources/glossary#drandtime-lock-encryption) describes
-Drand as a randomness beacon used for time-lock encryption.
+Time-lock encryption binds access to a later round instead of immediate decryption. In the
+[Drand/time-lock encryption glossary entry](https://docs.learnbittensor.org/resources/glossary#drandtime-lock-encryption),
+encrypted data becomes decryptable only after a future Drand round, which makes the round boundary
+part of the visibility rule.
 
-## Commit Reveal use
+## Commit Reveal Context
 
-In Commit Reveal, validator weights are committed in concealed form and revealed later for the
-consensus process. Drand time-lock encryption supports that delayed reveal by making the concealed
-weights unavailable before the target reveal round. The
-[Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal) source describes the
-commit-and-reveal flow and connects it to copied-weight protection.
+Commit Reveal uses concealed weight submission before later reveal. Drand time-lock encryption fits
+that process as the timing layer: the committed weight data remains unreadable until the target
+round, then the revealed information can enter the consensus flow. The
+[Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal) reference links this delay
+to copied-weight protection.
 
-## Development Stage Context
+## Consensus Boundary
 
-The
-[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from local testing to testchain and then mainchain. For Drand
-time-lock encryption, that sequence changes how readers should interpret examples of delayed access
-to validator weights.
+Drand time-lock encryption controls when concealed weight information becomes readable; it does not
+score miners or allocate emissions. After reveal,
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) is the aggregation context
+for validator evaluations, miner incentives, and validator dividends. The delayed-visibility layer
+protects inputs before that aggregation step.
 
-In local testing, Drand time-lock encryption can show how concealed weight data is handled inside an
-isolated subnet environment. That is useful for checking the timing model around Commit Reveal, but
-it does not show that a live public subnet is using the same configuration in production.
+## Multiple-Mechanism Context
 
-On testchain, delayed-reveal behavior can be observed in a shared testing network. This gives
-stronger evidence about how Drand timing interacts with validators, weight submissions, blocks, and
-subnet configuration than a private local run, while still keeping the result separate from
-production mainchain activity.
+When a subnet uses more than one incentive mechanism, each mechanism has its own weight context. The
+[multiple incentive mechanisms](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets)
+material keeps those evaluation contexts separate, so delayed access to concealed weights should be
+read inside the mechanism whose weights are being revealed.
 
-On mainchain, Drand time-lock encryption belongs to live Commit Reveal behavior. The
-[Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal) documentation connects Drand
-rounds with the delayed reveal flow, so production readings should keep the selected subnet, target
-reveal timing, and current configuration context attached.
+## Reading the Term
 
-The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
-separates mainnet, testnet, and localnet. A Drand time-lock example in one environment should not be
-read as identical evidence about validator-weight visibility in another environment.
-
-This distinction matters because Drand time-lock encryption controls timing and visibility, not
-validator evaluation quality by itself. The network environment explains what kind of evidence the
-example provides, while the subnet configuration explains whether the delayed reveal layer is in
-scope.
-
-For readers, this keeps delayed-access examples from sounding stronger than their environment
-supports. Local, testchain, and mainchain contexts can all contain Drand time-lock language, but
-they do not carry the same interpretive weight.
-
-## What it does not decide
-
-Drand time-lock encryption does not evaluate miners, choose validator weights, or allocate
-emissions. It controls timing and visibility around concealed weight information. Consensus still
-depends on validator evaluations and the later aggregation process. The
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) page explains how validator
-weights feed consensus outcomes, while
-[Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal) explains the delayed
-visibility layer.
-
-## Relation to nearby concepts
-
-Drand time-lock encryption sits near [[yuma_consensus|Yuma Consensus]] and
-[[mining_and_validating|Mining and Validating]]. Validators evaluate miner work and produce weights;
-Yuma Consensus later aggregates weight information; Commit Reveal uses delayed visibility around
-that flow. The
-[Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor) and
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) sources define that
-validator-weight context.
-
-## Relationship to Multiple Mechanisms
-
-Drand time-lock encryption is usually discussed for one incentive mechanism at a time, but subnets
-can also run multiple mechanisms in parallel. The
-[Glossary](https://docs.learnbittensor.org/resources/glossary#weight-matrix) notes that each
-mechanism has its own weight matrix for independent consensus calculations.
-
-For readers, Drand time-lock encryption still delays access to concealed validator weights inside a
-subnet, but the mechanism context matters. Concealed weights for one mechanism should be read
-separately when a subnet uses more than one evaluation system.
-
-References:
-[Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets),
-[Glossary: Weight Matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix)
-
-## Relationship to Commit Reveal
-
-Drand time-lock encryption and Commit Reveal address related but different parts of delayed
-validator weight visibility. Commit Reveal names the subnet mechanism that conceals fresh validator
-weights, while Drand time-lock encryption provides the timing source that prevents decryption before
-the target reveal round. The [Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)
-documentation describes Drand as the reveal timing mechanism, and the
-[Glossary: Drand/time-lock encryption](https://docs.learnbittensor.org/resources/glossary#drandtime-lock-encryption)
-defines time-lock encryption using Drand rounds.
-
-For readers, Commit Reveal names the weight-concealment mechanism, while Drand time-lock encryption
-names the timing layer that enforces delayed access to concealed weights.
-
-References: [Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
-[Glossary: Drand/time-lock encryption](https://docs.learnbittensor.org/resources/glossary#drandtime-lock-encryption)
-
-## Relationship to Weight Copying
-
-Drand time-lock encryption and weight copying address related but different parts of
-validator-weight protection. Weight copying names the problem where validators reuse visible weight
-signals instead of evaluating miners independently, while Drand time-lock encryption supports
-delayed access to fresh weights inside Commit Reveal so copied signals are less useful. The
-[The Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor)
-documentation describes the copying risk, and the
-[Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal) documentation connects
-delayed reveal to copied-weight protection.
-
-For readers, weight copying names the behavior delayed visibility is designed to reduce, while Drand
-time-lock encryption names the timing mechanism behind that delay.
-
-References:
-[The Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor),
-[Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)
-
-## Relationship to Validator Weights
-
-Drand time-lock encryption and validator weights address related but different parts of subnet
-weight processing. Validator weights are the evaluation signals validators submit for miners, while
-Drand time-lock encryption controls when concealed forms of those signals can be decrypted inside
-Commit Reveal. The
-[Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#validator-weights)
-describes the per-validator evaluation inputs, and the
-[Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal) documentation describes
-concealed weight submission and delayed reveal.
-
-For readers, validator weights name the evaluation content, while Drand time-lock encryption names
-the timing layer around when concealed weight information becomes available.
-
-References:
-[Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#validator-weights),
-[Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)
-
-## Relationship to Yuma Consensus
-
-Drand time-lock encryption and Yuma Consensus address related but different parts of Bittensor
-consensus flow. Drand time-lock encryption controls timing and visibility around concealed validator
-weights before reveal, while Yuma Consensus aggregates revealed validator evaluations into miner
-incentives and validator dividends. The
-[Glossary: Drand/time-lock encryption](https://docs.learnbittensor.org/resources/glossary#drandtime-lock-encryption)
-describes delayed access to encrypted data, and
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) describes how validator
-weight signals become consensus outcomes after they are available.
-
-For readers, Drand time-lock encryption names a visibility and timing layer, while Yuma Consensus
-names the aggregation step that uses revealed validator signals.
-
-References:
-[Glossary: Drand/time-lock encryption](https://docs.learnbittensor.org/resources/glossary#drandtime-lock-encryption),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
-
-## Related articles
-
-- [[yuma_consensus|Yuma Consensus]]
-- [[mining_and_validating|Mining and Validating]]
+The term names a timing and visibility tool, not a separate consensus algorithm. It is closest to
+Commit Reveal, weight-copying protection, and validator-weight handling. The
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) distinction also
+keeps examples in production, shared testing, and local environments from being treated as the same
+evidence.
 
 ## Further Reading
 
 - [Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)
 - [Glossary: Drand/time-lock encryption](https://docs.learnbittensor.org/resources/glossary#drandtime-lock-encryption)
 - [The Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor)
-- [Introduction to Bittensor: Subnet development](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-- [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)
 - [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
+- [Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets)
