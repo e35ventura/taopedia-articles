@@ -31,19 +31,12 @@ level: miners produce subnet work, and validators evaluate miner responses.
 
 Each Bittensor subnet has a configurable maximum number of UID slots. The official
 [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters) reference
-includes `max_allowed_uids` as the hyperparameter that sets this ceiling for a given subnet. When a
-subnet's slots are all occupied, a new registration can succeed only by displacing an existing
-participant.
+includes `max_allowed_uids` as the ceiling for a given subnet. When slots are full, a new
+registration can require displacing an existing participant under the miner-deregistration rules
+([Mining: Miner deregistration](https://docs.learnbittensor.org/miners#miner-deregistration)).
 
-The official
-[Mining: Miner deregistration](https://docs.learnbittensor.org/miners#miner-deregistration)
-documentation describes what happens when a full subnet receives a new registration: the participant
-with the lowest pruning score is the candidate for displacement. The full selection criteria,
-including how the immunity period interacts with the pruning score, how ties are resolved, and which
-participants are exempt, are specified in that reference. For readers, the key concept is that the
-slot ceiling is a real capacity constraint: once max_allowed_uids is reached, accepting a new
-registrant requires removing an existing one according to the rules described in the official
-documentation.
+For readers, the slot ceiling is a real capacity constraint. Once `max_allowed_uids` is reached,
+accepting a new registrant depends on the official displacement rules.
 
 References:
 [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
@@ -85,35 +78,14 @@ References: [Glossary: UID Slot](https://docs.learnbittensor.org/resources/gloss
 
 ## Development Stage Context
 
-The
-[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from local testing to testchain and then mainchain. For a UID
-slot, that sequence changes how readers should interpret evidence about participant positions.
+Subnet development can move from local testing to testchain and then mainchain
+([Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)). A UID observed
+in one environment should not be read as identical evidence about a participant position in another.
 
-In local testing, a UID slot can identify a participant position inside an isolated subnet
-environment. That is useful for checking whether registration and participant state are represented
-correctly, but it does not show public network participation.
-
-On testchain, UID slots can appear in a shared testing network. This gives stronger evidence about
-how participant positions behave with other miners, validators, and subnet rules than a private
-local run, while still keeping the result separate from production mainchain activity.
-
-On mainchain, a UID slot belongs to live subnet state. The
-[Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph) documentation describes subnet
-state snapshots for a selected netuid, so production slot readings should keep the selected subnet,
-network environment, and block context attached.
-
-The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
-separates mainnet, testnet, and localnet. A UID observed in one environment should not be read as
-identical evidence about a participant position in another environment.
-
-This distinction is especially important because a UID slot is scoped by both netuid and network
-environment. The slot number tells readers which position is in scope, while the environment tells
-them what kind of evidence that position represents.
-
-For readers, this keeps UID examples from sounding stronger than their environment supports. Local,
-testchain, and mainchain contexts can all use UID slots, but they do not carry the same interpretive
-weight.
+For readers, a UID slot is scoped by both netuid and network environment. Production slot readings
+should keep the selected subnet, environment, and block context attached
+([Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)).
 
 ## Register as the Entry Path to a Slot
 
@@ -225,46 +197,23 @@ References:
 
 ## Relationship to Subnet Deregistration
 
-A UID slot and subnet deregistration address related but different parts of Bittensor subnet
-lifecycle vocabulary. A UID slot is a participant position inside a subnet — the numbered position
-that a miner or validator occupies within a specific subnet's participant set, identified together
-with the subnet's netuid — while subnet deregistration is the network mechanism that removes an
-entire non-immune subnet when the subnet limit is reached and a new registration attempt enters,
-selecting the existing subnet with the lowest EMA of alpha price for removal. The
-[Glossary: UID Slot](https://docs.learnbittensor.org/resources/glossary#uid-slot) defines a slot as
-a participant position inside a subnet, and the
-[Subnet Deregistration](https://docs.learnbittensor.org/subnets/subnet-deregistration) documentation
-describes the network-level subnet removal process.
+A UID slot and subnet deregistration describe different levels of state. A UID slot is one
+participant position inside a subnet, while subnet deregistration removes an entire subnet context
+([Glossary: UID Slot](https://docs.learnbittensor.org/resources/glossary#uid-slot),
+[Subnet Deregistration](https://docs.learnbittensor.org/subnets/subnet-deregistration)).
 
-The "Relationship to Deregistration" section above covers participant-level deregistration, which
-vacates one UID slot while the subnet continues operating. Subnet deregistration is different — it
-removes the entire subnet at the network level, ending every UID slot within it simultaneously
-because the subnet context no longer exists. A UID slot names a single participant position inside a
-continuing subnet; subnet deregistration ends the entire collection of UID slots that composed that
-subnet.
-
-References: [Glossary: UID Slot](https://docs.learnbittensor.org/resources/glossary#uid-slot),
-[Subnet Deregistration](https://docs.learnbittensor.org/subnets/subnet-deregistration)
+For readers, participant-level deregistration can vacate one UID slot while the subnet continues.
+Subnet deregistration ends the subnet context that contained the collection of UID slots.
 
 ## Relationship to Child Hotkeys
 
-A UID slot and a child hotkey describe different parts of how validation happens in a subnet. A UID
-slot is a participant position within a subnet, occupied by a miner or validator and identified by a
-unique UID, as the [Glossary](https://docs.learnbittensor.org/resources/glossary#uid-slot)
-describes. A child hotkey, by the
-[Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys) documentation, is a
-separate key that a parent hotkey authorizes to validate on its behalf by re-delegating a portion of
-the parent's stake to it, without transferring ownership of that stake.
+A UID slot and a child hotkey describe different parts of validation. A UID slot is the participant
+position in subnet state, while a child hotkey is a separate key authorized by a parent hotkey
+([Glossary: UID Slot](https://docs.learnbittensor.org/resources/glossary#uid-slot),
+[Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys)).
 
-For readers, a UID slot names the position a participant holds in a subnet, while a child hotkey
-names a key a parent hotkey authorizes to carry out validation on its behalf. The two are not
-interchangeable: a UID slot is the position identifier in subnet state, whereas a child hotkey is a
-delegated validation key acting on a parent's re-delegated stake-weight. A parent that holds a slot
-can authorize a child hotkey to validate for it; the child hotkey is the authorized key, not the
-slot itself.
-
-References: [Glossary: UID Slot](https://docs.learnbittensor.org/resources/glossary#uid-slot),
-[Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys)
+For readers, a parent that holds a slot can authorize a child hotkey to validate for it. The child
+hotkey is the authorized key, not the slot itself.
 
 ## Reader Boundary
 
@@ -274,20 +223,13 @@ details.
 
 ## Relationship to Coinbase
 
-A UID slot and coinbase are related but different parts of subnet participation and emissions. A UID
-slot is the participant position a miner or validator occupies inside a subnet. The
-[Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase)
-documentation describes coinbase as the per-block protocol mechanism that drives TAO emission,
-accumulates pending emissions, and triggers Yuma Consensus rounds at epoch boundaries, while the
-[Glossary: UID Slot](https://docs.learnbittensor.org/resources/glossary#uid-slot) defines the
-participant position.
+A UID slot and coinbase are related through subnet rewards, but they name different things. A UID
+slot is the participant position inside a subnet, while coinbase is the per-block emission operation
+([Glossary: UID Slot](https://docs.learnbittensor.org/resources/glossary#uid-slot),
+[Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase)).
 
-Occupying a UID slot is what makes a participant part of the subnet that coinbase distributes
-emissions within. The emissions coinbase produces each epoch are allocated among the subnet's
-participants, and a UID slot is the position a participant must hold to be among them. The UID slot
-is the seat at the table; coinbase is the recurring process that produces and distributes the
-emissions shared among those seated. The slot is a position label and performs no emission itself,
-while coinbase is the mechanism that generates and routes the rewards a slot holder may receive.
+For readers, a UID slot identifies who can be part of subnet reward distribution. Coinbase names
+part of the mechanism that produces and routes emissions.
 
 ## Further Reading
 
