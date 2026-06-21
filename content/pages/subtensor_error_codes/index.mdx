@@ -47,6 +47,40 @@ custom errors and short descriptions. A numeric code is a lookup key for a speci
 the returned code still needs the attempted action, selected network, and surrounding chain context
 to be interpreted safely.
 
+## Error family versus cause
+
+An error family is not always the whole cause. The standard-errors page gives named Subtensor
+failure categories, and the custom-errors page gives numeric custom conditions, but both references
+are intentionally compact
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor),
+[Subtensor Custom Errors](https://docs.learnbittensor.org/errors/custom)).
+
+For example, a balance-related failure identifies a balance condition, while a subnet-related
+failure identifies a subnet condition. The reason that condition appeared still depends on the
+submitted action, selected network, account state, and runtime state at the moment the chain checked
+the action. The error code is the diagnostic entry point, not a full reconstruction of everything
+that led to the rejection.
+
+This makes error-code articles different from troubleshooting transcripts. A transcript can show the
+specific tool output and user action that produced one failure. A reference article names the
+failure vocabulary and explains how to read it across many possible actions.
+
+## Rate-limit interpretation
+
+Rate-limit failures are especially easy to misread because they involve timing. The
+[Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits) documentation explains that
+Bittensor uses block-based cooldowns for selected actions. In that case, the relevant context is the
+action family and the number of blocks since the last accepted action of that kind.
+
+That timing model is narrower than a generic retry rule. Some returned errors can point to rate
+limits, but other errors point to missing state, invalid parameters, balance conditions, ownership
+conditions, or runtime checks. Treating every error as a wait-and-try-again problem loses the
+distinction that the error pages are meant to preserve.
+
+The safer interpretation is to read rate-limit evidence with the action being attempted and the
+network where it was submitted. The error code gives the diagnostic label, the rate-limit reference
+explains the cooldown model, and the selected network determines the chain history being checked.
+
 ## Interpreting a Returned Error
 
 A returned error should be read with the action that produced it. The code or named condition can
