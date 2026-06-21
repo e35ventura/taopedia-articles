@@ -11,211 +11,74 @@ infoboxRows:
   - label: Context
     value: Submitted chain actions
   - label: Groups
-    value: Multiple calls
+    value: Multiple actions
   - label: Key boundary
     value: Failure behavior
   - label: Fee context
-    value: Inner-call fees still matter
+    value: Inner-action fees still matter
 ---
 
 # Batch Transactions
 
-Batch transactions are a Bittensor grouping concept. They describe submitting several chain actions
-together as one on-chain transaction instead of submitting each action separately.
+Batch transactions group multiple Bittensor chain actions into one submitted transaction. They are
+submission grouping vocabulary, not a new kind of action.
 
 The official [Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions) page
-describes Bittensor's batching support as a way to include multiple calls inside one submitted
-transaction. For Taopedia readers, the important idea is not a procedure for building a batch, but
-the boundary created by grouping actions that still have their own meanings, permissions, and
-outcomes.
-
-Reference: [Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions)
+describes Bittensor's batching support as a way to include multiple actions inside one submitted
+transaction. The key concept is the boundary between the outer grouped submission and the inner
+actions it carries.
 
 ## Grouped Action Boundary
 
-A batch transaction is not a new purpose for a chain action. It is a container around multiple
-actions that are being submitted together. The actions inside the group still matter because each
-one may touch different wallet authority, staking context, subnet state, or fee behavior.
+The [Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions) source makes
+batching a container around multiple actions. The group changes how actions are bundled together,
+but each inner action still has its own meaning and result context.
 
-This makes batching different from a chain read. A chain read observes public state, while a batch
-transaction belongs to the submitted-action side of the network.
-
-References: [Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions),
-[Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees)
+This keeps batching separate from passive observation. A chain read inspects public state, while a
+batch transaction belongs to the submitted-action side of the network.
 
 ## Failure Boundary
 
-The official batch documentation distinguishes batching forms by what happens when one inner action
-does not succeed. At a concept level, the difference is whether the grouped submission can stop
-after a failed action, require every inner action to succeed together, or continue checking later
-actions after one fails.
+The [Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions) documentation
+distinguishes batching forms by failure behavior. At a concept level, the difference is whether a
+group can stop after a failed inner action, require every inner action to succeed together, or
+continue checking later actions after one fails.
 
 That failure boundary is the main reason batch transactions need separate vocabulary. A reader
-should not assume that every grouped submission has the same all-or-nothing behavior, and should not
-assume that a failure inside a group means every earlier or later action has the same outcome.
-
-Reference: [Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions)
+should not assume that every grouped submission has the same all-or-nothing behavior.
 
 ## Fee Boundary
 
-Batching changes how actions are grouped for submission, but it does not erase the fee character of
-the actions inside the group. The official
+Batching changes grouping, but it does not erase the fee character of the inner actions. The
 [Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees) page explains that batch
-transaction fees aggregate the fee behavior of the inner calls and include batch-wrapper overhead.
+fees aggregate the fee behavior of inner actions and include batch-wrapper overhead.
 
-For readers, this means a batch should not be treated as a free shortcut. If a grouped action
-contains fee-bearing activity, the grouped transaction can still have a fee. If the inner actions
-are fee-free, the batch-fee context is different.
+This means a batch should not be treated as a free shortcut. If a grouped submission contains
+fee-bearing activity, the group can still carry a fee. If the inner actions are fee-free, the fee
+context is different.
 
-Reference: [Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees)
+## Network Context
 
-## Network and Submission Context
-
-Batch-transaction examples depend on the network and the actions inside the group. The
+Batch examples belong to the network where they are submitted. The
 [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
-separates mainnet, testnet, and localnet, while the
-[Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions) page explains how
-multiple calls can be submitted inside one transaction.
+separates mainnet, testnet, and localnet, so batch examples should keep their network context
+visible when the claim depends on observed behavior.
 
-In localnet context, a batch example mainly teaches the grouping behavior. It can show how inner
-calls sit inside one submitted transaction without implying that the same actions were submitted on
-a public network.
+Local examples can explain grouping mechanics. Testnet examples can show shared testing context.
+Mainnet examples belong to primary network context and require the appropriate source context.
 
-In testnet context, the example belongs to a shared testing environment. It can help readers see the
-grouped-submission model outside a private local run, but it remains separate from production
-mainnet activity.
+## Evidence Boundary
 
-In mainnet context, a batch transaction is live chain activity. The selected network, batching form,
-inner calls, signer authority, fee behavior, and failure model all affect how a concrete example
-should be read.
+The [Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions) page supports
+claims about grouped submissions and their failure forms. It does not provide a blanket success
+guarantee, fee quote, or universal result for every grouped action.
 
-This context keeps batching from being mistaken for a change in what the inner calls mean. A batch
-groups actions for submission; it does not remove their permissions, fees, state changes, or failure
-boundaries.
-
-Concrete examples should therefore name the batching form and the inner actions being grouped. That
-detail tells readers whether the example is teaching the concept, showing test behavior, or
-describing a production submission.
-
-The same reading also prevents a successful outer submission from being overread. Depending on the
-batching form, an inner call can have its own outcome, so the grouped transaction and the carried
-actions should both be considered when interpreting an example.
-
-That keeps batching useful as coordination vocabulary without turning it into a blanket success
-claim.
-
-## Choosing a Batching Form in Plain Terms
-
-The official batch documentation distinguishes batching forms by failure behavior, not by appearance
-alone. One form can stop when an inner action fails. Another can require every inner action to
-succeed together. Another can continue evaluating later inner actions after one failure. Those
-differences matter because a grouped submission is not automatically all-or-nothing.
-
-Readers planning or reviewing a batch should ask which failure model applies before assuming that
-one failed inner call cancels everything else or that a successful outer submission means every
-inner action succeeded. The batch page is the reference for those behavioral differences; this
-article names the concept boundary rather than prescribing which form to use in a particular
-workflow. Wallet tools may present a batch as one submission, but the chain still evaluates the
-inner calls under the rules described on the official batch page.
-
-Reference: [Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions)
-
-## Signing Authority Inside the Group
-
-Grouping actions does not reduce the authority each inner action requires. If an inner call moves
-stake, changes subnet state, or uses wallet permissions, those requirements still apply inside the
-batch. The outer wrapper only changes how several submitted actions travel together, not what each
-action means on its own.
-
-That is why batch transactions belong near wallet-permission and staking vocabulary even though they
-are a protocol grouping concept. A reader reviewing a batch should inspect each inner action's
-authority and outcome, then inspect the wrapper's failure and fee behavior. Treating the group as
-one harmless button obscures the mixed permissions that batches often contain.
-
-References: [Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions),
-[BTCLI Permissions Guide](https://docs.learnbittensor.org/btcli/btcli-permissions)
-
-## When Grouping Helps and When It Does Not
-
-Batching can make related chain actions easier to submit as one unit, especially when several steps
-should land in the same block context. It does not remove slippage, conversion, staking, or fee
-effects from the inner calls, and it does not replace careful review of each action's meaning. A
-successful outer batch submission is not a substitute for checking whether each inner call should
-have been authorized in the first place. Operational batch behavior belongs in the official batch
-documentation and in the specific submission being reviewed.
-
-Grouping is a submission convenience and coordination tool, not a safety blanket. If the inner
-actions should be reviewed separately for risk, they should still be reviewed separately inside the
-batch. The useful habit is two-layer reading: understand the wrapper's failure and fee rules first,
-then inspect each inner action for permissions, state changes, and expected outcomes on its own
-terms. A batch that looks like one button in a wallet UI can still contain several distinct chain
-effects once the inner calls are unpacked.
-
-References: [Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions),
-[Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees)
-
-## Relationship to Extrinsics
-
-Batch transactions sit near extrinsic vocabulary because they are submitted to the chain rather than
-merely observed. The batch page describes grouped submissions, while the fee page describes how the
-chain accounts for submitted activity, including fee-bearing and fee-free cases.
-
-For readers, an extrinsic names a submitted chain action, while a batch transaction names a grouped
-submission that contains more than one action. The distinction keeps the outer grouping separate
-from the meaning of each inner action.
-
-References: [Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions),
-[Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees)
-
-## Safety and Interpretation Context
-
-A batch transaction can make related actions easier to reason about as a group, but it does not make
-authority or state changes harmless. If the inner actions require signing authority, change staking
-state, or interact with subnet state, those facts remain important even though the actions are
-submitted together.
-
-This is why a batch transaction should be interpreted from both layers: the outer grouped submission
-and the inner actions it carries.
-
-Reference: [Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions)
-
-## Reader Boundary
-
-This article defines batch transactions as a concept. It is not a procedure guide, fee quote, wallet
-recommendation, or guarantee that grouped actions will have a particular result. Current behavior
-and exact submitted-action details belong in the official Bittensor references and the specific
-network context being used.
-
-## Development Stage Context
-
-The
-[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from localnet to testnet and then mainnet. For batch
-transactions, that sequence changes how readers should interpret evidence about grouped chain-action
-submissions.
-
-In localnet, batch transactions can be tested in an isolated environment. Results show how inner
-calls behave inside a grouped submission without implying any connection to public network activity.
-
-On testnet, batch transaction behavior can be observed in a shared, non-production network. This
-separates the result from a private local environment while keeping it outside mainnet chain state.
-
-On mainnet, batch transactions are live grouped submissions that change Subtensor state under the
-rules described in the
-[Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions) documentation. Each
-inner call carries its own permissions, fees, and failure boundary on the production network.
-
-The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
-separates mainnet, testnet, and localnet. A batch transaction example from one environment should
-not be read as identical evidence about grouped submission behavior in another environment.
-
-For readers, this keeps batch transaction examples from being treated as carrying more weight than
-their environment supports. Localnet, testnet, and mainnet contexts can all describe grouped chain
-actions, but they carry different interpretive weight.
+When a claim depends on a concrete batch, the article should identify the batching form, network
+context, and inner actions. The outer grouped transaction and the carried actions should both be
+considered when interpreting evidence.
 
 ## Further Reading
 
 - [Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions)
 - [Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees)
-- [Introduction to Bittensor: Subnet development](https://docs.learnbittensor.org/learn/introduction#subnet-development)
 - [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)
