@@ -46,6 +46,47 @@ apply broadly across the network, while others apply within a subnet context. Th
 Taopedia-level distinction is scope: a reader should ask which action is being paced and whether the
 rule is global or tied to a particular subnet setting.
 
+## Staking Operation Per-Block Limit
+
+Among Subtensor's global rate limits, staking operations have one of the tightest cadences. The
+official [Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits) documentation limits
+how frequently a user can add stake, remove stake, or move stake within a particular subnet to one
+successful operation per block, surfacing `StakingOperationRateLimitExceeded` when the limit is hit.
+
+That rule is separate from the general block-based cooldown pattern described earlier in this
+article. It names a specific action family — staking changes on a netuid — rather than every
+rate-limited transaction on the chain.
+
+References: [Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits),
+[Staking and Delegation](https://docs.learnbittensor.org/staking-and-delegation/delegation)
+
+## Weights Setting Effective Period
+
+Subnet validators face a configurable weights-setting rate limit tied to subnet tempo. The same rate
+limit reference lists `weights_rate_limit` in subnet hyperparameters and gives an effective period
+formula of tempo multiplied by the rate limit multiplied by twelve seconds.
+
+Readers interpreting validator weight submissions should treat that limit as subnet-scoped timing,
+not as a single global block count. The tempo linkage connects rate limits to each subnet's epoch
+cadence rather than to wall-clock time alone.
+
+References: [Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+
+## Neuron Registration Without Cooldown Windows
+
+Not every repeated chain action uses the same rate-limit pattern. The official rate-limit page
+states that neuron registration is continuous: there are no registration windows, rate limits, or
+per-block caps on UID admission. Instead, registration is governed by a burn price that decays over
+time and rises with each successful registration.
+
+That distinction matters when comparing register to other paced actions. Rate limits in this article
+describe cooldowns after successful operations, while subnet entry through register follows the
+dynamic burn-price model documented under registration vocabulary.
+
+References: [Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits),
+[Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register)
+
 ## Relationship to Errors
 
 Rate limits often appear to readers as rejection messages when an action is attempted too soon.
