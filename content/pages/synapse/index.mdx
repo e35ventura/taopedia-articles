@@ -19,254 +19,88 @@ infoboxRows:
 
 # Synapse
 
-A synapse is a structured data object exchanged in Bittensor subnet communication. The official
-[Glossary](https://docs.learnbittensor.org/resources/glossary#synapse) describes synapse objects as
-the main vehicle for information exchange between subnet validators and subnet miners, and notes
-that they are based on Pydantic's BaseModel. The official
-[Synapse reference](https://docs.learnbittensor.org/python-api/html/autoapi/bittensor/core/synapse/)
-places Synapse alongside the Axon and Dendrite communication components.
+A synapse is the structured message object used in Bittensor subnet communication
+([Glossary: Synapse](https://docs.learnbittensor.org/resources/glossary#synapse),
+[Synapse reference](https://docs.learnbittensor.org/python-api/html/autoapi/bittensor/core/synapse/)).
+
+The term belongs to communication vocabulary. It should be read separately from the subnet role,
+subnet task, and incentive rule that interpret the information carried by the message.
 
 ## Message Object Context
 
-Synapse is best read as the message object in the Axon-dendrite path. Axon names the server-side
-endpoint, dendrite names the client-side component, and synapse names the object carried through
-that request-and-response exchange. This makes synapse communication vocabulary, not a reward rule
-or a subnet role.
+The official glossary describes synapse objects as the main vehicle for information exchange between
+subnet validators and subnet miners
+([Glossary: Synapse](https://docs.learnbittensor.org/resources/glossary#synapse)).
 
-The term is intentionally narrower than subnet protocol. A subnet protocol can decide what fields
-matter and how responses are evaluated, while a synapse is the structured object used to carry the
-information for that exchange.
+That framing makes synapse a message-object term. It names the object exchanged through subnet
+traffic, not the whole miner role, validator role, scoring rule, or reward outcome.
 
-## Validator and Miner Exchange
+## Axon and Dendrite Boundary
 
-The official [Glossary: Synapse](https://docs.learnbittensor.org/resources/glossary#synapse)
-describes synapse objects as the main vehicle for information exchange between subnet validators and
-subnet miners. When documentation discusses subnet communication, synapse names the structured
-message that moves task-related information between those two roles.
+Synapse sits between axon and dendrite vocabulary. Axon is the server-side endpoint that receives
+incoming synapse objects, while dendrite is the client-side component that sends requests to axon
+endpoints and processes responses
+([Axon reference](https://docs.learnbittensor.org/python-api/html/autoapi/bittensor/core/axon/),
+[Dendrite reference](https://docs.learnbittensor.org/python-api/html/autoapi/bittensor/core/dendrite/)).
 
-That exchange role keeps synapse inside communication vocabulary. It does not name who earns
-emissions, which validator set weights are final, or how a subnet prices alpha inside its market.
+For readers, dendrite contacts, axon receives, and synapse is the structured message object
+exchanged through that path.
 
-For readers, synapse explains what kind of object moves through subnet request traffic, not the
-reward rule that later interprets the returned information.
+## Miner and Validator Exchange
 
-References: [Glossary: Synapse](https://docs.learnbittensor.org/resources/glossary#synapse),
-[Glossary: Subnet Validator](https://docs.learnbittensor.org/resources/glossary#subnet-validator)
+Synapse language often appears near subnet miners and subnet validators because those roles exchange
+task-related information. The miner role produces work for a subnet task, and the validator role
+evaluates work under the subnet's incentive mechanism
+([Glossary: Subnet Miner](https://docs.learnbittensor.org/resources/glossary#subnet-miner),
+[Glossary: Subnet Validator](https://docs.learnbittensor.org/resources/glossary#subnet-validator)).
 
-## Structured Message, Not a Participant Role
+The synapse itself does not decide whether a response is useful. It carries the information that a
+subnet protocol and scoring model can later interpret.
 
-Subnet miner and subnet validator are role labels for who produces or evaluates work. Synapse names
-the message object those roles exchange during that work. Mixing the terms makes prose read as if
-sending a synapse were the same as holding a UID slot or receiving a validator permit.
+## Subnet-Specific Payloads
 
-Keeping role labels and message objects separate helps when readers move from glossary entries to
-subnet communication examples. Miners and validators participate in a subnet; synapses carry the
-task-specific payload exchanged before scoring decisions are made there.
+The synapse concept is stable across subnet communication, but the useful content inside a message
+depends on the subnet task. Bittensor documentation describes subnet tasks as the work miners
+perform for a subnet, and multiple-mechanism documentation notes that different mechanisms can
+define different task contexts inside a subnet
+([Glossary: Subnet Task](https://docs.learnbittensor.org/resources/glossary#subnet-task),
+[Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets)).
 
-The synapse term therefore belongs beside Axon-dendrite communication vocabulary rather than beside
-emission, staking, or governance role labels.
+This means a synapse should not be treated as a universal schema for every subnet. The article-level
+point is the communication role; task-specific fields belong to the relevant subnet or API
+reference.
 
-References: [Glossary: Synapse](https://docs.learnbittensor.org/resources/glossary#synapse),
-[Glossary: Subnet Miner](https://docs.learnbittensor.org/resources/glossary#subnet-miner)
+## Development and Network Context
 
-## Task Content Varies by Subnet
+Bittensor documentation separates local development, testchain, and mainchain contexts for subnet
+work, and it separately describes mainnet, testnet, and localnet network contexts
+([Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
 
-Each subnet can define a different task and evaluation standard. The
-[Glossary: Subnet Task](https://docs.learnbittensor.org/resources/glossary#subnet-task) connects
-subnet tasks to the work miners perform, while synapse names the object that carries task-related
-information for that exchange inside one subnet market.
-
-Readers should therefore attach a netuid when interpreting synapse examples. A message shape that
-fits one subnet's task does not automatically define every other subnet's task or scoring rules.
-
-The synapse label stays stable across subnets, but the useful task content inside the message
-travels with the subnet task and protocol for the market being read.
-
-References: [Glossary: Synapse](https://docs.learnbittensor.org/resources/glossary#synapse),
-[Glossary: Subnet Task](https://docs.learnbittensor.org/resources/glossary#subnet-task)
-
-## Relationship to Axons and Dendrites
-
-The official
-[Axon reference](https://docs.learnbittensor.org/python-api/html/autoapi/bittensor/core/axon/)
-describes Axon as the server-side interface that services incoming requests. The official
-[Dendrite reference](https://docs.learnbittensor.org/python-api/html/autoapi/bittensor/core/dendrite/)
-describes Dendrite as a network client that sends requests to axon endpoints and processes
-responses. Synapse sits between those terms as the object being sent, received, and returned.
-
-For Taopedia readers, the practical distinction is simple: axon is the contacted endpoint, dendrite
-is the contacting component, and synapse is the structured message object.
-
-## Subnet Communication Context
-
-The glossary ties synapses to subnet miners and subnet validators because those roles exchange
-task-specific information. A validator-side process may send a synapse through a dendrite to a
-miner-side axon, and the response can contain the information that the subnet's scoring logic needs
-to interpret.
-
-This communication context does not define the scoring logic itself. Synapse explains the object
-that carries task information; the subnet protocol and scoring model explain what that information
-means for the subnet.
-
-## Development Stage Context
-
-The
-[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from local testing to testchain and then mainchain. For a
-synapse, that sequence changes how readers should interpret examples of subnet messages.
-
-In local testing, a synapse example can show the shape of a request object and the response object
-that returns through an isolated Axon-dendrite exchange. That is useful for understanding message
-structure, but it does not show that the same object has been exchanged with a public miner on a
-live subnet.
-
-On testchain, synapse behavior can be observed in a shared testing network. This gives stronger
-evidence about how message fields, validator-side requests, miner axon responses, and subnet
-protocol rules interact than a private local run, while still keeping the result separate from
-production mainchain activity.
-
-On mainchain, a synapse belongs to live subnet communication context. The
-[Glossary: Synapse](https://docs.learnbittensor.org/resources/glossary#synapse) describes synapse
-objects as the main vehicle for information exchange between subnet validators and subnet miners, so
-production readings should keep the selected subnet, miner and validator roles, contacted endpoint
-context, and block timing attached.
-
-The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
-separates mainnet, testnet, and localnet. A synapse example in one environment should not be read as
-identical evidence about response quality, scoring meaning, or miner behavior in another
-environment.
-
-This distinction matters because synapse names the structured message object, not the whole subnet
-protocol or the final reward rule. The network environment explains what kind of evidence the
-example provides, while the subnet protocol explains how the message should be interpreted.
-
-For readers, this keeps synapse examples from sounding stronger than their environment supports.
-Local, testchain, and mainchain contexts can all contain synapse language, but they do not carry the
-same interpretive weight.
+A synapse example from one environment should therefore not be read as identical evidence about
+response quality, endpoint availability, or subnet scoring in another environment. The message
+object can be the same kind of object while the surrounding evidence has a different scope.
 
 ## Incentive Mechanism Handoff
 
-Synapse sits in the communication layer that feeds subnet evaluation. The official
-[Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)
-documentation places miner work, validator evaluation, and emission outcomes inside a subnet
-incentive mechanism. A validator-side dendrite exchange carries a synapse to a miner axon so the
-returned response can be interpreted under those subnet rules.
+Synapse exchange can feed a subnet's evaluation pipeline. The incentive-mechanism documentation
+places miner work, validator evaluation, and emission outcomes inside subnet-specific incentive
+mechanisms
+([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
 
-For readers, synapse is therefore a transport object inside the evaluation pipeline, not the
-incentive rule itself. The incentive mechanism defines what useful work means; synapse defines how
-task-specific information is exchanged before weights and emissions are determined.
-
-References:
-[Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism),
-[Glossary: Synapse](https://docs.learnbittensor.org/resources/glossary#synapse)
-
-## Structured Fields and Subnet Protocol
-
-Synapse objects carry subnet-specific fields, but the synapse concept itself does not define a
-universal schema for every netuid. The glossary describes synapses as structured message objects
-based on Pydantic's BaseModel, while subnet protocol documentation decides which fields matter for
-evaluation in a given market.
-
-Readers should separate the transport object from the subnet's task definition. A synapse names how
-information is packaged for Axon-dendrite exchange; the subnet protocol names what responses mean
-for scoring and emissions inside that subnet. Field lists, validation rules, and example payloads
-belong in subnet protocol references and official API documentation rather than in a static article
-quote.
-
-References: [Glossary: Synapse](https://docs.learnbittensor.org/resources/glossary#synapse),
-[Synapse reference](https://docs.learnbittensor.org/python-api/html/autoapi/bittensor/core/synapse/)
-
-## Round-Trip Exchange Through Axon Endpoints
-
-The Axon reference describes the server-side interface that services incoming requests, and the
-Dendrite reference describes the client that sends requests and processes responses. Synapse sits in
-that round trip as the object passed forward and returned, not as a persistent on-chain record by
-itself.
-
-For readers, the useful mental model is a validator-side query path: a dendrite sends a synapse to a
-miner axon, the miner processes the request, and the response synapse carries data back for subnet
-evaluation. Communication failures, timeouts, and malformed responses belong to operational subnet
-behavior described in mining and validating documentation rather than to the synapse label alone.
-
-References:
-[Axon reference](https://docs.learnbittensor.org/python-api/html/autoapi/bittensor/core/axon/),
-[Dendrite reference](https://docs.learnbittensor.org/python-api/html/autoapi/bittensor/core/dendrite/),
-[Glossary: Synapse](https://docs.learnbittensor.org/resources/glossary#synapse)
-
-## Role Labels Versus Message Objects
-
-Synapse names a message object, not a participant role. Subnet miner and subnet validator glossary
-entries describe who produces or evaluates work, while synapse describes what structured object
-moves between those roles during communication. Mixing the terms makes documentation read as if
-exchanging a synapse were the same as holding a UID slot or validator permit.
-
-Keeping role labels and message objects separate helps when reading API references alongside
-glossary entries. Miners and validators participate in subnets; synapses carry the task-specific
-payload those participants exchange before scoring logic runs under the subnet's incentive
-mechanism. The synapse label does not by itself specify weight commits, emissions, or validator
-trust scores.
-
-References: [Glossary: Synapse](https://docs.learnbittensor.org/resources/glossary#synapse),
-[Glossary: Subnet Miner](https://docs.learnbittensor.org/resources/glossary#subnet-miner),
-[Glossary: Subnet Validator](https://docs.learnbittensor.org/resources/glossary#subnet-validator)
-
-## Relationship to Multiple Mechanisms
-
-A synapse is usually discussed for one incentive mechanism at a time, but subnets can also run
-multiple mechanisms in parallel. The
-[Glossary](https://docs.learnbittensor.org/resources/glossary#subnet-task) notes that when multiple
-incentive mechanisms are used within a subnet, each mechanism can define different tasks for miners
-to perform.
-
-For readers, a synapse still carries task-specific information in subnet communication, but the
-mechanism context matters. The task context for one mechanism should be read separately when a
-subnet uses more than one evaluation system.
-
-References:
-[Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets),
-[Glossary: Subnet Task](https://docs.learnbittensor.org/resources/glossary#subnet-task)
-
-## Relationship to Registration
-
-Synapse and registration describe different stages of subnet participation for miners. Registration
-names the process by which a miner joins a subnet and receives a UID, placing the miner's axon
-endpoint in the subnet's metagraph. The
-[Glossary: Registration](https://docs.learnbittensor.org/resources/glossary#registration) describes
-registration as the process of joining a subnet and receiving a UID.
-
-For readers, registration is the prerequisite that makes a miner's axon discoverable for synapse
-exchange. A synapse can only reach a miner's axon if that miner is registered and its endpoint is
-known to the subnet. Registration names the membership step; synapse names the message object that
-flows once membership is in place.
-
-References:
-[Glossary: Registration](https://docs.learnbittensor.org/resources/glossary#registration),
-[Glossary: Synapse](https://docs.learnbittensor.org/resources/glossary#synapse)
-
-## Relationship to Coinbase
-
-Synapse and coinbase address different parts of Bittensor subnet incentive flow. A synapse is the
-structured message object that carries task-specific information between validators and miners in
-the evaluation pipeline — the object a validator's dendrite sends to a miner's axon and that returns
-the miner's response. Coinbase is the per-block Subtensor mechanism that accumulates pending
-emissions and triggers the Yuma Consensus epoch round at each subnet's epoch boundary, distributing
-miner incentives and validator dividends, as described by the
-[Coinbase Implementation](https://docs.learnbittensor.org/subtensor-api/extrinsics#coinbase).
-
-Synapse exchanges are how validators gather the miner response data they need to assign weights.
-Those validator weight submissions then feed the Yuma Consensus round that coinbase triggers each
-epoch. In that sense, synapse exchanges sit at the beginning of the evaluation pipeline, and
-coinbase sits at the end — translating accumulated validator judgments into miner incentive
-allocations and validator dividends each epoch.
-
-References: [Glossary: Synapse](https://docs.learnbittensor.org/resources/glossary#synapse),
-[Coinbase Implementation](https://docs.learnbittensor.org/subtensor-api/extrinsics#coinbase)
+That does not make synapse a reward rule. Synapse names the object carrying task information before
+the subnet's own evaluation logic turns responses into weights, scores, or other outcome signals.
 
 ## Reader Boundary
 
-Synapse should not be read as a complete subnet interface, a list of required fields, or a universal
-request schema for all subnets. Exact fields, validation behavior, and response meaning depend on
-the subnet protocol and the current official reference or subnet documentation.
+Synapse should be read as Bittensor's structured communication object for subnet exchanges. It is
+not a miner role, a validator decision, a persistent chain record, or a complete description of any
+subnet's protocol ([Glossary: Synapse](https://docs.learnbittensor.org/resources/glossary#synapse),
+[Subtensor Events](https://docs.learnbittensor.org/subtensor-api/events),
+[Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage)).
+
+That boundary keeps the term useful: synapse identifies what is exchanged, while surrounding subnet
+documentation explains what the exchanged data means.
 
 ## Further Reading
 
@@ -274,4 +108,4 @@ the subnet protocol and the current official reference or subnet documentation.
 - [Synapse reference](https://docs.learnbittensor.org/python-api/html/autoapi/bittensor/core/synapse/)
 - [Axon reference](https://docs.learnbittensor.org/python-api/html/autoapi/bittensor/core/axon/)
 - [Dendrite reference](https://docs.learnbittensor.org/python-api/html/autoapi/bittensor/core/dendrite/)
-- [Coinbase Implementation](https://docs.learnbittensor.org/subtensor-api/extrinsics#coinbase)
+- [Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)
