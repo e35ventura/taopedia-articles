@@ -14,110 +14,75 @@ network-level TAO with subnet-specific alpha tokens, subnet liquidity pools, emi
 validator stake weight
 ([Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)).
 
-The main change is that subnet economics are no longer described only through network-wide TAO. Each
-subnet has an alpha side as well as a TAO side, so staking, pool liquidity, and emission
-distribution all need subnet-specific wording.
+The main shift is that subnet economics are not described only through network-wide TAO. Each subnet
+has an alpha side as well as a TAO side, so staking, liquidity, and emission language needs
+subnet-specific context.
 
 ## Subnet Alpha Model
 
-Dynamic TAO gives each subnet its own alpha token. The
-[Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets) documentation
-describes subnet pools with TAO reserves, alpha reserves, and alpha outstanding.
+Dynamic TAO gives each subnet its own alpha token. Subnet pools include TAO reserves, alpha
+reserves, and alpha outstanding
+([Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets),
+[Glossary: Alpha Tokens](https://docs.learnbittensor.org/resources/glossary#alpha-tokens)).
 
-That creates a two-asset subnet model. TAO remains the network asset, while alpha describes the
-subnet-specific asset used in that subnet's pool, stake, and reward calculations.
+That creates a two-asset subnet model. TAO remains the network asset, while alpha names the
+subnet-specific asset used in that subnet's pool, stake, and reward context.
 
 ## Reserve and Outstanding Alpha
 
 The alpha side is split by location. Alpha reserve is the subnet alpha inside the liquidity pool,
 paired with the subnet's TAO reserve. Alpha outstanding is alpha outside that reserve side and is
-connected to subnet stake and rewards ([Emission](https://docs.learnbittensor.org/learn/emissions)).
+connected to subnet stake and rewards ([Emissions](https://docs.learnbittensor.org/learn/emissions),
+[Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)).
 
 This makes Dynamic TAO easier to read. A pool statement usually concerns TAO reserve and alpha
-reserve. A reward or stake statement usually concerns alpha outstanding.
+reserve, while a reward or stake statement usually concerns alpha outstanding.
 
 ## Emission Routing
 
-The [Emission](https://docs.learnbittensor.org/learn/emissions) documentation describes emitted TAO
-and alpha moving through subnet-specific paths. TAO enters subnet reserve paths, alpha can enter the
-reserve side, and alpha outstanding is set aside for subnet rewards.
+Emissions move through subnet-specific paths. TAO can enter subnet reserve paths, alpha can enter
+the reserve side, and alpha outstanding can be set aside for subnet rewards
+([Emissions](https://docs.learnbittensor.org/learn/emissions),
+[Emission: Distribution Across Subnets](https://docs.learnbittensor.org/learn/emissions#distribution-across-subnets)).
 
 Dynamic TAO therefore links emission to subnet liquidity. Emission is not only a network supply
-event; it also changes the TAO-and-alpha structure that each subnet uses.
+event; it also changes the TAO-and-alpha structure each subnet uses.
 
 ## Validator Stake Weight
 
-Validator stake weight is one concrete place where Dynamic TAO combines TAO and alpha. The
-[Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets#validator-stake-weight)
-documentation defines a validator's subnet stake weight as alpha stake plus TAO stake multiplied by
-the `tao_weight` parameter.
+Validator stake weight is one place where Dynamic TAO combines TAO and alpha. Bittensor defines a
+validator's subnet stake weight as alpha stake plus TAO stake scaled by the subnet's TAO weight
+parameter
+([Understanding Subnets: Validator stake weight](https://docs.learnbittensor.org/subnets/understanding-subnets#validator-stake-weight)).
 
-In plain terms, validator stake weight lets subnet alpha stake and TAO stake both contribute to a
-validator's influence in a subnet, with TAO scaled by the subnet's `tao_weight`. This is more
-specific than saying TAO "matters differently"; the difference comes from the documented stake
-weight formula.
+In plain terms, subnet alpha stake and TAO stake can both contribute to validator influence inside a
+subnet. The TAO side is scaled, so the two assets are related without being identical.
 
 ## Cross-Subnet Allocation
 
-Dynamic TAO also affects how emissions are compared across subnets. The
-[Emission](https://docs.learnbittensor.org/learn/emissions#distribution-across-subnets)
-documentation describes distribution across subnets through flow-based emission logic.
+Dynamic TAO also affects how emissions are compared across subnets. Flow-based emission logic uses
+subnet demand signals when allocating TAO reserve injection across subnets
+([Emission: Distribution Across Subnets](https://docs.learnbittensor.org/learn/emissions#distribution-across-subnets),
+[Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)).
 
-This connects subnet demand signals with emission share. Dynamic TAO is the system in which TAO
-flows, subnet alpha, and subnet weights interact rather than a separate asset by itself.
+This connects TAO flows, subnet alpha, and subnet weights. Dynamic TAO is the system in which those
+pieces interact rather than a separate asset by itself.
 
-## Yuma Consensus Role
+## Yuma Consensus Boundary
 
-Dynamic TAO and Yuma Consensus describe different layers of the system. Dynamic TAO describes the
-TAO-and-alpha tokenomics across subnets, while
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) describes how validator
-signals are combined inside a subnet to determine reward outcomes.
+Dynamic TAO and Yuma Consensus describe different layers. Dynamic TAO describes TAO-and-alpha
+tokenomics across subnets, while Yuma Consensus describes how validator signals combine inside a
+subnet to determine reward outcomes
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
+[Emissions](https://docs.learnbittensor.org/learn/emissions)).
 
 The two are connected through emissions. Dynamic TAO provides the subnet tokenomics environment;
 Yuma Consensus resolves within-subnet reward allocation.
-
-## Term Placement
-
-Dynamic TAO is the broad term for Bittensor's subnet-aware tokenomics. Alpha reserve names the
-pool-held alpha side. Alpha outstanding names alpha outside that reserve side. Validator stake
-weight names the formula that combines subnet alpha stake and TAO stake for validator influence.
-Subnet weights describe cross-subnet emission allocation
-([Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)).
-
-Those terms are related because they all describe parts of the same Dynamic TAO design, but each one
-answers a different question about subnet economics.
-
-## Development Stage Context
-
-The
-[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from localnet to testnet and then mainnet. For Dynamic TAO,
-that sequence changes how readers should interpret examples of subnet-specific alpha token behavior
-and stake-weight mechanics.
-
-In localnet, Dynamic TAO mechanics can be tested in an isolated environment. Localnet alpha token
-pools and stake-weight outcomes reflect local chain settings and do not represent production subnet
-economics.
-
-On testnet, Dynamic TAO behavior can be observed in a shared, non-production network. Testnet alpha
-token pools and validator stake-weight outcomes are separate from mainnet subnet economics.
-
-On mainnet, Dynamic TAO is the live subnet tokenomics design that assigns each subnet its own alpha
-token pool and uses TAO and alpha staking positions to compute validator stake weight in production
-Bittensor operations. The
-[Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets) documentation
-describes the Dynamic TAO mechanics that apply on the production network.
-
-The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
-separates mainnet, testnet, and localnet. A Dynamic TAO example from one environment should not be
-read as representing alpha token pool state or stake-weight outcomes in another environment.
 
 ## Further Reading
 
 - [Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)
 - [Understanding Subnets: Validator stake weight](https://docs.learnbittensor.org/subnets/understanding-subnets#validator-stake-weight)
-- [Emission](https://docs.learnbittensor.org/learn/emissions)
+- [Emissions](https://docs.learnbittensor.org/learn/emissions)
 - [Emission: Distribution Across Subnets](https://docs.learnbittensor.org/learn/emissions#distribution-across-subnets)
 - [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
-- [Introduction to Bittensor: Subnet development](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-- [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)
