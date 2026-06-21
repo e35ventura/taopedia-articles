@@ -1,8 +1,6 @@
 ---
 title: "Rate Limits"
-summary:
-  "How Bittensor rate limits use block-based cooldowns to protect chain resources and pace repeated
-  actions."
+summary: "How Bittensor rate limits use block-based cooldowns to pace repeated chain actions."
 category: "Core Concepts"
 tags: ["Subtensor", "Transactions"]
 infoboxTitle: Rate Limits
@@ -20,86 +18,81 @@ infoboxRows:
 
 # Rate Limits
 
-Rate limits are Subtensor timing rules that pace repeated Bittensor chain actions. They are
-described as block-based cooldown periods, so the durable idea is not a wall-clock timer but a
-required amount of chain progression before the same kind of action can succeed again
-([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+Rate limits are Subtensor timing rules that pace repeated Bittensor chain actions. They are measured
+in blocks rather than ordinary wall-clock time, so the key idea is chain progression between
+accepted actions ([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
 
-The concept is most useful as a boundary term. A rate limit explains when a repeated action is too
-soon, not whether the action is useful or appropriate for a particular workflow. It is timing
-evidence, not a complete explanation of a user's broader activity.
+The concept is useful as boundary vocabulary. A rate limit explains that an action is being repeated
+too soon for the relevant rule; it does not by itself explain whether the action is useful, optimal,
+or part of a broader workflow.
 
 ## Cooldown Meaning
 
-A rate-limited action starts its cooldown after the relevant successful action. The rate-limit
-reference distinguishes that from unsuccessful attempts, which can be retried without being treated
-as the successful action that starts the cooldown
-([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+A cooldown begins from a successful action of the relevant kind. The
+[rate-limit](https://docs.learnbittensor.org/learn/chain-rate-limits) material distinguishes
+successful actions from failed attempts, so the accepted action is the pacing point.
 
-That distinction keeps rejection messages from being overread. The
-[Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits) reference makes the
-successful action the pacing point, so a failed action is not automatically proof that every later
-attempt must wait the same interval.
+That distinction keeps rejection evidence from being overread. A failed attempt can return an error,
+but the cooldown rule is tied to the successful action that the chain accepted for that action
+family.
 
 ## Scope of the Rule
 
-Rate limits are scoped to specific action families. The Bittensor reference groups them across
-network-wide limits and subnet-specific limits, so a reader should preserve both the action being
-paced and the scope where the rule applies
-([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+Rate limits are scoped to action families. The same
+[Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits) reference separates global
+limits from subnet-specific limits, so a reader should preserve the action and scope attached to the
+claim.
 
-This prevents one cooldown from being generalized to all chain activity. A subnet-specific validator
-action, a staking-related action, and a broader network rule can all use rate-limit language while
-answering different questions about timing and scope.
+This prevents one cooldown from being generalized to all chain activity. A staking-related action, a
+weight-setting action, and another subnet action can all use rate-limit language while answering
+different timing questions.
 
-## Staking and Validator Examples
+## Staking and Weight Examples
 
-The rate-limit reference gives staking operations as a concrete global example: adding stake,
-removing stake, or moving stake within a selected subnet is paced at one successful operation per
-block, with a rate-limit error when the rule is exceeded
-([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits),
-[Staking and Delegation](https://docs.learnbittensor.org/staking-and-delegation/delegation)).
+Staking operations provide one example of globally paced actions. Adding stake, removing stake, and
+moving stake are discussed in the rate-limit context, while
+[Staking and Delegation](https://docs.learnbittensor.org/staking-and-delegation/delegation) gives
+the broader staking vocabulary around those actions.
 
-Validator weight-setting is a different example because it is tied to subnet configuration. The
-subnet hyperparameter reference includes `weights_rate_limit`, and the rate-limit documentation
-connects the effective period to tempo and block timing
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
-[Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+Validator weight setting is a different example because it is tied to subnet configuration. The
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters) reference
+places weight-setting pace in subnet configuration, while
+[Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits) keeps the block-based timing
+model attached.
 
-Those examples show why the action family matters. Staking changes and validator weight updates are
-both chain actions, but their pacing rules should not be collapsed into a single generic cooldown.
+## Error Context
 
-## Rejection Evidence
+Rate-limit errors are diagnostic signals from the chain layer. The
+[Subtensor Error Codes](https://docs.learnbittensor.org/errors) overview and
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor) reference place these
+signals alongside other rejection categories, while the
+[Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits) page explains the timing rule
+behind too-soon repeats.
 
-A rate-limit error is structured timing feedback from the chain layer. Subtensor error references
-group failures that can appear when a submitted action does not pass runtime checks, while the
-rate-limit reference explains the cooldown rule behind too-soon repeats
-([Subtensor Error Codes](https://docs.learnbittensor.org/errors),
-[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor),
-[Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+That makes a returned rate-limit error useful evidence, but not a complete diagnosis. The attempted
+action, selected network, subnet context, and relevant mechanism documentation still determine how
+the signal should be interpreted.
 
-That makes rate limits useful diagnostic evidence, but not complete diagnosis. A rejected action
-should still be read with the submitted action, selected network, relevant subnet context, and the
-official mechanism documentation for the operation involved.
+## Transaction Boundary
 
-## Network Context
+Rate limits apply to submitted chain actions, not to every way of reading Bittensor information. The
+[Transaction Fees](https://docs.learnbittensor.org/learn/fees) documentation distinguishes
+state-changing submissions from free chain reads, and the
+[Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits) reference focuses on pacing
+accepted actions.
 
-Network context changes how rate-limit examples should be read. Bittensor documentation separates
-mainnet, testnet, and localnet, so a timing example from one environment should not be treated as
-proof of identical behavior in another environment
-([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
-
-The safe article-level claim is that rate limits are block-based Subtensor pacing rules. Current
-configuration, rejection behavior, and examples belong to the specific environment and subnet
-context that produced them.
+That boundary keeps rate-limit vocabulary from being applied to passive observation. A reader should
+ask which submitted action is being paced before treating a timing claim as a rate-limit claim.
 
 ## Reader Boundary
 
-This article explains how to interpret rate-limit vocabulary. It does not list every current
-cooldown value, prescribe retry timing, diagnose private state, or reproduce interface output. Those
-details depend on the action, network, subnet context, and current chain state at the time of
-observation ([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits),
-[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+Rate limits should be read as block-based pacing rules for repeated chain actions
+([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)). They are not a general
+retry guide, a complete troubleshooting transcript, or a list of every configured value.
+
+This article does not prescribe action timing, reproduce interface output, or diagnose private
+state. Exact interpretation belongs to the submitted action, selected network, subnet context, and
+official mechanism source involved.
 
 ## Further Reading
 
@@ -108,4 +101,4 @@ observation ([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limi
 - [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor)
 - [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
 - [Staking and Delegation](https://docs.learnbittensor.org/staking-and-delegation/delegation)
-- [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)
+- [Transaction Fees](https://docs.learnbittensor.org/learn/fees)
