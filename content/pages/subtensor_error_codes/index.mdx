@@ -1,7 +1,6 @@
 ---
 title: "Subtensor Error Codes"
-summary:
-  "How Subtensor error-code families help Bittensor readers interpret failed network actions."
+summary: "How Subtensor error-code families help Bittensor readers interpret failed chain actions."
 category: "Core Concepts"
 tags: ["Subtensor", "Errors"]
 infoboxTitle: Subtensor Error Codes
@@ -11,154 +10,105 @@ infoboxRows:
     value: Subtensor
   - label: Purpose
     value: Failure diagnosis
-  - label: Common families
+  - label: Families
     value: Standard and custom errors
   - label: Related
-    value: Staking and delegation
+    value: Rate limits
 ---
 
 # Subtensor Error Codes
 
 Subtensor error codes are diagnostic signals from the blockchain layer beneath Bittensor. They help
-identify why a network action failed.
+identify why a chain action failed, but they do not provide the full surrounding context by
+themselves ([Subtensor Error Codes](https://docs.learnbittensor.org/errors),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor)).
 
-The [Subtensor Error Codes](https://docs.learnbittensor.org/errors) page frames the topic as errors
-that can appear through Bittensor-facing interfaces, while the
-[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor) page describes
-standard error categories from the Subtensor layer.
+The term is useful as rejection vocabulary. An error code points toward a rule family, while the
+relevant action, subnet context, network context, and mechanism documentation explain how that
+family should be interpreted.
 
 ## Diagnostic Scope
 
-An error code usually points to the rule family that rejected an action. The
-[Subtensor Error Codes](https://docs.learnbittensor.org/errors) overview groups these failures into
-standard Subtensor errors, custom errors, and errors inherited from the underlying Substrate
-framework. That grouping matters because a short error message identifies the kind of failure, not
-the full context of the attempted action.
+The Subtensor error overview groups failures into standard Subtensor errors, custom errors, and
+errors inherited from the underlying Substrate framework
+([Subtensor Error Codes](https://docs.learnbittensor.org/errors)).
 
-That makes Subtensor error codes diagnostic vocabulary rather than a complete incident report. The
-returned label can tell a reader where to start, while the action, account role, subnet context, and
-network environment explain why that family appeared in a specific case.
+That grouping makes error codes classification signals. A short label can tell a reader where to
+start, but it should not be treated as a complete reconstruction of every condition that led to the
+rejection.
 
 ## Standard and Custom Families
 
-The [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor) page describes
-named failure categories from the Subtensor layer. These categories cover protocol checks such as
-subnet existence, balances, staking conditions, weight-setting constraints, and other runtime
-boundaries.
-
-The [Subtensor Custom Errors](https://docs.learnbittensor.org/errors/custom) page lists numeric
-custom errors and short descriptions. A numeric code is a lookup key for a specific condition, but
-the returned code still needs the attempted action, selected network, and surrounding chain context
-to be interpreted safely.
-
-Standard and custom families should therefore be read as layers of classification. A standard error
-can name a broad Subtensor failure category, while a custom error can identify a more specific
-runtime condition exposed by the chain.
-
-The useful article-level distinction is that both families identify rejection vocabulary. Neither
-family, by itself, proves the full cause without the surrounding submission context.
-
-## Family and Cause Boundary
-
-An error family is not always the whole cause. The standard-errors page gives named Subtensor
-failure categories, and the custom-errors page gives numeric custom conditions, but both references
-are intentionally compact
+Standard errors describe named failure categories from the Subtensor layer, while custom errors list
+numeric conditions with short descriptions
 ([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor),
 [Subtensor Custom Errors](https://docs.learnbittensor.org/errors/custom)).
 
-For example, a balance-related failure identifies a balance condition, while a subnet-related
-failure identifies a subnet condition. The reason that condition appeared still depends on the
-submitted action, selected network, account state, and runtime state at the moment the chain checked
-the action. The error code is the diagnostic entry point, not a full reconstruction of everything
-that led to the rejection.
+Both families are lookup vocabulary. A standard error can name a broad Subtensor condition, and a
+custom error can identify a more specific chain condition. Neither family, by itself, proves the
+entire cause without the surrounding chain context.
 
-This makes error-code articles different from troubleshooting transcripts. A transcript can show the
-specific tool output and user action that produced one failure. A reference article names the
-failure vocabulary and explains how to read it across many possible actions.
+## Family and Cause Boundary
 
-That boundary helps keep the article reusable. It can explain how to read Subtensor error-code
-families without claiming that a single returned label is enough to reconstruct every failed
-submission.
+An error family is not always the whole cause. A balance-related failure identifies a balance
+condition, while a subnet-related failure identifies a subnet condition, but the reason that
+condition appeared depends on the action and context being checked
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor),
+[Subtensor Custom Errors](https://docs.learnbittensor.org/errors/custom)).
 
-## Action and Rate-Limit Context
+This keeps error-code prose different from a troubleshooting transcript. A reference article can
+name the failure vocabulary and explain how to read it across many possible cases without
+reproducing tool output or prescribing a recovery path.
 
-Rate-limit failures are especially easy to misread because they involve timing. The
-[Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits) documentation explains that
-Bittensor uses block-based cooldowns for selected actions. In that case, the relevant context is the
-action family and the number of blocks since the last accepted action of that kind.
+## Rate-Limit Context
 
-That timing model is narrower than a generic retry rule. Some returned errors can point to rate
-limits, but other errors point to missing state, invalid parameters, balance conditions, ownership
-conditions, or runtime checks. Treating every error as a wait-and-try-again problem loses the
-distinction that the error pages are meant to preserve.
+Rate-limit failures are easy to misread because they involve timing. Bittensor rate-limit
+documentation explains that selected chain actions use block-based cooldowns
+([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
 
-The safer interpretation is to read rate-limit evidence with the action being attempted and the
-network where it was submitted. The error code gives the diagnostic label, the rate-limit reference
-explains the cooldown model, and the selected network determines the chain history being checked.
+That timing model is narrower than a generic wait-and-try-again rule. Some errors point to rate
+limits, while other errors point to missing state, invalid parameters, balance conditions, authority
+conditions, or Subtensor checks.
 
-A returned error should be read with the action that produced it. The code or named condition can
-identify the failure family, but the attempted
-[extrinsic](https://docs.learnbittensor.org/subtensor-api/extrinsics), account role, subnet context,
-resource state, and network environment explain why that family appeared in a particular case. The
-same error vocabulary can point to different explanations depending on what was being submitted.
+## Chain Signal Context
 
-This keeps the error reference from becoming an operating manual. The official pages provide error
-vocabulary and short descriptions. Exact recovery steps, interface output, and private account
-diagnosis depend on the tool, network, and state involved in the failed action.
+Error codes sit beside other chain-observation surfaces. Storage entries describe recorded state,
+events describe emitted runtime records, and errors describe rejection categories when an intended
+state change does not complete
+([Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage),
+[Subtensor Events](https://docs.learnbittensor.org/subtensor-api/events),
+[Subtensor Error Codes](https://docs.learnbittensor.org/errors)).
 
-## Chain Signals Context
+Those signals are strongest when read in their own lanes. Storage is not an error, an event is not a
+full diagnosis, and an error code is not a complete description of the underlying Bittensor
+mechanism.
 
-Error codes sit beside other chain-observation surfaces, but they answer a different question. A
-[storage entry](https://docs.learnbittensor.org/subtensor-api/storage) can show recorded state. An
-[event](https://docs.learnbittensor.org/subtensor-api/events) can show a named runtime record
-emitted during processed activity. An error code explains a rejection category when the intended
-state change does not complete.
+## Network Boundary
 
-These sources are strongest when read together. If a submitted action fails, the attempted action
-shows what was requested, the returned error identifies the rejection family, and storage or event
-context can help explain the surrounding chain state. No single signal is a complete explanation of
-the underlying Bittensor mechanism.
+The network that returns an error is part of the interpretation. Bittensor documentation separates
+mainnet, testnet, and localnet as network contexts
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
 
-That comparison keeps chain signals in their lanes. Storage describes recorded state, events
-describe emitted runtime records, and errors describe why an intended state change was rejected.
+A localnet or testnet failure can illustrate an error family, but it should not be treated as proof
+about another network environment. The error label can match while the surrounding chain history is
+different.
 
-## Network Context
+## What Error Codes Do Not Mean
 
-The network that returns an error is part of the interpretation. The
-[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
-separates mainnet, testnet, and localnet as network contexts. A failed submission returns feedback
-from the network endpoint that processed it, so the same error family can appear in different
-environments while referring to different chain histories.
+Subtensor error codes do not name a complete recovery guide, a full incident report, or a guarantee
+that the same label has the same practical meaning in every context
+([Subtensor Error Codes](https://docs.learnbittensor.org/errors),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
 
-Error codes also should not all be reduced to retry advice. The
-[Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits) documentation describes
-block-based cooldowns, but many returned errors reflect other protocol checks. Waiting may be
-relevant for a rate-limited action; it is not a general interpretation for every Subtensor error.
-
-Examples should keep the environment label attached. A localnet or testnet failure can illustrate a
-Subtensor error family, but it should not be treated as evidence for another network environment.
-
-## Evidence Boundary
-
-The [Subtensor Error Codes](https://docs.learnbittensor.org/errors) overview and related error pages
-provide structured diagnostic evidence. They can identify the rejection family and help connect a
-failed action to the relevant official mechanism documentation. They do not diagnose private
-accounts, reproduce interface output, or prescribe account operations.
-
-That boundary matters because an error can involve account state, subnet state, signing authority,
-network choice, or timing conditions that a static reference page cannot verify. The
-[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) documentation
-shows why selected network context matters when interpreting the returned error.
-
-The stable article-level point is that Subtensor error codes name rejection vocabulary. They are
-evidence about a failed action, not a substitute for the complete context around that action.
+Keeping that boundary preserves the term's narrower meaning. Subtensor error codes identify
+rejection vocabulary, while rate limits, storage, events, subnet settings, network context, and
+mechanism references describe neighboring parts of the system.
 
 ## Further Reading
 
 - [Subtensor Error Codes](https://docs.learnbittensor.org/errors)
 - [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor)
 - [Subtensor Custom Errors](https://docs.learnbittensor.org/errors/custom)
-- [Subtensor Extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics)
 - [Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage)
 - [Subtensor Events](https://docs.learnbittensor.org/subtensor-api/events)
 - [Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)
