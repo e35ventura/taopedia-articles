@@ -34,8 +34,36 @@ components ([Transaction Fees in Bittensor](https://docs.learnbittensor.org/lear
 Weight is tied to computational load, while length is tied to transaction size. This base-fee
 context belongs to the state-changing action, not to passive observation.
 
+Fee-bearing extrinsics pay both components from the sender's TAO free balance
+([Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees)). The weight fee is
+based on the `ref_time` part of transaction weight, and the length fee is charged per encoded byte.
+The fee documentation states the total base transaction fee as the sum of the weight fee and the
+length fee.
+
+For length, the documented charge is 1 rao per byte of the encoded extrinsic
+([Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees)). For weight, the
+documented formula scales the `ref_time` component by `50,000 / 10^9` rao.
+
+The same fee documentation places paid base fees in recycling context. Collected base fees are
+deducted from `TotalIssuance`, which connects the fee event to Bittensor's recycling and burning
+accounting context ([Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees),
+[Recycling and burning](https://docs.learnbittensor.org/resources/glossary#recycling-and-burning)).
+
 That boundary also keeps base-fee language separate from later economic effects. The fee page can
 explain the cost category without turning every nearby cost into the same transaction-fee concept.
+
+## Fee-Free and Alpha Fallback Cases
+
+The fee documentation lists fee-free extrinsics that pay neither the weight component nor the length
+component. The examples include `set_weights`, `commit_weights`, `reveal_weights`, and `sudo`
+([Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees)).
+
+Alpha fallback is a separate fee-payment case. When the sender's TAO balance is insufficient, the
+fee documentation describes transaction fees being paid in alpha instead
+([Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees)).
+
+The fee-free list is about whether the chain charges the base components at all. Alpha fallback is
+about the asset used to pay fees when a fee-bearing transaction cannot be covered by TAO.
 
 ## Read and Write Boundary
 
@@ -55,6 +83,11 @@ The fee documentation treats swap fees as separate from base transaction fees
 A stake-related action can therefore involve more than one cost concept. The base fee belongs to the
 chain action, while a swap fee belongs to the liquidity-linked part of the action. The two can
 appear near each other without meaning the same thing.
+
+The fee page gives the swap fee as 0.05% of transacted liquidity for staking and unstaking
+operations ([Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees)). That
+percentage belongs to the amount-based swap-fee side of the action, while the base transaction fee
+still follows weight and length.
 
 ## Batch Context
 
