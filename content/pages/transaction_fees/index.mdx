@@ -20,233 +20,86 @@ infoboxRows:
 
 # Transaction Fees
 
-Transaction fees are costs the Bittensor chain can attach to state-changing network actions. The
-official [Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees) page separates
-base chain transaction fees from swap fees that can apply when stake-related activity interacts with
-subnet liquidity. It also notes that reading chain state is free.
+Transaction fees are costs the Bittensor chain can attach to state-changing actions. They are
+separate from free chain reads.
 
-## General Transaction Fees
+The official [Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees) page
+separates base chain transaction fees from swap fees that can apply when stake-related activity
+interacts with subnet liquidity. It also states that reading chain state is free.
 
-The official fees page describes many state-changing actions as fee-bearing. Their base transaction
-fee has two parts: a weight component, tied to computational load, and a length component, tied to
-the size of the submitted action. At a Taopedia level, the important point is the distinction
-between the base chain fee and other economic effects that may appear around a specific Bittensor
-action.
+## Base Chain Fee Context
 
-Reference: [Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees)
+The [Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees) documentation
+describes base transaction fees as having weight and length components. Weight is tied to the
+computational load of a submitted action, while length is tied to the size of that submitted action.
 
-## Swap Fees
+This base-fee concept belongs to state-changing activity. It should not be collapsed into every
+economic effect that can occur around a Bittensor action, and it should not be applied to passive
+chain reads.
 
-The same source treats swap fees as separate from the base transaction fee. Stake and unstake
-activity can also involve an amount-based swap fee when liquidity is transacted through subnet
-markets. This means a stake-related action can have both a base chain fee and a liquidity-linked
-fee, while ordinary chain reads have neither.
+## Swap Fee Boundary
 
-Reference: [Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees)
+The [Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees) source treats swap
+fees as separate from the base transaction fee. Stake and unstake activity can involve an
+amount-based swap fee when liquidity is transacted through subnet markets.
+
+That boundary matters because a stake-related action can involve more than one cost concept. The
+base chain fee belongs to the submitted action, while the swap fee belongs to the liquidity-linked
+part of the action.
 
 ## Fee-Free Activity
 
-Bittensor documentation identifies chain reads as free and lists some weight-setting and
-commit-reveal actions as fee-free. The practical distinction is not whether an action feels small to
-a user, but whether the chain classifies that action as fee-bearing. This keeps fee-free activity
-separate from actions that change state and consume chain resources.
+The [official fee page](https://docs.learnbittensor.org/learn/fees) identifies chain reads as free
+and lists some weight-setting and commit-reveal activity as fee-free. The useful distinction is not
+whether an action appears small, but whether the chain classifies that action as fee-bearing.
 
-Reference: [Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees)
+This keeps observation separate from submitted action. A chain read inspects state without asking
+Subtensor to record a change, while fee-bearing activity belongs to the submitted-action path.
 
 ## Grouped Actions
 
-The official page also explains that grouped actions inherit fee behavior from their component
-actions. If a grouped action contains a fee-bearing component, the group can carry a fee; if every
-component is fee-free, the group can remain fee-free. This helps readers avoid assuming that
-grouping actions always removes or duplicates fees.
+Grouped actions do not erase fee behavior. The
+[Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees) page explains that batch
+transaction fees aggregate the fee behavior of the inner calls and include batch-wrapper overhead.
 
-Reference: [Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees)
+This means a grouped submission should be read through its components. A batch containing
+fee-bearing activity can carry a fee, while a group of fee-free actions has a different fee context.
 
-## Fee Recycling Context
+## Recycling Context
 
-The
-[Glossary: Recycling and burning](https://docs.learnbittensor.org/resources/glossary#recycling-and-burning)
-describes collected transaction fees as recycled tokens deducted from the record of token issuance
-for future emission. In Taopedia prose, that links base chain fees to recycling vocabulary rather
-than treating every fee as burned or permanently removed.
+Transaction fees also sit near recycling vocabulary. The
+[Recycling and burning](https://docs.learnbittensor.org/resources/glossary#recycling-and-burning)
+glossary entry describes collected transaction fees as recycled tokens deducted from the issuance
+record for future emission.
 
-References: [Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees),
-[Glossary: Recycling and burning](https://docs.learnbittensor.org/resources/glossary#recycling-and-burning)
+This context prevents collected fees from being treated as a generic burn in every article. Fee
+recycling is an issuance-accounting concept, while transaction fees are the cost layer on submitted
+actions.
 
-## Relationship to Mempool
+## Network Context
 
-Transaction fees and the mempool address different parts of a submitted chain action. The
-[Glossary: Mempool](https://docs.learnbittensor.org/resources/glossary#mempool) is where pending
-transactions wait before block inclusion, while
-[Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees) describes the costs the
-chain can attach to state-changing actions, including weight and length components.
-
-For readers, the mempool names the pending holding period, while transaction fees describe cost
-accounting for fee-bearing actions that may wait there before inclusion.
-
-References: [Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees),
-[Glossary: Mempool](https://docs.learnbittensor.org/resources/glossary#mempool)
-
-## Relationship to Extrinsics
-
-Transaction fees and extrinsics address related but different parts of a submitted chain action. An
-extrinsic is a state-changing runtime request, while
-[Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees) describes the costs the
-chain can attach to those actions, including weight and length components.
-
-For readers, an extrinsic names the submitted action, while transaction fees describe the fee
-accounting that may apply when that action is processed.
-
-References: [Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees),
-[Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics)
-
-## Relationship to Blocks
-
-Transaction fees and blocks address related but different parts of chain activity. The
-[Glossary: Block](https://docs.learnbittensor.org/resources/glossary#block) describes a block as
-containing a collection of transactions, while
-[Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees) describes the costs the
-chain can attach to state-changing actions that may be included there.
-
-For readers, a block names chain ordering and inclusion, while transaction fees describe fee
-accounting for fee-bearing actions recorded inside that block.
-
-References: [Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees),
-[Glossary: Block](https://docs.learnbittensor.org/resources/glossary#block)
-
-## Relationship to Recycling
-
-Transaction fees and recycling address related but different parts of Bittensor token flow.
-[Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees) describes costs on
-state-changing actions, while the
-[Glossary: Recycling and burning](https://docs.learnbittensor.org/resources/glossary#recycling-and-burning)
-describes collected transaction fees as recycled tokens deducted from the issuance record for future
-emission.
-
-For readers, transaction fees name the cost layer on submitted actions, while recycling describes
-what can happen to collected fees after they enter issuance accounting.
-
-References: [Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees),
-[Glossary: Recycling and burning](https://docs.learnbittensor.org/resources/glossary#recycling-and-burning)
-
-## Relationship to Subtensor
-
-Transaction fees and Subtensor address related but different parts of Bittensor chain economics. The
-[Glossary: Subtensor](https://docs.learnbittensor.org/resources/glossary#subtensor) defines
-Subtensor as Bittensor's layer 1 blockchain and system of record for transactions, while
-[Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees) describes the costs the
-chain can attach to state-changing actions processed inside that layer.
-
-For readers, Subtensor names the blockchain layer where fees are enforced, while transaction fees
-describe the cost accounting applied to fee-bearing actions on that layer. Chain reads inspect
-Subtensor state without incurring those base transaction fees.
-
-References: [Glossary: Subtensor](https://docs.learnbittensor.org/resources/glossary#subtensor),
-[Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees)
-
-## Relationship to Subtensor Error Codes
-
-Transaction fees and Subtensor error codes address related but different parts of a failed chain
-action. [Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees) describes costs
-on state-changing actions, while the [Subtensor Error Codes](https://docs.learnbittensor.org/errors)
-overview groups failure families returned when an action is rejected, including balance and
-fee-related conditions.
-
-For readers, transaction fees explain what a successful fee-bearing action may cost, while error
-codes explain why a submission failed before completing. A rejected extrinsic can surface an error
-code even when the fee model itself is understood.
-
-References: [Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees),
-[Subtensor Error Codes](https://docs.learnbittensor.org/errors)
-
-## Relationship to Network Context
-
-Transaction fees are evaluated inside a specific Bittensor network environment. The
+Transaction-fee examples belong to a selected Bittensor network environment. The
 [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
-separates mainnet, testnet, and localnet as deployment contexts, and fee-bearing actions are
-processed against whichever network endpoint is being used. Balances, subnet markets, and fee
-outcomes belong to that network's chain history.
+separates mainnet, testnet, and localnet, so fee examples should keep the network context visible
+when the claim depends on observed state.
 
-For readers, this matters when estimating or comparing costs across environments. A fee-bearing
-action on testnet uses testnet balances and state even when the fee rule family matches mainnet
-documentation.
+The same fee rule family can be discussed across environments, but balances, subnet markets, and
+observed fee outcomes belong to the network where the action is evaluated.
 
-References: [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks),
-[Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees)
+## Evidence Boundary
 
-## Relationship to Chain Reads
+The [Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees) page supports
+conceptual claims about fee categories, fee-free activity, batch fee behavior, and fee recycling. It
+does not provide a permanent quote for every action or replace network-specific inspection.
 
-Transaction fees and chain reads address opposite sides of Subtensor interaction. The official
-[Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees) page identifies chain
-reads as free, while state-changing actions can carry base transaction fees with weight and length
-components. The [Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics)
-reference lists submitted runtime methods that change state.
-
-For readers, a chain read inspects current state without submitting a fee-bearing extrinsic.
-Transaction fees belong to the submission path that asks the runtime to record a change, not to the
-inspection path that queries existing state.
-
-References: [Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees),
-[Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics)
-
-## Relationship to Coinbase
-
-Transaction fees and coinbase are related but different parts of Bittensor token flow vocabulary.
-Transaction fees are costs the chain can attach to state-changing actions, with collected fees
-recycled as tokens deducted from the issuance record for future emission. Coinbase is the per-block
-Subtensor mechanism that accumulates pending emissions and injects them into subnet pools,
-processing the emission pipeline each block. The
-[Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees) page describes fee
-recycling as deducted from the record of token issuance for future emission, and the
-[Coinbase Implementation](https://docs.learnbittensor.org/subtensor-api/extrinsics#coinbase)
-describes the per-block emission mechanism.
-
-Collected transaction fees enter the recycling pipeline that contributes to the emission supply that
-coinbase distributes. Coinbase accumulates pending emission supply each block and injects it into
-subnet pools as block-by-block emission proceeds. Transaction fees name the cost model that
-generates recycled tokens feeding into the emission supply; coinbase names the per-block mechanism
-that processes and distributes that supply. The two connect through the recycling-to-emission
-pipeline: fees collected in one block eventually become part of the pending emissions that coinbase
-handles in subsequent blocks.
-
-References: [Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees),
-[Coinbase Implementation](https://docs.learnbittensor.org/subtensor-api/extrinsics#coinbase)
-
-## Careful Interpretation
-
-Transaction-fee details can depend on the action being evaluated and on current chain behavior.
-Taopedia readers should use this article as conceptual orientation, not as a fee calculator or an
-operating guide. For exact current behavior, examples, and estimation paths, use the official
-Bittensor documentation.
-
-Reference: [Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees)
-
-## Development Stage Context
-
-The
-[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from localnet to testnet and then mainnet. For transaction
-fees, that sequence changes how readers should interpret evidence about fee amounts and recycling
-behavior.
-
-In localnet, transaction fee mechanics can be tested in an isolated environment. Localnet fee
-amounts reflect local chain configuration and do not represent production fee levels.
-
-On testnet, transaction fees operate in a shared, non-production network. Testnet fee values are
-separate from mainnet fee behavior.
-
-On mainnet, transaction fees are live Subtensor charges attached to state-changing actions. The
-[Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees) documentation describes
-the fee structure and recycling treatment that applies on the production network.
-
-The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
-separates mainnet, testnet, and localnet. A transaction fee example from one environment should not
-be read as representing fee amounts or recycling behavior in another environment.
+When exact cost matters, the claim should identify the action, network, and source context. This
+article is a concept reference, not a calculator, operating guide, or guarantee of a future fee
+outcome.
 
 ## Further Reading
 
 - [Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees)
-- [Glossary: Recycling and burning](https://docs.learnbittensor.org/resources/glossary#recycling-and-burning)
-- [Coinbase Implementation](https://docs.learnbittensor.org/subtensor-api/extrinsics#coinbase)
-- [Introduction to Bittensor: Subnet development](https://docs.learnbittensor.org/learn/introduction#subnet-development)
+- [Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions)
+- [Recycling and burning](https://docs.learnbittensor.org/resources/glossary#recycling-and-burning)
 - [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)
+- [Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics)
