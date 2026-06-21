@@ -1,15 +1,15 @@
 ---
 title: "Flow-Based Emissions"
 summary:
-  "How Bittensor uses net TAO flow to allocate subnet-level emission injection before participant
-  distribution."
+  "How Bittensor uses net TAO flow to compare subnet-level TAO reserve injection before reward
+  allocation."
 category: "Tokenomics"
 tags: ["Tokenomics", "Emissions"]
 infoboxTitle: Flow-Based Emissions
 infoboxCaption: Subnet emission allocation based on TAO flow.
 infoboxRows:
   - label: Context
-    value: Emission injection
+    value: TAO reserve injection
   - label: Signal
     value: Net TAO flow
   - label: Scope
@@ -20,378 +20,85 @@ infoboxRows:
 
 # Flow-Based Emissions
 
-Flow-based emissions are Bittensor's model for allocating subnet-level emission injection from TAO
-flow activity. The official
-[Emission](https://docs.learnbittensor.org/learn/emissions#distribution-across-subnets)
-documentation describes the model as using net TAO inflows from staking and unstaking activity
-rather than relying on subnet token prices.
+Flow-based emissions are the subnet-level allocation model that compares net TAO movement for TAO
+reserve injection before reward allocation happens inside a subnet
+([Emission: Distribution Across Subnets](https://docs.learnbittensor.org/learn/emissions#distribution-across-subnets)).
+
+This article scopes the term to TAO reserve injection. The later emission path can include
+subnet-specific alpha-token and reward allocation after the subnet-level injection context is set
+([Emission](https://docs.learnbittensor.org/learn/emissions)).
 
 ## Injection Context
 
-Emission has two useful reading levels: injection into subnet liquidity contexts and later
-distribution to participants. Flow-based emissions belong to the injection level. They describe how
-the network decides a subnet's share of TAO reserve injection before the accumulated subnet rewards
-are distributed through the participant-facing emission process.
+Emission has two useful reading levels: subnet-level injection and later reward allocation inside
+the subnet. Flow-based emissions belong to the first level because they compare subnets for TAO
+reserve injection
+([Emission: TAO Reserve Injection](https://docs.learnbittensor.org/learn/emissions#tao-reserve-injection)).
 
-This makes the term narrower than Bittensor emissions as a whole. It is about comparing subnets for
-the injection stage, not about deciding a particular miner's incentive, a validator's dividend, or a
-staker's final payout.
+That makes the term narrower than Bittensor emissions as a whole. Flow-based emissions do not decide
+one miner's incentive or one validator's dividend; they set the subnet-level context those later
+steps operate within ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
-## Net Flow Signal
+## Net Flow and Smoothing
 
-The flow-based model reads subnet demand through net TAO movement. The
-[Emission](https://docs.learnbittensor.org/learn/emissions#tao-reserve-injection) documentation
-frames the relevant signal as TAO flowing into a subnet through staking minus TAO flowing out
-through unstaking. The docs also describe smoothing this signal with an exponential moving average
-so short-term movement is not treated as the whole subnet picture, and the official
-[Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema) explainer gives the broader
-Bittensor context for EMA smoothing.
+The flow signal compares TAO entering a subnet through staking with TAO leaving through unstaking.
+The net direction of that movement is the demand signal used for subnet comparison
+([Emission: TAO Reserve Injection](https://docs.learnbittensor.org/learn/emissions#tao-reserve-injection)).
 
-For readers, the important idea is direction rather than exact math: sustained net inflow supports
-the subnet's emission-share context, while sustained net outflow weakens it.
+For readers, the key idea is direction rather than exact arithmetic: sustained net inflow supports a
+subnet's injection-share context, while sustained net outflow weakens it
+([Emission: Distribution Across Subnets](https://docs.learnbittensor.org/learn/emissions#distribution-across-subnets)).
 
-## Difference from Price-Based Allocation
+The flow signal is smoothed so that a brief burst of staking or unstaking does not dominate
+cross-subnet allocation. Bittensor uses exponential moving averages in several contexts for this
+kind of noisy-signal smoothing
+([Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema)).
 
-Flow-based emissions should not be confused with a price-only allocation model. The official
-emission docs distinguish the flow-based model from the previous price-based approach, where subnet
-emissions were tied to smoothed token prices. In the flow-based model, subnet allocation is framed
-around user flow into and out of subnet staking contexts.
+In this article, EMA context belongs to the flow comparison stage. It does not describe the final
+reward table inside a subnet
+([Emission: TAO Reserve Injection](https://docs.learnbittensor.org/learn/emissions#tao-reserve-injection)).
 
-This distinction matters because a subnet token's price and a subnet's net TAO flow are different
-signals. A price can move for market reasons, while flow-based emissions focus on whether TAO is
-moving into or out of the subnet's staking context over time.
+## Negative Flow Context
 
-## Negative Net Flow Zero Emissions
+The emissions documentation describes a zero-injection outcome for subnets whose smoothed net flow
+is negative. That outcome is part of subnet comparison before later reward allocation
+([Emission: Distribution Across Subnets](https://docs.learnbittensor.org/learn/emissions#distribution-across-subnets)).
 
-Under the active flow-based model, subnet TAO injection follows net staking flow rather than
-smoothed token price. The official
-[Emission: Distribution across subnets](https://docs.learnbittensor.org/learn/emissions#distribution-across-subnets)
-documentation states that subnets with negative net flows — more unstaking than staking over the
-smoothed window — can receive zero TAO emissions.
+Zero injection should therefore be read as an injection-stage result, not as a separate miner,
+validator, or staker penalty rule ([Emission](https://docs.learnbittensor.org/learn/emissions)).
 
-That zero-emission outcome belongs to the injection stage this article names. It is separate from
-miner incentives, validator dividends, and staker payouts inside a subnet. Flow-based emissions
-decide whether a subnet receives new TAO reserve injection before participant distribution begins.
+When TAO injection does not grow a subnet pool, the emissions documentation links that condition to
+pool-side effects such as harder staking conditions and higher slippage
+([Emission: Distribution Across Subnets](https://docs.learnbittensor.org/learn/emissions#distribution-across-subnets)).
 
-References:
-[Emission: Distribution across subnets](https://docs.learnbittensor.org/learn/emissions#distribution-across-subnets),
-[Emission](https://docs.learnbittensor.org/learn/emissions)
+Those effects are downstream of the injection model. They help explain why net flow matters without
+changing what flow-based emissions mean
+([Understanding Slippage](https://docs.learnbittensor.org/learn/slippage)).
 
-## Protocol Cost Normalization
+## Distribution Handoff
 
-Flow-based allocation also tracks protocol-generated TAO movement into and out of subnet pools. The
-official
-[Emission: TAO reserve injection](https://docs.learnbittensor.org/learn/emissions#tao-reserve-injection)
-documentation smooths that protocol activity with its own exponential moving average and, when net
-flow mode is enabled, subtracts a normalized protocol term from the user-flow signal.
+After subnet-level injection is resolved, reward allocation still happens through within-subnet
+logic. Yuma Consensus describes how validator evaluations become miner incentives and validator-side
+outcomes ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
-The practical reading is that emission share follows genuine staking demand rather than protocol
-subsidies alone. Two subnets with similar gross inflows can still receive different injection shares
-when one subnet's liquidity growth comes mainly from protocol mechanics instead of user stake
-movement.
-
-References:
-[Emission: TAO reserve injection](https://docs.learnbittensor.org/learn/emissions#tao-reserve-injection),
-[Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema)
-
-## Sustained Outflow Consequences
-
-When a subnet's smoothed net flow stays negative long enough to receive zero TAO injection, the
-official emission documentation also describes downstream pool effects. Zero TAO injection means no
-liquidity growth for the subnet pool, which can increase slippage for users trying to stake and make
-it harder for the subnet to attract new participants.
-
-Readers should treat those consequences as injection-stage outcomes tied to flow-based allocation,
-not as a separate penalty rule outside the emission model. The term still names subnet comparison
-for injection share rather than individual participant rewards.
-
-References:
-[Emission: Distribution across subnets](https://docs.learnbittensor.org/learn/emissions#distribution-across-subnets),
-[Understanding Slippage](https://docs.learnbittensor.org/learn/slippage)
-
-## Relationship to Distribution
-
-After subnet-level injection, emissions still have to be distributed to network participants. The
-[Emission: Distribution](https://docs.learnbittensor.org/learn/emissions#distribution) section
-places miner, validator, staker, and subnet-owner outcomes in that later distribution flow.
-Flow-based emissions do not replace Yuma Consensus or validator/staker distribution rules; they set
-the subnet-level injection context those later mechanisms operate within.
-
-## Participant Distribution Handoff
-
-Subnet-level injection is only the first stage of Bittensor emissions. The official
-[Emission: Distribution](https://docs.learnbittensor.org/learn/emissions#distribution) documentation
-describes a later participant-facing flow where miner incentives, validator dividends, and staker
-outcomes are allocated after injection context is resolved.
-
-For readers, flow-based emissions explain how subnets compare for injection share, while Yuma
-Consensus and distribution rules explain how that injected context becomes participant rewards.
-
-References: [Emission: Distribution](https://docs.learnbittensor.org/learn/emissions#distribution),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
-
-## EMA Smoothing Context
-
-Flow-based allocation reads net TAO movement through a smoothed signal rather than a single burst of
-staking or unstaking activity. The official
-[Emission](https://docs.learnbittensor.org/learn/emissions#tao-reserve-injection) documentation
-describes smoothing net flow with an exponential moving average, and the
-[Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema) page explains the broader
-Bittensor context for EMA-based smoothing.
-
-For readers, EMA smoothing belongs to the flow signal stage, not to participant payout tables.
-
-References:
-[Emission: TAO reserve injection](https://docs.learnbittensor.org/learn/emissions#tao-reserve-injection),
-[Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema)
-
-## Relationship to Bittensor Emissions
-
-Flow-based emissions and Bittensor emissions address related but different parts of the emission
-process. [Emission](https://docs.learnbittensor.org/learn/emissions) describes how newly created TAO
-and subnet alpha tokens enter subnet and participant contexts, while flow-based emissions name one
-subnet-level injection model based on net TAO movement.
-
-For readers, Bittensor emissions is the broader distribution topic, while flow-based emissions names
-the subnet injection comparison model before participant distribution.
-
-References: [Emission](https://docs.learnbittensor.org/learn/emissions),
-[Flow-Based Emissions](https://docs.learnbittensor.org/learn/emissions#flow-based-emissions)
-
-## Relationship to Root Claims
-
-Flow-based emissions and root claims address related but different parts of subnet flow accounting.
-Flow-based emissions compare subnets using net TAO movement, while the
-[Root Claim Overview](https://docs.learnbittensor.org/staking-and-delegation/root-claims) describes
-how alpha dividends are handled when stake is placed through the Root Subnet.
-
-For readers, flow-based emissions name subnet injection comparison, while root claims name dividend
-handling that the official docs treat separately from subnet TAO outflows.
-
-References:
-[Root Claim Overview](https://docs.learnbittensor.org/staking-and-delegation/root-claims),
-[Emission](https://docs.learnbittensor.org/learn/emissions)
-
-## Relationship to Multiple Mechanisms
-
-Flow-based emissions compare subnets for TAO injection share. The
-[Glossary](https://docs.learnbittensor.org/resources/glossary#incentive-mechanism) notes that each
-subnet has one or more incentive mechanisms.
-
-For readers, flow-based emissions still describe subnet-level injection before participant
-distribution. A subnet may run more than one incentive mechanism after injection reaches that subnet
-market.
-
-References:
-[Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets),
-[Glossary: Incentive Mechanism](https://docs.learnbittensor.org/resources/glossary#incentive-mechanism)
-
-## Relationship to Subnet Weights
-
-Flow-based emissions and subnet weights address related but different parts of Bittensor
-cross-subnet tokenomics. Flow-based emissions name the injection model that compares subnets using
-net TAO movement, while subnet weights name the relative emission importance assigned through that
-flow signal. The
-[Emission: Distribution across subnets](https://docs.learnbittensor.org/learn/emissions#distribution-across-subnets)
-documentation describes the flow-based model, and the
-[Glossary: Subnet Weights](https://docs.learnbittensor.org/resources/glossary#subnet-weights)
-describes relative emission importance through net TAO flows.
-
-For readers, flow-based emissions answer how subnets are compared for injection share, while subnet
-weights answer the allocation measure built from that comparison.
-
-References:
-[Emission: Distribution across subnets](https://docs.learnbittensor.org/learn/emissions#distribution-across-subnets),
-[Glossary: Subnet Weights](https://docs.learnbittensor.org/resources/glossary#subnet-weights)
-
-## Relationship to Exponential Moving Averages
-
-Flow-based emissions and exponential moving averages address related but different parts of emission
-signal processing. Flow-based emissions read subnet demand through net TAO movement, while
-exponential moving averages smooth that flow signal so brief staking swings do not dominate
-cross-subnet allocation. The
-[Emission: TAO reserve injection](https://docs.learnbittensor.org/learn/emissions#tao-reserve-injection)
-documentation describes EMA smoothing of net flow, and the
-[Glossary: Exponential Moving Average (EMA)](https://docs.learnbittensor.org/resources/glossary#exponential-moving-average-ema)
-describes the smoothing method applied to noisy measurements over time.
-
-For readers, flow-based emissions name the flow comparison model, while exponential moving averages
-name the smoothing technique applied to that flow signal before allocation.
-
-References:
-[Emission: TAO reserve injection](https://docs.learnbittensor.org/learn/emissions#tao-reserve-injection),
-[Glossary: Exponential Moving Average (EMA)](https://docs.learnbittensor.org/resources/glossary#exponential-moving-average-ema)
-
-## Relationship to Yuma Consensus
-
-Flow-based emissions and Yuma Consensus address related but different stages of Bittensor emission
-flow. Flow-based emissions set subnet-level injection context from net TAO movement, while Yuma
-Consensus aggregates validator evaluations into miner incentives and validator dividends after that
-injection context is established. The
-[Emission: Distribution](https://docs.learnbittensor.org/learn/emissions#distribution) documentation
-places participant distribution after injection, and
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) describes within-subnet
-aggregation of validator weight signals.
-
-For readers, flow-based emissions belong to cross-subnet injection comparison, while Yuma Consensus
-belongs to within-subnet evaluation aggregation.
-
-References: [Emission: Distribution](https://docs.learnbittensor.org/learn/emissions#distribution),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
-
-## Relationship to Netuid
-
-Flow-based emissions and a netuid address related but different parts of Bittensor subnet
-vocabulary. A netuid identifies a subnet on the network, while flow-based emissions describe how
-subnets are compared for TAO injection share across the network. The
-[Glossary: Netuid](https://docs.learnbittensor.org/resources/glossary#netuid) places netuid at the
-subnet level, and the
-[Emission: Distribution across subnets](https://docs.learnbittensor.org/learn/emissions#distribution-across-subnets)
-documentation describes cross-subnet allocation from net TAO flow.
-
-For readers, a netuid answers which subnet is being discussed, while flow-based emissions answer how
-identified subnets compare for injection share under the flow-based model.
-
-References: [Glossary: Netuid](https://docs.learnbittensor.org/resources/glossary#netuid),
-[Emission: Distribution across subnets](https://docs.learnbittensor.org/learn/emissions#distribution-across-subnets)
-
-## Relationship to Alpha Tokens
-
-Flow-based emissions and alpha tokens address related but different parts of subnet tokenomics
-vocabulary. Flow-based emissions describe how subnets are compared for TAO injection share from net
-TAO flow across the network, while alpha tokens name the subnet-specific token used in each subnet's
-pool and staking context after injection reaches that subnet. The
-[Emission: Distribution across subnets](https://docs.learnbittensor.org/learn/emissions#distribution-across-subnets)
-documentation describes cross-subnet allocation from net TAO flow, and the
-[Glossary: Alpha Tokens](https://docs.learnbittensor.org/resources/glossary#alpha-tokens) describes
-subnet-specific tokens tied to individual subnets.
-
-For readers, flow-based emissions name the cross-subnet injection comparison model, while alpha
-tokens name the subnet-level asset context that receives and moves value inside one subnet.
-
-References:
-[Emission: Distribution across subnets](https://docs.learnbittensor.org/learn/emissions#distribution-across-subnets),
-[Glossary: Alpha Tokens](https://docs.learnbittensor.org/resources/glossary#alpha-tokens)
-
-## Relationship to Dividends
-
-Flow-based emissions and dividends address related but different stages of Bittensor reward flow.
-Flow-based emissions set subnet-level injection context from net TAO movement across the network,
-while dividends name the validator-side emission result calculated from bonds and miner incentives
-inside one subnet after that injection context is established. The
-[Emission: Distribution across subnets](https://docs.learnbittensor.org/learn/emissions#distribution-across-subnets)
-documentation describes cross-subnet injection comparison, and the
-[Glossary: Dividends](https://docs.learnbittensor.org/resources/glossary#dividends) describes the
-validator-side reward portion within subnet emission distribution.
-
-For readers, flow-based emissions belong to cross-subnet injection comparison, while dividends
-belong to validator-side outcomes inside one subnet after consensus resolves evaluations.
-
-References:
-[Emission: Distribution across subnets](https://docs.learnbittensor.org/learn/emissions#distribution-across-subnets),
-[Glossary: Dividends](https://docs.learnbittensor.org/resources/glossary#dividends)
-
-## Relationship to Tempo
-
-Flow-based emissions and tempo address related but different parts of Bittensor timing vocabulary.
-Flow-based emissions describe how subnets are compared for TAO injection share from net TAO flow,
-while tempo names the block-based cadence that governs epoch transitions and periodic reward
-distribution inside one subnet. The
-[Emission: Distribution across subnets](https://docs.learnbittensor.org/learn/emissions#distribution-across-subnets)
-documentation describes cross-subnet allocation from net TAO flow, and the
-[Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo) describes tempo as the
-subnet-specific cadence for epochs.
-
-For readers, flow-based emissions answer how subnets compare for injection share across the network,
-while tempo names the periodic cadence inside one subnet once injection and within-subnet consensus
-work proceed.
-
-References:
-[Emission: Distribution across subnets](https://docs.learnbittensor.org/learn/emissions#distribution-across-subnets),
-[Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo)
-
-## Relationship to Emission
-
-Flow-based emissions and emission address related but different parts of Bittensor reward
-vocabulary. Emission names the full generation and allocation process that distributes currency to
-participants, while flow-based emissions describe one cross-subnet comparison model used when
-deciding how much TAO injection share each subnet receives from net TAO flow. The
-[Glossary: Emission](https://docs.learnbittensor.org/resources/glossary#emission) describes the
-combined injection and distribution process, and the
-[Emission: Distribution across subnets](https://docs.learnbittensor.org/learn/emissions#distribution-across-subnets)
-documentation describes the flow-based injection comparison model.
-
-For readers, emission is the broader process term, while flow-based emissions name one cross-subnet
-injection comparison method inside that process.
-
-References: [Glossary: Emission](https://docs.learnbittensor.org/resources/glossary#emission),
-[Emission: Distribution across subnets](https://docs.learnbittensor.org/learn/emissions#distribution-across-subnets)
-
-## Relationship to Coinbase
-
-Flow-based emissions and coinbase address related but different parts of Bittensor subnet emission
-vocabulary. Flow-based emissions is the cross-subnet allocation model that determines each subnet's
-share of the TAO injection based on net TAO flow, while coinbase is the per-block process that
-accumulates pending emissions, injects that TAO into subnet reserves according to the allocation,
-and triggers each subnet's Yuma Consensus epoch. The
-[Emission: Distribution across subnets](https://docs.learnbittensor.org/learn/emissions#distribution-across-subnets)
-documentation describes flow-based emissions as the cross-subnet comparison model for TAO injection
-share, while the
-[Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase)
-documentation describes coinbase as running every block to carry out emission accumulation and
-injection.
-
-For readers, flow-based emissions names the model that determines how much TAO each subnet receives
-per block; coinbase names the per-block mechanism that delivers that TAO into subnet reserves and
-triggers consensus. Flow-based emissions sets the per-subnet allocation; coinbase executes it.
-
-References:
-[Emission: Distribution across subnets](https://docs.learnbittensor.org/learn/emissions#distribution-across-subnets),
-[Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase)
+Flow-based emissions therefore sit before that handoff. They compare subnets; they do not replace
+the later consensus and reward-allocation steps
+([Emission: Distribution](https://docs.learnbittensor.org/learn/emissions#distribution)).
 
 ## Reader Boundary
 
-Flow-based emissions are not a live subnet ranking, an earnings quote, or a staking instruction.
-They are a tokenomics concept for reading how subnet emission injection is allocated from net TAO
-flow context. Exact formulas, parameters, current settings, and implementation details should be
-checked in the official Bittensor documentation.
+Flow-based emissions should be read as a tokenomics concept for subnet comparison. It is not a
+miner-ranking rule, validator-dividend formula, or staking tutorial
+([Emission: Distribution Across Subnets](https://docs.learnbittensor.org/learn/emissions#distribution-across-subnets)).
 
-## Development Stage Context
-
-The
-[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from local testing to testchain and then mainchain. For
-flow-based emissions, that sequence changes how readers should interpret evidence about how net TAO
-flow allocates subnet emission injection.
-
-In local testing, flow-based emission allocation can be exercised inside an isolated environment to
-check how net TAO flow shapes per-subnet injection share. That is useful for verifying the
-allocation mechanics, but it remains isolated feedback from a local environment.
-
-On testchain, flow-based emission behavior can be observed in a shared testing network. This gives
-stronger evidence about how staking and unstaking net flows translate into per-subnet injection
-shares than a private local run, while still keeping the result separate from production mainchain
-allocation values.
-
-On mainchain, flow-based emissions determine live per-subnet TAO injection allocation based on
-actual net TAO flow. The
-[Emission: Distribution across subnets](https://docs.learnbittensor.org/learn/emissions#distribution-across-subnets)
-documentation describes how net TAO flow drives injection allocation, so production context is tied
-to real subnet market activity on the active network.
-
-The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
-separates mainnet, testnet, and localnet. A flow-based emission outcome observed in one environment
-should not be read as identical evidence about subnet injection allocation in another environment.
-
-For readers, this keeps flow-based emissions examples from sounding stronger than their environment
-supports. Local, testchain, and mainchain contexts can all describe net-flow-driven injection
-allocation, but they do not carry the same interpretive weight.
+The stable article-level point is that net TAO movement helps determine subnet-level injection
+before rewards are allocated inside the selected subnet
+([Emission](https://docs.learnbittensor.org/learn/emissions)).
 
 ## Further Reading
 
-- [Emission: Distribution across subnets](https://docs.learnbittensor.org/learn/emissions#distribution-across-subnets)
-- [Emission: TAO reserve injection](https://docs.learnbittensor.org/learn/emissions#tao-reserve-injection)
-- [Emission: Distribution](https://docs.learnbittensor.org/learn/emissions#distribution)
+- [Emission: Distribution Across Subnets](https://docs.learnbittensor.org/learn/emissions#distribution-across-subnets)
+- [Emission: TAO Reserve Injection](https://docs.learnbittensor.org/learn/emissions#tao-reserve-injection)
 - [Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema)
-- [Introduction to Bittensor: Subnet development](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-- [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)
+- [Understanding Slippage](https://docs.learnbittensor.org/learn/slippage)
+- [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
