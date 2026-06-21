@@ -20,142 +20,81 @@ infoboxRows:
 
 # Subnet Weights
 
-Subnet weights describe how Bittensor compares subnets for cross-subnet emission allocation. The
-[Glossary](https://docs.learnbittensor.org/resources/glossary#subnet-weights) defines subnet weights
-through net TAO flows, while the
-[Emission](https://docs.learnbittensor.org/learn/emissions#distribution-across-subnets)
-documentation places the signal inside distribution across subnets.
+Subnet weights describe how Bittensor compares subnets for cross-subnet emission allocation. They
+are tied to net TAO flows and the flow-based emission model
+([Glossary: Subnet Weights](https://docs.learnbittensor.org/resources/glossary#subnet-weights),
+[Emission: Distribution Across Subnets](https://docs.learnbittensor.org/learn/emissions#distribution-across-subnets)).
 
-The term is about relative emission share. It is not the same as validator weights, weight vectors,
-or weights used inside a single subnet's consensus process.
+The term is about relative emission share across subnets. It is not the same as validator weights,
+weight vectors, or weights used inside a single subnet's consensus process.
 
 ## Flow Signal
 
-Subnet weights are tied to net TAO flow. The
-[Emission](https://docs.learnbittensor.org/learn/emissions#distribution-across-subnets)
-documentation describes flow-based emissions as using net flow to guide cross-subnet allocation.
+Subnet weights are tied to net TAO flow. Net flow is used to guide cross-subnet allocation, making
+subnet weights an allocation signal rather than a direct measure of work quality inside one subnet
+([Emission: Distribution Across Subnets](https://docs.learnbittensor.org/learn/emissions#distribution-across-subnets),
+[Glossary: Subnet Weights](https://docs.learnbittensor.org/resources/glossary#subnet-weights)).
 
-That makes subnet weights an allocation signal. They do not directly describe work quality inside a
-subnet; they describe how a subnet is weighted against other subnets for emission share.
-
-The net-flow basis keeps the term tied to cross-subnet movement rather than a single subnet's
-internal scoring. A subnet can have miners, validators, and its own incentive mechanism, but subnet
-weights compare subnet-level flow signals for distribution across the network
-([Emission: Distribution Across Subnets](https://docs.learnbittensor.org/learn/emissions#distribution-across-subnets)).
-
-This makes subnet weights useful when the question is relative allocation among subnets. It is less
-precise when the question is how a validator scored miners inside one subnet, because that belongs
-to validator weights, weight vectors, or weight matrices.
+This keeps the term tied to cross-subnet movement. A subnet can have miners, validators, and its own
+incentive mechanism, but subnet weights compare subnet-level flow signals.
 
 ## Smoothing Context
 
-The flow signal is smoothed. The
-[Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema#subnet-flow-emission-smoothing)
-documentation explains subnet-flow emission smoothing through an exponential moving average.
+The flow signal is smoothed with an exponential moving average. Smoothing keeps a brief movement
+from being treated as a durable allocation signal
+([Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema#subnet-flow-emission-smoothing),
+[Emission: Distribution Across Subnets](https://docs.learnbittensor.org/learn/emissions#distribution-across-subnets)).
 
-This smoothing context matters because subnet weights are not meant to represent every brief
-movement as a durable allocation signal. They are read through the slower flow signal used by the
-emission system.
-
-Smoothing also separates subnet weights from a one-block observation. The allocation signal is read
-through an averaged flow context, so a short-lived movement and a durable allocation signal are not
-the same thing
-([Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema#subnet-flow-emission-smoothing)).
-
-That distinction helps keep the term from being treated as a direct event log. Subnet weights are
-part of the emission-allocation model, not a complete record of every individual flow event.
+That distinction helps keep subnet weights from being read as a direct event log. They are part of
+the emission-allocation model, not a complete record of every individual flow event.
 
 ## Emission Allocation
 
-Subnet weights belong to the cross-subnet allocation stage. The
-[Emission](https://docs.learnbittensor.org/learn/emissions#injection-and-distribution-two-stages-of-the-emissions-process)
-documentation separates injection and distribution stages in the broader emission process.
+Subnet weights belong to the cross-subnet allocation stage. They help answer how much relative
+emission importance is assigned to a subnet before rewards are resolved inside that subnet
+([Emission: Injection and Distribution](https://docs.learnbittensor.org/learn/emissions#injection-and-distribution-two-stages-of-the-emissions-process),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
-For readers, subnet weights answer a narrow question: how much relative emission importance is
-assigned to a subnet before rewards are resolved inside that subnet.
-
-This keeps allocation and distribution layers separate. Subnet weights help determine how emission
-importance is assigned across subnets, while within-subnet consensus still determines how that
-subnet's rewards are resolved among miners and validators
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-The term therefore sits above miner-level scoring. It can explain why one subnet receives a larger
-relative share, but it does not explain which miner inside that subnet receives rewards.
-
-## Development Stage Context
-
-Bittensor's subnet-development path moves from localnet to testnet and then mainnet
-([Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)).
-For subnet weights, that sequence changes how readers should interpret examples of cross-subnet
-emission allocation.
-
-In localnet, subnet-weight behavior can be tested in an isolated environment. Localnet examples
-reflect local subnet conditions, local flow activity, and local chain state rather than production
-emission allocation.
-
-On testnet, subnet weights can be observed in a shared, non-production network. Testnet examples can
-show realistic cross-subnet flow and smoothing behavior, but they remain separate from mainnet
-emission outcomes.
-
-On mainnet, subnet weights are production allocation signals for distributing emissions across
-subnets. The [Emission](https://docs.learnbittensor.org/learn/emissions#distribution-across-subnets)
-documentation places subnet weights in the distribution stage, where net flow helps determine
-relative emission share.
-
-Smoothing context also matters. The
-[Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema#subnet-flow-emission-smoothing)
-documentation describes subnet-flow emission smoothing, so a subnet-weight example should be read
-with the averaging context that produced it.
-
-The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
-separates mainnet, testnet, and localnet. A subnet-weight example from one environment should not be
-read as representing flow state, smoothing behavior, or emission allocation in another environment.
-
-That keeps local tests, shared testing observations, and production subnet-weight context distinct.
+This keeps allocation and distribution layers separate. Subnet weights help determine relative
+importance across subnets, while within-subnet consensus determines how rewards are resolved among
+miners and validators.
 
 ## Validator Weight Contrast
 
-Subnet weights and validator weights use similar vocabulary but refer to different scopes. The
-[Glossary](https://docs.learnbittensor.org/resources/glossary#validator-weights) describes validator
-weights as evaluation signals used for miners inside a subnet.
+Subnet weights and validator weights use similar vocabulary but refer to different scopes. Subnet
+weights compare subnets; validator weights compare miner outputs inside one subnet's consensus
+context
+([Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#validator-weights),
+[Glossary: Subnet Weights](https://docs.learnbittensor.org/resources/glossary#subnet-weights)).
 
-Subnet weights compare subnets. Validator weights compare miner outputs inside one subnet's
-consensus context. Keeping the scopes separate prevents the two weight terms from being collapsed.
-
-The shared word "weights" is the confusing part. In subnet weights, the weighted object is the
-subnet as a unit in cross-subnet emissions. In validator weights, the weighted object is miner
-output inside a subnet's consensus process
-([Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#validator-weights)).
-
-Reading the object being weighted usually resolves the ambiguity: subnet weights are subnet-level;
+Reading the object being weighted usually resolves the ambiguity. Subnet weights are subnet-level;
 validator weights are miner-evaluation signals inside a subnet.
 
 ## Alpha Token Context
 
-Subnet weights are related to alpha-token tokenomics, but they are not alpha tokens themselves. The
-[Glossary](https://docs.learnbittensor.org/resources/glossary#alpha-tokens) describes alpha tokens
-as subnet-specific assets, while subnet weights describe emission importance across subnets.
+Subnet weights are related to alpha-token tokenomics, but they are not alpha tokens themselves.
+Alpha tokens are subnet-specific assets, while subnet weights describe relative cross-subnet
+allocation
+([Glossary: Alpha Tokens](https://docs.learnbittensor.org/resources/glossary#alpha-tokens),
+[Emission: Distribution Across Subnets](https://docs.learnbittensor.org/learn/emissions#distribution-across-subnets)).
 
 That distinction is useful when reading Dynamic TAO material. Alpha tokens name subnet assets;
-subnet weights name relative cross-subnet allocation.
+subnet weights name relative allocation across subnets.
 
-## Term Scope
+## Reader Boundary
 
-Subnet weights describe cross-subnet emission share
-([Glossary](https://docs.learnbittensor.org/resources/glossary#subnet-weights)). Validator weights,
-weight vectors, and weight matrices describe narrower within-subnet consensus signals, while alpha
-tokens describe subnet-specific assets.
+Use subnet weights when the focus is cross-subnet emission share. Use validator weights, weight
+vectors, or weight matrices when the focus is narrower within-subnet consensus signals
+([Glossary: Subnet Weights](https://docs.learnbittensor.org/resources/glossary#subnet-weights),
+[Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#validator-weights)).
 
-The term therefore sits between Dynamic TAO's broad subnet tokenomics and the more specific
-within-subnet weight terms used by consensus.
+The term sits between Dynamic TAO's broad subnet tokenomics and the more specific weight terms used
+inside consensus.
 
 ## Further Reading
 
 - [Glossary: Subnet Weights](https://docs.learnbittensor.org/resources/glossary#subnet-weights)
 - [Emission: Distribution Across Subnets](https://docs.learnbittensor.org/learn/emissions#distribution-across-subnets)
-- [Emission: Injection and Distribution](https://docs.learnbittensor.org/learn/emissions#injection-and-distribution-two-stages-of-the-emissions-process)
 - [Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema#subnet-flow-emission-smoothing)
 - [Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#validator-weights)
 - [Glossary: Alpha Tokens](https://docs.learnbittensor.org/resources/glossary#alpha-tokens)
-- [Introduction to Bittensor: Subnet development](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-- [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)
