@@ -20,141 +20,72 @@ infoboxRows:
 
 # MEV Shield
 
-MEV Shield is Bittensor's encrypted mempool-protection feature. It is designed for transactions
-where revealing details before block inclusion can create maximal extractable value, or MEV, risk.
-The main idea is simple: keep sensitive transaction contents hidden while they are waiting to be
-included, then reveal them only when the chain can process them.
-[MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield/) introduces this protection, and
-the
-[glossary entry for MEV](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value)
-defines the underlying risk.
+MEV Shield is Bittensor's encrypted mempool-protection feature. It hides sensitive transaction
+details during the pending window before block inclusion.
 
-## Mempool risk
+The official [MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield/) page describes this
+as encrypted mempool protection. The
+[MEV glossary entry](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value)
+defines the risk area behind the feature.
 
-A mempool is the temporary area where pending transactions sit before block inclusion. Because
-pending transactions can be visible, another actor may try to gain an advantage by ordering,
-inserting, or censoring transactions around them. In Bittensor, that risk is especially relevant to
-staking-related activity where transaction details can affect token movement and price execution.
-The [glossary](https://docs.learnbittensor.org/resources/glossary#mempool) explains mempool
-visibility, and the same glossary's
-[MEV entry](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value)
-connects MEV risk to staking and unstaking.
+## Mempool Visibility Context
 
-## Development Stage Context
+The [Mempool](https://docs.learnbittensor.org/resources/glossary#mempool) entry places pending
+transactions before block inclusion. MEV Shield belongs to that pre-inclusion window because it
+limits what sensitive details are visible while a protected transaction is waiting.
+
+This makes MEV Shield different from post-inclusion privacy. It is about hiding sensitive contents
+before the chain can process them, not about erasing records after activity is included.
+
+## MEV Risk Context
 
 The
-[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from local testing to testchain and then mainchain. MEV
-Shield examples should be read with that network stage in mind because the feature protects a
-pending-transaction window that belongs to a specific environment.
+[MEV glossary entry](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value)
+connects MEV risk to pending transaction visibility. If sensitive details are exposed before
+inclusion, another observer may be able to use that timing and ordering information.
 
-In local testing, a MEV Shield example can explain the idea of hiding sensitive transaction details
-before block inclusion. That is useful for understanding the protection model, but it should not be
-read as evidence of public MEV risk or production transaction behavior.
+MEV Shield is one official Bittensor response to that exposure. It should be read as a protection
+for the pending visibility problem, not as a general guarantee that every transaction outcome will
+match a user's preference.
 
-On testchain, protected transaction behavior can be observed in a shared testing network. This gives
-stronger evidence about public-network assumptions than a private local run, while still keeping the
-result separate from production mainchain activity.
+## Shielded Protection Boundary
 
-On mainchain, MEV Shield belongs to live production transaction flow. A production claim should keep
-the selected network, protected transaction type, pending visibility context, price-protection
-context where relevant, and eventual block inclusion evidence attached.
+The [MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield/) documentation explains that
+sensitive transaction contents are encrypted while pending and revealed only when the chain can
+process them. The protection is therefore about information exposure during the waiting period.
+
+That boundary matters because shielding and execution are separate questions. MEV Shield changes
+what can be seen before inclusion; it does not replace the runtime rules, fee rules, or price
+movement controls that apply to the submitted action.
+
+## Price Protection Boundary
+
+MEV Shield and price protection address related but different risks. MEV Shield hides sensitive
+pre-inclusion details, while
+[Price Protection](https://docs.learnbittensor.org/learn/price-protection) defines guardrails for
+adverse price movement around staking-related activity.
+
+The two protections should not be blended into one concept. A source-backed claim should say whether
+it concerns pending visibility, adverse price movement, fees, or inclusion evidence.
+
+## Network Context
 
 The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
-separates mainnet, testnet, and localnet, while
-[MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield/) describes encrypted mempool
-protection for sensitive submissions. Reading those together keeps shielded behavior tied to the
-network where it is observed.
+separates mainnet, testnet, and localnet. MEV Shield examples should therefore keep network context
+visible because pending-visibility evidence belongs to the environment being observed.
 
-This distinction matters because MEV Shield reduces pre-inclusion visibility, but it does not turn
-every example into a production safety claim. The environment explains what kind of evidence the
-example provides, while the transaction and pricing context explain what risk is being addressed.
+Local examples can explain the protection model. Testnet examples can show shared testing context.
+Mainnet claims need source support appropriate to production network behavior.
 
-For readers, this keeps MEV Shield examples from sounding broader than their environment supports.
-Local, testchain, and mainchain contexts can all discuss protected pending transactions, but they do
-not carry the same interpretive weight.
+## Evidence Boundary
 
-## Shielded flow
+The [MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield/) page supports claims about
+encrypted mempool protection. It does not support fee quotes, price guarantees, wallet advice,
+private account diagnosis, or claims that every other transaction risk has been removed.
 
-MEV Shield protects the waiting period before block inclusion by encrypting the sensitive
-transaction payload. The protected transaction is wrapped in an encrypted outer transaction, and the
-inner contents remain hidden while the protected transaction is pending. After inclusion, validators
-can reveal and process the protected contents. The
-[MEV Shield concept page](https://docs.learnbittensor.org/concepts/mev-shield/) describes this
-encrypted mempool-protection model, and the
-[MEV Shield SDK guide](https://docs.learnbittensor.org/sdk/mev-protection) gives the same
-encrypt-and-submit flow at a lower interface level.
-
-## Relationship to Mempool Visibility
-
-MEV Shield and mempool visibility address opposite sides of the same pre-inclusion risk. Mempool
-visibility names whether sensitive pending transaction details are exposed before block inclusion,
-while the [MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield/) feature encrypts those
-contents during the wait.
-
-For readers, mempool visibility describes the exposure problem, while MEV Shield describes one
-official defense against that visibility risk. Hiding details does not remove every other
-transaction risk.
-
-References: [MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield/),
-[Glossary: Mempool](https://docs.learnbittensor.org/resources/glossary#mempool)
-
-## Relationship to price protection
-
-MEV Shield and price protection address related but different risks. MEV Shield hides transaction
-details before inclusion; price protection controls how a transaction handles adverse price movement
-while it is being processed. A reader should therefore treat MEV Shield as privacy around pending
-transaction contents, not as a replacement for price-tolerance logic. The
-[Price Protection](https://docs.learnbittensor.org/learn/price-protection) docs explain strict,
-partial, and unsafe price-protection modes, while the
-[MEV Shield page](https://docs.learnbittensor.org/concepts/mev-shield/) frames encrypted mempool
-protection as a defense against MEV-style visibility risk.
-
-## Client context
-
-Bittensor's official clients can apply MEV Shield to sensitive operations, but the important
-Taopedia-level concept is not a particular flag or code path. The article-level distinction is that
-some transaction types benefit from hiding contents before inclusion, while other interactions may
-not need that protection. The
-[MEV Shield concept page](https://docs.learnbittensor.org/concepts/mev-shield/) describes client
-support at a high level, and the [SDK guide](https://docs.learnbittensor.org/sdk/mev-protection)
-documents how supported interfaces wrap protected transactions.
-
-## Careful interpretation
-
-MEV Shield reduces visibility during the pending-transaction window. It does not make every
-transaction safe, remove normal transaction costs, guarantee an execution result, or replace wallet
-review. For staking-related activity, slippage and price-protection settings still matter because
-pool movement and tolerance rules are separate from whether transaction details were hidden before
-inclusion. The [MEV Shield page](https://docs.learnbittensor.org/concepts/mev-shield/) limits the
-feature to encrypted mempool protection, and
-[Price Protection](https://docs.learnbittensor.org/learn/price-protection) covers the separate
-price-movement controls.
-
-## Relationship to Multiple Mechanisms
-
-MEV Shield conceals sensitive transaction contents until block inclusion, the same visibility window
-[Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal) uses around fresh validator
-weights. The [Glossary](https://docs.learnbittensor.org/resources/glossary#weight-matrix) notes that
-each incentive mechanism has its own weight matrix for independent consensus calculations.
-
-For readers, encrypted mempool protection applies to pending chain actions. Weight concealment still
-operates per mechanism when a subnet runs more than one incentive path.
-
-References:
-[Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets),
-[Glossary: Weight Matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix)
-
-## Relation to nearby concepts
-
-MEV Shield sits near several Taopedia topics without replacing them.
-[[staking_and_delegation|Staking and Delegation]] explains the broader staking context.
-[[wallets|Wallets]] explains the account-management surface around transactions.
-[[dynamic_tao|Dynamic TAO]] explains the broader tokenomics context where subnet pools and
-staking-related movement matter. MEV Shield is the narrow mempool-visibility concept inside that
-larger safety and transaction context.
-[MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield/) and
-[Price Protection](https://docs.learnbittensor.org/learn/price-protection) define this boundary.
+When a claim depends on a concrete protected transaction, the article should identify the network,
+pending-visibility context, and any separate protection source being used. MEV Shield is a
+visibility-protection concept, not a replacement for every other chain-action reference.
 
 ## Related articles
 
@@ -162,71 +93,10 @@ larger safety and transaction context.
 - [[wallets|Wallets]]
 - [[dynamic_tao|Dynamic TAO]]
 
-## Relationship to Mempool
-
-MEV Shield and the mempool are related but different parts of Bittensor chain activity. The mempool
-names pending transactions before block inclusion, while MEV Shield encrypts sensitive transaction
-contents during that pre-inclusion wait. The
-[Glossary: Mempool](https://docs.learnbittensor.org/resources/glossary#mempool) describes the
-pending-transaction context, and the
-[MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield/) documentation describes encrypted
-mempool protection for sensitive submissions.
-
-For readers, the mempool is where a transaction waits before inclusion, while MEV Shield is one
-official response to visibility risk during that wait.
-
-References: [Glossary: Mempool](https://docs.learnbittensor.org/resources/glossary#mempool),
-[MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield/)
-
-## Relationship to Extrinsics
-
-MEV Shield and extrinsics are related but different parts of Bittensor chain action vocabulary.
-Extrinsics name signed transactions and calls submitted to Subtensor, while MEV Shield wraps
-sensitive extrinsic payloads in encrypted protection before block inclusion. The
-[Glossary: Extrinsics](https://docs.learnbittensor.org/resources/glossary#extrinsics) describes
-signed transactions submitted to the chain, and the
-[MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield/) documentation describes the
-encrypt-and-submit flow for protected transactions.
-
-For readers, extrinsics name the submitted chain actions, while MEV Shield names a protection layer
-applied to sensitive submissions during the pending window.
-
-References: [Glossary: Extrinsics](https://docs.learnbittensor.org/resources/glossary#extrinsics),
-[MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield/)
-
-## Relationship to Subtensor
-
-MEV Shield and Subtensor are related but different parts of Bittensor chain vocabulary. Subtensor
-names Bittensor's layer 1 blockchain and system of record, while MEV Shield is a feature that
-encrypts sensitive transaction contents on that chain layer before block inclusion. The
-[Glossary: Subtensor](https://docs.learnbittensor.org/resources/glossary#subtensor) describes the
-blockchain layer, and the [MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield/)
-documentation describes encrypted mempool protection within that layer.
-
-For readers, Subtensor names the chain layer, while MEV Shield names a visibility-protection feature
-applied to pending actions on that layer.
-
-References: [Glossary: Subtensor](https://docs.learnbittensor.org/resources/glossary#subtensor),
-[MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield/)
-
-## Relationship to Transaction Fees
-
-MEV Shield and transaction fees are related but different parts of Bittensor chain vocabulary.
-Transaction fees name the costs attached to state-changing actions on Subtensor, while MEV Shield
-encrypts sensitive transaction contents before inclusion without replacing the normal fee model. The
-[Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees) documentation describes
-fee-bearing actions, and the [MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield/)
-documentation describes encrypted mempool protection for sensitive submissions.
-
-For readers, transaction fees belong to the cost model for chain actions, while MEV Shield belongs
-to the visibility-protection layer around pending submissions.
-
-References: [Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees),
-[MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield/)
-
 ## Further Reading
 
 - [MEV Shield: Encrypted Mempool Protection](https://docs.learnbittensor.org/concepts/mev-shield/)
-- [Using MEV Shield with the Bittensor SDK](https://docs.learnbittensor.org/sdk/mev-protection)
+- [MEV](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value)
+- [Mempool](https://docs.learnbittensor.org/resources/glossary#mempool)
 - [Price Protection](https://docs.learnbittensor.org/learn/price-protection)
-- [Glossary: MEV](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value)
+- [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)
