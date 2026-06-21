@@ -1,27 +1,27 @@
 ---
 title: "Liquid Alpha"
 summary:
-  "How liquid alpha varies validator-miner bond EMA smoothing by pair within bounded consensus-based
+  "How liquid alpha varies validator-miner bond EMA smoothing by pair within consensus-based
   weights."
 category: "Consensus"
 tags: ["Consensus", "Validation"]
 infoboxTitle: Liquid Alpha
-infoboxCaption: Per-pair variable bonds EMA smoothing for a subnet.
+infoboxCaption: Per-pair variable bond smoothing for a subnet.
 infoboxRows:
   - label: Context
     value: Consensus-based weights
   - label: Affects
     value: Validator bonds EMA
   - label: Bounds
-    value: alpha_low <= alpha_high
+    value: Low and high alpha range
   - label: Scope
-    value: Concept only
+    value: Concept
 ---
 
 # Liquid Alpha
 
 Liquid alpha is the name used for Bittensor's consensus-based weights feature. It lets the
-validator-miner bond smoothing factor vary by pair instead of applying one fixed factor across the
+validator-miner bond smoothing factor vary by pair instead of applying one fixed factor across a
 subnet
 ([Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)).
 
@@ -34,20 +34,19 @@ validator weights are compared with consensus alignment
 Validator-miner bonds use exponential moving average smoothing, so a bond does not move entirely
 from one evaluation step to the next. In that moving average, alpha is the smoothing factor that
 controls how quickly the bond responds
-([Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds)).
+([Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds),
+[Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema)).
 
 Liquid alpha changes how that smoothing factor is chosen. Instead of one shared value, the factor
-can vary for each validator-miner pair according to consensus alignment
-([Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema)).
+can vary for each validator-miner pair according to consensus alignment.
 
-## What Liquid Alpha Changes
+## Pair-Specific Response
 
-When liquid alpha is in scope, bond smoothing becomes pair-specific. Validator-miner pairs that are
-closer to consensus can respond more directly, while weaker alignment keeps the response more
-conservative
+When liquid alpha is in scope, bond smoothing becomes pair-specific. Validator-miner pairs closer to
+consensus can respond more directly, while weaker alignment keeps the response more conservative
 ([Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)).
 
-That makes liquid alpha a bond-smoothing mechanism, not a separate miner ranking rule. Validator
+That makes liquid alpha a bond-smoothing mechanism, not a separate miner-ranking rule. Validator
 weights, clipping, rank calculation, and validator dividends remain part of the broader Yuma
 Consensus path ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
@@ -55,78 +54,44 @@ Consensus path ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-cons
 
 Liquid alpha is described with low and high alpha bounds. Those bounds limit the range of smoothing
 responses available to the feature, keeping pair-specific alpha values inside a configured interval
-([Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)).
+([Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
-For readers, the useful point is conceptual: alpha_low and alpha_high define the available response
-range. Exact parameter readings belong with the subnet and reference source being inspected
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+For readers, the useful point is conceptual. The bounds define the available response range; liquid
+alpha chooses a value inside that range based on consensus alignment.
 
-## Subnet Scope
-
-Liquid alpha is a subnet-scoped consensus feature. One subnet can discuss liquid-alpha behavior
-without implying that every other subnet has the same bond-smoothing context
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
-
-This keeps liquid alpha from being treated as a universal property of every validator-miner bond.
-The relevant subnet, mechanism, and consensus path are part of the interpretation
-([Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets)).
-
-## Consensus Alignment Context
+## Consensus Alignment
 
 Liquid alpha ties bond response to how closely validator weights align with consensus. That is why
 it is also described as consensus-based weights: the bond-smoothing response depends on the
 consensus relationship around submitted weights
-([Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)).
+([Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights),
+[Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#validator-weights)).
 
 The mechanism is therefore about bond adaptation after evaluation, not about replacing the
-evaluation itself. Validators still submit weights, and Yuma Consensus still aggregates and filters
-signals
-([Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#validator-weights)).
+evaluation itself.
 
-## Weight Copying Context
+## Weight-Copying Context
 
 Liquid alpha is often discussed near delayed weight visibility and weight-copying defenses. Copied
 or stale weights can diverge from consensus, and liquid alpha changes how bond response follows
 alignment
-([The Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor)).
+([The Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor),
+[Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)).
 
 This does not make liquid alpha proof that copying occurred. Weight copying names an
 evaluation-quality problem; liquid alpha names a bond-path mechanism that responds to consensus
-alignment ([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)).
+alignment.
 
 ## Reader Boundary
 
 Liquid alpha should be read as a consensus bond-smoothing concept. It is not a standalone staking
 instruction, a separate subnet token, or a complete explanation of validator dividends
-([Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)).
+([Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights),
+[Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds)).
 
 The stable article-level point is that the smoothing factor for validator-miner bonds can vary by
-pair within bounds, based on consensus alignment inside the relevant subnet context
-([Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds)).
-
-## Development Stage Context
-
-The
-[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from localnet to testnet and then mainnet. For liquid alpha,
-that sequence changes how readers should interpret examples of per-pair bond smoothing behavior and
-alpha bound settings.
-
-In localnet, liquid alpha behavior can be tested in an isolated environment. Localnet bond smoothing
-responses and alpha bound settings reflect local chain configuration and do not represent production
-subnet consensus state.
-
-On testnet, liquid alpha can be observed in a shared, non-production network. Testnet bond smoothing
-outcomes are separate from mainnet validator-miner bond state.
-
-On mainnet, liquid alpha is the live consensus-based weights mechanism that varies validator-miner
-bond smoothing factors by pair within configured bounds in production Bittensor subnet operations.
-The [Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)
-documentation describes the liquid alpha mechanics that apply on the production network.
-
-The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
-separates mainnet, testnet, and localnet. A liquid alpha example from one environment should not be
-read as representing bond smoothing state in another environment.
+pair within bounds, based on consensus alignment inside the relevant subnet context.
 
 ## Further Reading
 
@@ -134,7 +99,4 @@ read as representing bond smoothing state in another environment.
 - [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
 - [Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema)
 - [Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds)
-- [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
 - [The Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor)
-- [Introduction to Bittensor: Subnet development](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-- [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)
