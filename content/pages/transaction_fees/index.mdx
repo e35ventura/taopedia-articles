@@ -37,6 +37,15 @@ This base-fee concept belongs to state-changing activity. It should not be colla
 economic effect that can occur around a Bittensor action, and it should not be applied to passive
 chain reads.
 
+Base fees are easiest to understand as the chain cost of processing a submitted action. The weight
+component reflects the work the runtime must perform, while the length component reflects the size
+of the submitted data. A larger economic value does not automatically mean a larger base fee, and a
+small-looking action can still have a fee if the runtime classifies it as fee-bearing.
+
+This keeps base fees separate from the broader financial result of an action. A transfer, stake
+operation, or batched submission can have a base fee because it asks Subtensor to process a state
+change. Reading public state does not make that request, so it belongs to a different category.
+
 ## Swap Fee Boundary
 
 The [Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees) source treats swap
@@ -47,6 +56,15 @@ That boundary matters because a stake-related action can involve more than one c
 base chain fee belongs to the submitted action, while the swap fee belongs to the liquidity-linked
 part of the action.
 
+In practice, this means a stake or unstake discussion can involve both concepts at once. The base
+transaction fee covers the submitted chain action. The swap fee describes the amount-based cost
+connected to liquidity movement through subnet markets. They can appear near each other, but they
+answer different questions.
+
+Keeping the terms separate avoids a common confusion: "fee" does not always mean the same thing in
+Bittensor tokenomics. Base transaction fees, swap fees, and recycled fees sit in the same economic
+neighborhood, but they describe different parts of the chain action and accounting flow.
+
 ## Fee-Free Activity
 
 The [official fee page](https://docs.learnbittensor.org/learn/fees) identifies chain reads as free
@@ -56,6 +74,15 @@ whether an action appears small, but whether the chain classifies that action as
 This keeps observation separate from submitted action. A chain read inspects state without asking
 Subtensor to record a change, while fee-bearing activity belongs to the submitted-action path.
 
+That distinction is important for tools that can both inspect and submit. Looking up storage,
+events, constants, metadata, or balances is a read-only activity. Submitting an extrinsic is
+different because it asks the runtime to evaluate a call and may require signing authority,
+eligibility checks, and fees.
+
+For readers, the useful shortcut is simple: observing public chain state is fee-free, while asking
+the chain to change state can be fee-bearing unless the documentation places that action in a
+fee-free category.
+
 ## Grouped Actions
 
 Grouped actions do not erase fee behavior. The
@@ -64,6 +91,15 @@ transaction fees aggregate the fee behavior of the inner calls and include batch
 
 This means a grouped submission should be read through its components. A batch containing
 fee-bearing activity can carry a fee, while a group of fee-free actions has a different fee context.
+
+Batching changes the packaging, not the meaning of the calls inside it. The outer batch groups
+multiple calls into one submitted transaction, and the inner calls still determine much of the fee
+context. A batch that carries fee-bearing calls should be interpreted differently from a batch made
+up only of fee-free calls.
+
+This is why batch fees can include both wrapper overhead and the fee behavior of the inner calls.
+The grouped transaction is one submission, but its cost still depends on what the group asks the
+runtime to process.
 
 ## Recycling Context
 
