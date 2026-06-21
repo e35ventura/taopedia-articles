@@ -41,6 +41,11 @@ subnet. That state includes consensus and incentive-related values such as stake
 weights, ranks, trust, consensus, incentives, dividends, emissions, activity state, and bonds. These
 values describe chain-derived subnet state, not editorial ratings.
 
+The metagraph provides structured access to per-neuron fields that validators and miners query when
+making subnet participation decisions. Common fields include UID assignments, hotkey addresses,
+stake amounts, validator permits, and the weight matrix that captures validator evaluations of miner
+performance.
+
 References: [The Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph),
 [Understanding Neurons](https://docs.learnbittensor.org/learn/neurons)
 
@@ -50,6 +55,11 @@ The metagraph is important because it gives readers a common term for the subnet
 around Bittensor incentives. Yuma Consensus explains how validator evaluations are aggregated into
 miner incentives and validator dividends; the metagraph is one of the places those subnet-level
 results are represented.
+
+Subnet participants query the metagraph to understand current network conditions. Validators check
+which UIDs are active and their current stake before submitting weights. Miners examine validator
+stake distribution to understand evaluation influence. Subnet owners monitor metagraph state to
+track participant activity and emission outcomes over time.
 
 References: [Yuma Consensus](https://docs.learnbittensor.org/yuma-consensus/),
 [Glossary: Metagraph](https://docs.learnbittensor.org/resources/glossary#metagraph)
@@ -230,6 +240,25 @@ state view that can include participants after entry.
 
 References: [Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register),
 [Glossary: Metagraph](https://docs.learnbittensor.org/resources/glossary#metagraph)
+
+## Implementation Context
+
+The metagraph is accessed through Bittensor's Python SDK using the `subtensor` library. The typical
+pattern involves instantiating a subtensor connection, specifying the netuid, and calling the
+metagraph method to retrieve the current subnet state snapshot. The returned object provides
+attribute access to neuron-level fields indexed by UID.
+
+Metagraph queries are read-only operations that reflect on-chain state. They do not modify subnet
+membership, stake positions, or validator weights. Write operations such as setting weights or
+registering neurons require separate extrinsics submitted through the wallet interface.
+
+The metagraph reflects state at the block height when the query executes. Subnet state can change
+between queries as new blocks arrive, weights are submitted, or stake positions are modified. Code
+that depends on metagraph consistency across multiple operations should cache the snapshot or
+re-query to confirm current state.
+
+Reference:
+[Bittensor Python SDK Documentation](https://github.com/opentensor/bittensor/tree/master/docs)
 
 ## Reader Boundary
 
