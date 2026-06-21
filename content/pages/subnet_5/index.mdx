@@ -1,187 +1,103 @@
 ---
 title: "Subnet 5: Hone"
 summary:
-  "Hone is a Bittensor subnet operated by Manifold where miners compete to solve ARC-AGI-2 abstract
-  reasoning problems; solutions run in a secure GPU sandbox and are scored by exact-match accuracy."
+  "Hone is Bittensor Subnet 5, an ARC-AGI-2 reasoning subnet that evaluates solver repositories in a
+  secure GPU sandbox."
 category: "Subnets"
 tags: ["Subnets"]
-infoboxTitle: Subnet 5 — Hone
-infoboxCaption: ARC-AGI-2 benchmarking in a secure GPU sandbox.
+infoboxTitle: Subnet 5: Hone
+infoboxCaption: ARC-AGI-2 reasoning evaluation on Bittensor.
 infoboxRows:
   - label: Subnet
     value: SN5
-  - label: Operator
-    value: Manifold
-  - label: Neurons
-    value: "256"
-  - label: GitHub
+  - label: Project
+    value: Hone
+  - label: Task
+    value: ARC-AGI-2 reasoning
+  - label: Repository
     value: manifold-inc/hone
-  - label: Site
-    value: hone.training
 ---
 
 # Subnet 5: Hone
 
-Hone is Bittensor's fifth subnet (netuid 5), operated by [Manifold](https://www.hone.training/). Its
-purpose is to benchmark and advance AI reasoning by pitting miners against
-[ARC-AGI-2](https://arcprize.org/) — a suite of novel abstract reasoning tasks designed to resist
-pattern-memorisation and measure genuine general intelligence. Miners don't run solvers inside the
-validator workflow directly; instead they publish a git repository containing their solution, which
-a centralised GPU sandbox clones, builds, and executes in isolation.
+Hone is Bittensor Subnet 5, a subnet where miners compete on ARC-AGI-2 abstract reasoning tasks. The
+subnet's repository frames the work as solver evaluation: miners point to solution repositories, and
+validators use a managed GPU sandbox to evaluate those solutions
+([Hone repository](https://github.com/manifold-inc/hone),
+[Subnet 5 on TaoStats](https://taostats.io/subnets/5)).
 
-References: [manifold-inc/hone (GitHub)](https://github.com/manifold-inc/hone),
-[taostats.io/subnets/5](https://taostats.io/subnets/5)
+## What the Subnet Evaluates
 
-## How the Mechanism Works
+Hone evaluates whether a submitted solver can answer held-out ARC-AGI-2 reasoning problems. The task
+is not ordinary model hosting or prompt serving. It is benchmark-style reasoning evaluation where
+the useful output is a score for how many problems the solver answers correctly
+([Hone README](https://raw.githubusercontent.com/manifold-inc/hone/main/README.md)).
 
-Each miner hosts a lightweight HTTP server that exposes a `/info` endpoint. When queried, this
-endpoint returns a pointer to the miner's solution repository — an owner, repository name, branch,
-and commit hash.
+This makes Subnet 5 easier to read as an evaluation subnet. The miner contribution is a solver, the
+validator-side work is scoring, and the subnet reward path depends on those scores.
 
-Validators collect these pointers and submit **jobs** to a managed **Sandbox Runner** — a cluster of
-H200 GPUs operated by Manifold. The Sandbox Runner:
+## Sandbox Evaluation
 
-1. Clones the miner's repository and builds a Docker image from its `Dockerfile`.
-2. Runs a **prep phase** (internet-accessible) so the solver can download model weights or other
-   assets.
-3. Runs an **inference phase** with network access fully disabled, passing a set of held-out
-   ARC-AGI-2 problems.
-4. Computes `exact_match_rate` — the fraction of problems the solver answers correctly — and returns
-   that score to the validator.
+The sandbox design is central to Hone's task. A sandbox runner executes submitted solver material,
+allows preparation before scoring, then runs inference in an isolated phase before calculating the
+score ([Hone README](https://raw.githubusercontent.com/manifold-inc/hone/main/README.md)).
 
-Validators aggregate scores and assign on-chain weights. The reward distribution uses **exponential
-decay** (factor 0.8 per rank): only the **top 5** miners that exceed a 20% accuracy floor receive
-any emission. If no miner clears the floor in a given round, the entire emission for that round is
-burned rather than distributed. Miners with identical repo + branch + commit combinations receive a
-cached score rather than a redundant evaluation, and a daily submission limit (default: one per
-miner per day) prevents gaming through rapid re-submissions. Weights feed into [[Yuma Consensus]] to
-determine per-epoch emissions.
+That boundary keeps the score from being a simple self-report. A miner does not merely claim a
+result; the solver is evaluated in a controlled execution environment. The sandbox context is the
+reason Hone's score can stand for benchmark performance rather than ordinary service uptime.
 
-References: [manifold-inc/hone (GitHub)](https://github.com/manifold-inc/hone)
+## Scoring Model
 
-## Participating as a Miner
+Hone's main metric is exact-match accuracy over ARC-AGI-2 problems. The scoring model also includes
+a minimum accuracy floor, a top-ranked reward focus, cached scoring for identical solution
+references, and burning when no solver qualifies
+([Hone README](https://raw.githubusercontent.com/manifold-inc/hone/main/README.md)).
 
-Miners must run an HTTP server (default port 8091) that returns their solution repository pointer at
-`GET /info`. The repository must contain a `Dockerfile` that the Sandbox Runner can build; all model
-downloads and setup should happen in the prep phase (before network isolation begins).
+Those details show what the subnet is trying to reward. Hone is tuned toward correct reasoning on
+the held-out task, not toward broad participation for its own sake. The cache and submission limits
+also keep repeated identical solver material from being treated as new progress.
 
-General setup flow:
+## Relationship to Yuma Consensus
 
-1. Register a hotkey on SN5 with `btcli subnet register` for `netuid 5`.
-2. Clone the official repository and set up the miner service from its `miner` directory.
-3. Configure `miner/.env` with wallet credentials, chain endpoint, and solution repository details.
-4. Start the miner services with Docker Compose.
-5. Announce the miner's IP address and port on-chain so validators can discover the `/info`
-   endpoint.
+Subnet 5 still uses the ordinary Bittensor weight path. Validators turn Hone evaluation results into
+weights, and those weights feed into Yuma Consensus. Yuma aggregates validator weight submissions,
+and the emission system uses the resulting consensus weights to distribute subnet emissions
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
+[Emission](https://docs.learnbittensor.org/learn/emissions)).
 
-Solution repositories can use any language or framework that builds inside Docker. The Sandbox
-Runner optionally starts a **vLLM sidecar** alongside the inference container for transformer-based
-solvers that need GPU-accelerated model inference.
+For Hone, this connects ARC-AGI-2 reasoning scores to Bittensor incentives. The subnet-specific work
+is solver evaluation in the sandbox; the protocol relationship to rewards still runs through
+validator weights and Yuma Consensus.
 
-References: [manifold-inc/hone — Miner Setup](https://github.com/manifold-inc/hone#miner-setup),
-[miner-solution-example (GitHub)](https://github.com/manifold-inc/hone/tree/main/miner-solution-example)
+## Environment Context
 
-## Participating as a Validator
+Hone examples can belong to localnet, testnet, or mainnet contexts, and those environments should
+not be mixed. A local example can help explain the sandbox concept, while testnet and mainnet are
+separate Bittensor network environments with separate histories
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks),
+[Introduction to Bittensor: Subnet development](https://docs.learnbittensor.org/learn/introduction#subnet-development)).
 
-Validators do not need a GPU. Their role is to query each registered miner's `/info` endpoint,
-forward the solution pointers to the Sandbox Runner API, collect the returned `exact_match_rate`
-scores, and set on-chain weights accordingly.
+Keeping the environment attached prevents overreading examples. A solver score, validator
+assessment, or emission result from one environment should not be treated as proof of performance in
+another.
 
-Validator requirements (from the official README):
+## Concept Boundaries
 
-- 4+ CPU cores
-- 8 GB+ RAM
-- 20 GB disk
-- A PostgreSQL database (provided via Docker Compose)
-- Reliable network connection
+Subnet 5 should be read as a Hone overview, not as miner onboarding material, a validator operations
+guide, or a hardware shopping list. The stable concept is ARC-AGI-2 reasoning evaluation through a
+managed sandbox, with Bittensor incentives tied to validator scoring
+([Hone README](https://raw.githubusercontent.com/manifold-inc/hone/main/README.md),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
-Validator setup follows the official repository's `validator` workflow: clone the repository, create
-`validator/.env` with chain, wallet, and database credentials, and start the validator stack with
-Docker Compose.
-
-The validator service polls registered miners, submits jobs to the Sandbox Runner, stores results in
-PostgreSQL, and pushes weights to the chain. Because the Sandbox Runner handles all GPU work,
-validators have a low hardware bar.
-
-References:
-[manifold-inc/hone — Validator Setup](https://github.com/manifold-inc/hone#validator-setup)
-
-## On-Chain Identity
-
-Subnet 5's registered on-chain identity, verifiable via
-[taostats.io/subnets/5](https://taostats.io/subnets/5):
-
-- **Owner coldkey:** `5GurNtB3yQFCh6CSmfH7LrYJDsvzup4diHZiaYtKe274nrMX`
-  ([view on taostats](https://taostats.io/coldkey/5GurNtB3yQFCh6CSmfH7LrYJDsvzup4diHZiaYtKe274nrMX))
-- **GitHub:** [manifold-inc/hone](https://github.com/manifold-inc/hone)
-- **URL:** [hone.training](https://www.hone.training/)
-- **Neurons:** 256
-
-## Sandbox Evaluation Context
-
-The [manifold-inc/hone README](https://raw.githubusercontent.com/manifold-inc/hone/main/README.md)
-describes Hone as evaluating miner solutions inside a managed GPU sandbox rather than trusting
-self-reported results. A miner publishes a solution repository, and the Sandbox Runner clones it,
-builds a Docker image, runs a network-accessible prep phase for asset downloads, then runs the
-scored inference phase with network access disabled.
-
-That network-isolation step is the part worth understanding for a reader. Because
-[ARC-AGI-2](https://arcprize.org/) is designed to resist pattern-memorization, disabling network
-access during inference is what keeps the score a measure of the solver's own reasoning rather than
-its ability to look answers up at runtime. The sandbox design is therefore central to what SN5's
-score actually means, not just an operational detail.
-
-References:
-[manifold-inc/hone README](https://raw.githubusercontent.com/manifold-inc/hone/main/README.md),
-[ARC-AGI-2 prize and dataset](https://arcprize.org/)
-
-## Scoring and Reward Context
-
-The Hone README describes scoring as an `exact_match_rate` — the fraction of held-out ARC-AGI-2
-problems a solver answers correctly — and a reward distribution that uses exponential decay across
-only the top-ranked miners above an accuracy floor, with the round's emission burned when no miner
-clears that floor.
-
-For a reader, this design says something specific about the subnet's intent. Rewarding only a small
-top tier and burning emission when nothing clears the floor means SN5 is built to pay for
-demonstrated reasoning capability rather than to spread rewards across marginal attempts. The
-cached-score and daily-submission limits described in the README reinforce that focus by reducing
-gains from rapid resubmission rather than genuine improvement.
-
-References:
-[manifold-inc/hone README](https://raw.githubusercontent.com/manifold-inc/hone/main/README.md),
-[taostats.io/subnets/5](https://taostats.io/subnets/5)
-
-## Development Stage Context
-
-The
-[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from localnet to testnet and then mainnet. For Hone (SN5),
-that sequence changes how readers should interpret participation examples and ARC-AGI-2 evaluation
-outcomes.
-
-In localnet, miners and validators can develop and test Hone-compatible implementations in an
-isolated environment. Localnet sandbox evaluation results and emission outcomes do not represent
-production subnet performance.
-
-On testnet, Hone-compatible implementations can be exercised in a shared, non-production network.
-Testnet ARC-AGI-2 scores and validator assessments are separate from mainnet subnet state.
-
-On mainnet, Hone (SN5) is the live production subnet where miners solve ARC-AGI-2 abstract reasoning
-problems in a secure GPU sandbox and validators score solutions by exact-match accuracy to determine
-real Bittensor emissions. The [manifold-inc/hone repository](https://github.com/manifold-inc/hone)
-describes the mechanism that applies on the production network.
-
-The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
-separates mainnet, testnet, and localnet. A solution score or emission example from one environment
-should not be read as representing production subnet performance in another environment.
+Project-specific requirements, service endpoints, solver packaging details, and troubleshooting
+belong in Hone's own repository. The stable distinction is that Hone rewards sandboxed reasoning
+performance, not generic compute availability.
 
 ## Further Reading
 
-- [manifold-inc/hone (GitHub)](https://github.com/manifold-inc/hone)
-- [ARC-AGI-2 prize and dataset](https://arcprize.org/)
-- [taostats.io/subnets/5](https://taostats.io/subnets/5)
-- [Introduction to Bittensor: Subnet development](https://docs.learnbittensor.org/learn/introduction#subnet-development)
+- [Hone repository](https://github.com/manifold-inc/hone)
+- [Hone README](https://raw.githubusercontent.com/manifold-inc/hone/main/README.md)
+- [Subnet 5 on TaoStats](https://taostats.io/subnets/5)
+- [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
+- [Emission](https://docs.learnbittensor.org/learn/emissions)
 - [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)
-- [[Yuma Consensus]]
-- [[Dynamic TAO]]
