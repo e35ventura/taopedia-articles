@@ -20,319 +20,96 @@ infoboxRows:
 
 # Validator Weights
 
-Validator weights are the evaluation signals that Bittensor validators submit after judging miner
-work on a subnet. A subnet's incentive mechanism defines what useful work means, validators score
-miners against that mechanism, and [[yuma_consensus|Yuma Consensus]] aggregates those submitted
-signals into miner incentives and validator dividends.
+Validator weights are evaluation signals submitted by subnet validators after judging miner work in
+a subnet. They are the inputs that [[yuma_consensus|Yuma Consensus]] aggregates into miner
+incentives and validator dividends
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
-References: [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
-[Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)
+The term is subnet-specific. A weight only has meaning inside the incentive mechanism and evaluation
+criteria of the subnet where it was produced
+([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
 
-## What a weight represents
+## Evaluation Signal Context
 
-A validator weight is not a generic reputation score. It is a subnet-specific judgment about how
-well a miner performed under the rules of that subnet's incentive mechanism. Different subnets can
-measure different work, so the meaning of a strong weight depends on the task, scoring method, and
-evaluation criteria chosen by the subnet.
+A validator weight is not a generic reputation score. It is a subnet-specific evaluation of miner
+work under the rules of the subnet's incentive mechanism
+([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
 
-References:
-[Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism),
-[[subnet_creation_mechanisms|Subnet Creation and Incentive Mechanisms]]
+That means the same numeric-looking signal can mean different things in different subnets. The
+subnet task, scoring method, and mechanism design give the weight its interpretation
+([Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#validator-weights)).
 
-## From scoring to consensus
+## From Evaluation to Consensus
 
-Validators produce weight vectors: one validator's relative evaluation of miners for a subnet. Yuma
-Consensus combines the validators' submitted weight vectors into a broader consensus result. That
-aggregation step matters because Bittensor is not rewarding a single validator's opinion; it is
-using many validator evaluations to decide how miner and validator rewards should be allocated.
+Validators submit weight vectors that express their relative evaluation of miners. Yuma Consensus
+combines those submitted vectors into a broader consensus result, rather than treating one
+validator's evaluation as final on its own
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
-References: [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
-[Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)
+This aggregation step is why validator weights matter to rewards. They are not merely observations;
+they are the evaluation inputs that help determine how incentives are allocated inside the subnet
+([Emission](https://docs.learnbittensor.org/learn/emissions)).
 
-## Why weights affect incentives
+## Consensus Score Boundary
 
-Weights connect subnet work to economic outcomes. Miners compete to earn stronger evaluations, while
-validators are rewarded for producing evaluations that are useful, timely, and consistent with the
-consensus process. [[dynamic_tao|Dynamic TAO]] describes the broader emission system; validator
-weights explain the subnet-level distribution step that turns evaluations into rewards.
+Validator weights and consensus score are related but distinct. Validator weights are the submitted
+evaluation inputs, while consensus score is the stake-weighted threshold used to filter outlier
+submissions before final rank calculations
+([Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score)).
 
-References: [Emission](https://docs.learnbittensor.org/learn/emissions),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
+For readers, this means a validator weight should not be read as the consensus score itself. The
+consensus score is computed from submitted weights and then used during filtering
+([Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#validator-weights)).
 
-## Quality risks
+## Weight Matrix Boundary
 
-The weight system depends on independent validator evaluation. If validators copy visible weights
-instead of evaluating miners themselves, the subnet loses useful information and the incentive
-mechanism becomes easier to game. Bittensor documentation describes Commit Reveal as one protection:
-fresh weights can be concealed before they become visible, making copied signals less useful when
-miner performance changes.
+Validator weights and the weight matrix describe the same data at different scopes. A weight vector
+is one validator's submitted evaluation signal, while the weight matrix is the subnet-level
+collection of submitted vectors used as input to consensus
+([Glossary: Weight Matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix)).
 
-References:
-[The Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor),
-[Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)
+That boundary keeps individual submissions separate from the organized consensus input. Validator
+weights name what validators submit; the matrix names how those submissions are collected for
+aggregation ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
-## Relationship to Consensus Score
+## Quality and Timing Context
 
-Validator weights and consensus score refer to related but different parts of Yuma Consensus. The
-[Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score)
-frames a consensus score as a stake-weighted median of validator-assigned weights used to filter
-outlier submissions before final rank calculations. Validator weights are the evaluation signals
-that validators submit and that Yuma Consensus aggregates.
+Validator weights are most useful when they reflect independent evaluation. Weight copying weakens
+that signal by relying on visible weight information instead of fresh evaluation
+([The Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor)).
 
-For readers, validator weights name the per-validator evaluation inputs, while consensus score names
-the agreement threshold used to filter those inputs. A validator weight should not be read as a
-consensus score; it is the submitted signal that the consensus score is computed from.
+Commit Reveal is one timing-related protection around that problem. It can conceal fresh weight
+submissions until a later reveal period, reducing the usefulness of copying newly submitted signals
+([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)).
 
-References:
-[Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
+## Multiple Mechanisms Context
 
-## Relationship to Multiple Mechanisms
+When a subnet uses multiple incentive mechanisms, validator weights must be read inside the
+mechanism context that produced them. A weight for one mechanism does not automatically describe
+miner performance under another mechanism
+([Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets)).
 
-Most validator-weight discussion centers on one incentive mechanism, but subnets can also run
-multiple mechanisms in parallel. The official documentation describes validators as setting weights
-independently for each mechanism and evaluating miners separately under each mechanism's criteria.
+For readers, validator weights still mean subnet-specific evaluation signals. Multiple mechanisms
+only add another boundary: which mechanism's evaluation path produced the signal
+([Glossary: Multiple Incentive Mechanisms](https://docs.learnbittensor.org/resources/glossary#multiple-incentive-mechanisms)).
 
-For readers, a validator weight still means a subnet-specific evaluation signal, but the mechanism
-context matters. A weight submitted for one mechanism does not describe miner performance in
-another, and validator dividends combine performance across mechanisms rather than isolating one
-mechanism alone.
+## Reader Boundary
 
-References:
-[Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets),
-[Glossary: Multiple Incentive Mechanisms](https://docs.learnbittensor.org/resources/glossary#multiple-incentive-mechanisms)
+Validator weights should be read as consensus inputs, not as universal miner ratings or cross-subnet
+comparisons. A weight claim should stay tied to the subnet, incentive mechanism, and Yuma Consensus
+context that give it meaning
+([Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#validator-weights)).
 
-## Relationship to Weight Matrix
-
-Validator weights and the weight matrix describe the same evaluation data at different scopes. A
-validator weight vector is one validator's submitted evaluation signal for miners, while the weight
-matrix is the subnet-level collection of those vectors used as input to Yuma Consensus. The
-[Glossary: Weight Matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix)
-describes the matrix as built from ranking weight vectors submitted by subnet validators.
-
-For readers, validator weights answer what individual validators submit, while the weight matrix
-answers how those submissions are organized together before consensus filtering and aggregation.
-
-References:
-[Glossary: Weight Matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
-
-## Development Stage Context
-
-The
-[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from local testing to testchain and then mainchain. For
-validator weights, that sequence changes how readers should interpret the evidence represented by a
-weight signal.
-
-In local testing, validator weights can show whether an evaluation method can produce a coherent
-weight vector for miner work. That is useful for checking the shape of the scoring logic, but it is
-still isolated feedback from a local environment.
-
-On testchain, validator weights can be observed in a shared testing network. This gives stronger
-evidence about how validator submissions behave together than a private local run, while still
-keeping the result separate from production mainchain incentives.
-
-On mainchain, validator weights are part of the live consensus input path. The
-[Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)
-page describes validators computing weight vectors from subnet evaluation logic, and
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) describes those submitted
-weights being aggregated into incentive outcomes.
-
-The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
-separates mainnet, testnet, and localnet. A weight vector observed in one environment should not be
-read as identical evidence about validator evaluation in another environment.
-
-For readers, this keeps weight claims from sounding stronger than their environment supports. Local,
-testchain, and mainchain weights can all describe validator evaluation, but they do not carry the
-same interpretive weight. The network context is part of the weight claim, not an afterthought.
-
-This distinction is especially important when comparing weights over time. A local or testchain
-vector can demonstrate behavior, but mainchain context determines whether the signal was part of
-production reward allocation.
-
-## How to read weight claims
-
-A claim about validator weights should be read with its subnet context. The important questions are
-what the subnet is measuring, how validators are expected to evaluate miner work, and how Yuma
-Consensus uses the submitted signals. A high weight only has meaning inside that evaluation system;
-it should not be treated as a universal score across unrelated subnets.
-
-References:
-[Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
-
-## Relationship to Yuma Consensus
-
-Validator weights and Yuma Consensus address related but different parts of Bittensor subnet
-incentive flow. Validator weights are the evaluation signals validators submit after judging miner
-work, while Yuma Consensus aggregates those submitted signals into miner incentives and validator
-dividends. The
-[Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#validator-weights)
-describes the per-validator evaluation inputs, and
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) describes how those inputs
-become consensus outcomes.
-
-For readers, validator weights name the subnet-specific evaluation submissions, while Yuma Consensus
-names the aggregation step that turns many validator submissions into shared incentive results.
-
-References:
-[Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#validator-weights),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
-
-## Relationship to Commit Reveal
-
-Validator weights and Commit Reveal address related but different parts of validator-weight
-processing. Validator weights are the evaluation signals validators produce for miners, while Commit
-Reveal can conceal those signals until a later reveal time before consensus uses them. The
-[Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal) documentation describes
-concealed weight submission and delayed reveal, and the
-[Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#validator-weights)
-describes the evaluation inputs that validators submit.
-
-For readers, validator weights name the evaluation content, while Commit Reveal names a visibility
-and timing layer that can protect fresh weight information before aggregation.
-
-References: [Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
-[Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#validator-weights)
-
-## Relationship to Tempo
-
-Validator weights and tempo are related but different parts of subnet timing vocabulary. Tempo names
-the block-based cadence that governs epoch transitions inside a subnet, while validator weights are
-the evaluation signals validators submit during that subnet's periodic work. The
-[Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo) describes tempo as the
-subnet-specific cadence for epochs, and the
-[Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#validator-weights)
-describes the per-validator evaluation inputs collected across that cadence.
-
-For readers, tempo names the subnet's periodic cadence, while validator weights name the evaluation
-submissions validators produce within that cadence before consensus aggregation.
-
-References: [Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo),
-[Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#validator-weights)
-
-## Relationship to Epoch
-
-Validator weights and an epoch address related but different parts of subnet consensus timing. An
-epoch names the consensus period inside a subnet, while validator weights are the evaluation signals
-validators submit during that period for later aggregation. The
-[Glossary: Epoch](https://docs.learnbittensor.org/resources/glossary#epoch) describes the subnet
-consensus period, and the
-[Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#validator-weights)
-describes the per-validator evaluation inputs that feed Yuma Consensus inside that window.
-
-For readers, an epoch names the time window for subnet consensus work, while validator weights name
-the evaluation submissions produced inside that window.
-
-References: [Glossary: Epoch](https://docs.learnbittensor.org/resources/glossary#epoch),
-[Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#validator-weights)
-
-## Relationship to Weight Copying
-
-Validator weights and weight copying address related but different parts of subnet evaluation
-quality. Validator weights are the evaluation signals validators submit for miners, while weight
-copying describes when a validator relies on public weight information instead of producing an
-independent evaluation. The
-[Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#validator-weights)
-describes the per-validator evaluation inputs, and the
-[The Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor)
-documentation describes copied or derived weights as the problem behavior.
-
-For readers, validator weights name the evaluation submission concept, while weight copying names
-when those submissions fail to add independent information.
-
-References:
-[Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#validator-weights),
-[The Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor)
-
-## Relationship to Drand Time-Lock Encryption
-
-Validator weights and Drand time-lock encryption address related but different parts of delayed
-weight visibility. Validator weights are the evaluation signals validators submit for miners, while
-Drand time-lock encryption provides the timing source that prevents concealed weights from being
-decrypted before the target reveal round inside Commit Reveal. The
-[Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#validator-weights)
-describes the evaluation inputs, and the
-[Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal) documentation describes
-Drand as the reveal timing mechanism.
-
-For readers, validator weights name the evaluation content, while Drand time-lock encryption names
-the timing layer around when concealed weight information becomes available.
-
-References:
-[Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#validator-weights),
-[Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)
-
-## Relationship to Liquid Alpha
-
-Validator weights and liquid alpha address related but different parts of consensus bond processing.
-Validator weights are the evaluation signals validators submit for miners, while liquid alpha
-adjusts validator-miner bond smoothing based on how closely those weights align with consensus. The
-[Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#validator-weights)
-describes the per-validator evaluation inputs, and the
-[Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)
-documentation describes liquid alpha as varying bond-smoothing response per validator-miner pair.
-
-For readers, validator weights name the evaluation submissions, while liquid alpha names a bond-path
-adjustment that responds to how those submissions align with consensus.
-
-References:
-[Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#validator-weights),
-[Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)
-
-## Relationship to Validator-Miner Bonds
-
-Validator weights and validator-miner bonds address related but different parts of Yuma Consensus
-vocabulary. Validator weights are the evaluation signals validators submit for miners, while
-validator-miner bonds describe the smoothed relationship between a validator and miners over time
-inside the consensus path. The
-[Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#validator-weights)
-describes the per-validator evaluation inputs, and the
-[Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds)
-describes the smoothed bond relationship those evaluations help shape.
-
-For readers, validator weights name the evaluation submissions, while validator-miner bonds name the
-smoothed relationship that evolves from those evaluations inside consensus.
-
-References:
-[Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#validator-weights),
-[Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds)
-
-## Related articles
-
-- [[yuma_consensus|Yuma Consensus]]
-- [[mining_and_validating|Mining and Validating]]
-- [[subnet_creation_mechanisms|Subnet Creation and Incentive Mechanisms]]
-- [[dynamic_tao|Dynamic TAO]]
-
-## Relationship to Coinbase
-
-Validator weights and coinbase are related but different parts of how subnet evaluation becomes
-emissions. Validator weights are the evaluation signals validators submit after judging miner work.
-Coinbase is the per-block protocol mechanism that drives TAO emission, injects TAO into emitting
-subnets' pool reserves, accumulates pending emissions, and checks epoch boundaries to trigger Yuma
-Consensus rounds. The
-[Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#validator-weights)
-describes the evaluation inputs, and the
-[Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase)
-documentation describes the per-block emission operation.
-
-Validator weights are the primary input that coinbase-triggered epoch rounds consume. When coinbase
-reaches a subnet's epoch boundary, it runs the Yuma Consensus round that reads the submitted
-validator weights, filters and aggregates them, and distributes miner incentives and validator
-dividends accordingly. Without fresh validator weights there is little signal for the coinbase round
-to act on, and without a coinbase-triggered round the weights are not translated into emissions.
-Validator weights supply the judgment; coinbase is the process that converts that judgment into
-reward outcomes.
+This boundary also keeps timing terms separate. Tempo and epoch describe cadence, Commit Reveal
+describes delayed visibility, and validator weights describe the evaluation signals that consensus
+uses within that cadence
+([Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo)).
 
 ## Further Reading
 
+- [Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#validator-weights)
 - [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
 - [Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)
-- [Emission](https://docs.learnbittensor.org/learn/emissions)
-- [The Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor)
+- [Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score)
+- [Glossary: Weight Matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix)
 - [Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)
-- [Introduction to Bittensor: Subnet development](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-- [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)
-- [Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase)
