@@ -8,7 +8,7 @@ infoboxCaption: Per-validator signal used by subnet consensus.
 infoboxRows:
   - label: Context
     value: Yuma Consensus
-  - label: Produced by
+  - label: Set by
     value: Validators
   - label: Represents
     value: Miner evaluations
@@ -26,8 +26,8 @@ Each element represents a weight assigned to a subnet miner according to that va
 The key boundary is scope. A single vector is one validator's signal before aggregation, not the
 whole subnet result.
 
-That makes weight vector a container concept. It names the structured set submitted by one
-validator, while the individual values inside the set are validator weights
+That makes weight vector a container concept. It names the structured set from one validator, while
+the individual values inside the set are validator weights
 ([Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#validator-weights),
 [Glossary: Weight Vector](https://docs.learnbittensor.org/resources/glossary#weight-vector)).
 
@@ -42,12 +42,7 @@ That keeps the term narrower than final rank or reward allocation. Consensus can
 but each vector remains a per-validator input.
 
 The per-validator boundary is important because Yuma Consensus compares many validator signals. One
-vector can express one validator's view, but it does not stand in for every validator's submitted
-evaluation.
-
-This also separates a vector from a subnet-wide table. A subnet can have many validators, and each
-validator can submit its own structured set of weights for the miners being evaluated
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+vector can express one validator's view, but it does not stand in for every validator's evaluation.
 
 ## Task and Mechanism Context
 
@@ -74,81 +69,73 @@ The useful distinction is that a vector organizes one validator's evaluations. T
 values that carry miner-scoring information.
 
 That is why validator-weight language is more precise for an individual score, while weight-vector
-language is more precise for the whole submitted set.
+language is more precise for the whole structured set.
+
+## Matrix Boundary
+
+Weight vector and weight matrix are different levels of the same input vocabulary. A vector belongs
+to one validator, while the matrix is the subnet-level collection of validator weight vectors
+([Glossary: Weight Matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix),
+[Glossary: Weight Vector](https://docs.learnbittensor.org/resources/glossary#weight-vector)).
+
+This boundary keeps a single validator's view from being mistaken for the combined input set. Yuma
+Consensus operates over many validator signals, not just one vector.
+
+The matrix vocabulary is useful when the focus is the grouped input. Weight-vector vocabulary is
+more precise when the focus is one validator's structured evaluation set.
 
 ## Consensus Score Boundary
 
-A weight vector is distinct from consensus score. The vector is a submitted evaluation signal, while
-consensus score is the stake-weighted threshold used to filter outlier submissions before final rank
+A weight vector is distinct from consensus score. The vector is an evaluation signal, while
+consensus score is the stake-weighted benchmark used to filter outlier weights before final rank
 results
 ([Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score),
 [Glossary: Weight Vector](https://docs.learnbittensor.org/resources/glossary#weight-vector)).
 
 That makes consensus score downstream of validator weight signals. A vector supplies input; the
-consensus score helps constrain how submitted signals can influence the final result.
+consensus score helps constrain how those signals can influence the final result.
+
+The distinction also keeps input and filtering vocabulary separate. A vector is not the benchmark,
+and the benchmark is not one validator's structured set.
 
 ## Stake-Weight Context
 
 Weight vectors are interpreted inside a stake-weighted consensus process. Stake weight helps
-determine how much influence a validator's vector carries after it is submitted
+determine how much influence a validator's vector carries during consensus
 ([Glossary: Stake Weight](https://docs.learnbittensor.org/resources/glossary#stake-weight),
 [Glossary: Weight Vector](https://docs.learnbittensor.org/resources/glossary#weight-vector)).
 
 This keeps evaluation and influence separate. The vector records miner evaluations; stake weight
 helps determine how strongly that validator signal is counted.
 
-## Rank Context
+Stake weight does not replace vector vocabulary. It describes influence around the signal, while the
+vector describes the structured miner-evaluation input.
+
+## Rank and Visibility Context
 
 Rank is downstream of weight vectors. A vector supplies one validator's miner evaluations, while
-rank is the consensus-adjusted miner-side result after submitted signals are filtered and aggregated
+rank is the consensus-adjusted miner-side result after signals are filtered and aggregated
 ([Glossary: Rank](https://docs.learnbittensor.org/resources/glossary#rank),
 [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
-That distinction helps readers avoid treating a single vector as the final subnet outcome. A vector
-is input vocabulary; rank is result vocabulary.
-
-## Visibility Context
-
 Independent validator evaluation is what gives a weight vector useful information. Weight copying
-weakens that purpose when validators rely on visible public weights instead of fresh evaluation
+weakens that purpose when validators rely on visible weights instead of fresh evaluation
 ([The Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor),
 [Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)).
 
-Commit Reveal can add a timing layer by concealing fresh weight submissions until a reveal period.
-That protects timing around the information, but it does not change the definition of a vector.
+Commit Reveal can add a timing layer by delaying visibility of fresh weight signals. That protects
+timing around the information, but it does not change the definition of a vector.
 
-## Practical Limits
+## Environment Boundary
 
-Weight vector should be read as per-validator consensus-input vocabulary. The stable point is that a
-vector represents one validator's miner evaluations before those signals are organized and
-aggregated
-([Glossary: Weight Vector](https://docs.learnbittensor.org/resources/glossary#weight-vector),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+Bittensor separates mainnet, testnet, and localnet environments. Weight-vector examples from one
+environment should not be treated as evidence for another because subnet tasks, validators, and
+incentive mechanisms can differ
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks),
+[Introduction to Bittensor: Subnet development](https://docs.learnbittensor.org/learn/introduction#subnet-development)).
 
-Weight vector does not provide validator recommendations, miner-performance claims, or cross-subnet
-rankings. Exact interpretation belongs to the subnet task and incentive mechanism being discussed.
-
-The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
-separates mainnet, testnet, and localnet. Weight vector examples or consensus input outcomes from
-one environment should not be read as representing production subnet performance in another
-environment.
-
-A weight vector should be read as validator-submitted mechanism input, not as the final consensus
-result by itself. Yuma Consensus describes validators assigning weights, while Commit Reveal changes
-when submitted weights become visible
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
-[Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)).
-
-The vector is an input into a larger mechanism. Claims about final ranking, incentives, or dividends
-need the surrounding consensus and emission context rather than the vector alone.
-
-Use weight-vector language when the focus is the submitted set of evaluations. Use validator-weight,
-consensus-score, rank, stake-weight, incentive, or dividend language when those specific parts of
-the consensus path are the focus.
-
-The narrow use keeps the term useful: a weight vector names one validator's submitted evaluation
-set, while consensus vocabulary explains how many such submissions are filtered, weighted, and
-turned into outcomes.
+Localnet examples are isolated development examples. Testnet examples are shared non-production
+examples. Mainnet weight-vector interpretation concerns production Yuma Consensus behavior.
 
 ## Further Reading
 
@@ -156,6 +143,7 @@ turned into outcomes.
 - [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
 - [Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)
 - [Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#validator-weights)
+- [Glossary: Weight Matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix)
 - [Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score)
 - [Glossary: Stake Weight](https://docs.learnbittensor.org/resources/glossary#stake-weight)
 - [Glossary: Rank](https://docs.learnbittensor.org/resources/glossary#rank)
