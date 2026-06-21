@@ -19,213 +19,108 @@ infoboxRows:
 
 # Validator-Miner Bonds
 
-Validator-miner bonds are Bittensor consensus signals that connect validator evaluation to miner
-outcomes over time. The
-[Glossary](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds) defines bonds
-as part of the relationship between a validator and a miner, while
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) explains how validator
-evaluation, clipping, bonding, and emissions fit together.
+Validator-miner bonds are smoothed relationships between validators and miners inside Bittensor's
+Yuma Consensus process. They connect validator evaluation history to validator-side emission
+outcomes, rather than naming a social endorsement or a general quality score
+([Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+The term is useful because it separates submitted validator weights from the smoothed bond state
+used later in consensus. Validator weights are evaluation inputs; validator-miner bonds are the
+smoothed relationship values that help shape dividends
+([Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#validator-weights),
+[Glossary: Dividends](https://docs.learnbittensor.org/resources/glossary#dividends)).
 
 ## Consensus Bonding
 
-In Yuma Consensus, validators evaluate miner work and those evaluations are resolved into subnet
-outcomes. Bonds sit in that consensus flow after validator weights are compared with the consensus
-benchmark. The [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) page places
-bonding after clipping and before validator-side emission calculation.
+Yuma Consensus places bonding after validator weights are compared with consensus. Weights are the
+fresh evaluation signals, while bonds carry a smoothed validator-miner relationship across consensus
+rounds ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
+[Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds)).
 
-## Smoothing Over Time
+That makes bonds part of the validator-side reward path. Miner incentives come from aggregate miner
+ranking outcomes, while validator dividends depend partly on how validator-miner bond relationships
+develop through consensus
+([Glossary: Incentives](https://docs.learnbittensor.org/resources/glossary#incentives),
+[Glossary: Dividends](https://docs.learnbittensor.org/resources/glossary#dividends)).
 
-Validator-miner bonds are not just a one-moment signal. The
-[Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema) page explains that
-Bittensor uses EMAs of validator-miner bond strengths when determining emissions inside each subnet.
-This smoothing keeps bond behavior tied to a running history rather than only the latest evaluation.
+## EMA Smoothing
 
-## Relationship to Evaluation
+Validator-miner bonds are smoothed over time with exponential moving average behavior. EMA smoothing
+keeps bond values from being only a one-round signal and gives the relationship a running history
+inside the consensus process
+([Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema),
+[Glossary: Exponential Moving Average (EMA)](https://docs.learnbittensor.org/resources/glossary#exponential-moving-average-ema)).
 
-Subnets define useful work, miners produce that work, and validators evaluate it.
-[Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets) describes
-that miner-and-validator model, while
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) explains how validator
-rankings become inputs to consensus. Bonds help connect that evaluation path to validator-side
-outcomes.
+Smoothing is the main reason bonds should not be read as a simple copy of the latest validator
+weight. A validator weight is a submitted evaluation signal; a bond is a smoothed relationship that
+evolves as consensus rounds continue
+([Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#validator-weights)).
 
-## Out-of-Consensus Penalty Context
+## Evaluation Context
 
-Bonds can also reflect a penalty when a validator's evaluation moves away from consensus. The
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus#penalizing-out-of-consensus-bonds)
-documentation explains that when a validator's weight for a miner exceeds that miner's consensus
-benchmark, the bond-weight can be blended from the validator's raw weight toward the
-consensus-clipped weight. A configurable penalty factor controls how far the bond-weight moves in
-that direction, so the amount of above-consensus evaluation that survives into the bond depends on
-how the subnet sets that factor.
+Subnets define work, miners produce outputs, and validators evaluate those outputs. Validator-miner
+bonds sit after that evaluation step, connecting validator judgments to the consensus process that
+allocates incentives and dividends
+([Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets),
+[Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
 
-For readers, the distinction is between the validator's submitted evaluation and the
-consensus-aligned bond value that feeds emissions. Because the penalty is configurable, an
-out-of-consensus evaluation may still contribute some bond strength, but the configured factor
-determines how closely the bond-weight tracks consensus rather than the validator's raw opinion.
+This keeps the bond term narrower than the whole incentive mechanism. The incentive mechanism
+describes task and evaluation design, validator weights carry submitted evaluations, and bonds
+describe the smoothed validator-miner relationship inside Yuma Consensus
+([Glossary: Incentive Mechanism](https://docs.learnbittensor.org/resources/glossary#incentive-mechanism)).
 
-## Development Stage Context
+## YC3 and Mechanism Context
 
-The
-[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from local testing to testchain and then mainchain. For
-validator-miner bonds, that sequence changes how readers should interpret evidence about smoothed
-validator-miner relationships.
+Yuma Consensus 3 belongs near validator-miner bonds because YC3 refines bond scaling. The base bond
+term names the smoothed validator-miner relationship, while YC3 names a later refinement that makes
+bond movement more responsive to useful independent evaluation
+([How Yuma Consensus 3 Makes Bittensor More Fair](https://docs.learnbittensor.org/learn/yc3-blog)).
 
-In local testing, bonds can show whether validator evaluations are being carried into a smoothed
-relationship with miners. That is useful for checking the shape of the bonding path, but it remains
-isolated feedback from a local environment.
+Some subnets can also run multiple incentive mechanisms. In that case, bond context can be
+mechanism-specific, because separate mechanisms can maintain separate bond pools for Yuma Consensus
+calculations
+([Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets),
+[Glossary: Multiple Incentive Mechanisms](https://docs.learnbittensor.org/resources/glossary#multiple-incentive-mechanisms)).
 
-On testchain, bond behavior can be observed in a shared testing network. This gives stronger
-evidence about how validator-miner relationships evolve across consensus rounds than a private local
-run, while still keeping the result separate from production mainchain incentives.
+## Timing and Emission Context
 
-On mainchain, validator-miner bonds are part of the live Yuma Consensus path. The
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) documentation places bonding
-inside the clipping, bonding, and emission process, so production bond context is tied to live
-validator dividends and miner incentive outcomes.
+Coinbase is the per-block mechanism that advances emission processing and triggers epoch-boundary
+activity. Validator-miner bonds are read inside the Yuma Consensus round that coinbase helps
+schedule, so the two terms sit at different points in the emission path
+([Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
-The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
-separates mainnet, testnet, and localnet. A bond value observed in one environment should not be
-read as identical evidence about validator-miner alignment in another environment.
+Emission is the broader tokenomics process around those outcomes. Bonds influence validator-side
+dividend calculation, while emission names the value-creation and allocation flow in which those
+outcomes appear ([Emissions](https://docs.learnbittensor.org/learn/emissions),
+[Glossary: Dividends](https://docs.learnbittensor.org/resources/glossary#dividends)).
 
-This distinction matters because bonds are smoothed over time. A local bond history, a testchain
-bond history, and a production bond history describe different consensus conditions.
+## Network Context
 
-For readers, this keeps bond examples from sounding stronger than their environment supports. Local,
-testchain, and mainchain contexts can all describe smoothed validator-miner relationships, but they
-do not carry the same interpretive weight.
+Network environment changes how bond examples should be read. Localnet, testnet, and mainnet are
+separate contexts, so a validator-miner bond example from one environment is evidence about that
+environment rather than a universal statement for every Bittensor network
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks),
+[Introduction to Bittensor: Subnet development](https://docs.learnbittensor.org/learn/introduction#subnet-development)).
 
-## Relationship to Multiple Mechanisms
+The same boundary applies to mechanism examples. A bond relationship belongs to the subnet,
+mechanism, epoch cadence, and network environment being discussed, not to every subnet or every
+evaluation design at once
+([Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets)).
 
-Validator-miner bonds are usually discussed in a single-mechanism subnet context, but subnets can
-also run multiple incentive mechanisms in parallel. The
-[Glossary](https://docs.learnbittensor.org/resources/glossary#multiple-incentive-mechanisms) defines
-multiple incentive mechanisms as independent evaluation systems, each with its own bond pool for
-Yuma Consensus calculations.
+## Reader Boundary
 
-For readers, bonds still describe how validator evaluation connects to subnet outcomes over time,
-but the mechanism context matters. Bond behavior in one mechanism does not substitute for bond
-context in another when a subnet runs parallel evaluation paths.
-
-References:
-[Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets),
-[Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds)
-
-## Relationship to Yuma Consensus
-
-Validator-miner bonds and Yuma Consensus address related but different parts of Bittensor subnet
-incentive flow. Validator-miner bonds are smoothed consensus relationships between validators and
-miners, while Yuma Consensus aggregates validator weight signals and resolves them into miner
-incentives and validator dividends. The
-[Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds)
-describes the bond relationship, and
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) describes clipping, bonding,
-and emission calculation inside that process.
-
-For readers, validator-miner bonds name the smoothed validator-miner relationship, while Yuma
-Consensus names the broader aggregation step that uses bonds when allocating subnet outcomes.
-
-References:
-[Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
-
-## Relationship to Validator Weights
-
-Validator-miner bonds and validator weights address related but different parts of subnet evaluation
-structure. Validator weights are the per-validator evaluation signals validators submit for miners,
-while validator-miner bonds describe the smoothed relationship that evolves from those evaluations
-over time inside Yuma Consensus. The
-[Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#validator-weights)
-describes the per-validator evaluation inputs, and the
-[Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds)
-describes the bond values that connect validators to miners across epochs.
-
-For readers, validator weights name the evaluation submissions, while validator-miner bonds name the
-smoothed relationship those submissions help build inside consensus.
-
-References:
-[Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#validator-weights),
-[Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds)
-
-## Relationship to Dividends
-
-Validator-miner bonds and dividends address related but different parts of validator-side subnet
-outcomes. Validator-miner bonds describe the smoothed relationship between a validator and miners,
-while dividends describe the validator-side emission result calculated from those bonds and miner
-incentive values. The
-[Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds)
-describes the bond relationship, and the
-[Glossary: Dividends](https://docs.learnbittensor.org/resources/glossary#dividends) describes the
-validator-side reward portion within emission distribution.
-
-For readers, validator-miner bonds name the relationship being smoothed, while dividends name the
-validator-side emission outcome that relationship helps produce.
-
-References:
-[Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds),
-[Glossary: Dividends](https://docs.learnbittensor.org/resources/glossary#dividends)
-
-## Relationship to Incentives
-
-Validator-miner bonds and incentives address related but different parts of subnet consensus
-outcomes. Validator-miner bonds connect validator evaluation to miners over time, while incentives
-name the miner-side emission portion that results from aggregate miner rankings after consensus. The
-[Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds)
-describes the validator-miner relationship, and the
-[Glossary: Incentives](https://docs.learnbittensor.org/resources/glossary#incentives) describes the
-miner-facing reward portion inside a subnet.
-
-For readers, validator-miner bonds name the smoothed validator-miner connection, while incentives
-name the miner-side emission result that consensus assigns after evaluations are aggregated.
-
-References:
-[Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds),
-[Glossary: Incentives](https://docs.learnbittensor.org/resources/glossary#incentives)
-
-## Relationship to Coinbase
-
-Validator-miner bonds and coinbase are related but different parts of Bittensor subnet consensus
-vocabulary. Validator-miner bonds are the smoothed validator-miner connections that Yuma Consensus
-uses to allocate emissions — each bond records how consistently a validator has evaluated a given
-miner, weighted using an exponential moving average across consensus rounds. Coinbase is the
-per-block protocol mechanism that accumulates pending emissions each block and checks each subnet's
-epoch boundary to trigger the Yuma Consensus round where bond state is read and emission outcomes
-are calculated. The
-[Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds)
-describes the smoothed validator-miner connection, and the
-[Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase)
-documentation describes the per-block operation that detects when the next consensus round is due.
-
-Bonds accumulate across consensus rounds; coinbase determines when each round runs. Each time
-coinbase detects a subnet's epoch boundary and triggers a Yuma Consensus round, that round reads the
-current bond state to calculate miner incentives and validator dividends for the epoch. Bonds name
-the smoothed evaluation state that persists between rounds; coinbase names the per-block mechanism
-that decides when the next round fires.
-
-References:
-[Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds),
-[Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase)
-
-## Interpretation Boundaries
-
-Validator-miner bonds should be read as a consensus concept, not as a social endorsement, a
-standalone quality score, or a user-facing staking guide. The
-[Glossary](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds) connects the
-term to Yuma Consensus, and [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
-places it inside the broader clipping, bonding, and emission process.
-
-## Related Articles
-
-- [[yuma_consensus|Yuma Consensus]]
-- [[mining_and_validating|Mining and Validating]]
-- [[subnet_creation_mechanisms|Subnet Creation and Incentive Mechanisms]]
+Validator-miner bonds are consensus-reference vocabulary. They are not a staking guide, validator
+strategy, miner ranking table, or guarantee of a particular reward result. Concrete examples require
+the selected subnet, mechanism context, network environment, and relevant official source
+([Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
 ## Further Reading
 
 - [Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds)
 - [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
 - [Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema)
-- [Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)
-- [Introduction to Bittensor: Subnet development](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-- [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)
+- [How Yuma Consensus 3 Makes Bittensor More Fair](https://docs.learnbittensor.org/learn/yc3-blog)
+- [Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase)
