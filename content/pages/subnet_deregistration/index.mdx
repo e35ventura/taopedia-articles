@@ -1,208 +1,108 @@
 ---
 title: "Subnet Deregistration"
 summary:
-  "How subnet deregistration frees a slot within Bittensor's 128-subnet limit by removing the subnet
-  with the lowest EMA price among non-immune subnets."
+  "How Bittensor removes an eligible subnet when the subnet cap is full and a new subnet needs a
+  slot."
 category: "Subnets"
 tags: ["Subnets", "Tokenomics"]
 infoboxTitle: Subnet Deregistration
-infoboxCaption: Lifecycle removal by lowest EMA price.
+infoboxCaption: Slot turnover for Bittensor subnets.
 infoboxRows:
   - label: Context
     value: Subnet lifecycle
-  - label: Selects
+  - label: Cap
+    value: "128 subnet slots"
+  - label: Selection signal
     value: Lowest EMA price
-  - label: Subnet limit
-    value: "128"
-  - label: Article scope
-    value: Concept only
+  - label: Protected period
+    value: Immunity window
 ---
 
 # Subnet Deregistration
 
-Subnet deregistration is the Bittensor mechanism that removes a subnet from the network to make room
-for a new one. The official
-[Subnet Deregistration](https://docs.learnbittensor.org/subnets/subnet-deregistration) documentation
-describes it as a lifecycle process that maintains network quality by removing weaker subnets so new
-subnets can register within the network's fixed subnet limit.
+Subnet deregistration is the Bittensor subnet-lifecycle mechanism that frees a subnet slot when the
+network is full. The core case is simple: if the 128-slot cap is already occupied, adding another
+subnet requires one eligible subnet to leave first
+([Subnet Deregistration](https://docs.learnbittensor.org/subnets/subnet-deregistration)).
 
-## Why Subnets Get Deregistered
+## Why the Cap Matters
 
-Bittensor caps how many subnets can occupy the network at once. The
-[Subnet Deregistration](https://docs.learnbittensor.org/subnets/subnet-deregistration) documentation
-states the network supports up to 128 subnet slots, while
-[Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets) provides the
-broader subnet context. Once that limit is full, a new subnet cannot register unless an existing one
-leaves.
+Bittensor treats subnet capacity as a bounded resource. The subnet cap keeps the network from
+growing by unlimited slot creation, while the deregistration rule gives the system a way to rotate
+capacity toward subnets with stronger market support
+([Subnet Deregistration](https://docs.learnbittensor.org/subnets/subnet-deregistration),
+[Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)).
 
-Deregistration addresses that pressure by efficiency. The documentation frames it as removing
-subnets that consume TAO emissions without providing value and unlocking the TAO resources locked in
-those subnet pools, so capacity flows toward subnets that hold more market value.
+This makes deregistration part of subnet lifecycle vocabulary rather than a general failure label.
+It is about freeing one subnet slot under a documented cap, not about judging every miner,
+validator, or application running inside every subnet.
 
-## How a Subnet Is Selected
+## Selection Rule
 
-The process is triggered by demand for a slot. The
-[Subnet Deregistration](https://docs.learnbittensor.org/subnets/subnet-deregistration) documentation
-explains that when the subnet limit is reached and a new subnet attempts to register, the network
-selects a subnet to remove rather than rejecting the newcomer outright.
+When the cap is full, the eligible subnet with the lowest exponential moving average price is the
+removal candidate. EMA price is a smoothed alpha-price signal, so the rule is tied to market value
+over time rather than a one-moment price tick
+([Subnet Deregistration](https://docs.learnbittensor.org/subnets/subnet-deregistration),
+[Glossary: Alpha Price](https://docs.learnbittensor.org/resources/glossary#alpha-price)).
 
-The selection metric is market price, not a generic performance grade. The documentation states that
-the subnet chosen for deregistration is the non-immune subnet with the lowest EMA price, meaning its
-exponential moving average of alpha price. Here, "underperforming" is a conceptual shorthand: the
-actual selection compares EMA price across eligible subnets. The on-chain behavior behind this lives
-in the Subtensor
-[network source code](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/subnet.rs).
+That distinction matters for interpretation. "Lowest EMA price" is the documented comparison, while
+"weak subnet" is only shorthand. The mechanism does not require a manual content review, a social
+vote, or a broad quality essay about the subnet.
 
-## Immunity and Rate Limiting
+## Immunity and Timing
 
-New subnets are not removed immediately. The
-[Subnet Deregistration](https://docs.learnbittensor.org/subnets/subnet-deregistration) documentation
-describes an immunity period, currently about four months, during which a freshly registered subnet
-is protected from deregistration, giving it time to establish its EMA price.
+Newer subnets can be protected by an immunity window, which keeps a freshly created subnet out of
+the removal comparison while it has time to establish price history. Deregistration is also paced by
+rate limits, so slot turnover belongs to the same family of delayed, bounded network actions as
+other sensitive subnet lifecycle changes
+([Subnet Deregistration](https://docs.learnbittensor.org/subnets/subnet-deregistration),
+[Rate Limits in Bittensor](https://docs.learnbittensor.org/learn/chain-rate-limits)).
 
-The mechanism is also paced. The documentation notes a rate-limiting window of about two days
-between registrations and deregistrations, which connects subnet lifecycle changes to the broader
-[Rate Limits in Bittensor](https://docs.learnbittensor.org/learn/chain-rate-limits) model that
-spaces sensitive chain actions over time.
+The practical reading is that selection is not just "lowest price wins removal." Eligibility,
+immunity, and timing are part of the concept. A subnet can have a low market signal and still be
+outside the comparison if the protected window applies.
 
-## What Happens When the Cap Is Full
+## Creation Pressure
 
-The 128-subnet limit is not just a registration quota on paper. When every slot is occupied, a new
-subnet creator cannot add another market unless something else leaves the network. The official
-[Subnet Deregistration](https://docs.learnbittensor.org/subnets/subnet-deregistration) documentation
-describes that pressure as the trigger: a registration attempt when the cap is full can cause the
-network to remove an existing subnet rather than reject the newcomer outright.
+Subnet deregistration is coupled to subnet creation pressure. A full cap creates the need for slot
+turnover; without that pressure, the concept is not just a standing ranking table. The lifecycle
+pair is easier to read as "create a slot" and "free a slot" rather than as unrelated operations
+([Subnet Deregistration](https://docs.learnbittensor.org/subnets/subnet-deregistration),
+[Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet)).
 
-That makes deregistration part of subnet creation economics, not only subnet failure vocabulary. A
-creator evaluating whether to register should understand that the cap can force lifecycle turnover
-through market-price comparison among eligible subnets, not through a manual review of subnet
-content. Current slot occupancy and immunity status belong in live chain data and official
-references rather than in a static article quote.
+This boundary separates deregistration from ordinary subnet analysis. A reader can understand the
+mechanism without listing every possible subnet, comparing teams, or turning the article into a
+status dashboard.
 
-References: [Subnet Deregistration](https://docs.learnbittensor.org/subnets/subnet-deregistration),
-[Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)
+## Environment Context
 
-## How EMA Price Drives Selection
+Localnet, testnet, and mainnet examples do not carry the same weight. A localnet example can show
+how the lifecycle rule behaves in an isolated development environment, while testnet and mainnet
+belong to separate network contexts with separate histories
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks),
+[Introduction to Bittensor: Subnet development](https://docs.learnbittensor.org/learn/introduction#subnet-development)).
 
-Selection uses the lowest exponential moving average of alpha price among non-immune subnets. The
-documentation uses market price rather than a subjective performance score, which keeps the removal
-rule tied to the alpha-price context described in Bittensor tokenomics vocabulary. A subnet still
-inside its immunity window is excluded from that comparison so a newly registered market has time to
-establish price history.
+Keeping the environment attached prevents overreading examples. A demonstration outside mainnet can
+be useful for learning the rule, but it is not evidence that a production subnet has left the main
+Bittensor network.
 
-Readers should not treat "lowest EMA price" as a promise about any specific subnet's future or as a
-live ranking table. It is the documented selection signal when the cap binds and a new registration
-needs a slot. Exact immunity lengths, rate limits, and market conditions can change on chain, so
-operational decisions should use current official references.
+## Concept Boundaries
 
-References: [Subnet Deregistration](https://docs.learnbittensor.org/subnets/subnet-deregistration),
-[Glossary: Alpha Price](https://docs.learnbittensor.org/resources/glossary#alpha-price),
-[Subtensor network source code](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/subnet.rs)
+Subnet deregistration removes a subnet slot. It should be kept separate from miner or validator
+deregistration, which concerns a role slot inside a subnet that continues to exist. The shared word
+"deregistration" can obscure the level being discussed, so the article's term is the whole-subnet
+lifecycle case
+([Subnet Deregistration](https://docs.learnbittensor.org/subnets/subnet-deregistration),
+[Glossary: Deregistration](https://docs.learnbittensor.org/resources/glossary#deregistration)).
 
-## Development Stage Context
-
-The
-[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from local testing to testchain and then mainchain. For
-subnet deregistration, that sequence changes how readers should interpret examples of subnet
-removal.
-
-In local testing, subnet deregistration can show how cap pressure or lifecycle logic is represented
-inside an isolated environment. That is useful for checking the concept, but it does not show that a
-public subnet has been removed from the production network.
-
-On testchain, subnet deregistration behavior can be observed in a shared testing network. This gives
-stronger evidence about how slot limits, immunity windows, rate limits, and EMA-price selection
-interact than a private local run, while still keeping the result separate from production mainchain
-activity.
-
-On mainchain, subnet deregistration belongs to live network lifecycle state. The
-[Subnet Deregistration](https://docs.learnbittensor.org/subnets/subnet-deregistration) documentation
-describes removal when the subnet limit is reached, so production readings should keep the network,
-slot cap, immunity status, EMA-price context, and block timing attached.
-
-The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
-separates mainnet, testnet, and localnet. A subnet-deregistration example in one environment should
-not be read as identical evidence about subnet removal in another environment.
-
-This distinction matters because subnet deregistration removes an entire subnet context, not one
-participant UID. The network environment explains what kind of evidence the example provides, while
-the cap and eligibility context explain why a subnet would be in scope.
-
-For readers, this keeps subnet-deregistration examples from sounding stronger than their environment
-supports. Local, testchain, and mainchain contexts can all contain subnet deregistration language,
-but they do not carry the same interpretive weight.
-
-## Subnet Removal Versus UID Removal
-
-Subnet deregistration removes an entire subnet to free a network slot. Miner or validator
-deregistration, by contrast, removes a participant from a UID slot inside a subnet that continues to
-exist. The official subnet deregistration page describes whole-subnet lifecycle removal, while
-mining and validating documentation describe participant replacement when registration pressure or
-performance rules require a slot change inside an active market.
-
-Mixing those levels makes subnet policy harder to read. A low-performing miner can be replaced
-without dissolving the subnet itself. A subnet deregistration event changes which netuid markets
-exist at the network level. Keeping the two lifecycle events separate prevents a participant removal
-story from being mistaken for an entire subnet sunset.
-
-References: [Subnet Deregistration](https://docs.learnbittensor.org/subnets/subnet-deregistration),
-[Glossary: Deregistration](https://docs.learnbittensor.org/resources/glossary#deregistration),
-[Miner Deregistration](https://docs.learnbittensor.org/miners#miner-deregistration)
-
-## Related Concepts
-
-The [Subnet Deregistration](https://docs.learnbittensor.org/subnets/subnet-deregistration) lifecycle
-should be separated from participant deregistration. Subnet deregistration removes an entire subnet
-to free a network slot, while
-[deregistration](https://docs.learnbittensor.org/resources/glossary#deregistration) can also refer
-to removing a miner or validator from a UID slot inside a subnet.
-
-The selection rule depends on alpha-price context, not a manual review of subnet content. The subnet
-deregistration documentation describes the target as the non-immune subnet with the lowest EMA
-price, while the [Alpha Price](https://docs.learnbittensor.org/resources/glossary#alpha-price)
-glossary entry defines alpha price as the value of a subnet's alpha token relative to TAO. The
-non-immune qualifier matters because a new subnet can be protected by an
-[immunity period](https://docs.learnbittensor.org/resources/glossary#immunity-period) while it has
-time to establish market history.
-
-Rate limits and settlement context describe what happens around the lifecycle event.
-[Rate limits](https://docs.learnbittensor.org/learn/chain-rate-limits) pace subnet registrations and
-deregistrations; they do not decide which subnet is selected. If a subnet dissolves,
-[protocol alpha](https://docs.learnbittensor.org/resources/glossary#protocol-alpha) is part of the
-tokenomics settlement context rather than an ordinary participant-held stake.
-
-## Reader Boundary
-
-Subnet deregistration should not be read as a prediction about any specific subnet, a live ranking,
-or a step-by-step guide. The subnet limit, immunity period, and rate-limit values can change on
-chain, so current figures belong in official references and live chain state. This article describes
-the concept of removing the lowest-EMA-price subnet to free a slot.
-
-## Relationship to Subnet Registration
-
-Subnet deregistration and subnet registration are related but distinct lifecycle events. The
-[Subnet Deregistration](https://docs.learnbittensor.org/subnets/subnet-deregistration) documentation
-describes deregistration as triggered when the 128-subnet limit is reached and a new subnet attempts
-to register, with the network removing the lowest-EMA-price non-immune subnet so the registration
-can succeed. The [Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet)
-documentation describes registration as the on-chain creation step that pays the registration burn
-and assigns a new netuid.
-
-For readers, the two act on the 128-slot cap from opposite sides. Subnet registration is the act
-that tries to add a subnet to the network, while subnet deregistration is the act that can fire when
-that addition would exceed the limit. Registration produces the netuid; deregistration removes it. A
-reader who understands subnet registration as the lifecycle's "in" event can use subnet
-deregistration as the corresponding "out" event that keeps the cap from binding new creators.
-
-References: [Subnet Deregistration](https://docs.learnbittensor.org/subnets/subnet-deregistration),
-[Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet)
+It should also be kept separate from predictions. The concept covers the cap, eligibility, EMA price
+comparison, immunity window, and timing context. Exact future removals, changing parameter values,
+and operational decisions belong in up-to-date network references.
 
 ## Further Reading
 
 - [Subnet Deregistration](https://docs.learnbittensor.org/subnets/subnet-deregistration)
 - [Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)
-- [Introduction to Bittensor: Subnet development](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-- [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)
+- [Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet)
 - [Rate Limits in Bittensor](https://docs.learnbittensor.org/learn/chain-rate-limits)
-- [Subtensor network source code](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/subnet.rs)
+- [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)
