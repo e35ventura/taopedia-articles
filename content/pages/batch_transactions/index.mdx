@@ -36,6 +36,11 @@ call keeps its own purpose, inputs, and possible result
 That makes batching useful as grouping vocabulary. It does not turn several runtime actions into a
 single conceptual action, and it does not replace the need to understand what each inner call does.
 
+The grouped structure also keeps the evidence layered. The batch describes the outer wrapper, while
+the inner calls still need their own action references and surrounding chain evidence
+([Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions),
+[Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics)).
+
 ## Failure Behavior
 
 Batch forms differ in what happens after an inner action fails. At a reference level, the important
@@ -46,6 +51,12 @@ actions to succeed together, or continues evaluating later actions
 This failure boundary is part of the batch form. The same inner call can have different practical
 meaning depending on the wrapper around it.
 
+Batch evidence has two layers: the wrapper and the inner action. A failure or success signal needs
+the batch form, the relevant inner call, and the surrounding runtime evidence before it is read as
+an outcome for the whole group
+([Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions),
+[Subtensor Error Codes](https://docs.learnbittensor.org/errors)).
+
 ## Fee Boundary
 
 Batching changes grouping, but it does not make the inner actions free. Bittensor's fee
@@ -55,6 +66,11 @@ documentation explains that batch fees aggregate inner-action fee behavior and a
 
 That keeps batch vocabulary separate from fee vocabulary. The batch describes how calls are grouped;
 the fee reference explains how costs are counted.
+
+Fee evidence belongs with both layers. The wrapper contributes overhead, and the inner actions still
+carry their own fee context. A batch cost depends on more than the number of calls alone
+([Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees),
+[Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions)).
 
 ## Read and Write Boundary
 
@@ -76,6 +92,27 @@ evidence about what happened afterward
 
 Those surfaces should stay in their own lanes. A batch can be one outer transaction while still
 containing several actions that need separate interpretation.
+
+Events can help identify runtime records emitted around the processed activity. Storage can help
+show state after processing. Error codes can identify rejection categories when processing fails
+([Subtensor Events](https://docs.learnbittensor.org/subtensor-api/events),
+[Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage),
+[Subtensor Error Codes](https://docs.learnbittensor.org/errors)).
+
+Those signals complement the batch reference rather than replacing it. The batch page explains the
+grouping form, while events, storage, and errors help interpret what the selected network recorded
+around that grouped activity.
+
+## Inner-Action Scope
+
+An inner action keeps its own meaning inside the batch. A staking action, a serving update, and
+another runtime call can be grouped by a wrapper while still pointing to different action families
+([Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions),
+[Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics)).
+
+That scope prevents batch language from flattening every grouped action into one concept. The batch
+is the packaging layer; the inner action reference is still needed for the action's purpose, fee
+context, and possible failure category.
 
 ## Network Boundary
 
