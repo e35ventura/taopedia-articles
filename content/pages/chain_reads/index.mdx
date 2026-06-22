@@ -39,6 +39,11 @@ read itself does not move TAO, change stake, register a role, or alter subnet se
 This distinction matters because inspection and action answer different questions. A read can show
 what is visible on-chain, while an extrinsic asks the runtime to process an action.
 
+The fee boundary follows the same split. Bittensor fee documentation separates free reads from
+state-changing submissions, so a read can inform a reader without becoming the fee-bearing action
+itself ([Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees),
+[Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics)).
+
 ## Inspection Surfaces
 
 Different read targets answer different questions. Storage entries expose stored chain state, events
@@ -53,6 +58,14 @@ what a selected surface contains, but it does not by itself explain every cause 
 state
 ([Inspecting the Chain with Polkadot.js](https://docs.learnbittensor.org/concepts/inspecting-the-chain)).
 
+That surface distinction keeps read evidence precise. Storage entries describe stored state, events
+describe emitted records, constants describe runtime reference values, and blocks describe ordering
+context. A chain read should preserve which surface supplied the evidence
+([Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage),
+[Subtensor Events](https://docs.learnbittensor.org/subtensor-api/events),
+[Subtensor Constants](https://docs.learnbittensor.org/subtensor-api/constants),
+[Glossary: Block](https://docs.learnbittensor.org/resources/glossary#block)).
+
 ## Fee Boundary
 
 Read-only inspection is separate from state-changing actions, so fee language belongs with the
@@ -62,6 +75,33 @@ action unless the point is specifically that a read is free
 
 That boundary keeps chain-read vocabulary from being treated as transaction vocabulary. A read can
 inform a later decision, but the read itself is not the fee-bearing action.
+
+## Evidence Context
+
+Chain reads are evidence of visible public chain state from the selected read surface. They are
+strongest when paired with the surface type being used: storage state, an emitted event, a runtime
+constant, or a block-context observation
+([Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage),
+[Subtensor Events](https://docs.learnbittensor.org/subtensor-api/events),
+[Subtensor Constants](https://docs.learnbittensor.org/subtensor-api/constants),
+[Glossary: Block](https://docs.learnbittensor.org/resources/glossary#block)).
+
+That evidence still has limits. A storage read can show a recorded value, but surrounding mechanism
+documentation may be needed to explain why the value exists. An event can show that runtime activity
+was emitted, but the event name is not the same as the full action reference
+([Subtensor Events](https://docs.learnbittensor.org/subtensor-api/events),
+[Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics)).
+
+## Constants and Stored State
+
+Constants and storage entries are both readable, but they do not answer the same question. Constants
+name runtime reference values, while storage entries expose state stored by the chain
+([Subtensor Constants](https://docs.learnbittensor.org/subtensor-api/constants),
+[Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage)).
+
+This helps keep chain-read prose from flattening every read into one category. Reading a constant is
+reference inspection; reading storage is state inspection. Both can be chain reads, but the source
+surface changes how the result should be described.
 
 ## Network Boundary
 
@@ -73,6 +113,12 @@ chain history of another
 
 The same storage key, event name, or block concept can appear across environments while pointing to
 different chain histories.
+
+That means a chain-read example needs its network context attached when the observation matters. The
+Bittensor Networks reference separates the environments, and the inspecting-the-chain guide places
+reads inside the selected chain context
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks),
+[Inspecting the Chain with Polkadot.js](https://docs.learnbittensor.org/concepts/inspecting-the-chain)).
 
 ## What Chain Reads Do Not Mean
 
