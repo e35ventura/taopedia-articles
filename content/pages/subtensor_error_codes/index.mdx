@@ -182,6 +182,79 @@ Similarly, standard errors name recognizable Subtensor conditions, but the short
 the action and network around it. The code is a compact index into the failure vocabulary, not a
 replacement for the surrounding chain evidence.
 
+## Standard Outline Is Not Exhaustive
+
+The [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor) page organizes
+named failures into readable themes such as network and subnet checks, hotkey and coldkey checks,
+stake and balance checks, weight-setting checks, and rate-limiting checks.
+
+Official documentation also states that this outline is provided for high-level reference and is not
+exhaustive. Readers who need every runtime variant are directed to the generated
+[Subtensor API Errors](https://docs.learnbittensor.org/subtensor/api/errors) reference instead.
+
+That split matters when a short error name does not appear in the standard outline. The themed list
+still helps a reader guess the failure domain, while the API reference carries the fuller catalog of
+runtime error variants grouped by pallet.
+
+The same distinction separates subnet-presence labels from stake-and-balance labels. A
+subnet-missing signal and a not-enough-stake signal can both arrive as compact names, but the
+standard-error themes place them in different reading paths.
+
+Standard-error vocabulary therefore names common Bittensor rejection themes, not the complete error
+inventory for every chain build.
+
+References: [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor),
+[Subtensor API Errors](https://docs.learnbittensor.org/subtensor/api/errors)
+
+## Custom Errors Use an Invalid Transaction Wrapper
+
+Most Bittensor network failures share a common returned shape with separate `code`, `message`, and
+`data` fields ([Subtensor Error Codes](https://docs.learnbittensor.org/errors)).
+
+Custom errors follow that same outer envelope. Official documentation shows them appearing with code
+`1010` and message `Invalid Transaction`, while the `data` field carries `Custom error:` followed by
+the numeric code ([Subtensor Custom Errors](https://docs.learnbittensor.org/errors/custom)).
+
+The wrapper and the Bittensor code therefore answer different questions. The outer
+invalid-transaction label marks a rejected transaction at the chain interface, and the number
+embedded in `data` selects the row in the custom-error table that explains the Bittensor-specific
+condition.
+
+A reader who stops at the number alone still needs that table row. Custom error `1`, for example,
+maps to `StakeAmountTooLow`, which states that the staking, unstaking, or moving amount is below the
+documented minimum TAO equivalent
+([Subtensor Custom Errors](https://docs.learnbittensor.org/errors/custom)).
+
+The numeric code is the index into Bittensor's custom vocabulary, not the full explanation by
+itself.
+
+References: [Subtensor Error Codes](https://docs.learnbittensor.org/errors),
+[Subtensor Custom Errors](https://docs.learnbittensor.org/errors/custom)
+
+## Rate-Limit Labels Split by Action
+
+Rate-limit documentation describes block-based cooldowns across Bittensor, but the custom-error
+table carries separate labels for different action families rather than one generic timing error
+([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits),
+[Subtensor Custom Errors](https://docs.learnbittensor.org/errors/custom)).
+
+`RateLimitExceeded` covers too many submitted transactions outside
+[axon](https://docs.learnbittensor.org/resources/glossary#axon) serving paths.
+`ServingRateLimitExceeded` applies when an axon serving action exceeds its own limit.
+`EvmKeyAssociateRateLimitExceeded` marks a separate limit on EVM key association actions.
+
+Official rate-limit guidance also notes that cooldown timing starts after a rate-limited operation
+succeeds, while unsuccessful operations may be retried. The error label therefore describes a
+rejected attempt, not automatic proof that every follow-up must wait through the full cooldown
+window.
+
+Reading the specific rate-limit error name next to the action being attempted keeps timing failures
+separate from balance, subnet, or authorization rejections that can look similar at the interface
+layer.
+
+References: [Subtensor Custom Errors](https://docs.learnbittensor.org/errors/custom),
+[Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)
+
 ## Further Reading
 
 - [Subtensor Error Codes](https://docs.learnbittensor.org/errors)
