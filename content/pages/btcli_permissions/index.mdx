@@ -120,6 +120,75 @@ This article explains the permission model. It does not list every BTCLI subcomm
 reference table, or provide wallet procedures. For the exact current command requirements, readers
 should use the official BTCLI permissions guide and reference documentation.
 
+## Config Setup Sits Outside Signing Authority
+
+The official
+[Bittensor CLI: Permissions Guide](https://docs.learnbittensor.org/btcli/btcli-permissions) treats
+configuration setup as separate from signing authority. Choosing a target network and setting where
+wallet material is stored does not require a coldkey private key, a hotkey private key, or any other
+signing credential.
+
+Those setup actions are meant to run on every BTCLI workstation type, including permissionless,
+hotkey, and coldkey environments, because they initialize the tool rather than authorize on-chain
+changes. Network selection and wallet storage location therefore belong to CLI preparation, not to
+the same permission layer as transfers, staking, registration, or weight setting
+([Coldkey and Hotkey Workstation Security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security)).
+
+That split helps explain why a machine can be correctly configured for BTCLI and still unable to
+perform signed actions. Configuration answers where the CLI looks and which chain it targets;
+[Coldkey](https://docs.learnbittensor.org/resources/glossary#coldkey) and
+[Hotkey](https://docs.learnbittensor.org/resources/glossary#hotkey) authority still determine
+whether private signing material is present when a state-changing action is attempted.
+
+References:
+[Bittensor CLI: Permissions Guide](https://docs.learnbittensor.org/btcli/btcli-permissions),
+[Coldkey and Hotkey Workstation Security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security)
+
+## Hotkey Workstations Keep Public Coldkey Context
+
+Official permissions guidance describes a hotkey workstation as carrying two different key materials
+at once. It holds the hotkey private key needed for miner or validator signing, and it also holds
+the corresponding coldkey public key for the wallet that owns that hotkey
+([Bittensor CLI: Permissions Guide](https://docs.learnbittensor.org/btcli/btcli-permissions)).
+
+That pairing is not the same as loading a coldkey private key onto an operational server. The
+public-side coldkey material lets the workstation stay linked to the correct wallet identity while
+operational signing still flows through the hotkey layer described in
+[Glossary: Hotkey-Coldkey Pair](https://docs.learnbittensor.org/resources/glossary#coldkey-hotkey-pair)
+vocabulary.
+
+The same guide also notes that TAO and alpha stake can move only with coldkey authority, while a
+leaked hotkey can be replaced through coldkey-controlled recovery. A hotkey workstation therefore
+supports subnet operation without granting custody authority, which is why the permissions model
+treats hotkey exposure as serious but not equivalent to coldkey compromise.
+
+References:
+[Bittensor CLI: Permissions Guide](https://docs.learnbittensor.org/btcli/btcli-permissions),
+[Glossary: Hotkey-Coldkey Pair](https://docs.learnbittensor.org/resources/glossary#coldkey-hotkey-pair)
+
+## Subnet Creation Burns Follow a Dynamic Auction
+
+Some BTCLI actions fail for economic reasons even when the correct signer is present. Subnet
+creation is one example where the required TAO amount is not fixed. The official
+[Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet) documentation describes
+subnet creation burn cost as dynamic: the price doubles whenever a new subnet is created and then
+lowers gradually over time.
+
+The permissions guide presents that mechanism as a distributed auction in which the current creation
+price reflects what participants are willing to pay under uncertainty about future demand
+([Bittensor CLI: Permissions Guide](https://docs.learnbittensor.org/btcli/btcli-permissions)). That
+is a different resource question from ordinary transfer balance checks or the
+[neuron registration burn](https://docs.learnbittensor.org/resources/glossary#register) paid when a
+hotkey registers on an existing subnet.
+
+A coldkey with signing authority can still fail subnet creation if the wallet does not hold enough
+TAO for the current burn cost at submission time. The
+[Glossary: Burn cost](https://docs.learnbittensor.org/resources/glossary#burn-cost) label therefore
+marks a moving economic gate tied to recent subnet creation activity, not a static fee table entry.
+
+References: [Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet),
+[Glossary: Burn cost](https://docs.learnbittensor.org/resources/glossary#burn-cost)
+
 ## Relationship to Coldkeys
 
 BTCLI permissions and a coldkey are related but different scopes in Bittensor wallet authority
