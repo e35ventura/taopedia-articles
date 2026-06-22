@@ -26,7 +26,7 @@ Transaction fees are costs the Bittensor chain can attach to state-changing acti
 The term describes chain-processing costs. It is separate from chain reads, swap fees, batch
 grouping, and every other economic effect that can appear near a transaction.
 
-## Base Fee Context
+## Base Fee Components
 
 The official fee documentation describes base transaction fees as having weight and length
 components ([Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees)).
@@ -34,11 +34,14 @@ components ([Transaction Fees in Bittensor](https://docs.learnbittensor.org/lear
 Weight is tied to computational load, while length is tied to transaction size. This base-fee
 context belongs to the state-changing action, not to passive observation.
 
-Fee-bearing extrinsics pay both components from the sender's TAO free balance
-([Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees)). The weight fee is
-based on the `ref_time` part of transaction weight, and the length fee is charged per encoded byte.
+Fee-bearing extrinsics pay both components from the sender's TAO free balance. The weight fee is
+based on the `ref_time` part of transaction weight, and the length fee is charged per encoded byte
+([Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees)).
+
 The fee documentation states the total base transaction fee as the sum of the weight fee and the
-length fee.
+length fee. For length, the documented charge is 1 rao per byte of the encoded extrinsic. For
+weight, the documented formula scales the `ref_time` component by `50,000 / 10^9` rao
+([Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees)).
 
 This makes weight a fee-input measure, not a promise that an extrinsic will be included or succeed.
 The extrinsic reference still describes the runtime call being submitted, while the fee reference
@@ -46,19 +49,11 @@ describes how a fee-bearing submission is charged
 ([Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics),
 [Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees)).
 
-For length, the documented charge is 1 rao per byte of the encoded extrinsic
-([Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees)). For weight, the
-documented formula scales the `ref_time` component by `50,000 / 10^9` rao.
+A base-fee example can therefore describe the charge formula without describing every economic
+effect around the transaction. Swap fees, batch wrapper overhead, and recycling accounting remain
+nearby fee concepts, but they answer different parts of the cost picture.
 
-The same fee documentation places paid base fees in recycling context. Collected base fees are
-deducted from `TotalIssuance`, which connects the fee event to Bittensor's recycling and burning
-accounting context ([Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees),
-[Recycling and burning](https://docs.learnbittensor.org/resources/glossary#recycling-and-burning)).
-
-That boundary also keeps base-fee language separate from later economic effects. The fee page can
-explain the cost category without turning every nearby cost into the same transaction-fee concept.
-
-## Fee-Free and Alpha Fallback Cases
+## Fee-Free and Alpha Cases
 
 The fee documentation lists fee-free extrinsics that pay neither the weight component nor the length
 component. The examples include `set_weights`, `commit_weights`, `reveal_weights`, and `sudo`
@@ -71,7 +66,11 @@ fee documentation describes transaction fees being paid in alpha instead
 The fee-free list is about whether the chain charges the base components at all. Alpha fallback is
 about the asset used to pay fees when a fee-bearing transaction cannot be covered by TAO.
 
-## Read and Write Boundary
+These cases should not be collapsed into one rule. A fee-free extrinsic is listed as not paying the
+base components; alpha fallback is still a fee-payment path, only with a different asset source
+([Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees)).
+
+## Reads, Swaps, and Batches
 
 The fee documentation identifies chain reads as free
 ([Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees)).
@@ -81,7 +80,10 @@ change. Fee language should stay attached to state-changing actions rather than 
 inspection ([Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage),
 [Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees)).
 
-## Swap Fee Boundary
+The same distinction helps when a read appears immediately before a transaction. The read can show
+state used by the user or interface, while the later submitted action is the fee-bearing event
+([Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees),
+[Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage)).
 
 The fee documentation treats swap fees as separate from base transaction fees
 ([Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees)).
@@ -95,8 +97,6 @@ operations ([Transaction Fees in Bittensor](https://docs.learnbittensor.org/lear
 percentage belongs to the amount-based swap-fee side of the action, while the base transaction fee
 still follows weight and length.
 
-## Batch Context
-
 Batch transaction documentation describes grouped calls, and the fee documentation describes batch
 fees as combining inner-call behavior with batch-wrapper overhead
 ([Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions),
@@ -105,7 +105,11 @@ fees as combining inner-call behavior with batch-wrapper overhead
 This means grouped activity should still be read through its components. A batch is a grouped
 submission pattern, not a way to erase fee-bearing activity inside the batch.
 
-## Recycling Context
+Together, these neighboring concepts keep the transaction-fee term narrow. Reads are inspection,
+swap fees are liquidity-linked, and batches describe grouped submission; none of those labels
+replace the base fee components.
+
+## Recycling and Network Context
 
 The recycling and burning glossary entry describes collected transaction fees as recycled tokens
 deducted from the issuance record for future emission
@@ -114,7 +118,9 @@ deducted from the issuance record for future emission
 That places transaction fees near issuance accounting. Recycling explains where collected fees go in
 the issuance record; it does not change what the fee was charged for.
 
-## Network Boundary
+The fee documentation also places paid base fees in that accounting context by describing collected
+base fees as deducted from `TotalIssuance`
+([Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees)).
 
 Bittensor documentation separates mainnet, testnet, and localnet contexts
 ([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
@@ -123,16 +129,20 @@ A fee example from one environment should not be treated as proof about another 
 Localnet examples can show controlled behavior, testnet examples can show shared non-production
 conditions, and mainnet references need separate support from mainnet-specific material.
 
-## What Transaction Fees Do Not Mean
+Network context is especially important for examples. A formula or category from the fee reference
+can describe the concept, while an observed fee from one environment remains an observation from
+that environment.
+
+## Reading the Term
 
 Transaction fees do not name a permanent quote for every action, a calculator result, or a complete
 description of all costs that can appear near a transaction
 ([Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees),
 [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
 
-Keeping that boundary preserves the term's narrower meaning. Transaction fees identify
-chain-processing costs, while free reads, swap fees, batch grouping, recycling, and network context
-describe neighboring parts of the system.
+Use the term for chain-processing costs tied to state-changing actions. Use the neighboring term
+when the question is a read, swap fee, batch wrapper, recycling accounting record, or
+network-specific observation.
 
 ## Further Reading
 
