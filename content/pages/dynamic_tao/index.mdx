@@ -124,6 +124,89 @@ particular conversion result
 For readers, the stable concept is the reserve-based mechanism. Specific observed prices, slippage,
 and pool state belong to the network and block context where they are queried.
 
+Finalizing three distinct sections that avoid overlap with the article's existing content.
+
+## Root Subnet Keeps TAO-Denominated Stake
+
+The [Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)
+documentation describes the
+[Root Subnet](https://docs.learnbittensor.org/resources/glossary#root-subnetsubnet-zero), also
+called Subnet Zero, as the only subnet without its own alpha currency. No miners can register there,
+and no validation work is performed on that market path.
+
+Validators can still register on the Root Subnet, and
+[TAO](https://docs.learnbittensor.org/resources/glossary#tao) holders can stake to them as they
+would on any other subnet. That creates a subnet-agnostic staking route where support remains
+expressed in network TAO rather than in a subnet-specific
+[alpha token](https://docs.learnbittensor.org/resources/glossary#alpha-tokens).
+
+Dynamic TAO therefore needs a clear exception at subnet zero. On alpha subnets, stake held by a
+hotkey is tracked in that subnet's alpha units. On the Root Subnet, the same staking vocabulary
+stays on the TAO side only
+([Staking and delegation overview](https://docs.learnbittensor.org/staking-and-delegation/delegation)).
+
+That exception also changes which pool pieces apply. Alpha subnets pair TAO reserve with alpha
+reserve inside an
+[automated market maker (AMM)](https://docs.learnbittensor.org/resources/glossary#automated-market-maker-amm).
+Root does not introduce a second subnet token side, so reserve-ratio and alpha-price language from
+alpha markets does not transfer directly to subnet zero reading.
+
+References: [Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets),
+[Glossary: Root Subnet/Subnet Zero](https://docs.learnbittensor.org/resources/glossary#root-subnetsubnet-zero)
+
+## Staking Positions Stay Subnet-Local
+
+Official [staking and delegation](https://docs.learnbittensor.org/staking-and-delegation/delegation)
+guidance states that staking is always local to a subnet. Each subnet operates its own AMM with
+paired TAO and alpha reserves, so a stake action belongs to the selected
+[netuid](https://docs.learnbittensor.org/resources/glossary#netuid) rather than to the network as
+one undivided balance.
+
+That locality also applies to validator choice. Staking to the same validator's hotkey on one subnet
+does not move or merge stake on another subnet; those positions remain independent even when the
+validator identity looks the same across markets.
+
+When TAO is staked on an alpha subnet, the documentation describes a reserve-side sequence rather
+than a direct balance rename. The TAO enters that subnet's TAO reserve, the pool applies the current
+exchange rate, and the matching alpha amount is drawn from alpha reserve and credited to the
+validator hotkey as subnet stake. Unstaking reverses that path by returning alpha to reserve before
+TAO is sent back to the holder's
+[coldkey](https://docs.learnbittensor.org/resources/glossary#coldkey).
+
+The sum of alpha held across hotkeys on that subnet is the subnet's alpha outstanding reading.
+Dynamic TAO therefore treats each subnet market as carrying its own stake ledger even when the same
+participant appears in several places.
+
+References:
+[Staking and delegation overview](https://docs.learnbittensor.org/staking-and-delegation/delegation),
+[Glossary: Staking](https://docs.learnbittensor.org/resources/glossary#staking)
+
+## Alpha Reserve Injection Preserves Pool Price
+
+The [Emissions](https://docs.learnbittensor.org/learn/emissions) documentation separates block-level
+injection from later reward distribution. During the injection stage, new TAO can enter a subnet's
+TAO reserve based on that subnet's emission share, and new alpha can enter the paired alpha reserve
+in proportion to that TAO injection so pool price stays stable
+([Emission: Alpha reserve injection](https://docs.learnbittensor.org/learn/emissions#alpha-reserve-injection)).
+
+That proportional alpha reserve injection is a distinct injection path from alpha allocated to alpha
+outstanding for participant rewards. TAO reserve injection grows one reserve side according to
+cross-subnet allocation, while the matched alpha reserve injection grows the other side by the
+amount needed to preserve the existing reserve ratio rather than to pay miners, validators, or
+stakers directly.
+
+[Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets) ties alpha
+price to the ratio of TAO in reserve to alpha in reserve. Keeping those sides growing together
+during emission injection therefore protects the pricing context that later staking and unstaking
+actions will read, instead of letting reserve growth on only one side rewrite the quote by itself.
+
+Injection still changes subnet liquidity, but the matched reserve growth explains why emission
+routing can add tokens to a pool without treating that step as an ordinary user swap.
+
+References:
+[Emission: Alpha reserve injection](https://docs.learnbittensor.org/learn/emissions#alpha-reserve-injection),
+[Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)
+
 ## Further Reading
 
 - [Introduction to Bittensor: Subnet development](https://docs.learnbittensor.org/learn/introduction#subnet-development)
