@@ -93,6 +93,61 @@ convenience must not remove human review entirely.
 
 Reference: [Proxies overview](https://docs.learnbittensor.org/keys/proxies)
 
+## Proxy Delegation Starts On Chain
+
+The [Proxies overview](https://docs.learnbittensor.org/keys/proxies) describes a proxy relationship
+as beginning when the safe wallet creates a proxy entry. That entry names the delegate account, the
+allowed proxy type, and an optional delay before permitted calls can run.
+
+Once the entry exists, the delegate signs with its own key material and submits permitted calls
+through the proxy extrinsic path. The safe wallet does not need to load its private key for those
+scoped operations.
+
+That on-chain registration is what makes delegation revocable. The safe wallet remains the account
+that owns assets and can add or remove proxy entries without transferring ownership to the delegate.
+
+References: [Proxies overview](https://docs.learnbittensor.org/keys/proxies),
+[Working with proxies](https://docs.learnbittensor.org/keys/proxies/working-with-proxies)
+
+## Multiple Scoped Delegates Can Coexist
+
+The [Working with proxies](https://docs.learnbittensor.org/keys/proxies/working-with-proxies) guide
+notes that one safe wallet can maintain several proxy relationships when each entry uses a different
+proxy type. Operational tasks can therefore split across narrow delegates instead of routing every
+action through one broad key.
+
+Duplicate entries that reuse the same delegate address and proxy type are rejected on chain.
+Planning should treat each proxy type as a distinct registration slot rather than expecting one
+delegate to hold overlapping entries for the same type.
+
+A NonTransfer proxy can create and remove other proxy relationships on behalf of the safe wallet.
+That supports keeping the primary coldkey offline while still rotating or revoking scoped delegates
+when workflows change
+([Coldkey and hotkey workstation security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security)).
+
+References:
+[Working with proxies](https://docs.learnbittensor.org/keys/proxies/working-with-proxies),
+[Coldkey and hotkey workstation security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security)
+
+## Proxy Wallet Signs From Its Own Account
+
+The proxy wallet is a separate Subtensor account with its own key material. The
+[Working with proxies](https://docs.learnbittensor.org/keys/proxies/working-with-proxies) guide
+treats the delegate as the account that loads its key to sign, while the safe wallet authorizes the
+relationship rather than signing every operational call directly.
+
+For fee-paying operations such as staking workflows, the delegate account may need its own TAO
+balance to cover transaction costs. That operational balance is not the same role as custody of the
+safe wallet's holdings.
+
+Delegated signing therefore happens on the proxy side, while TAO and stake authority remain under
+the safe wallet account that registered the proxy
+([Managing Your Stakes](https://docs.learnbittensor.org/keys/proxies/staking-with-proxy)).
+
+References:
+[Working with proxies](https://docs.learnbittensor.org/keys/proxies/working-with-proxies),
+[Managing Your Stakes](https://docs.learnbittensor.org/keys/proxies/staking-with-proxy)
+
 ## Relationship to Coldkey Swap
 
 Proxy wallets and coldkey swap are related but different parts of Bittensor wallet security
