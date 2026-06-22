@@ -157,6 +157,76 @@ Specific examples belong to the subnet, mechanism, network, and source that prod
 Scores, ranks, trust, bonds, incentives, and dividends describe adjacent parts of the same consensus
 process.
 
+## Weights Arrive Through the Tempo Cycle
+
+Official incentive-mechanism documentation describes validators as periodically computing
+[weight vectors](https://docs.learnbittensor.org/resources/glossary#weight-vector) from miner
+performance and transmitting those vectors to the blockchain
+([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
+
+The chain then waits for the latest ranking signals from the subnet's validators before assembling
+[weight matrices](https://docs.learnbittensor.org/resources/glossary#weight-matrix) for Yuma
+Consensus input. That collection step treats validator weights as submitted evaluation material that
+must be gathered subnet-wide rather than as one validator's standalone verdict.
+
+Epoch documentation states that validator weights are submitted during the preceding
+[tempo](https://docs.learnbittensor.org/resources/glossary#tempo), while emissions from the
+consensus pass are finalized at the end of each tempo period
+([Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch),
+[Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo)).
+
+A tempo is the subnet-specific interval, described in the glossary as a 360-block period over which
+Yuma Consensus calculates emissions from the latest available ranking weight matrix. Validator
+weights therefore belong to a recurring submission window rather than to one isolated snapshot.
+
+References:
+[Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism),
+[Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo)
+
+## Multiple Mechanisms Carry Separate Weight Sets
+
+Subnet documentation describes subnets that run more than one
+[incentive mechanism](https://docs.learnbittensor.org/resources/glossary#incentive-mechanism) as
+maintaining separate evaluation tracks rather than one blended ranking table
+([Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets)).
+
+In that layout, each validator sets weights independently for each mechanism, and each mechanism
+keeps its own weight matrix for Yuma Consensus calculations. The
+[Glossary: Weight Vector](https://docs.learnbittensor.org/resources/glossary#weight-vector) notes
+the same pattern at validator scope: when multiple mechanisms are used, validators maintain separate
+weight vectors for each one.
+
+Each mechanism also keeps independent bond pools and independent emissions paths tied to the weights
+validators submit for that mechanism's work. A high weight in one mechanism's vector therefore does
+not automatically carry the same meaning in another mechanism's separate matrix on the same subnet.
+
+References:
+[Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets),
+[Glossary: Weight Matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix)
+
+## Eligibility Rules Trim Submitted Weights
+
+Not every value a validator submits survives into consensus unchanged. Epoch documentation lists
+pre-consensus filtering steps that remove certain submitted weights before stake-weighted
+aggregation begins
+([Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)).
+
+Self-assigned weights are removed so validators cannot vote for themselves, with an exception for
+the subnet creator when that role exists on the subnet. Weights tied to a neuron before that
+neuron's latest [registration](https://docs.learnbittensor.org/resources/glossary#register) are also
+dropped so stale assignments do not follow re-registered identities.
+
+Only rows from validators holding a
+[validator permit](https://docs.learnbittensor.org/resources/glossary#validator-permit) influence
+consensus. The glossary describes that permit as a validation-rights flag required for setting
+weights and participating in consensus, awarded to the top neurons by stake weight on the subnet.
+
+Together, those checks limit which submitted validator weights can enter Yuma Consensus at all.
+
+References:
+[Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch),
+[Glossary: Validator Permit](https://docs.learnbittensor.org/resources/glossary#validator-permit)
+
 ## Further Reading
 
 - [Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#validator-weights)
