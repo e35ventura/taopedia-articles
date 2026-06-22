@@ -92,6 +92,76 @@ The concise reading is: Drand time-lock encryption delays readability of committ
 information until a future Drand round, helping Commit Reveal reduce copied-weight behavior before
 Yuma Consensus uses the revealed weights.
 
+## Beacon Pulse Unlocks Concealed Weights
+
+Drand round numbers describe when concealed validator-weight information can become readable, but
+the unlock step also depends on the beacon pulse from the Drand network. Official Commit Reveal
+documentation states that the chain reveals committed weights when the corresponding Drand beacon
+pulse becomes available and supplies the cryptographic key needed to unlock the time-locked
+encryption ([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)).
+
+That pulse is more specific than a generic future timestamp. The committed encrypted weight data may
+already exist on chain, but the beacon output is what makes decryption possible at the intended
+moment
+([Glossary: Drand/time-lock encryption](https://docs.learnbittensor.org/resources/glossary#drandtime-lock-encryption)).
+
+Round timing and beacon pulse therefore answer different parts of the same unlock event. A Drand
+round names the schedule anchor, while the pulse names the randomness output that satisfies the
+time-lock condition for concealed validator-weight information.
+
+This makes Drand time-lock encryption easier to read beside Commit Reveal prose. The mechanism
+concerns when decryption becomes possible, and the beacon pulse is the documented trigger for that
+unlock step.
+
+References: [Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
+[Glossary: Drand/time-lock encryption](https://docs.learnbittensor.org/resources/glossary#drandtime-lock-encryption)
+
+## Concealment Length From Subnet Settings
+
+The concealment interval before reveal is configured per subnet rather than implied by Drand alone.
+Commit Reveal documentation describes a waiting period set through the commit_reveal_period
+hyperparameter and measured in tempos, with subnet owners enabling and tuning the mechanism through
+subnet hyperparameter settings
+([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+During that configured interval, committed weight information stays encrypted on chain before the
+automatic reveal step runs. The hyperparameter value defines how many tempos pass before that reveal
+timing is reached, while Drand supplies the external unlock reference used at reveal time.
+
+A timing claim should therefore name the selected subnet setting as well as the Drand unlock step.
+Two subnets can share the same Drand infrastructure but use different concealment lengths because
+their commit_reveal_period values differ
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+Subnet hyperparameter documentation groups Commit Reveal with other subnet settings that shape
+validator signal flow and epoch timing. That placement helps read the concealment interval as part
+of subnet configuration rather than as a standalone cryptography label.
+
+References: [Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+
+## Weight Matrix Follows Reveal
+
+The weight matrix collects validator weight vectors as structured input for Yuma Consensus after
+those signals are available
+([Glossary: Weight Matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+Drand time-lock encryption sits earlier in the validator-weight path. It governs when concealed
+forms of validator weight information can be decrypted inside Commit Reveal, not how revealed
+vectors are organized into subnet-level matrix form
+([Glossary: Drand/time-lock encryption](https://docs.learnbittensor.org/resources/glossary#drandtime-lock-encryption)).
+
+That order keeps timing vocabulary separate from input-structure vocabulary. Concealed submission
+and timed reveal belong to Drand time-lock encryption language; collection of revealed validator
+vectors for Yuma processing belongs to weight matrix language
+([Glossary: Weight Matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix)).
+
+References:
+[Glossary: Weight Matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix),
+[Glossary: Drand/time-lock encryption](https://docs.learnbittensor.org/resources/glossary#drandtime-lock-encryption)
+
 ## Further Reading
 
 - [Introduction to Bittensor: Subnet development](https://docs.learnbittensor.org/learn/introduction#subnet-development)
