@@ -139,6 +139,78 @@ consensus state can differ
 Localnet examples are isolated development examples. Testnet examples are shared non-production
 examples. Mainnet validator-miner bond interpretation concerns production Yuma Consensus behavior.
 
+## Stake Scales Instant Bond Allocation
+
+The
+[Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds)
+describes bond formation as starting with an instant bond for each validator-miner pair. That step
+combines a validator's [stake](https://docs.learnbittensor.org/resources/glossary#stake) with a
+penalty-adjusted evaluation input for the miner, then normalizes the result against every
+validator's contribution toward that same miner.
+
+Stake therefore scales how much instant bond mass a validator can add during a Yuma Consensus round.
+A validator with more stake can contribute a larger share of the per-miner instant bond pool when
+its evaluation input for that miner is applied. That role is different from treating bond strength
+as if it were the same thing as a staking balance.
+
+The normalization keeps instant bonds miner-relative rather than subnet-wide. Each miner's instant
+bond pool is divided among validators according to their stake-weighted evaluation inputs, so bond
+growth toward one miner does not automatically mirror bond growth toward another miner in the same
+subnet ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+That stake-scaling step sits before exponential moving average smoothing turns instant values into
+the longer-lived bond state used later in consensus.
+
+References:
+[Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
+
+## Validator Permits Retain Bond State
+
+Official bond documentation states that neurons retain
+[validator-miner bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds)
+only while they keep
+[validator permits](https://docs.learnbittensor.org/resources/glossary#validator-permit). If a
+neuron loses its validator permit, its bonds are cleared.
+
+A validator permit marks which neurons may set weights and participate in consensus inside a subnet.
+Permits are awarded to top stake-weight neurons and can change as stake ranking shifts across epochs
+([Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)).
+
+Bond clearing on permit loss is a retention rule rather than a quality judgment about past
+evaluation. A validator may have built bond state with miners, but that stored bond data does not
+carry forward once the neuron no longer holds validation rights in that subnet.
+
+That boundary keeps bond vocabulary tied to active validation authority. Bonds describe
+relationships maintained by permitted validators inside consensus, not a permanent record that
+survives loss of validation rights.
+
+References:
+[Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds),
+[Glossary: Validator Permit](https://docs.learnbittensor.org/resources/glossary#validator-permit)
+
+## Dividends Combine Bonds and Miner Outcomes
+
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) states that a validator's
+share of validator-side emissions comes from the sum of its bonds to miners, weighted by each bonded
+miner's emission outcome. [Emissions](https://docs.learnbittensor.org/learn/emissions) documentation
+also places 41% of each subnet's total emissions on the validator-and-staker side, with that
+validator allocation determined through the Yuma Consensus validator-emissions path.
+
+That pairing explains why [dividends](https://docs.learnbittensor.org/resources/glossary#dividends)
+sit downstream of both bond state and miner-side results. A strong bond to a miner matters more when
+that miner also receives a meaningful share of miner-side
+[incentives](https://docs.learnbittensor.org/resources/glossary#incentives). Bonds name the
+validator-miner relationship; incentives name the miner-side emission result that helps translate
+bonded relationships into validator-side dividends.
+
+Reading bonds without miner incentive context therefore leaves part of the dividend path unstated.
+Bonds alone do not describe a validator payout, and miner incentive outcomes alone do not show which
+validator relationships contributed to the dividend calculation.
+
+References: [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
+[Glossary: Dividends](https://docs.learnbittensor.org/resources/glossary#dividends)
+
 ## Further Reading
 
 - [Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds)
