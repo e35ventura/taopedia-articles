@@ -12,7 +12,7 @@ infoboxRows:
     value: Runtime actions
   - label: Groups
     value: Multiple calls
-  - label: Key boundary
+  - label: Key behavior
     value: Failure behavior
   - label: Fee context
     value: Inner-action fees still matter
@@ -26,6 +26,10 @@ Batch transactions group multiple Bittensor chain actions into one outer transac
 The term describes packaging. It is not a passive chain read, not a new meaning for every inner
 action, and not a way to ignore the fee or failure behavior of the calls inside the batch.
 
+The batch documentation names three utility-pallet variants: `batch`, `batch_all`, and
+`force_batch`. The variants share the same grouping idea but differ in how they handle inner-call
+failure ([Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions)).
+
 ## Grouped Action Context
 
 A batch is a container for runtime calls. The outer transaction groups the calls, while each inner
@@ -35,6 +39,11 @@ call keeps its own purpose, inputs, and possible result
 
 That makes batching useful as grouping vocabulary. It does not turn several runtime actions into a
 single conceptual action, and it does not replace the need to understand what each inner call does.
+
+The inner-call framing is important for reference prose. A batch can hold several calls, but each
+call still has its own method, parameters, and result surface
+([Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics),
+[Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions)).
 
 ## Failure Behavior
 
@@ -46,6 +55,16 @@ actions to succeed together, or continues evaluating later actions
 This failure boundary is part of the batch form. The same inner call can have different practical
 meaning depending on the wrapper around it.
 
+The basic `batch` form is for grouped calls where partial success can be acceptable. The `batch_all`
+form is the all-or-nothing variant: all inner calls must succeed together, or none of them are
+applied. The `force_batch` form continues past failures so later calls can still be evaluated
+([Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions)).
+
+That makes the variant name part of the evidence. A reader cannot infer failure semantics from the
+presence of grouping alone; the relevant distinction is which batch form wrapped the inner calls.
+The same list of inner calls can therefore describe different execution behavior under different
+batch variants.
+
 ## Fee Boundary
 
 Batching changes grouping, but it does not make the inner actions free. Bittensor's fee
@@ -55,6 +74,11 @@ documentation explains that batch fees aggregate inner-action fee behavior and a
 
 That keeps batch vocabulary separate from fee vocabulary. The batch describes how calls are grouped;
 the fee reference explains how costs are counted.
+
+The fee context also differs from the failure context. Failure behavior explains which inner calls
+can take effect; fee documentation explains how the grouped submission and its inner calls are
+charged ([Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees),
+[Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions)).
 
 ## Read and Write Boundary
 
@@ -77,6 +101,11 @@ evidence about what happened afterward
 Those surfaces should stay in their own lanes. A batch can be one outer transaction while still
 containing several actions that need separate interpretation.
 
+The selected batch form affects how those later signals are read. A failed `batch_all` has different
+meaning from a `force_batch` that records one failed inner call and still evaluates later calls
+([Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions),
+[Subtensor Error Codes](https://docs.learnbittensor.org/errors)).
+
 ## Network Boundary
 
 A batch example belongs to the Bittensor network where it is observed. Mainnet, testnet, and
@@ -98,6 +127,9 @@ or a replacement for the individual action references
 Keeping that boundary preserves the term's narrower meaning. Batch transactions identify grouping
 behavior, while extrinsics, fees, events, storage, errors, and network context describe neighboring
 parts of the system.
+
+Use the batch term when the grouping behavior matters. Use the individual extrinsic reference when
+the question is what a particular inner call does.
 
 ## Further Reading
 
