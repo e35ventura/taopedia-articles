@@ -145,6 +145,75 @@ Mainnet, testnet, and localnet are separate contexts for observed signal behavio
 be explained across those environments, but an observed EMA example belongs to the network and
 mechanism where it was observed.
 
+## Smoothing Alpha Is Not Alpha Tokens
+
+Official [Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema) documentation
+draws a hard line between the smoothing factor used in the EMA formula and the word alpha used
+elsewhere in Bittensor tokenomics. The alpha parameter in the moving-average calculation controls
+how much weight each new observation carries; it is distinct from and unrelated to
+[alpha tokens](https://docs.learnbittensor.org/resources/glossary#alpha-tokens) as subnet-specific
+currencies.
+
+That separation matters because Bittensor prose reuses alpha in several places. Consensus-based bond
+smoothing can vary alpha by validator-miner pair, while alpha tokens name subnet assets and pool
+reserves. An EMA discussion can still mention alpha as a smoothing factor without implying that the
+formula is pricing or moving an alpha-token balance.
+
+The
+[Glossary: Exponential Moving Average](https://docs.learnbittensor.org/resources/glossary#exponential-moving-average-ema)
+describes the technique as blending current and prior values through a smoothing factor. That factor
+belongs to the update rule, not to Dynamic TAO asset vocabulary. When a sentence pairs EMA with
+alpha, the useful question is whether the topic is smoothing behavior or subnet tokenomics.
+
+References:
+[Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema#mathematical-definition),
+[Glossary: Alpha Tokens](https://docs.learnbittensor.org/resources/glossary#alpha-tokens)
+
+## Flow Smoothing Keeps a Long Half-Life
+
+Subnet flow [emission](https://docs.learnbittensor.org/learn/emissions) smoothing uses an EMA with a
+thirty-day half-life and an effective window of roughly eighty-seven days, according to the official
+[subnet flow emission smoothing](https://docs.learnbittensor.org/learn/ema#subnet-flow-emission-smoothing)
+section. Each update keeps almost all of the prior smoothed value and adds only a tiny fraction from
+the current block's net [staking](https://docs.learnbittensor.org/staking-and-delegation/delegation)
+movement.
+
+The long memory is a deliberate guard against brief manipulation. Official documentation lists
+short-term staking spikes, wash-trading-style price games, and flash attacks on emissions as
+behaviors the slow EMA is meant to dampen. A
+[subnet](https://docs.learnbittensor.org/resources/glossary#subnet) comparison therefore reacts to
+sustained net [TAO](https://docs.learnbittensor.org/resources/glossary#tao) flow rather than one
+burst of activity.
+
+When smoothed net flow turns negative, official guidance also connects sustained negative flow with
+zero emission share for that subnet. The zero outcome follows the smoothed signal, not a single
+block of unstaking.
+
+References:
+[Exponential Moving Averages: Subnet Flow Emission Smoothing](https://docs.learnbittensor.org/learn/ema#subnet-flow-emission-smoothing),
+[Emission: Distribution Across Subnets](https://docs.learnbittensor.org/learn/emissions#distribution-across-subnets)
+
+## Protocol Cost Tracks a Second EMA
+
+Flow-based [subnet weights](https://docs.learnbittensor.org/resources/glossary#subnet-weights) use
+more than one smoothed input. Official EMA documentation describes a second parallel EMA that tracks
+each subnet's per-block protocol cost, using the same smoothing factor as the user-flow EMA
+([Exponential Moving Averages: Protocol Cost EMA](https://docs.learnbittensor.org/learn/ema#protocol-cost-ema)).
+
+Protocol cost in that framing counts TAO injected into the pool plus chain buys minus root staker
+claims. When net-flow accounting is active, the allocation input subtracts a scaled share of
+positive protocol cost from the smoothed staking flow rather than treating gross user flow alone as
+the full signal.
+
+Both EMAs advance every block even when net-flow accounting is toggled, so switching the accounting
+mode does not reset smoothed history. EMA vocabulary here therefore names two related smoothing
+paths—participant staking movement and protocol-side TAO movement—that combine into one net-flow
+comparison input.
+
+References:
+[Exponential Moving Averages: Protocol Cost EMA](https://docs.learnbittensor.org/learn/ema#protocol-cost-ema),
+[Glossary: Subnet Weights](https://docs.learnbittensor.org/resources/glossary#subnet-weights)
+
 ## Further Reading
 
 - [Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema)
