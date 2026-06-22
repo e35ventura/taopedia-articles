@@ -29,7 +29,7 @@ change state and involve fees
 The term is about observation. It is separate from an extrinsic, transaction, or other action that
 asks the chain to process a change.
 
-## Read and Write Boundary
+## Read Scope
 
 A chain read can show public state, metadata, blocks, storage values, or related records, but the
 read itself does not move TAO, change stake, register a role, or alter subnet settings
@@ -37,12 +37,17 @@ read itself does not move TAO, change stake, register a role, or alter subnet se
 [Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees)).
 
 This distinction matters because inspection and action answer different questions. A read can show
-what is visible on-chain, while an extrinsic asks the runtime to process an action.
+what is visible on chain, while an extrinsic asks the runtime to process a state-changing action
+([Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics)).
 
-The fee boundary follows the same split. Bittensor fee documentation separates free reads from
-state-changing submissions, so a read can inform a reader without becoming the fee-bearing action
-itself ([Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees),
-[Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics)).
+The useful reference point is the source of evidence. A chain read is evidence that a connected
+chain exposed a value or record; it is not evidence that a new chain action occurred.
+
+That makes chain reads useful for checking public facts before describing them. The read can anchor
+the observation, but the claim should still name the surface that was read and avoid turning the
+observation into a broader mechanism claim
+([Inspecting the Chain with Polkadot.js](https://docs.learnbittensor.org/concepts/inspecting-the-chain),
+[Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage)).
 
 ## Inspection Surfaces
 
@@ -58,7 +63,7 @@ what a selected surface contains, but it does not by itself explain every cause 
 state
 ([Inspecting the Chain with Polkadot.js](https://docs.learnbittensor.org/concepts/inspecting-the-chain)).
 
-That surface distinction keeps read evidence precise. Storage entries describe stored state, events
+The surface distinction keeps read evidence precise. Storage entries describe stored state, events
 describe emitted records, constants describe runtime reference values, and blocks describe ordering
 context. A chain read should preserve which surface supplied the evidence
 ([Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage),
@@ -66,7 +71,19 @@ context. A chain read should preserve which surface supplied the evidence
 [Subtensor Constants](https://docs.learnbittensor.org/subtensor-api/constants),
 [Glossary: Block](https://docs.learnbittensor.org/resources/glossary#block)).
 
-## Fee Boundary
+Constants and storage entries are both readable, but they do not answer the same question. Reading a
+constant is reference inspection; reading storage is state inspection. Both can be chain reads, but
+the source surface changes how the result should be described
+([Subtensor Constants](https://docs.learnbittensor.org/subtensor-api/constants),
+[Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage)).
+
+Runtime metadata belongs beside those read surfaces as structure evidence. It shows available
+runtime structure, while storage and events show recorded values and emitted records in context
+([Inspecting the Chain with Polkadot.js](https://docs.learnbittensor.org/concepts/inspecting-the-chain),
+[Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage),
+[Subtensor Events](https://docs.learnbittensor.org/subtensor-api/events)).
+
+## Fee and Action Context
 
 Read-only inspection is separate from state-changing actions, so fee language belongs with the
 action unless the point is specifically that a read is free
@@ -75,6 +92,12 @@ action unless the point is specifically that a read is free
 
 That boundary keeps chain-read vocabulary from being treated as transaction vocabulary. A read can
 inform a later decision, but the read itself is not the fee-bearing action.
+
+The fee split also keeps article prose from overclaiming. A read may be part of understanding chain
+state before an action, but the action and its fee behavior belong to the transaction or extrinsic
+surface, not to the read itself
+([Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees),
+[Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics)).
 
 ## Evidence Context
 
@@ -92,18 +115,7 @@ was emitted, but the event name is not the same as the full action reference
 ([Subtensor Events](https://docs.learnbittensor.org/subtensor-api/events),
 [Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics)).
 
-## Constants and Stored State
-
-Constants and storage entries are both readable, but they do not answer the same question. Constants
-name runtime reference values, while storage entries expose state stored by the chain
-([Subtensor Constants](https://docs.learnbittensor.org/subtensor-api/constants),
-[Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage)).
-
-This helps keep chain-read prose from flattening every read into one category. Reading a constant is
-reference inspection; reading storage is state inspection. Both can be chain reads, but the source
-surface changes how the result should be described.
-
-## Network Boundary
+## Network and Block Context
 
 A chain read belongs to the network being inspected. Mainnet, testnet, and localnet are separate
 Bittensor network contexts, so an observation from one environment should not be treated as the
@@ -114,88 +126,26 @@ chain history of another
 The same storage key, event name, or block concept can appear across environments while pointing to
 different chain histories.
 
+Block context provides the other half of that scope. A value read from one point in chain history
+should not automatically be treated as the value at every later point on the same network
+([Glossary: Block](https://docs.learnbittensor.org/resources/glossary#block),
+[Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage)).
+
 That means a chain-read example needs its network context attached when the observation matters. The
 Bittensor Networks reference separates the environments, and the inspecting-the-chain guide places
 reads inside the selected chain context
 ([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks),
 [Inspecting the Chain with Polkadot.js](https://docs.learnbittensor.org/concepts/inspecting-the-chain)).
 
-## What Chain Reads Do Not Mean
+## Reading the Term
 
-Chain reads do not prove intent, predict a later action, replace mechanism documentation, or show
-private state that is not on-chain
+Chain reads identify read-only observation. They do not prove intent, predict a later action,
+replace mechanism documentation, or show private state that is not on chain
 ([Inspecting the Chain with Polkadot.js](https://docs.learnbittensor.org/concepts/inspecting-the-chain),
 [Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage)).
 
-Keeping that boundary preserves the term's narrower meaning. Chain reads identify read-only
-observation, while extrinsics, fees, events, storage changes, blocks, and network context describe
-neighboring parts of the system.
-
-## Storage Reads Depend on Block Context
-
-The [Glossary: Block](https://docs.learnbittensor.org/resources/glossary#block) describes a block as
-a unit of Bittensor blockchain data that contains transactions and carries a unique block hash.
-Stored state is read inside that chain-history context, even when the interface looks like a simple
-lookup.
-
-A storage value observed at one block can differ from the value at a later block on the same
-network. Balances, stake records, subnet settings, and other stored fields can all change as new
-blocks are accepted, so the block reference should stay attached to the read result
-([Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage)).
-
-Block browsing and direct storage lookups answer related but different questions. Browsing shows
-ordering and included activity, while the selected block context tells readers which moment in chain
-history a state read represents
-([Inspecting the Chain with Polkadot.js](https://docs.learnbittensor.org/concepts/inspecting-the-chain)).
-
-References: [Glossary: Block](https://docs.learnbittensor.org/resources/glossary#block),
-[Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage)
-
-## Runtime Metadata Describes Structure
-
-The inspecting-the-chain guide lists runtime metadata alongside storage entries, constants, blocks,
-and events as read-oriented surfaces
-([Inspecting the Chain with Polkadot.js](https://docs.learnbittensor.org/concepts/inspecting-the-chain)).
-
-Metadata answers a structure question rather than a current-value question. It shows what the
-connected runtime exposes—such as available runtime areas and call interfaces—before any transaction
-is signed. A storage read, by contrast, shows what the chain currently records at a selected lookup
-([Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage)).
-
-That distinction keeps metadata vocabulary separate from stored-state vocabulary. A metadata read
-helps a reader understand which inspection surfaces exist on the connected chain. It does not by
-itself prove a particular balance, stake amount, or subnet record.
-
-Constants sit beside metadata in that pre-action inspection picture. Constants name configured
-reference values, while metadata maps the broader runtime layout readers can inspect before moving
-toward signed actions
-([Subtensor Constants](https://docs.learnbittensor.org/subtensor-api/constants)).
-
-References:
-[Inspecting the Chain with Polkadot.js](https://docs.learnbittensor.org/concepts/inspecting-the-chain),
-[Subtensor Constants](https://docs.learnbittensor.org/subtensor-api/constants)
-
-## Chain Reads Stay Permissionless
-
-The BTCLI permissions guide separates actions that require no private key from actions that need
-hotkey or coldkey authority
-([Bittensor CLI: Permissions Guide](https://docs.learnbittensor.org/btcli/btcli-permissions)).
-Transaction-fee documentation also states that reading chain state is free
-([Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees)).
-
-Those statements reinforce different parts of the same observation boundary. Permissionless reads
-describe signing authority: public storage, constant, metadata, block, and event inspection can
-proceed without loading wallet key material. Free reads describe processing cost: the observation
-itself is not a fee-bearing state change.
-
-That pairing matters when readers compare inspection to action. A balance lookup or storage
-inspection belongs to permissionless observation vocabulary until the workflow moves toward
-transfers, staking, registration, weight submission, or other signed runtime actions that the
-permissions guide places under hotkey or coldkey authority.
-
-References:
-[Bittensor CLI: Permissions Guide](https://docs.learnbittensor.org/btcli/btcli-permissions),
-[Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees)
+Use the term when the article is about observing public chain state. Use the neighboring reference
+when the article is about a transaction, fee, event, storage mutation, or network-specific result.
 
 ## Further Reading
 
@@ -205,5 +155,5 @@ References:
 - [Subtensor Events](https://docs.learnbittensor.org/subtensor-api/events)
 - [Subtensor Constants](https://docs.learnbittensor.org/subtensor-api/constants)
 - [Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics)
-- [Bittensor CLI: Permissions Guide](https://docs.learnbittensor.org/btcli/btcli-permissions)
+- [Glossary: Block](https://docs.learnbittensor.org/resources/glossary#block)
 - [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)
