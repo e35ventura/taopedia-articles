@@ -92,6 +92,71 @@ The concise reading is: Drand time-lock encryption delays readability of committ
 information until a future Drand round, helping Commit Reveal reduce copied-weight behavior before
 Yuma Consensus uses the revealed weights.
 
+## Early Decryption Is Blocked for Everyone
+
+Official [Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal) documentation
+states that encrypted validator weights cannot be decrypted by anyone until the designated
+[Glossary: Drand/time-lock encryption](https://docs.learnbittensor.org/resources/glossary#drandtime-lock-encryption)
+round is reached. That restriction includes the validator who submitted the concealed weights.
+
+The point is stronger than ordinary private-key secrecy. A validator cannot treat the commit step as
+a personal preview of readable weights, because the time-lock condition binds decryption to future
+beacon output rather than to the submitter's signing keys
+([Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#validator-weights)).
+
+That property keeps the concealment interval meaningful for observers as well as for the committing
+validator. Until the unlock round arrives, the committed weight information stays unreadable across
+the network, which is what makes the delay useful against immediate copying of fresh evaluations
+([The Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor)).
+
+References: [Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
+[Glossary: Drand/time-lock encryption](https://docs.learnbittensor.org/resources/glossary#drandtime-lock-encryption)
+
+## Chain Automation Replaces Manual Reveal Steps
+
+The same Commit Reveal overview explains that time-lock encryption lets the chain automatically
+reveal validator weights after the concealment interval. That automation removes the need for manual
+reveal steps and helps prevent selective revelation attacks, where a validator might otherwise
+choose which committed weights to disclose
+([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)).
+
+Validators still set weights through the ordinary submission path, while the concealed commit and
+later reveal handling run on chain around those signals. Drand time-lock encryption supplies the
+timed unlock condition that makes that automatic path possible without trusting each validator to
+self-disclose on schedule
+([Glossary: Drand/time-lock encryption](https://docs.learnbittensor.org/resources/glossary#drandtime-lock-encryption)).
+
+The distinction matters for how the term should be read. Drand time-lock encryption is not a
+separate validator workflow; it is the shared timing layer that lets concealed weights move from
+unreadable commit to readable reveal without optional manual disclosure in between
+([The Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor)).
+
+References: [Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
+[The Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor)
+
+## Public Beacon Randomness Sets the Unlock Point
+
+The
+[Glossary: Drand/time-lock encryption](https://docs.learnbittensor.org/resources/glossary#drandtime-lock-encryption)
+entry describes Drand as a distributed randomness beacon that publishes publicly verifiable,
+unpredictable random numbers through independent operators in the League of Entropy consortium.
+Time-lock encryption in that setting encrypts data so it can be decrypted only after a specific
+time, using randomness the beacon produces on a regular schedule.
+
+Bittensor uses that external beacon as the unlock reference inside Commit Reveal rather than relying
+on a subnet-local clock or a validator-held decryption key. The committed weight data may already
+exist on chain, but readability waits for the beacon output tied to the target round
+([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)).
+
+That external anchor is what separates Drand time-lock encryption from generic encryption labels.
+The important feature is delayed readability tied to public randomness anyone can verify, not merely
+that the weight payload was encrypted before reveal
+([Glossary: Drand/time-lock encryption](https://docs.learnbittensor.org/resources/glossary#drandtime-lock-encryption)).
+
+References:
+[Glossary: Drand/time-lock encryption](https://docs.learnbittensor.org/resources/glossary#drandtime-lock-encryption),
+[Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)
+
 ## Further Reading
 
 - [Introduction to Bittensor: Subnet development](https://docs.learnbittensor.org/learn/introduction#subnet-development)
