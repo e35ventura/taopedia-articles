@@ -57,6 +57,53 @@ replay does not quietly succeed.
 References:
 [bittensor.core.axon](https://docs.learnbittensor.org/python-api/html/autoapi/bittensor/core/axon/)
 
+## Dendrite Requests and Axon Responses Use Signed Synapses
+
+Bittensor's [Glossary: Dendrite](https://docs.learnbittensor.org/resources/glossary#dendrite) and
+[Glossary: Synapse](https://docs.learnbittensor.org/resources/glossary#synapse) describe the
+off-chain request path: a dendrite sends a signed synapse to an
+[axon](https://docs.learnbittensor.org/resources/glossary#axon), which verifies the signature before
+responding. Replay risk sits in that signed message path, not only in chain
+[extrinsics](https://docs.learnbittensor.org/resources/glossary#extrinsics).
+
+The axon-side documentation referenced in this article focuses on nonce checking at the receiver.
+The dendrite and synapse vocabulary names the complementary sender side where a valid signed payload
+is first produced and then could be captured for reuse if freshness checks fail.
+
+References: [Glossary: Dendrite](https://docs.learnbittensor.org/resources/glossary#dendrite),
+[Glossary: Synapse](https://docs.learnbittensor.org/resources/glossary#synapse)
+
+## Chain Extrinsics Use Account Nonces Separately
+
+On [Subtensor](https://docs.learnbittensor.org/resources/glossary#subtensor), submitted extrinsics
+also carry account-level nonce expectations so a signed chain transaction cannot be accepted twice.
+That protection belongs to the
+[Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics) submission path,
+which is separate from axon synapse verification in subnet communication.
+
+Readers should therefore keep two replay contexts apart. Extrinsic replay defenses protect on-chain
+actions such as staking or registration, while axon nonce checking protects signed off-chain synapse
+traffic between neurons. Both resist message reuse, but they apply to different layers of Bittensor
+activity.
+
+References: [Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics),
+[Glossary: Extrinsics](https://docs.learnbittensor.org/resources/glossary#extrinsics)
+
+## Freshness Windows Reject Stale Nonces
+
+The axon documentation describes nonce validation as requiring both an increasing value and a fresh
+nonce within an acceptable time range. A replayed synapse therefore fails not only when its nonce
+was already consumed, but also when the attached nonce is too old to count as current for that
+signing [hotkey](https://docs.learnbittensor.org/resources/glossary#hotkey).
+
+That freshness rule limits how long a captured signed message remains dangerous. An adversary who
+records a valid synapse cannot rely on it indefinitely; the receiver is expected to treat an expired
+nonce as invalid even if the signature itself still verifies mathematically.
+
+References:
+[bittensor.core.axon](https://docs.learnbittensor.org/python-api/html/autoapi/bittensor/core/axon/),
+[Glossary: Hotkey](https://docs.learnbittensor.org/resources/glossary#hotkey)
+
 ## Further Reading
 
 - [bittensor.core.axon](https://docs.learnbittensor.org/python-api/html/autoapi/bittensor/core/axon/)
