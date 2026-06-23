@@ -1,0 +1,134 @@
+---
+title: "Bonds Moving Average"
+summary:
+  "How the bonds moving average smooths validator bonds in Yuma Consensus, and why it is a timing
+  control rather than a definition of a bond."
+category: "Consensus"
+tags: ["Consensus", "Subnets"]
+infoboxTitle: Bonds Moving Average
+infoboxCaption: Smoothing window for validator bonds in Yuma Consensus.
+infoboxRows:
+  - label: Concept
+    value: Bond smoothing window
+  - label: Scope
+    value: Subnet consensus
+  - label: Used by
+    value: Validator bonds
+  - label: Related
+    value: Yuma Consensus
+---
+
+# Bonds Moving Average
+
+Bonds Moving Average is a subnet setting that controls how strongly validator bonds are smoothed
+over time inside Yuma Consensus. It describes the moving-average window applied to bond values
+rather than defining what a bond is
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#bondsmovingaverage)).
+
+Official documentation describes it as the moving average of bonds and notes that higher bonds yield
+higher dividends for validators, pointing to the consensus bonding mechanics for the underlying
+behavior
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#bondsmovingaverage),
+[Yuma Consensus: Bonding mechanics](https://docs.learnbittensor.org/learn/yuma-consensus#bonding-mechanics)).
+
+## Bonds Versus the Smoothing of Bonds
+
+Bonds and the smoothing applied to them are separate ideas. A bond is the weight a validator accrues
+toward a miner it has supported, and that bond is what later contributes to validator dividends
+([Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds),
+[Yuma Consensus: Bonding mechanics](https://docs.learnbittensor.org/learn/yuma-consensus#bonding-mechanics)).
+
+The bonds moving average does not create that bond. It governs how quickly the bond value tracks new
+consensus outcomes versus carrying forward prior state. The bond is the quantity; the moving average
+is the rate at which the quantity is allowed to move
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#bondsmovingaverage)).
+
+## Window Size Is a Responsiveness Trade-Off
+
+The setting names a window size, so reading it as a trade-off is more accurate than reading it as a
+quality dial. Larger windows produce smoother bond values that respond slowly to change, while
+smaller windows react faster but can be more volatile
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+For readers, that means a claim about this setting should state which direction is being discussed.
+"Smoother and slower" and "faster and noisier" are the two ends of one control, not two different
+controls.
+
+## Relationship to Liquid Alpha
+
+Bonds Moving Average is not the only setting that shapes bond behavior. The liquid alpha mechanism
+is a separate, toggled feature that adjusts how bonds respond within a configured alpha range
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+Keeping the two apart avoids a common conflation. Liquid alpha changes the alpha response used in
+bonding, while the bonds moving average sets the window over which bond values are smoothed. A
+statement about one should not be transferred to the other without a source
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#bondsmovingaverage)).
+
+## Smoothing Versus Resetting
+
+Smoothing a bond and resetting a bond are different operations. Documentation lists a separate
+bond-reset control that governs whether periodic bond resets occur, which clears accumulated state
+rather than averaging it
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+The bonds moving average influences the gradual path a bond takes between updates; a reset is a
+discontinuity in that path. Reading the moving average as a reset, or a reset as a smoothing window,
+mixes two distinct subnet controls.
+
+## Why the Window Matters for Dividends
+
+The window matters because bonds feed validator rewards. Documentation ties higher bonds to higher
+dividends for validators, and the bonding mechanics describe how consensus-aligned support is what
+accrues into those bonds
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#bondsmovingaverage),
+[Yuma Consensus: Bonding mechanics](https://docs.learnbittensor.org/learn/yuma-consensus#bonding-mechanics)).
+
+A longer window lets accumulated bonds persist through short-term fluctuations, while a shorter
+window lets them re-form more quickly around new outcomes. In both cases the moving average shapes
+the timing of how bonds, and therefore validator dividends, evolve, without changing the consensus
+rule that produced them.
+
+## Consensus Alignment Still Comes First
+
+Bonds Moving Average operates on top of consensus, not instead of it. Yuma Consensus penalizes
+out-of-consensus bonds, so the moving average smooths a quantity whose direction is already
+constrained by consensus alignment
+([Yuma Consensus: Penalizing out-of-consensus bonds](https://docs.learnbittensor.org/learn/yuma-consensus#penalizing-out-of-consensus-bonds)).
+
+This ordering keeps the setting in scope. It governs how fast aligned bonds move, but it does not
+let a validator escape the consequences of weight copying or of submitting weights that fall outside
+the consensus the network agrees on
+([Glossary: Weight Copying](https://docs.learnbittensor.org/resources/glossary#weight-copying)).
+
+## Per-Subnet Boundary
+
+Like other subnet settings, the bonds moving average is configured per subnet, so it should not be
+read as one universal value across Bittensor
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)). The
+stable concept is moving-average smoothing of bonds; any exact value belongs with the specific
+subnet's documented parameter source.
+
+A claim about its effect is clearest when it names the subnet context and cites the hyperparameter
+source rather than treating a single example as the network-wide rule
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## Reader Boundary
+
+Read Bonds Moving Average as a smoothing window for validator bonds, not as a bond, a dividend
+formula, a reset switch, or the liquid alpha mechanism. It tells readers how quickly bond values are
+allowed to track new consensus results inside Yuma Consensus
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#bondsmovingaverage)).
+
+References:
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#bondsmovingaverage),
+[Yuma Consensus: Bonding mechanics](https://docs.learnbittensor.org/learn/yuma-consensus#bonding-mechanics)
+
+## Further Reading
+
+- [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#bondsmovingaverage)
+- [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
+- [Yuma Consensus: Bonding mechanics](https://docs.learnbittensor.org/learn/yuma-consensus#bonding-mechanics)
+- [Yuma Consensus: Penalizing out-of-consensus bonds](https://docs.learnbittensor.org/learn/yuma-consensus#penalizing-out-of-consensus-bonds)
+- [Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds)
+- [Glossary: Weight Copying](https://docs.learnbittensor.org/resources/glossary#weight-copying)
