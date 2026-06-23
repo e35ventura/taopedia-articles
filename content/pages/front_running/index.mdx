@@ -1,0 +1,93 @@
+---
+title: "Front-Running"
+summary:
+  "How front-running uses transaction ordering to trade ahead of a pending swap in Bittensor's
+  subnet pools, and how price protection and the MEV shield blunt it."
+category: "Safety"
+tags: ["Safety", "Tokenomics"]
+infoboxTitle: Front-Running
+infoboxCaption: Trading ahead of a pending order.
+infoboxRows:
+  - label: Context
+    value: Subnet liquidity pools
+  - label: Exploits
+    value: Transaction ordering
+  - label: Main defense
+    value: Price protection
+  - label: Scope
+    value: Concept only
+---
+
+# Front-Running
+
+Front-running is acting on the knowledge of someone else's pending transaction by getting your own
+transaction in first. In Bittensor it appears around a subnet's automated market maker pool: a swap
+that is waiting to execute is visible before it lands, and another trader can try to order their own
+swap ahead of it to profit from the price move the pending swap will cause.
+
+References: [Front-Running](https://docs.learnbittensor.org/resources/glossary#front-running)
+
+## Why It Is Possible
+
+A transaction does not execute the instant it is submitted. It first sits in the mempool, the
+holding area of pending transactions waiting to be included in a block, where its contents can be
+observed. Because a subnet prices alpha through a pool whose price moves with every swap, seeing a
+large pending swap tells an observer which way the price is about to move and by roughly how much.
+That visibility is the raw material front-running depends on.
+
+References: [Mempool](https://docs.learnbittensor.org/resources/glossary#mempool),
+[Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)
+
+## The Sandwich Pattern
+
+The best-known front-running pattern is the sandwich attack. An attacker who sees a pending buy
+places their own buy first, lets the victim's order push the price up, then sells into that higher
+price. The victim's trade is wrapped, or sandwiched, between the attacker's two trades, and the
+extra slippage the victim pays is the attacker's gain. Front-running is the front half of that
+pattern, and it can also stand alone whenever ordering ahead of a known trade is profitable on its
+own.
+
+References: [Sandwich Attack](https://docs.learnbittensor.org/resources/glossary#sandwich-attack),
+[Slippage](https://docs.learnbittensor.org/learn/slippage)
+
+## What Defends Against It
+
+Two mechanisms reduce the payoff. Price protection lets a trader set a limit on the price they will
+accept, so a swap that would execute worse than that limit fails instead of filling at the
+front-runner's inflated price, capping how much can be extracted. The MEV shield works earlier in
+the pipeline by limiting the predatory ordering of transactions itself, so a pending swap is harder
+to profitably trade ahead of in the first place. Together they attack both the payoff and the
+opportunity.
+
+References: [Price Protection](https://docs.learnbittensor.org/learn/price-protection),
+[MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield/)
+
+## Beyond Trading: Weight Copying
+
+Front-running also has a non-trading form. A validator can watch the weights other validators submit
+and copy or trade ahead of them rather than do its own evaluation, free-riding on their work.
+Commit-reveal answers this by having validators first publish only a hidden commitment to their
+weights and reveal the actual values later, so there is nothing readable to copy or run ahead of at
+submission time. The shape is the same as a pool sandwich, even though the thing being front-run is
+an evaluation rather than a swap.
+
+References: [Weight Copying](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor),
+[Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)
+
+## Reader Boundary
+
+This page defines the concept at a high level and is not trading advice or a claim that any specific
+trade was front-run. Whether front-running is profitable in a given moment depends on live pool
+depth, pending order flow, and the protections in force, all of which change continuously. The
+durable point is the relationship: visible pending transactions plus price-moving pools create the
+opening, and price protection and the MEV shield are what narrow it.
+
+References: [Price Protection](https://docs.learnbittensor.org/learn/price-protection)
+
+## Further Reading
+
+- [Front-Running](https://docs.learnbittensor.org/resources/glossary#front-running)
+- [Sandwich Attack](https://docs.learnbittensor.org/resources/glossary#sandwich-attack)
+- [MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield/)
+- [Price Protection](https://docs.learnbittensor.org/learn/price-protection)
+- [Weight Copying](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor)
