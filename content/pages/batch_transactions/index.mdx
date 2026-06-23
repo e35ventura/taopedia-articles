@@ -131,6 +131,57 @@ The same separation helps when tracing a result. The batch wrapper is the submis
 events, storage, and errors are the records that help explain what the runtime did with that
 submission.
 
+## Wrapper and Inner-Call Reading
+
+A batch transaction has two useful reading layers: the wrapper and the inner calls. The wrapper
+explains the group behavior, while the inner calls explain the runtime actions being requested
+inside that group ([Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions),
+[Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics)).
+
+| Reading layer    | What it explains                                          | What it does not replace           |
+| ---------------- | --------------------------------------------------------- | ---------------------------------- |
+| Batch wrapper    | Why several calls share one outer submission              | The meaning of each inner call     |
+| Failure variant  | Whether failure stops, rolls back, or continues the group | The reason a specific call failed  |
+| Inner extrinsic  | The actual runtime method being requested                 | The wrapper's group-level rule     |
+| Signer authority | Which key or role can authorize the action                | The batch packaging itself         |
+| Fee context      | How grouped submission and inner calls are charged        | Runtime success or state change    |
+| Event record     | What the runtime emitted while processing                 | The full explanation of every call |
+| Storage state    | What public state remains inspectable later               | The submitted call sequence        |
+
+This split keeps the variant name useful without overloading it. A `batch_all` wrapper tells readers
+to expect all-or-nothing group behavior, while a `force_batch` wrapper tells readers that later
+calls can still be evaluated after an earlier failure
+([Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions)).
+
+The inner extrinsics still carry the action meaning. If one inner call changes staking state and
+another updates a setting, the batch wrapper explains their shared submission, not a new combined
+mechanism ([Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics),
+[Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions)).
+
+Signer authority stays attached to the calls being made. The permissions guide separates hotkey,
+coldkey, and permissionless contexts, so a batch should not be read as removing the authority needed
+by an inner action
+([Bittensor CLI: Permissions Guide](https://docs.learnbittensor.org/btcli/btcli-permissions),
+[Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions)).
+
+Fee and result evidence come afterward. Fees explain the cost side of grouped submission, while
+events, storage, and errors help readers inspect what happened after the runtime evaluated the batch
+([Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees),
+[Subtensor Events](https://docs.learnbittensor.org/subtensor-api/events),
+[Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage),
+[Subtensor Error Codes](https://docs.learnbittensor.org/errors)).
+
+For readers, the practical order is to identify the wrapper, read each inner extrinsic, check
+authority and fee context, and then use events, errors, or storage to understand the observed
+result.
+
+That order also helps with partial results. A grouped submission can produce mixed evidence across
+inner calls, so event and error records should be read with the wrapper variant that produced them
+([Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions),
+[Subtensor Error Codes](https://docs.learnbittensor.org/errors)).
+
+Without that wrapper context, the same event list can be harder to interpret.
+
 ## Network Context
 
 A batch example belongs to the Bittensor network where it is observed. Mainnet, testnet, and
