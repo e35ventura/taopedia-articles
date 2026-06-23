@@ -93,6 +93,56 @@ transactions ([Glossary: Mempool](https://docs.learnbittensor.org/resources/glos
 This boundary keeps timing clear. An extrinsic can name the action being processed, while mempool
 and block vocabulary describe pending and included chain contexts.
 
+## Submission Lifecycle
+
+An extrinsic is easiest to read as one stage in a chain-action lifecycle. It begins as a submitted
+runtime action, can pass through pending transaction context, and then needs block, event, error, or
+storage evidence before stronger outcome claims are made
+([Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics),
+[Glossary: Mempool](https://docs.learnbittensor.org/resources/glossary#mempool),
+[Glossary: Block](https://docs.learnbittensor.org/resources/glossary#block)).
+
+| Stage             | What the stage names                             | Useful neighboring source      |
+| ----------------- | ------------------------------------------------ | ------------------------------ |
+| Action surface    | The method submitted to the runtime              | Subtensor extrinsics reference |
+| Pending context   | The transaction waiting before block inclusion   | Mempool glossary               |
+| Included context  | The transaction recorded in a block              | Block glossary                 |
+| Runtime record    | A named event emitted while processing activity  | Subtensor Events               |
+| Rejection context | An error explaining why a call was not accepted  | Subtensor Error Codes          |
+| State surface     | Public state inspected after processing          | Subtensor Storage              |
+| Cost context      | Transaction fees attached to state-changing work | Transaction Fees               |
+
+This lifecycle keeps the action name from doing too much work. The extrinsic name tells readers what
+was submitted, while the block or mempool context tells them where the transaction sits in chain
+timing ([Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics),
+[Glossary: Mempool](https://docs.learnbittensor.org/resources/glossary#mempool),
+[Glossary: Block](https://docs.learnbittensor.org/resources/glossary#block)).
+
+Events and errors add runtime evidence. Events are named records emitted by the runtime, while error
+codes explain rejected or failed runtime paths; both are later evidence around the submitted action,
+not replacements for the extrinsic surface itself
+([Subtensor Events](https://docs.learnbittensor.org/subtensor-api/events),
+[Subtensor Error Codes](https://docs.learnbittensor.org/errors)).
+
+Storage answers a different question again. A storage value can show public chain state after
+processing, but it is not the submitted action and it is not the pending transaction stage
+([Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage),
+[Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics)).
+
+Fee context also belongs beside, rather than inside, the action name. Transaction-fee documentation
+describes costs for state-changing work, while the extrinsics reference identifies callable runtime
+methods ([Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees),
+[Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics)).
+
+For readers, the practical sequence is: name the extrinsic when describing the requested action,
+name mempool or block context when describing timing, and use events, errors, storage, or fees when
+describing evidence produced around the action.
+
+The same sequence helps avoid overclaiming success. A submitted extrinsic can identify intent and
+method, but success language should wait for the runtime evidence that belongs to the selected
+network and block context ([Subtensor Events](https://docs.learnbittensor.org/subtensor-api/events),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
 ## Network Boundary
 
 Extrinsics are interpreted inside a selected Bittensor network environment. Bittensor documentation
