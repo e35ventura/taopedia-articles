@@ -1,0 +1,81 @@
+---
+title: "Front-Running"
+summary:
+  "How front-running observes a pending swap in Bittensor's subnet pools and orders ahead of it, and
+  how price protection and the MEV shield blunt it."
+category: "Safety"
+tags: ["Safety", "Tokenomics"]
+infoboxTitle: Front-Running
+infoboxCaption: Trading ahead of a pending order.
+infoboxRows:
+  - label: Context
+    value: Subnet liquidity pools
+  - label: Exploits
+    value: Pending-transaction visibility
+  - label: Main defenses
+    value: Price protection, MEV shield
+  - label: Scope
+    value: Concept only
+---
+
+# Front-Running
+
+Front-running is observing a pending transaction and submitting a similar transaction with higher
+priority so that it executes first. In Bittensor it appears around a subnet's automated market maker
+pool: a swap that is waiting to execute is visible before it lands, and another trader can order
+their own swap ahead of it to profit from the price move the pending swap will cause.
+
+References: [Front-Running](https://docs.learnbittensor.org/resources/glossary#front-running)
+
+## Why It Is Possible
+
+A transaction does not execute the instant it is submitted. It first sits in the mempool, the
+temporary holding area where pending and unconfirmed transactions wait before being included in a
+block, and there its contents can be observed. Because a subnet prices alpha through a pool whose
+price moves with every swap, seeing a large pending swap signals which way the price is about to
+move and by roughly how much. That visibility is the raw material front-running depends on.
+
+References: [Mempool](https://docs.learnbittensor.org/resources/glossary#mempool),
+[Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)
+
+## The Sandwich Pattern
+
+The best-known front-running pattern is the sandwich attack: placing transactions before and after a
+target transaction to profit from the price movement that target causes. An attacker who sees a
+pending buy places their own buy first, lets the victim's order push the price up, then sells into
+that higher price. The victim's trade is wrapped, or sandwiched, between the attacker's two trades,
+and the extra slippage the victim pays is the attacker's gain. Front-running is the front half of
+that pattern.
+
+References: [Sandwich Attack](https://docs.learnbittensor.org/resources/glossary#sandwich-attack),
+[Slippage](https://docs.learnbittensor.org/learn/slippage)
+
+## What Defends Against It
+
+Two mechanisms reduce the payoff. Price protection lets a trader set a tolerance on the price they
+will accept, so a swap that would execute worse than that limit fails or only partially fills rather
+than completing at a front-runner's inflated price, which caps how much can be extracted. The MEV
+shield attacks the information itself: transaction data is encrypted with a public key from the
+blockchain validator and decrypted only just before the transaction is finalized, so a pending
+swap's details stay hidden until it is already on-chain and there is nothing readable to trade ahead
+of.
+
+References: [Price Protection](https://docs.learnbittensor.org/learn/price-protection),
+[MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield/)
+
+## Reader Boundary
+
+This page defines the concept at a high level and is not trading advice or a claim that any specific
+trade was front-run. Whether front-running is profitable in a given moment depends on live pool
+depth, pending order flow, and the protections in force, all of which change continuously. The
+durable point is the relationship: visible pending transactions plus price-moving pools create the
+opening, and price protection and the MEV shield are what narrow it.
+
+References: [Price Protection](https://docs.learnbittensor.org/learn/price-protection)
+
+## Further Reading
+
+- [Front-Running](https://docs.learnbittensor.org/resources/glossary#front-running)
+- [Sandwich Attack](https://docs.learnbittensor.org/resources/glossary#sandwich-attack)
+- [MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield/)
+- [Price Protection](https://docs.learnbittensor.org/learn/price-protection)
