@@ -66,6 +66,71 @@ documented default, and the value for a given subnet is owner-settable.
 
 Reference: [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
 
+## Tempo Sets the Epoch Length Around the Cutoff
+
+Subnet [hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters) include
+both activity cutoff and [tempo](https://docs.learnbittensor.org/resources/glossary#tempo). Tempo
+names the block interval over which
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) calculates
+[emissions](https://docs.learnbittensor.org/resources/glossary#emissions) from the latest available
+ranking [weight matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix), while
+activity cutoff names how many blocks at the start of that interval a
+[validator](https://docs.learnbittensor.org/resources/glossary#validator) has to submit
+[validator weights](https://docs.learnbittensor.org/resources/glossary#validator-weights).
+
+Activity cutoff therefore sits inside a tempo-sized
+[epoch](https://docs.learnbittensor.org/resources/glossary#epoch) rather than on a separate
+schedule. A subnet owner can change tempo and activity cutoff independently, but both values are
+read against the same epoch window when deciding whether a validator participated in the current
+consensus pass.
+
+That pairing keeps timing vocabulary precise. Tempo answers how long each epoch lasts in blocks;
+activity cutoff answers how early inside that epoch a validator must act to count in the current
+round.
+
+References:
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo)
+
+## Commit Reveal Can Delay Visible Weight Submission
+
+[Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal) separates concealed weight
+submission from later public reveal inside a subnet epoch. Validators can commit encrypted weights
+during the interval, then reveal them when the corresponding Drand pulse becomes available, which
+can push visible weight data closer to the end of the epoch than an immediate public submission
+would.
+
+Activity cutoff still governs whether a validator participates in the current epoch at all. A
+validator that never completes the required submission path within the cutoff window is treated as
+inactive for that epoch even when commit-reveal mechanics are enabled on the subnet.
+
+Readers comparing timing rules should keep the two layers separate. Commit reveal names how weight
+visibility is staged; activity cutoff names the early-epoch participation gate for validators who
+want their signals included in the current Yuma pass.
+
+References: [Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+
+## Inactive Validators Wait for the Next Epoch Boundary
+
+When a validator misses the activity-cutoff window, official hyperparameter documentation states
+that the validator cannot participate in the current epoch and must wait until the next epoch
+begins. That exclusion applies to the consensus pass tied to the tempo in progress, not to every
+future action the same hotkey might take on other subnets.
+
+[Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)
+documentation places validator weight submission in the tempo leading up to epoch processing, while
+emission outcomes are finalized at the tempo boundary. Missing the cutoff therefore removes a
+validator from the current epoch's aggregation step rather than pausing the validator permanently.
+
+The practical reading is a one-epoch skip. A validator who goes quiet inside the cutoff window sits
+out the current Yuma result and can re-enter participation when the next epoch opens, subject to the
+same hyperparameter rules on that subnet.
+
+References:
+[Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
+
 ## Further Reading
 
 - [Glossary: Activity Cutoff](https://docs.learnbittensor.org/resources/glossary#activity-cutoff)
