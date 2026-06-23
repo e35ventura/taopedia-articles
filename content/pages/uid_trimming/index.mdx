@@ -64,6 +64,47 @@ be read for the subnet in question.
 
 Reference: [UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming)
 
+## Trimming Stops at the Owner's Target Count
+
+The owner chooses a maximum UID count, and trimming removes the lowest emitters until the subnet
+reaches that ceiling or runs out of eligible removals. The operation is a bulk resize rather than a
+single-slot replacement, which is why it can remove many low performers in one owner action instead
+of waiting for registrations one at a time.
+
+That target count is the stopping rule. Emission ranking decides who goes first, but the owner sets
+how small the active participant set should become once trimming finishes
+([UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming)).
+
+References: [UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming),
+[Glossary: Emission](https://docs.learnbittensor.org/resources/glossary#emission)
+
+## Too Many Immune UIDs Can Block Trimming
+
+Temporarily immune registrations and owner-owned UIDs are protected from trimming. The trimming docs
+also cap immune UIDs at 80% of the subnet's maximum UID count. When too many slots are protected,
+the owner cannot remove enough participants to reach the chosen target in that pass.
+
+The cap keeps bulk trimming from colliding with the grace period for newcomers. Immunity gives
+recent registrations time to earn before they can be selected, while the 80% limit prevents that
+protection from filling so much of the subnet that trimming cannot proceed
+([Glossary: Immunity Period](https://docs.learnbittensor.org/resources/glossary#immunity-period)).
+
+References: [UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming),
+[Glossary: Immunity Period](https://docs.learnbittensor.org/resources/glossary#immunity-period)
+
+## Trimmed Slots Lose Their On-Chain Neuron Data
+
+When a UID is trimmed, its neuron record is permanently deleted from chain state rather than left as
+an empty index. That deletion is stronger than ordinary deregistration language suggests on its own:
+the trimmed participant does not simply yield a slot while leaving historical data in place.
+
+Compression then renumbers the survivors into consecutive indices. Trimming therefore both removes
+low emitters and clears their on-chain records before the remaining UIDs are packed into a
+contiguous set ([UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming)).
+
+References: [UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming),
+[Glossary: Deregistration](https://docs.learnbittensor.org/resources/glossary#deregistration)
+
 ## Relationship to Deregistration
 
 Trimming is distinct from deregistration. Deregistration replaces the single lowest performer when a
