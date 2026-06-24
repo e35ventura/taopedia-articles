@@ -159,16 +159,99 @@ The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-netw
 separates mainnet, testnet, and localnet. A weight-copying example from one environment should not
 be read as representing production consensus behavior in another environment.
 
-## Relationship to Yuma Consensus
+## Independent Agreement Is Not Weight Copying
 
-Weight Copying and Yuma Consensus describe related parts of Bittensor's incentive system. Yuma
-Consensus is the on-chain process that aggregates validator weight signals within a subnet into
-miner incentives and validator dividends, applying consensus clipping, bonding, and emission
-calculation ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+Honest validators can evaluate the same miner work and reach similar rankings without copying one
+another's visible scores. Weight copying concerns lack of independent evaluation, not every case of
+validator agreement
+([Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor)).
 
-For readers, weight copying names a specific part of that incentive picture, while Yuma Consensus
-names the consensus process that turns validator weights into the resulting incentives and
-dividends.
+For readers, what separates the two is the source of the weights: independent validators derive
+theirs from evaluating miner work, while copying derives them from another validator's published
+weights.
+
+## Public Weights Create the Copying Risk
+
+[Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal) documentation explains that
+each validator's weight vector on a subnet joins others in a
+[weight matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix). That matrix feeds
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus), which turns
+[validator weights](https://docs.learnbittensor.org/resources/glossary#validator-weights) into
+incentive and dividend outcomes for the subnet.
+
+The matrix must remain public information so
+[emissions](https://docs.learnbittensor.org/resources/glossary#emission) across the Bittensor
+platform can be transparently fair. Transparent reward accounting and open validator scores are
+linked design goals, not optional extras.
+
+That openness is also what makes weight copying possible. When recent validator scores are readable,
+one validator can substitute another validator's visible evaluation for independent miner
+assessment. Weight copying therefore arises from the same transparency property that lets
+participants audit how rewards were assigned
+([Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor)).
+
+## Stake-Weighted Prediction Can Outperform Honest Scoring
+
+Weight-copying documentation describes a profitable copying pattern in which validators submit
+weights designed to maximize alignment with Yuma Consensus. One described approach uses the
+stake-weighted median of other validators' miner scores to predict the
+[consensus score](https://docs.learnbittensor.org/resources/glossary#consensus-score) that Yuma
+Consensus will form.
+
+Yuma Consensus rewards validators based on how closely their submitted weights align with emerging
+consensus. A copier who forecasts that consensus from stake-weighted aggregation can therefore
+appear better aligned than an honest validator who evaluates miners independently and disagrees with
+peers on some scores.
+
+Optimized copiers can achieve higher validator dividends per stake than honest validators in the
+described pattern. Weight copying can become more profitable than evaluation work when visible
+consensus is predictable from aggregated scores, not merely cheaper in operational effort
+([Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor)).
+
+That profitability gap is part of why subnet owners are expected to configure defenses such as
+Commit Reveal. Independent validation must remain the stronger economic path if subnets are to keep
+producing quality
+[digital commodities](https://docs.learnbittensor.org/resources/glossary#digital-commodity).
+
+## Concealed Weights Wait Outside Consensus
+
+Commit Reveal adds a waiting interval between when a validator commits weights and when those
+weights become public. During that interval, committed weights stay encrypted on chain and are
+therefore not included in Yuma Consensus
+([Glossary: Drand/time-lock encryption](https://docs.learnbittensor.org/resources/glossary#drandtime-lock-encryption)).
+
+After the concealment interval elapses, the weights are revealed and then enter Yuma Consensus for
+the next epoch calculation, the same role they would have played if submitted without concealment.
+The validator-weight path therefore has a hidden commitment phase followed by a consensus-input
+phase.
+
+Concealed weights are excluded from the aggregation step that turns validator signals into
+[rank](https://docs.learnbittensor.org/resources/glossary#rank),
+[trust](https://docs.learnbittensor.org/resources/glossary#trust), and emission outcomes until
+reveal completes. Copiers looking for a current consensus input cannot treat another validator's
+still-concealed commitment as live consensus material until those weights enter the Yuma calculation
+window for the relevant [tempo](https://docs.learnbittensor.org/resources/glossary#tempo).
+
+## Validator Trust Can Mask Copying
+
+[Validator trust](https://docs.learnbittensor.org/resources/glossary#validator-trust) measures how
+consistently a validator's clipped weights align with consensus over time. Yuma Consensus rewards
+alignment with the consensus outcome, so a copier who forecasts emerging consensus from visible
+weight signals can appear more consensus-aligned than an honest evaluator who disagrees with peers
+on some scores.
+
+Validator trust vocabulary therefore measures alignment, not evaluation independence. Similar
+consensus alignment can come from independent scoring or from copied signals that track the
+predicted middle
+([Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor)).
+
+## Defenses Address Visibility and Bond Alignment
+
+Commit Reveal limits when committed weights become visible, while
+[consensus-based weights](https://docs.learnbittensor.org/concepts/consensus-based-weights) adjust
+bonds around consensus alignment. Both reduce the value of copied or stale signals, but they address
+different parts of the same input-quality problem
+([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)).
 
 ## Reader Boundary
 
@@ -181,102 +264,6 @@ depend on another validator's weight information rather than on independent mine
 The useful boundary is evaluation independence. Similar-looking validator scores can still come from
 honest convergence; weight copying concerns dependence on copied or derived weight information
 ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-## Independent Agreement Is Not Weight Copying
-
-Honest validators can evaluate the same miner work and reach similar rankings without copying one
-another's visible scores. Weight copying concerns lack of independent evaluation, not every case of
-validator agreement
-([Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor)).
-
-For readers, what separates the two is the source of the weights: independent validators derive
-theirs from evaluating miner work, while copying derives them from another validator's published
-weights
-([Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor)).
-
-## Defenses Address Visibility and Bond Alignment
-
-Commit Reveal limits when committed weights become visible, while consensus-based weights adjust
-bonds around consensus alignment. Both reduce the value of copied or stale signals, but they address
-different parts of the same input-quality problem
-([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
-[Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)).
-
-## Public Weights Create the Copying Risk
-
-Commit Reveal documentation explains that each validator's weight vector on a subnet joins others in
-a weight matrix. That matrix feeds
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus), which turns
-[validator weights](https://docs.learnbittensor.org/resources/glossary#validator-weights) into
-incentive and dividend outcomes for the subnet.
-
-The matrix must remain public information. Official documentation says this visibility is required
-so [emissions](https://docs.learnbittensor.org/resources/glossary#emission) across the Bittensor
-platform can be transparently fair. Transparent reward accounting and open validator scores are
-linked design goals, not optional extras.
-
-That openness is also what makes weight copying possible. When recent validator scores are readable,
-one validator can substitute another validator's visible evaluation for independent miner
-assessment. Weight copying therefore arises from the same transparency property that lets
-participants audit how rewards were assigned.
-
-The documentation ties that behavior to unfair reward paths and weaker validation quality. A subnet
-that relies on visible consensus inputs must also manage the incentive to copy those inputs instead
-of performing fresh evaluation work that supports better
-[digital commodities](https://docs.learnbittensor.org/resources/glossary#digital-commodity).
-
-References: [Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
-[Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor)
-
-## Stake-Weighted Prediction Can Outperform Honest Scoring
-
-Weight-copying documentation describes a profitable copying pattern in which validators submit
-weights designed to maximize alignment with Yuma Consensus. One described approach uses the
-stake-weighted median of other validators' miner scores to predict the consensus that will form,
-using the [consensus score](https://docs.learnbittensor.org/resources/glossary#consensus-score)
-framing from official glossary language.
-
-Yuma Consensus rewards validators based on how closely their submitted weights align with emerging
-consensus. A copier who forecasts that consensus from stake-weighted aggregation can therefore
-appear better aligned than an honest validator who evaluates miners independently and disagrees with
-peers on some scores.
-
-Official documentation states that optimized copiers can achieve higher validator dividends per
-stake than honest validators. Weight copying can become more profitable than evaluation work when
-visible consensus is predictable from aggregated scores, not merely cheaper in operational effort.
-
-That profitability gap is part of why subnet owners are expected to configure defenses such as
-Commit Reveal. Independent validation must remain the stronger economic path if subnets are to keep
-producing quality digital commodities.
-
-References:
-[Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor),
-[Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score)
-
-## Concealed Weights Wait Outside Consensus
-
-Commit Reveal adds a waiting interval between when a validator commits weights and when those
-weights become public. During that interval, committed weights stay encrypted on chain and are
-therefore not included in Yuma Consensus.
-
-After the concealment interval elapses, the weights are revealed and then enter Yuma Consensus for
-the next epoch calculation, the same role they would have played if submitted without concealment.
-The validator-weight path therefore has a hidden commitment phase followed by a consensus-input
-phase.
-
-That timing boundary is different from merely hiding scores from human observers. Concealed weights
-are excluded from the aggregation step that turns validator signals into
-[rank](https://docs.learnbittensor.org/resources/glossary#rank),
-[trust](https://docs.learnbittensor.org/resources/glossary#trust), and emission outcomes until
-reveal completes.
-
-Copiers looking for a current consensus input cannot treat another validator's still-concealed
-commitment as live consensus material, because those weights have not yet entered the Yuma
-calculation window for the relevant
-[tempo](https://docs.learnbittensor.org/resources/glossary#tempo).
-
-References: [Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
 
 ## Further Reading
 
