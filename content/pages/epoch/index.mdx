@@ -93,48 +93,23 @@ which work-and-evaluation track is being discussed.
 
 The
 [Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from localnet to testnet and then mainnet. An epoch example
-should keep the selected network attached because localnet, testnet, and mainnet examples do not
-carry the same evidentiary weight
-([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+describes subnet development as moving from localnet to testnet and then mainnet. For epoch timing
+on a subnet such as netuid 1, that sequence changes how readers should interpret tempo boundaries,
+activity cutoff windows, and consensus settlement examples.
 
-Localnet epoch examples can test timing mechanics in isolation. Testnet examples add shared
-non-production consensus state. Mainnet epoch interpretation concerns production Yuma Consensus
-timing on the active network.
+In localnet, epoch examples can test timing mechanics in isolation. Local tempo and activity cutoff
+values reflect local chain configuration rather than production subnet cadence.
 
-## Relationship to Yuma Consensus
-
-Epoch and Yuma Consensus describe related parts of Bittensor's incentive system. Yuma Consensus is
-the on-chain process that aggregates validator weight signals within a subnet into miner incentives
-and validator dividends, applying consensus clipping, bonding, and emission calculation
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-For readers, epoch names a specific part of that incentive picture, while Yuma Consensus names the
-consensus process that turns validator weights into the resulting incentives and dividends.
-
-## Reader Boundary
-
-Epoch is the right term when the focus is a subnet consensus period. If the focus is cadence,
-[tempo](https://docs.learnbittensor.org/resources/glossary#tempo) is more precise. If the focus is
-aggregation logic, [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) is more
-precise. If the focus is evaluation signals themselves, validator weights are more precise
+On testnet, epoch boundaries can be observed in a shared, non-production network. Testnet consensus
+timing on a selected netuid is separate from mainnet emission and settlement state
 ([Glossary: Epoch](https://docs.learnbittensor.org/resources/glossary#epoch)).
 
-These boundaries keep epoch focused on consensus timing, not a subnet task description or a complete
-account of reward outcomes.
+On mainnet, epoch names the live production consensus period in which Yuma Consensus processes
+validator weights and allocates subnet emissions on the connected Bittensor network.
 
-## Timing Boundary
-
-Epoch language should keep timing and mechanism context attached. Bittensor references use epochs
-around recurring chain processes, and network documentation distinguishes observations by selected
-chain environment ([Glossary: Epoch](https://docs.learnbittensor.org/resources/glossary#epoch),
-[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
-
-An epoch is not a universal wall-clock promise. Its practical meaning depends on the network,
-subnet, and mechanism being discussed.
-
-That makes epoch a useful cross-reference term: it links tempo, validator weights, and Yuma
-Consensus without replacing any of them.
+The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
+separates mainnet, testnet, and localnet. An epoch example from one environment should not be read
+as representing production consensus timing on another network.
 
 ## Emission and Consensus Timing
 
@@ -160,8 +135,7 @@ happen independently of epoch boundaries
 ## Activity Cutoff Applies Inside Each Epoch
 
 Subnet [hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters) include
-activity cutoff measured in blocks within each epoch. Official documentation states that a validator
-must submit
+activity cutoff measured in blocks within each epoch. A validator must submit
 [validator weights](https://docs.learnbittensor.org/resources/glossary#validator-weights) within the
 first activity-cutoff blocks of an epoch or wait until the next epoch to participate
 ([Glossary: Activity Cutoff](https://docs.learnbittensor.org/resources/glossary#activity-cutoff)).
@@ -180,6 +154,59 @@ Epoch reading therefore spans submission and settlement. Validators can update s
 tempo, but miner and validator emission outcomes tied to those signals are credited when epoch
 processing completes at the tempo boundary
 ([Emission](https://docs.learnbittensor.org/learn/emissions)).
+
+## Clipping and Rank Refresh at the Tempo Boundary
+
+Each [tempo](https://docs.learnbittensor.org/resources/glossary#tempo) ends with Yuma Consensus
+reading the latest validator
+[weight matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix), clipping outlier
+submissions against a stake-weighted
+[consensus score](https://docs.learnbittensor.org/resources/glossary#consensus-score), and
+refreshing miner [rank](https://docs.learnbittensor.org/resources/glossary#rank) from the post-clip
+aggregate
+([Yuma Consensus: Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping)).
+
+That makes epoch timing the frame for both submission and settlement. Validators can update weights
+across the tempo, but rank, trust, bond updates, and emission allocation for that pass are tied to
+the epoch boundary when consensus completes.
+
+## Kappa Sets the Stake Threshold Inside Each Epoch Pass
+
+The hyperparameter [kappa](https://docs.learnbittensor.org/resources/glossary#kappa) sets how much
+validator stake must support a weight level before that level becomes the clipping ceiling during an
+epoch's Yuma pass. With the default kappa of 0.5, at least half of stake-weighted validator support
+must agree that a miner deserves weight above a given level before more generous weights are left
+unclipped
+([Yuma Consensus: Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+Kappa therefore belongs to epoch-level consensus mechanics rather than to wall-clock timing alone.
+The same tempo-defined epoch can produce different clipping outcomes if validator stake distribution
+changes between passes.
+
+## Timing Boundary
+
+Epoch language should keep timing and mechanism context attached. Bittensor references use epochs
+around recurring chain processes, and network documentation distinguishes observations by selected
+chain environment ([Glossary: Epoch](https://docs.learnbittensor.org/resources/glossary#epoch),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+An epoch is not a universal wall-clock promise. Its practical meaning depends on the network,
+subnet, and mechanism being discussed.
+
+That makes epoch a useful cross-reference term: it links tempo, validator weights, and Yuma
+Consensus without replacing any of them.
+
+## Reader Boundary
+
+Epoch is the right term when the focus is a subnet consensus period. If the focus is cadence,
+[tempo](https://docs.learnbittensor.org/resources/glossary#tempo) is more precise. If the focus is
+aggregation logic, [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) is more
+precise. If the focus is evaluation signals themselves, validator weights are more precise
+([Glossary: Epoch](https://docs.learnbittensor.org/resources/glossary#epoch)).
+
+These boundaries keep epoch focused on consensus timing, not a subnet task description or a complete
+account of reward outcomes.
 
 ## Further Reading
 
