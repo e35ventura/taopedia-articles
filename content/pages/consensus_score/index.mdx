@@ -127,38 +127,82 @@ shape later bond and incentive behavior
 
 ## Development Stage Context
 
-Bittensor separates localnet, testnet, and mainnet environments. Consensus-score examples from one
-environment are not evidence for another because validator sets, weights, and subnet state are
-environment-specific
-([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks),
-[Introduction to Bittensor: Subnet development](https://docs.learnbittensor.org/learn/introduction#subnet-development)).
+The
+[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
+describes subnet development as moving from localnet to testnet and then mainnet. For consensus
+score on a subnet such as netuid 1, that sequence changes how readers should interpret the
+stake-weighted benchmark, the validator set that produced it, and the rank and trust outcomes that
+follow clipping.
 
-Localnet examples are isolated development examples. Testnet examples are shared non-production
-examples. Mainnet consensus score concerns production validator weights and production Yuma
-Consensus behavior.
+In localnet, consensus-score examples can be exercised in an isolated environment. Local validator
+weights and stake-weighted medians reflect local chain configuration rather than production subnet
+consensus filtering.
 
-Specific examples belong to the subnet, network, validator set, and weight data that produced the
-benchmark. Consensus score describes the benchmark inside that setting, while rank and trust
-describe later Yuma outputs.
+On testnet, consensus score can be observed in a shared, non-production network. Testnet benchmark
+readings on a selected netuid are separate from mainnet validator-weight and stake-weight state
+([Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score)).
 
-## Relationship to Yuma Consensus
+On mainnet, consensus score is the live stake-weighted agreement benchmark Yuma Consensus uses when
+filtering production validator weights before rank and trust are calculated on the connected
+Bittensor network.
 
-Consensus Score and Yuma Consensus describe related parts of Bittensor's incentive system. Yuma
-Consensus is the on-chain process that aggregates validator weight signals within a subnet into
-miner incentives and validator dividends, applying consensus clipping, bonding, and emission
-calculation ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
+separates mainnet, testnet, and localnet. A consensus score example from one environment should not
+be read as representing production benchmark behavior on another network.
 
-For readers, consensus score names a specific part of that incentive picture, while Yuma Consensus
-names the consensus process that turns validator weights into the resulting incentives and
-dividends.
+## Kappa Sets the Stake Threshold for the Benchmark
 
-## Reader Boundary
+Before consensus score becomes a clipping ceiling, Yuma Consensus compares each validator's miner
+weights against a stake-weighted support level. The hyperparameter kappa sets how much of the
+subnet's validator stake must agree that a miner deserves weight above a given level before that
+level becomes the benchmark. With the default kappa of 0.5, at least half of stake-weighted
+validator support must back a weight level before more generous assignments are left unclipped
+([Yuma Consensus: Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
-Consensus score should not be read as a payout amount, a validator trust score by itself, or proof
-that a miner received a specific reward. It names the stake-weighted benchmark used when Yuma
-Consensus filters validator weight signals
-([Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+Readers should not treat kappa as a miner-quality score. It governs how aggressively outlier weights
+are trimmed relative to stake-backed agreement, while consensus score names the stake-weighted
+median benchmark that results from that clipping setup
+([Glossary: Stake Weight](https://docs.learnbittensor.org/resources/glossary#stake-weight)).
+
+## Eligibility Rules Shape the Input Set
+
+Consensus score is computed from validator weights that survive pre-consensus filtering, not from
+every value a validator submits. Epoch documentation lists steps that remove certain weights before
+stake-weighted aggregation begins
+([Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)).
+
+Self-assigned weights are removed so validators cannot vote for themselves, with an exception for
+the subnet creator when that role exists on the subnet. Weights tied to a neuron before that
+neuron's latest [registration](https://docs.learnbittensor.org/resources/glossary#register) are also
+dropped so stale assignments do not follow re-registered identities.
+
+Only rows from validators holding a
+[validator permit](https://docs.learnbittensor.org/resources/glossary#validator-permit) influence
+the benchmark. The glossary describes that permit as a validation-rights flag required for setting
+weights and participating in consensus, awarded to the top neurons by stake weight on the subnet.
+
+Those checks limit which submitted
+[validator weights](https://docs.learnbittensor.org/resources/glossary#validator-weights) can enter
+the stake-weighted median that becomes the consensus score for a miner.
+
+## Aggregate Rank Uses Post-Clip Weights
+
+After clipping against the consensus benchmark, Yuma Consensus aggregates the surviving
+stake-weighted weights into each miner's
+[rank](https://docs.learnbittensor.org/resources/glossary#rank). Rank is therefore a post-filter
+miner-side result, not the benchmark itself
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
+[Glossary: Rank](https://docs.learnbittensor.org/resources/glossary#rank)).
+
+[Trust](https://docs.learnbittensor.org/resources/glossary#trust) then compares final rank to
+pre-rank support to show how much evaluation signal survived clipping. A strong pre-rank with a
+lower trust reading can mean outlier weights were removed above the consensus benchmark rather than
+that the miner failed to perform useful subnet work.
+
+[Validator trust](https://docs.learnbittensor.org/resources/glossary#validator-trust) is a separate
+validator-side metric. It sums clipped weights a validator successfully contributed across neurons,
+which measures validator-side influence after filtering rather than the agreement benchmark itself.
 
 ## Weight Copying Can Forecast the Benchmark
 
@@ -171,11 +215,8 @@ separate scoring rule.
 The copying pattern matters because consensus score is derived from validator-submitted weights.
 When fresh weights are readable, a copier can align with the predicted median rather than evaluate
 miners independently
-([Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#validator-weights)).
-
-References:
-[Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor),
-[Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score)
+([Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#validator-weights),
+[Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor)).
 
 ## Clipping Reduces Weights Above the Benchmark
 
@@ -183,6 +224,11 @@ Yuma Consensus describes weights that exceed the stake-weighted consensus benchm
 for clipping. Inflated ratings that depart from broader agreement are trimmed rather than fully
 rewarded ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
 [Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
+
+When a submitted weight exceeds the clipped benchmark for a miner, neither the miner nor the
+submitting validator receives emissions for the excess portion. Clipping therefore turns raw
+validator submissions into a post-filter signal that later drives incentive allocation rather than
+passing every submitted value through unchanged.
 
 For readers, clipping applies to over-evaluation above the benchmark, not to every low or merely
 different score.
@@ -197,69 +243,16 @@ finalized.
 
 On a subnet such as netuid 1, those rank outcomes are credited when tempo-bound distribution runs
 rather than updating on every intermediate weight submission
-([Emission](https://docs.learnbittensor.org/learn/emissions)).
+([Emission](https://docs.learnbittensor.org/learn/emissions),
+[Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo)).
 
-References: [Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo),
-[Emission](https://docs.learnbittensor.org/learn/emissions)
+## Reader Boundary
 
-## Relationship to Rank
-
-Consensus score and rank are related but different Yuma Consensus outputs. Consensus score names the
-agreement benchmark used to filter outlier validator weights, while rank names the aggregate
-miner-side evaluation produced after those weights are combined
+Consensus score should not be read as a payout amount, a validator trust score by itself, or proof
+that a miner received a specific reward. It names the stake-weighted benchmark used when Yuma
+Consensus filters validator weight signals
 ([Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score),
-[Glossary: Rank](https://docs.learnbittensor.org/resources/glossary#rank)).
-
-For readers, consensus score belongs to the validator-weight filtering step and rank belongs to the
-resulting miner evaluation summary. One measures agreement among validator signals; the other
-summarizes miner placement after consensus processing. They are linked in the same pipeline but name
-different stages.
-
-References:
-[Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score),
-[Glossary: Rank](https://docs.learnbittensor.org/resources/glossary#rank),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
-
-## Relationship to Validator Weights
-
-Consensus score and validator weights are related but different Yuma Consensus terms. Validator
-weights name the evaluation signals validators submit about miner work, while consensus score names
-the stake-weighted agreement benchmark used to filter outlier weights before final rank results
-([Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#validator-weights),
-[Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score)).
-
-For readers, validator weights are the submitted evaluation inputs and consensus score is the
-filtering benchmark applied when those inputs are combined. One describes what validators signaled;
-the other describes how closely those signals align before clipping removes outliers.
-
-A single validator weight submission does not by itself define the consensus score reading, because
-consensus score is computed from the wider validator-weight set rather than from one submission
-alone ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-The filtering step keeps submitted validator weights separate from the consensus score benchmark
-that measures agreement among those signals before rank is finalized
-([Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)).
-
-## Relationship to Validator Trust
-
-Consensus score and validator trust are related but different Yuma Consensus metrics. Consensus
-score names the stake-weighted agreement benchmark used to filter outlier validator weights, while
-validator trust names the validator-side influence measure derived after that filtering step
-([Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score),
-[Glossary: Validator Trust](https://docs.learnbittensor.org/resources/glossary#validator-trust)).
-
-For readers, consensus score belongs to the filtering benchmark applied to submitted validator
-weights and validator trust belongs to the validator-side metric produced after outliers are clipped
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-A consensus score reading does not by itself report validator trust for an individual validator,
-because validator trust summarizes validator-side influence after filtering rather than the
-agreement benchmark itself
-([Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#validator-weights)).
-
-Official Yuma Consensus documentation keeps filtering-benchmark vocabulary separate from
-validator-side influence vocabulary so each metric stays tied to its step in the consensus pipeline
-([Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)).
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
 ## Further Reading
 
