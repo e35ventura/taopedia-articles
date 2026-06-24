@@ -147,45 +147,58 @@ The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-netw
 separates mainnet, testnet, and localnet. A Yuma Consensus example from one environment should not
 be read as representing production consensus outcomes on another network.
 
-## Reader Boundary
+## Weight Submissions Form a Consensus Input Matrix
 
-Yuma Consensus is a reference term for Bittensor's validator-weight aggregation process. It is not a
-validator strategy, subnet ranking table, point-in-time reward report, or guide to changing subnet
-behavior ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
-[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+Each validator on a subnet submits a weight vector ranking miners it has evaluated. Yuma Consensus
+treats those vectors as rows in a matrix of validator evaluations rather than as isolated scores.
+The on-chain process reads that combined input and resolves it into two emission vectors — one for
+miners and one for validators — that allocate each tempo's subnet emissions by role
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
-Concrete examples need the selected subnet, mechanism context, network environment, epoch context,
-and source. Without those boundaries, a Yuma Consensus claim can overstate what the mechanism alone
-proves.
+That matrix framing keeps input and output vocabulary separate. Validator weights name the submitted
+evaluations; miner and validator emission shares name the two allocation results produced after
+aggregation, clipping, bonding, and normalization inside the same epoch
+([Glossary: Weight Matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix),
+[Emissions](https://docs.learnbittensor.org/learn/emissions)).
+
+## Kappa Sets the Stake Threshold for Clipping
+
+Before rank and trust are computed, clipping compares each validator's miner weights against a
+stake-weighted benchmark. The hyperparameter kappa sets how much of the subnet's validator stake
+must support a weight level before that level becomes the clipping ceiling for a miner. With the
+default kappa of 0.5, at least half of stake-weighted validator support must agree that a miner
+deserves weight above a given level before more generous weights are left unclipped
+([Yuma Consensus: Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+Readers should not treat kappa as a miner-quality score. It governs how aggressively outlier weights
+are trimmed relative to stake-backed consensus, not how useful a miner's subnet work was in
+isolation
+([Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score)).
 
 ## Consensus Score Clips Outlier Weights
 
-Official [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) documentation
-describes a clipping step that runs before final reward outcomes are calculated. Clipping is
+Yuma Consensus runs a clipping step before final reward outcomes are calculated. Clipping is
 designed to punish inaccurate miner evaluation, especially patterns that could manipulate consensus
 to favor certain miners
 ([Yuma Consensus: Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping)).
 
-The [Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score)
-defines the benchmark used in that step as the stake-weighted median of weights assigned to a
-neuron. That median creates a consensus threshold that filters outlier
+The consensus score is the stake-weighted median benchmark used in that step. That median creates a
+threshold that filters outlier
 [validator weights](https://docs.learnbittensor.org/resources/glossary#validator-weights) before
-they reach final [rank](https://docs.learnbittensor.org/resources/glossary#rank) calculations.
+they reach final [rank](https://docs.learnbittensor.org/resources/glossary#rank) calculations
+([Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score)).
 
-When a submitted weight exceeds the clipped benchmark for a miner, official documentation states
-that neither the miner nor the submitting validator receives emissions for the excess portion.
-Clipping therefore turns raw validator submissions into a post-filter signal that later drives
-incentive allocation rather than passing every submitted value through unchanged.
-
-References: [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
-[Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score)
+When a submitted weight exceeds the clipped benchmark for a miner, neither the miner nor the
+submitting validator receives emissions for the excess portion. Clipping therefore turns raw
+validator submissions into a post-filter signal that later drives incentive allocation rather than
+passing every submitted value through unchanged.
 
 ## Trust Measures How Much Rank Survived Clipping
 
-Official glossary definitions give [trust](https://docs.learnbittensor.org/resources/glossary#trust)
-a specific meaning inside Yuma Consensus. Trust is calculated as the ratio of final rank to
-pre-rank, showing how much of the original validator support remained after consensus clipping
-([Glossary: Rank](https://docs.learnbittensor.org/resources/glossary#rank)).
+Inside Yuma Consensus, [trust](https://docs.learnbittensor.org/resources/glossary#trust) is the
+ratio of final rank to pre-rank. It shows how much of the original validator support remained after
+consensus clipping ([Glossary: Rank](https://docs.learnbittensor.org/resources/glossary#rank)).
 
 That ratio describes clipping impact rather than subnet task quality. A miner can show strong
 pre-rank support yet lower trust when outlier weights were removed before the aggregate rank was
@@ -193,17 +206,13 @@ calculated. Trust therefore answers how much evaluation signal survived filterin
 miner performed useful work under the subnet's incentive mechanism.
 
 [Validator trust](https://docs.learnbittensor.org/resources/glossary#validator-trust) is a separate
-validator-side metric. Official documentation describes it as the sum of clipped weights a validator
-successfully contributed across neurons, indicating that validator's influence inside the consensus
-process rather than miner-side rank change.
-
-References: [Glossary: Trust](https://docs.learnbittensor.org/resources/glossary#trust),
-[Glossary: Validator Trust](https://docs.learnbittensor.org/resources/glossary#validator-trust)
+validator-side metric. It sums clipped weights a validator successfully contributed across neurons,
+which measures that validator's influence inside the consensus process rather than miner-side rank
+change.
 
 ## Dividends Combine Bonds With Miner Incentives
 
-Official Yuma Consensus documentation states that each validator's share of validator-side emissions
-equals the sum of that validator's
+Each validator's share of validator-side emissions equals the sum of that validator's
 [validator-miner bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds)
 multiplied by each miner's incentive outcome
 ([Yuma Consensus: Validator emissions](https://docs.learnbittensor.org/learn/yuma-consensus#validator-emissions)).
@@ -214,35 +223,34 @@ produced from clipped and aggregated weight signals, while
 [dividends](https://docs.learnbittensor.org/resources/glossary#dividends) name validator-side
 outcomes derived from bond strength relative to those miner results.
 
-[Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)
-documentation adds that dividend calculation uses smoothed exponential moving average bond values
-rather than instantaneous bond readings alone. A dividend claim therefore depends on both bond
-history and the miner incentive outcomes being paired in the same epoch.
-
-References: [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
-[Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)
-
-## Relationship to Consensus Score
-
-Yuma Consensus and consensus score are related but different Yuma Consensus terms. Yuma Consensus
-names the on-chain aggregation process that turns validator weights into incentive outcomes, while
-consensus score names the stake-weighted agreement benchmark used to filter outlier weights inside
-that process ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
-[Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score)).
-
-For readers, Yuma Consensus is the full epoch mechanism and consensus score is one filtering step
-within it. Validator weights enter the process; consensus score measures how closely those signals
-align before clipping removes outliers
-([Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#validator-weights)).
-
-A consensus score reading does not by itself name the whole Yuma Consensus outcome, because rank,
-trust, incentives, and dividends follow additional steps after that filtering benchmark is applied
-([Glossary: Rank](https://docs.learnbittensor.org/resources/glossary#rank),
-[Glossary: Trust](https://docs.learnbittensor.org/resources/glossary#trust)).
-
-Official Yuma Consensus documentation keeps the full aggregation process separate from the consensus
-score benchmark that filters validator weights before rank and trust outcomes are finalized
+Dividend calculation uses smoothed exponential moving average bond values rather than instantaneous
+bond readings alone, so a dividend claim depends on both bond history and the miner incentive
+outcomes being paired in the same epoch
 ([Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)).
+
+## Bond-Weight Blending Penalizes Out-of-Consensus Evaluations
+
+When a validator assigns a miner weight above the clipped consensus benchmark, the bond update
+blends that submission toward the benchmark rather than accepting the full value. A configurable
+penalty factor controls how strongly out-of-consensus weights are pulled back toward the consensus
+level, and an exponential moving average then smooths validator-miner bonds across epochs
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
+[Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)).
+
+Validators who stay near consensus build stronger smoothed bonds and therefore participate more
+fully in validator-side emission allocation, while repeated over-evaluation relative to the
+benchmark erodes bond contribution over time.
+
+## Reader Boundary
+
+Yuma Consensus is a reference term for Bittensor's validator-weight aggregation process. It is not a
+validator strategy, subnet ranking table, point-in-time reward report, or guide to changing subnet
+behavior ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+Concrete examples need the selected subnet, mechanism context, network environment, epoch context,
+and source. Without those boundaries, a Yuma Consensus claim can overstate what the mechanism alone
+proves.
 
 ## Further Reading
 
