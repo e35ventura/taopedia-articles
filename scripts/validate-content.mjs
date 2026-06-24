@@ -77,6 +77,14 @@ function validateTags(data, filePath) {
   if (data.tags.length > 3) {
     throw new Error(`${filePath}: use at most 3 tags`);
   }
+  // build-index.mjs writes the tags array verbatim into each article's index
+  // record (content/index/articles.jsonl) without de-duplicating it, so a tag
+  // repeated inside one article carries that duplicate into the published index.
+  // That double-counts the article on its tag facet and renders a redundant tag
+  // chip. Match the indexer's normalizeString (trim) and compare case-insensitively
+  // so "Wallets" and " wallets " are treated as the same tag, then reject the
+  // collision here where npm run validate already runs in CI.
+  const seenTags = new Set();
   for (const tag of data.tags) {
     if (typeof tag !== "string" || !tag.trim()) {
       throw new Error(`${filePath}: tags must be non-empty strings`);
@@ -89,6 +97,13 @@ function validateTags(data, filePath) {
         `${filePath}: do not use "Bittensor" as a tag; every Taopedia article is already Bittensor-focused`
       );
     }
+    const normalizedTag = tag.trim().toLowerCase();
+    if (seenTags.has(normalizedTag)) {
+      throw new Error(
+        `${filePath}: duplicate tag "${tag}"; list each tag at most once per article`
+      );
+    }
+    seenTags.add(normalizedTag);
   }
 }
 
