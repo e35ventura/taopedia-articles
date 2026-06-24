@@ -117,30 +117,6 @@ Yuma Consensus path that shapes subnet incentives
 Validator trust is a consensus metric that helps explain the validator side of filtered weights
 before broader incentive outcomes are interpreted.
 
-## Relationship to Yuma Consensus
-
-Validator Trust and Yuma Consensus describe related parts of Bittensor's incentive system. Yuma
-Consensus is the on-chain process that aggregates validator weight signals within a subnet into
-miner incentives and validator dividends, applying consensus clipping, bonding, and emission
-calculation ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-For readers, validator trust names a specific part of that incentive picture, while Yuma Consensus
-names the consensus process that turns validator weights into the resulting incentives and
-dividends.
-
-## Reader Boundary
-
-Validator trust is a validator-side Yuma Consensus metric read after clipping, not a standalone
-reputation label, miner-side trust score, or dividend forecast
-([Glossary: Validator Trust](https://docs.learnbittensor.org/resources/glossary#validator-trust),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-Trust compares miner-side support through clipping; validator trust summarizes validator-side
-influence left by clipped weights. Rank names miner-side results; validator trust stays on the
-validator side of the filtered weight set
-([Glossary: Trust](https://docs.learnbittensor.org/resources/glossary#trust),
-[Glossary: Rank](https://docs.learnbittensor.org/resources/glossary#rank)).
-
 ## Validator Trust Names Validator-Side Alignment
 
 The [Glossary: Validator Trust](https://docs.learnbittensor.org/resources/glossary#validator-trust)
@@ -200,64 +176,68 @@ The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-netw
 separates mainnet, testnet, and localnet. A validator-trust example from one environment should not
 be read as representing production alignment metrics on another network.
 
-## Relationship to Weight Matrix
+## Validator Trust Sums Clipped Weight Influence
 
-Validator trust and weight matrix are related but different Yuma Consensus vocabulary. Weight matrix
-names the subnet-level collection of validator weight vectors, while validator trust names the
-validator-side influence measure derived after consensus clipping
-([Glossary: Weight Matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix),
-[Glossary: Validator Trust](https://docs.learnbittensor.org/resources/glossary#validator-trust)).
-
-For readers, the weight matrix is structured input assembled from validator weight signals, and
-validator trust is a downstream validator metric after those signals are filtered. One organizes
-subnet weight data; the other summarizes validator influence after clipping. They belong to the same
-consensus layer but name different objects.
-
-References:
-[Glossary: Weight Matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix),
-[Glossary: Validator Trust](https://docs.learnbittensor.org/resources/glossary#validator-trust),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
-
-## Relationship to Trust
-
-Validator trust and trust are related but different Yuma Consensus metrics. Trust names miner-side
-support after validator weights are clipped by consensus, while validator trust names validator-side
-influence after that same clipping step
-([Glossary: Trust](https://docs.learnbittensor.org/resources/glossary#trust),
-[Glossary: Validator Trust](https://docs.learnbittensor.org/resources/glossary#validator-trust)).
-
-For readers, trust belongs to miner evaluation and validator trust belongs to validator influence.
-Both are read after outlier validator weights are filtered, but one summarizes retained miner
-support and the other summarizes how much validator signal remains influential. They mirror opposite
-sides of the same consensus process rather than naming the same role.
-
-Rank names miner-side results after clipping, while validator trust stays on the validator side of
-the filtered weight set ([Glossary: Rank](https://docs.learnbittensor.org/resources/glossary#rank),
+Inside Yuma Consensus, validator trust sums clipped weights a validator successfully contributed
+across neurons. It measures validator-side influence after filtering rather than the
+[consensus score](https://docs.learnbittensor.org/resources/glossary#consensus-score) benchmark that
+triggered clipping
+([Glossary: Validator Trust](https://docs.learnbittensor.org/resources/glossary#validator-trust),
 [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
-A strong trust reading for a miner does not automatically imply a matching validator trust reading,
-because the two metrics answer different questions in the same Yuma Consensus pipeline.
+That sum keeps validator trust downstream of submitted
+[validator weights](https://docs.learnbittensor.org/resources/glossary#validator-weights). Unclipped
+submissions and clipped influence are different readings; validator trust describes the
+validator-side result after the consensus benchmark has acted on those signals.
 
-## Relationship to Consensus Score
+## Bond Blending Penalizes Out-of-Consensus Weights
 
-Validator trust and consensus score are related but different Yuma Consensus metrics. Consensus
-score names the stake-weighted agreement benchmark used to filter outlier validator weights, while
-validator trust names the validator-side influence measure derived after that filtering step
-([Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score),
-[Glossary: Validator Trust](https://docs.learnbittensor.org/resources/glossary#validator-trust)).
+When a validator assigns a miner weight above the clipped consensus benchmark, the bond update
+blends that submission toward the benchmark rather than accepting the full value. A configurable
+penalty factor controls how strongly out-of-consensus weights are pulled back, and an exponential
+moving average then smooths
+[validator-miner bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds)
+across epochs ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
+[Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)).
 
-For readers, consensus score belongs to the filtering benchmark applied to submitted validator
-weights and validator trust belongs to the validator-side metric produced after outliers are clipped
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+Validators who stay near consensus build stronger smoothed bonds and therefore participate more
+fully in validator-side emission allocation, while repeated over-evaluation relative to the
+benchmark erodes bond contribution over time.
 
-A consensus score reading does not by itself report validator trust for an individual validator,
-because validator trust summarizes validator-side influence after filtering rather than the
-agreement benchmark itself
-([Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#validator-weights)).
+## Dividends Pair Bonds With Miner Incentives
 
-Official Yuma Consensus documentation keeps filtering-benchmark vocabulary separate from
-validator-side influence vocabulary so each metric stays tied to its step in the consensus pipeline
-([Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)).
+Each validator's share of validator-side emissions equals the sum of that validator's bonds
+multiplied by each miner's
+[incentive](https://docs.learnbittensor.org/resources/glossary#incentives) outcome
+([Yuma Consensus: Validator emissions](https://docs.learnbittensor.org/learn/yuma-consensus#validator-emissions)).
+
+Validator trust vocabulary names how consistently a validator's clipped weights tracked consensus in
+that process. [Dividend](https://docs.learnbittensor.org/resources/glossary#dividends) vocabulary
+names what validators receive from the consensus role after bonds and miner incentives are paired in
+the same epoch.
+
+## Weight Matrix Input Precedes Validator Trust
+
+The [Glossary: Weight Matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix)
+collects validator weight vectors as structured input for Yuma Consensus. Validator trust is read
+after that matrix is filtered and clipped, not from one isolated vector inside it
+([Glossary: Weight Vector](https://docs.learnbittensor.org/resources/glossary#weight-vector)).
+
+Readers comparing terms should keep scale separate. A weight vector belongs to one validator; the
+matrix is the grouped set; validator trust summarizes that validator's clipped influence after
+consensus uses the grouped input.
+
+## Reader Boundary
+
+Validator trust is a validator-side Yuma Consensus metric read after clipping, not a standalone
+reputation label, miner-side trust score, or dividend forecast
+([Glossary: Validator Trust](https://docs.learnbittensor.org/resources/glossary#validator-trust),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+[Trust](https://docs.learnbittensor.org/resources/glossary#trust) compares miner-side support
+through clipping; validator trust summarizes validator-side influence left by clipped weights.
+[Rank](https://docs.learnbittensor.org/resources/glossary#rank) names miner-side results; validator
+trust stays on the validator side of the filtered weight set.
 
 ## Further Reading
 
