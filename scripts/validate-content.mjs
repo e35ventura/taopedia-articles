@@ -121,6 +121,19 @@ function hasFencedCodeBlock(content) {
   return fencedCodeBlockPattern.test(content);
 }
 
+function validateDuplicateSectionHeadings(articlePath, content) {
+  const seen = new Set();
+  for (const line of content.split("\n")) {
+    const match = line.match(/^## (.+)$/);
+    if (!match) continue;
+    const heading = match[1].trim();
+    if (seen.has(heading)) {
+      throw new Error(`${articlePath}: duplicate section heading "## ${heading}"`);
+    }
+    seen.add(heading);
+  }
+}
+
 function hasSourceLink(content) {
   for (const match of content.matchAll(markdownHttpLinkPattern)) {
     if (!match[0].startsWith("!")) return true;
@@ -241,6 +254,9 @@ async function validateArticle(slug, articleDir, knownTargets) {
     throw new Error(
       `${articlePath}: published articles must not contain fenced code blocks; explain commands and configuration in prose`
     );
+  }
+  if (isPublishedArticle(slug, data)) {
+    validateDuplicateSectionHeadings(articlePath, content);
   }
 
   if (Array.isArray(data.infoboxRows)) {
