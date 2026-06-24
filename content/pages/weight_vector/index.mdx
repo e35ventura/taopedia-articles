@@ -130,37 +130,37 @@ weakens that purpose when validators rely on visible weights instead of fresh ev
 Commit Reveal can add a timing layer by delaying visibility of fresh weight signals. That protects
 timing around the information, but it does not change the definition of a vector.
 
-## Relationship to Yuma Consensus
+## Development Stage Context
 
-Weight Vector and Yuma Consensus describe related parts of Bittensor's incentive system. Yuma
-Consensus is the on-chain process that aggregates validator weight signals within a subnet into
-miner incentives and validator dividends, applying consensus clipping, bonding, and emission
-calculation ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+The
+[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
+describes subnet development as moving from localnet to testnet and then mainnet. For weight vector
+on a subnet such as netuid 1, that sequence changes how readers should interpret per-validator
+submission examples, permit eligibility, and the tempo window that assembles them into a matrix.
 
-For readers, weight vector names a specific part of that incentive picture, while Yuma Consensus
-names the consensus process that turns validator weights into the resulting incentives and
-dividends.
+In localnet, weight-vector examples can be tested in an isolated environment. Local chain state
+reflects local configuration rather than production network behavior.
 
-## Reader Boundary
+On testnet, weight vectors can be observed in a shared, non-production network. Testnet readings on
+a selected netuid are separate from mainnet validator-weight state
+([Glossary: Weight Vector](https://docs.learnbittensor.org/resources/glossary#weight-vector)).
 
-Weight vector names per-validator consensus-input vocabulary. It describes one validator's
-structured miner-evaluation set before subnet-level matrix and consensus processing, not stake
-weight, rank, or a complete reward model
-([Glossary: Weight Vector](https://docs.learnbittensor.org/resources/glossary#weight-vector),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+On mainnet, a weight vector is a live per-validator evaluation signal submitted for Yuma Consensus
+on the production Bittensor network.
 
-Specific examples belong to the subnet, mechanism, network, and source that produced the vector.
-Validator weights, weight matrices, consensus score, rank, and stake weight describe neighboring
-parts of the same consensus process.
+The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
+separates mainnet, testnet, and localnet. A weight-vector example from one environment should not be
+read as representing production behavior on another network.
 
 ## Weight Setting Builds One Validator's Vector
 
-Official [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) documentation
-describes each subnet validator as periodically submitting a vector of weights that ranks miner
-work. [Weight setting](https://docs.learnbittensor.org/resources/glossary#weight-setting) is the
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) describes each subnet
+validator as periodically submitting a vector of weights that ranks miner work.
+[Weight setting](https://docs.learnbittensor.org/resources/glossary#weight-setting) is the
 validator-side process; the
 [Glossary: Weight Vector](https://docs.learnbittensor.org/resources/glossary#weight-vector) names
-the structured score set that process produces.
+the structured score set that process produces
+([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
 
 That keeps process and structure separate. Weight setting explains what a validator does; a weight
 vector names the per-validator miner scores that action creates.
@@ -186,27 +186,69 @@ every registered [UID](https://docs.learnbittensor.org/resources/glossary#uid-sl
 That scope keeps vector reading tied to evaluation. The structure holds one validator's miner
 judgments, and those judgments apply to miners the validator actually scored.
 
-## Development Stage Context
+## Multiple Mechanisms Keep Separate Vectors
 
-The
-[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from localnet to testnet and then mainnet. For weight vector,
-that sequence changes how readers should interpret examples tied to subnet state, validator
-activity, or chain observations.
+When a subnet runs more than one
+[incentive mechanism](https://docs.learnbittensor.org/resources/glossary#incentive-mechanism),
+validators maintain separate weight vectors for each mechanism rather than one blended ranking table
+([Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets)).
 
-In localnet, weight vector examples can be tested in an isolated environment. Local chain state
-reflects local configuration rather than production network behavior.
+Each mechanism also keeps independent bond pools and emissions paths tied to the weights validators
+submit for that mechanism's work. A high score in one mechanism's vector therefore does not
+automatically carry the same meaning in another mechanism's separate vector on the same subnet.
 
-On testnet, weight vector can be observed in a shared, non-production network. Testnet readings on a
-selected netuid are separate from mainnet state
-([Weight Vector](https://docs.learnbittensor.org/resources/glossary#weight-vector)).
+## Pre-Consensus Filtering Trims Vector Entries
 
-On mainnet, weight vector applies on the live production Bittensor network for the environment and
-subnet context being discussed.
+Not every value inside a submitted vector survives into Yuma Consensus unchanged. Epoch
+documentation lists pre-consensus filtering steps that remove certain weights before stake-weighted
+aggregation begins
+([Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)).
 
-The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
-separates mainnet, testnet, and localnet. A weight vector example from one environment should not be
-read as representing production behavior on another network.
+Self-assigned weights are removed so validators cannot vote for themselves, with an exception for
+the subnet creator when that role exists on the subnet. Weights tied to a neuron before that
+neuron's latest [registration](https://docs.learnbittensor.org/resources/glossary#register) are also
+dropped so stale assignments do not follow re-registered identities.
+
+Only vectors from validators holding a
+[validator permit](https://docs.learnbittensor.org/resources/glossary#validator-permit) influence
+consensus. Those checks limit which per-validator entries can enter the matrix Yuma actually
+processes.
+
+## Matrix Assembly Groups Validator Vectors
+
+The [Glossary: Weight Matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix)
+collects validator weight vectors as structured input for Yuma Consensus. A weight vector belongs to
+one validator; the matrix is the grouped set read after tempo-bound assembly rather than one
+isolated row inside it
+([Glossary: Weight Vector](https://docs.learnbittensor.org/resources/glossary#weight-vector)).
+
+[Rank](https://docs.learnbittensor.org/resources/glossary#rank),
+[trust](https://docs.learnbittensor.org/resources/glossary#trust), and
+[validator trust](https://docs.learnbittensor.org/resources/glossary#validator-trust) are read only
+after that grouped input passes through clipping and aggregation.
+
+## Activity Cutoff Limits Vector Submission
+
+Subnet [hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters) include an
+activity cutoff measured in blocks within each epoch. A validator that does not submit weights
+within the first activity-cutoff blocks of an epoch cannot participate until the next epoch
+([Glossary: Activity Cutoff](https://docs.learnbittensor.org/resources/glossary#activity-cutoff)).
+
+That timing rule affects whether a validator's vector can enter the current consensus pass.
+Validators who miss the early window sit out the epoch rather than joining that round of
+aggregation.
+
+## Reader Boundary
+
+Weight vector names per-validator consensus-input vocabulary. It describes one validator's
+structured miner-evaluation set before subnet-level matrix and consensus processing, not stake
+weight, rank, or a complete reward model
+([Glossary: Weight Vector](https://docs.learnbittensor.org/resources/glossary#weight-vector),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+Specific examples belong to the subnet, mechanism, network, and source that produced the vector.
+Validator weights, weight matrices, consensus score, rank, and stake weight describe neighboring
+parts of the same consensus process.
 
 ## Further Reading
 
