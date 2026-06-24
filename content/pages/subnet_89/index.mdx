@@ -1,147 +1,141 @@
 ---
-title: "Subnet 89: InfiniteHash"
+title: "Subnet 89: InfiniteQuant"
 summary:
-  "InfiniteHash is Bittensor Subnet 89, a decentralized Bitcoin mining pool where miners contribute
-  ASIC hashrate and run Lightning Network nodes to earn subnet rewards."
+  "InfiniteQuant is Bittensor Subnet 89, a trading-signals subnet where miners commit encrypted
+  directional trade calls and validators grade them on real market data."
 category: "Subnets"
 tags: ["Subnets"]
 ---
 
-InfiniteHash is Bittensor Subnet 89. Its on-chain description is "BTC Pool + Lightning Network." The
-[InfiniteHash README source](https://raw.githubusercontent.com/backend-developers-ltd/InfiniteHash/master/README.md)
-describes a subnet that combines Bitcoin mining-pool participation with Lightning Network
-infrastructure.
+InfiniteQuant is Bittensor Subnet 89. Its on-chain description is oriented around trading-signal
+grading, and the registered repository is
+[DeltaCompute24/InfiniteQuant-Subnet](https://github.com/DeltaCompute24/InfiniteQuant-Subnet). The
+[InfiniteQuant README](https://raw.githubusercontent.com/DeltaCompute24/InfiniteQuant-Subnet/master/README.md)
+describes miners committing encrypted directional trade calls and validators grading those calls on
+real market data before setting weights.
 
-## What InfiniteHash Provides
+## What InfiniteQuant Rewards
 
-InfiniteHash runs a shared Bitcoin mining pool on Bittensor. Participants dedicate Bitcoin mining
-hardware to the pool and receive subnet rewards in proportion to the hashrate they contribute. The
-subnet pairs this mining layer with Lightning Network participation: miners can also operate
-Lightning nodes and earn additional rewards based on the quality of that service, building a payment
-layer alongside the mining operation.
+Rather than rewarding trading opinions or social commentary, InfiniteQuant rewards miners who can
+commit encrypted signals that survive validator grading. A miner selects a pair and direction,
+encrypts the signal with a drand 24-hour timelock, and records `SHA256(signal)` on-chain through
+`set_commitment`. Validators later reveal the plaintext, verify it against the on-chain hash, and
+grade the call on market candles.
 
-## Auction Context
+The subnet therefore rewards provable signal quality under shared rules, not self-reported PnL.
+Emissions flow to qualified miners weighted by wins in the last 30 days multiplied by a lifetime
+hit-rate tier.
 
-The
-[auction incentive documentation](https://raw.githubusercontent.com/backend-developers-ltd/InfiniteHash/master/docs/subnet_auction_incentive_system.md)
-describes a repeated auction mechanism for allocating subnet emissions to hashrate delivery. Miners
-publish commitments that represent offered hashrate and price. Validators calculate how much
-hashrate the current subnet budget can purchase, select winning commitments, and later publish
-weights from the delivered results.
+## Commit and Reveal Context
 
-This gives the subnet a clearer economic loop than a simple participation list. A miner is not
-rewarded merely for being registered; the useful work is priced as Bitcoin mining capacity and then
-checked against what was actually delivered. The auction frame also lets the available budget adjust
-with subnet emissions and market price inputs, so reward allocation can respond to changing mining
-conditions.
+The README separates the commit step from the reveal-and-grade step. At commit time, validators
+anchor entry at the open of the first 1-second bar at or after the commitment block time plus 30
+seconds so every validator derives the same entry price. After the timelock opens, validators grade
+on 1-minute candles: first touch of take-profit wins, first touch of stop-loss loses, and no touch
+by the horizon is a wash.
 
-## Delivery Verification Context
+This matters because a miner must reveal what was committed. A blob still unfetchable six hours
+after its reveal round is treated as a decisive loss, so miners cannot hide losing calls behind an
+unrevealed commitment.
 
-InfiniteHash's source describes delivery verification as a separate step after auction selection.
-For each winning hotkey, validators compare the committed hashrate with observed pool snapshots for
-the relevant window. Delivered winners can be recorded for weight publication, while miners that
-fail delivery can be excluded from later auctions until the ban condition clears.
+## Scoring and Qualification Context
 
-That distinction matters for readers because Bitcoin mining has an external measurable output:
-hashrate delivered to the pool. The subnet's scoring problem is therefore not only "who bid for
-hashrate," but "who delivered the committed mining capacity after the auction." Pairing bids with
-delivery checks helps keep subnet rewards tied to real mining contribution.
+InfiniteQuant's README frames quality as lifetime and recent performance together. Hit rate is
+lifetime wins divided by lifetime decisive outcomes and never resets. A miner becomes qualified only
+after at least 30 lifetime decisive trades and a lifetime hit rate of at least 55%. Weight then
+scales with wins in the last 30 days multiplied by tier multipliers such as SHARP at 60% and WOLF at
+70%.
 
-## Pool Work and Auction Settlement Boundary
-
-The
-[InfiniteHash README](https://raw.githubusercontent.com/backend-developers-ltd/InfiniteHash/master/README.md)
-frames the subnet around Bitcoin mining-pool participation and Lightning Network infrastructure.
-That is the broad work surface: miners contribute hashrate to the pool, and the subnet can also
-consider Lightning service quality. The auction documentation narrows one part of that surface by
-describing how hashrate commitments become reward evidence.
-
-The
-[auction incentive documentation](https://raw.githubusercontent.com/backend-developers-ltd/InfiniteHash/master/docs/subnet_auction_incentive_system.md)
-describes a repeated auction flow where miners offer hashrate capacity and validators later compare
-that offer with observed delivery. A winning commitment is therefore provisional. It becomes
-rewardable only when the delivered mining capacity matches the work the miner offered.
-
-This boundary is useful because Bitcoin mining has an observable output outside the article prose:
-hashrate delivered to the pool. Validators do not have to treat a miner's description as enough on
-its own. They can compare the promised capacity with pool-side evidence of what was actually
-delivered.
-
-The same boundary keeps the mining-pool role separate from the Lightning-service role. Both belong
-to the broad InfiniteHash subnet description, but hashrate settlement is the part where auction
-commitments and pool delivery are paired. Lightning service quality is adjacent infrastructure, not
-the same evidence path as delivered mining capacity.
-
-For readers, Subnet 89 is best read as a mining-capacity market with delivery checks. The pool and
-Lightning framing describe what the subnet supports, while the auction-and-delivery flow describes
-how hashrate contribution becomes rewardable evidence.
-
-References:
-[InfiniteHash README](https://raw.githubusercontent.com/backend-developers-ltd/InfiniteHash/master/README.md),
-[InfiniteHash auction incentive source](https://raw.githubusercontent.com/backend-developers-ltd/InfiniteHash/master/docs/subnet_auction_incentive_system.md)
+Washes and voids do not count as decisive outcomes. If no qualified miner has recent wins, emissions
+burn. New hotkeys also receive an eight-day warmup period with dust emissions while they build a
+record.
 
 ## Miner and Validator Roles
 
-Miners contribute by pointing Bitcoin mining hardware at the subnet's pool and linking their
-Bittensor hotkey to their pool worker. Miners who also operate Lightning nodes can earn on top of
-their hashrate contribution.
+Miners publish encrypted signal blobs at public URLs, commit hashes on-chain, and reveal them after
+the timelock. They do not need a market-data subscription because validators handle pricing. The
+README also caps submissions at six signals per hotkey per UTC day and describes copy-penalty rules
+for hotkeys that habitually land second into another live trade.
 
-Validators track the hashrate each miner delivers to the pool and assess Lightning service quality
-where applicable, then translate those measurements into weights. Reward distribution follows
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus).
+Validators fetch revealed signals, grade them on shared candle rules, and set weights from the
+resulting track records. Running a validator requires a paid market-data plan sufficient to grade
+all supported assets and a validator permit so commits do not pile up unrevealed. Those weights feed
+into [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus).
 
-## Source and Live Data
+## On-Chain Identity
 
-Live SN89 data is available on [TaoStats](https://taostats.io/subnets/89). The mechanism details in
-this article are tied to the InfiniteHash README and auction documentation.
+Live SN89 data is available on [TaoStats](https://taostats.io/subnets/89). The live Finney identity
+for netuid 89 registers the subnet name as InfiniteQuant, with repository
+[DeltaCompute24/InfiniteQuant-Subnet](https://github.com/DeltaCompute24/InfiniteQuant-Subnet) and
+project URL [infinitequant.app](https://infinitequant.app).
 
 ## Relationship to Yuma Consensus
 
 Subnet 89 uses [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) to convert the
-hashrate-delivery weight vectors that validators submit into the emission shares distributed to
-miners and validators within the subnet each tempo. The
+trading-signal performance weight vectors that validators submit into the emission shares
+distributed to miners and validators within the subnet each tempo. The
 [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) documentation describes how
 validator weight submissions are aggregated into consensus weights for each miner registered on the
 subnet.
 
-In InfiniteHash's context, validators compare each miner's committed hashrate against observed
-pool-delivery evidence after auction settlement, translating delivered Bitcoin mining capacity and
-Lightning service quality into weight vectors for the subnet. The
-[Emission](https://docs.learnbittensor.org/learn/emissions) documentation describes how those
-consensus weights determine each participant's share of the subnet's accumulated emission each
-tempo.
+In InfiniteQuant's context, validators grade revealed commits against shared TP/SL and horizon
+rules, then translate qualified miners' recent wins and lifetime hit-rate tiers into weight vectors
+for the subnet. The [Emission](https://docs.learnbittensor.org/learn/emissions) documentation
+describes how those consensus weights determine each participant's share of the subnet's accumulated
+emission each tempo.
 
 ## Development Stage Context
 
 The
 [Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from localnet to testnet and then mainnet. For InfiniteHash
-(SN89), that sequence changes how readers should interpret Bitcoin hashrate contribution examples
-and auction-based scoring outcomes.
+describes subnet development as moving from localnet to testnet and then mainnet. For InfiniteQuant
+(SN89), that sequence changes how readers should interpret signal-commit and grading examples.
 
-In localnet, InfiniteHash-compatible miners and validators can be developed and tested in an
-isolated environment. Localnet hashrate delivery results and emission outcomes do not represent
-production subnet performance.
+In localnet, InfiniteQuant-compatible miners and validators can be developed and tested in an
+isolated environment. Localnet grading results and emission outcomes do not represent production
+subnet performance.
 
-On testnet, InfiniteHash-compatible hashrate commitment workflows can be exercised in a shared,
-non-production network. Testnet auction results and validator weights are separate from mainnet
-subnet state.
+On testnet, the README documents netuid 514 as the testnet counterpart using the same protocol with
+free TAO. Testnet signal grades and validator weights are separate from mainnet subnet state.
 
-On mainnet, InfiniteHash (SN89) is the live production subnet where miners contribute real Bitcoin
-ASIC hashrate to the pool and validators score delivery against committed capacity to determine real
-Bittensor emissions. The
-[InfiniteHash on GitHub](https://github.com/backend-developers-ltd/InfiniteHash) describes the
+On mainnet, InfiniteQuant (SN89) is the live production subnet where miners commit encrypted trade
+signals and validators grade them on market data to determine real Bittensor emissions. The
+[InfiniteQuant repository](https://github.com/DeltaCompute24/InfiniteQuant-Subnet) describes the
 mechanism that applies on the production network.
 
 The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
-separates mainnet, testnet, and localnet. A hashrate delivery result or emission outcome from one
+separates mainnet, testnet, and localnet. A signal grading result or emission outcome from one
 environment should not be read as representing production subnet performance in another environment.
+
+## Reader Boundary
+
+Subnet 89 InfiniteQuant should not be read as a discretionary trading bot, portfolio manager, or
+social sentiment feed. The
+[InfiniteQuant README](https://raw.githubusercontent.com/DeltaCompute24/InfiniteQuant-Subnet/master/README.md)
+describes a commit-reveal grading protocol where validators score encrypted directional calls
+against shared market-data rules.
+
+## Unrevealed Commits Are Not Free Options
+
+The same README states that miners must reveal what they commit and that a blob still unfetchable
+six hours after its reveal round counts as a decisive loss. A hidden or unreachable commitment does
+not substitute for a graded signal when weights are set.
+
+## Lifetime Quality and Recent Wins Both Matter
+
+The README separates lifetime hit rate, which never resets, from recent wins in the last 30 days
+that size emissions for qualified miners. A strong old record alone does not replace the need for
+fresh qualifying wins after warmup ends.
+
+Validator weights still flow through Yuma Consensus to determine emissions each tempo
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
+[Emission](https://docs.learnbittensor.org/learn/emissions)).
 
 ## Further Reading
 
-- [InfiniteHash on GitHub](https://github.com/backend-developers-ltd/InfiniteHash)
-- [InfiniteHash README source](https://raw.githubusercontent.com/backend-developers-ltd/InfiniteHash/master/README.md)
-- [InfiniteHash auction incentive source](https://raw.githubusercontent.com/backend-developers-ltd/InfiniteHash/master/docs/subnet_auction_incentive_system.md)
+- [InfiniteQuant website](https://infinitequant.app)
+- [InfiniteQuant on GitHub](https://github.com/DeltaCompute24/InfiniteQuant-Subnet)
+- [InfiniteQuant README source](https://raw.githubusercontent.com/DeltaCompute24/InfiniteQuant-Subnet/master/README.md)
 - [Subnet 89 on TaoStats](https://taostats.io/subnets/89)
 - [Introduction to Bittensor: Subnet development](https://docs.learnbittensor.org/learn/introduction#subnet-development)
 - [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)
