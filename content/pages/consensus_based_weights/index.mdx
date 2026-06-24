@@ -113,8 +113,8 @@ problem; consensus-based weights name a bond-path response to consensus alignmen
 The
 [Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
 describes subnet development as moving from localnet to testnet and then mainnet. For
-consensus-based weights, that sequence changes how readers should interpret bond-smoothing and
-liquid-alpha examples.
+consensus-based weights on a subnet such as netuid 1, that sequence changes how readers should
+interpret bond-smoothing and liquid-alpha examples tied to validator weights and clipping.
 
 In localnet, consensus-based weight mechanics can be tested in an isolated environment. Localnet
 bond history does not represent production validator-miner relationships.
@@ -131,16 +131,62 @@ The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-netw
 separates mainnet, testnet, and localnet. A liquid-alpha example from one environment should not be
 read as representing production bond behavior in another environment.
 
-## Relationship to Yuma Consensus
+## Bond Blending Pulls Out-of-Consensus Weights Toward Benchmark
 
-Consensus-Based Weights and Yuma Consensus describe related parts of Bittensor's incentive system.
-Yuma Consensus is the on-chain process that aggregates validator weight signals within a subnet into
-miner incentives and validator dividends, applying consensus clipping, bonding, and emission
-calculation ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+When a validator assigns a miner weight above the clipped
+[consensus score](https://docs.learnbittensor.org/resources/glossary#consensus-score) benchmark, the
+bond update blends that submission toward the benchmark rather than accepting the full value. A
+configurable penalty factor controls how strongly out-of-consensus weights are pulled back, and an
+exponential moving average then smooths
+[validator-miner bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds)
+across epochs ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
+[Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)).
 
-For readers, consensus-Based Weights names a specific part of that incentive picture, while Yuma
-Consensus names the consensus process that turns validator weights into the resulting incentives and
-dividends.
+Liquid alpha adjusts how quickly that smoothed bond history responds when submitted weights align or
+fall out of alignment with consensus rather than replacing clipping itself.
+
+## Clipping Filters Weights Before Bond Smoothing Responds
+
+Consensus-based weights are adjacent to clipping but not identical to it. Clipping limits outlier
+validator weights above the consensus benchmark before final
+[rank](https://docs.learnbittensor.org/resources/glossary#rank) calculations, while liquid alpha
+adjusts how bond history responds after weights are compared with consensus
+([Yuma Consensus: Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping)).
+
+Clipping is a filtering step and liquid alpha is a bond-smoothing step. Both sit inside the
+consensus path, but they answer different questions about validator-weight signals.
+
+## Dividends Pair Smoothed Bonds With Miner Incentives
+
+Each validator's share of validator-side emissions equals the sum of that validator's bonds
+multiplied by each miner's
+[incentive](https://docs.learnbittensor.org/resources/glossary#incentives) outcome
+([Yuma Consensus: Validator emissions](https://docs.learnbittensor.org/learn/yuma-consensus#validator-emissions)).
+
+Consensus-based weights shape how quickly those smoothed bonds respond to alignment, while
+[dividends](https://docs.learnbittensor.org/resources/glossary#dividends) name the validator-side
+emission result after bonds and miner incentives are paired in the same epoch.
+
+## Commit Reveal and Liquid Alpha Address Different Copy Risks
+
+Delayed visibility through Commit Reveal addresses timing around visible weights, while
+consensus-based weights address bond responsiveness around alignment
+([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)).
+
+The relationship is complementary. Commit Reveal reduces the value of copying fresh weights before
+they are revealed; consensus-based weights change how bonds respond when submitted weights align or
+fall out of alignment
+([The Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor)).
+
+## Validator Trust Reads Alignment, Not Bond Smoothing
+
+[Validator trust](https://docs.learnbittensor.org/resources/glossary#validator-trust) sums clipped
+weights a validator successfully contributed across neurons, which measures validator-side influence
+after filtering. Consensus-based weights instead adjust how bond history responds when alignment
+changes over repeated epochs.
+
+The two terms share one Yuma pass but answer different reader questions. Validator trust summarizes
+clipped influence; liquid alpha shapes bond responsiveness around that alignment path.
 
 ## Reader Boundary
 
@@ -153,29 +199,6 @@ The mechanism only becomes meaningful with the subnet, incentive mechanism, and 
 that interpret validator weights
 ([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism),
 [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-## Clipping Filters Weights Before Bond Smoothing Responds
-
-Consensus-based weights are adjacent to clipping but not identical to it. Clipping limits outlier
-validator weights above the consensus benchmark before final rank calculations, while liquid alpha
-adjusts how bond history responds after weights are compared with consensus
-([Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-Clipping is a filtering step and liquid alpha is a bond-smoothing step. Both sit inside the
-consensus path, but they answer different questions about validator-weight signals.
-
-## Commit Reveal and Liquid Alpha Address Different Copy Risks
-
-Delayed visibility through Commit Reveal addresses timing around visible weights, while
-consensus-based weights address bond responsiveness around alignment
-([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
-[Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)).
-
-The relationship is complementary. Commit Reveal reduces the value of copying fresh weights before
-they are revealed; consensus-based weights change how bonds respond when submitted weights align or
-fall out of alignment ([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
-[The Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor)).
 
 ## Further Reading
 
