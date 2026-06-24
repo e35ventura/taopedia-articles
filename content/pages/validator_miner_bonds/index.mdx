@@ -67,6 +67,60 @@ smoothed validator-miner relationship
 ([Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights),
 [Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema)).
 
+## BondsMovingAverage Names the Static Smoothing Factor
+
+The smoothing factor that section refers to has a name: `BondsMovingAverage`, a subnet
+hyperparameter that sets the weight given to each epoch's new bond value versus the bond history
+already accumulated. In the bonding formula, each epoch's bond updates as
+`B(t) = α · ΔB + (1 − α) · B(t − 1)`, where `ΔB` is the instant bond computed from a validator's
+current weight and stake, and `BondsMovingAverage` sets that `α`
+([Yuma Consensus: Bonding mechanics](https://docs.learnbittensor.org/learn/yuma-consensus#bonding-mechanics),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+A higher `BondsMovingAverage` value lets a single epoch's evaluation move the bond further; a lower
+value keeps bonds closer to their established history. Since higher accumulated bonds yield higher
+dividends, this factor governs how quickly a validator's emission share can respond to its own
+recent weight-setting behavior
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+`BondsMovingAverage` is configured per subnet, and a subnet owner can adjust it. The value in force
+is subnet-specific chain state, so the actual smoothing behavior on any given subnet should be read
+from that subnet rather than assumed from a default
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## Liquid Alpha Replaces One Fixed Factor With a Per-Pair Variable One
+
+`BondsMovingAverage` and liquid alpha are not used together for the same bond update; they are two
+different ways of choosing the same `α` in the bonding formula. `BondsMovingAverage` applies one
+fixed value to every validator-miner pair on the subnet, while liquid alpha (documented as
+[[Consensus-Based Weights]]) varies `α` per pair based on how closely each validator's weight tracks
+consensus
+([Yuma Consensus: Bonding mechanics](https://docs.learnbittensor.org/learn/yuma-consensus#bonding-mechanics)).
+
+For readers, that makes `BondsMovingAverage` the static baseline and liquid alpha the
+consensus-sensitive alternative to it, not an addition on top of it. A subnet uses one mechanism or
+the other to set the smoothing factor for a given bond update, not both at once.
+
+## BondsPenalty Names the Out-of-Consensus Adjustment
+
+The "penalty-adjusted evaluation input" used when forming an instant bond also has a specific
+hyperparameter behind it: `BondsPenalty`. If a validator's submitted weight for a miner exceeds that
+miner's consensus evaluation, the validator's bond value for that miner is reduced by a factor set
+by `BondsPenalty`
+([Yuma Consensus: Penalizing out-of-consensus bonds](https://docs.learnbittensor.org/learn/yuma-consensus#penalizing-out-of-consensus-bonds),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+`BondsPenalty` is also owner-settable per subnet, with an official default of zero, meaning no
+penalty applies unless a subnet owner configures one
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)). Where
+`BondsMovingAverage` controls how quickly bonds respond to new evaluations, `BondsPenalty` controls
+how much an over-generous evaluation is discounted before it ever reaches that smoothing step.
+
+Read together, the three hyperparameters cover three separate stages of one bond's life: a penalty
+factor that can discount an out-of-consensus instant bond, a moving-average factor that blends that
+instant value into running history, and liquid alpha as the alternative way to set the second factor
+dynamically instead of using one fixed value.
+
 ## Evaluation Context
 
 Subnets define work, miners produce outputs, and validators evaluate those outputs. Validator-miner
