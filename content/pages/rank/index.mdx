@@ -134,33 +134,64 @@ settings
 
 ## Development Stage Context
 
-Bittensor separates localnet, testnet, and mainnet environments. A concrete rank value belongs to
-the environment, subnet task, validator set, and miner set that produced it
-([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks),
-[Introduction to Bittensor: Subnet development](https://docs.learnbittensor.org/learn/introduction#subnet-development)).
+The
+[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
+describes subnet development as moving from localnet to testnet and then mainnet. For rank on a
+subnet such as netuid 1, that sequence changes how readers should interpret miner-side consensus
+outcomes, the validator set that produced them, and the tempo boundary where those results are
+credited.
 
-Localnet examples can test consensus mechanics in isolation. Testnet examples add shared
-non-production subnet state. Mainnet rank interpretation concerns production Yuma Consensus outcomes
-on the active network.
+In localnet, rank examples can be exercised in an isolated environment. Local validator weights and
+aggregated miner results reflect local chain configuration rather than production subnet evaluation
+history.
 
-## Relationship to Yuma Consensus
+On testnet, rank can be observed in a shared, non-production network. Testnet rank readings on a
+selected netuid are separate from mainnet validator-weight and miner-evaluation state
+([Glossary: Rank](https://docs.learnbittensor.org/resources/glossary#rank)).
 
-Rank and Yuma Consensus describe related parts of Bittensor's incentive system. Yuma Consensus is
-the on-chain process that aggregates validator weight signals within a subnet into miner incentives
-and validator dividends, applying consensus clipping, bonding, and emission calculation
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+On mainnet, rank is the live miner-side consensus result Yuma Consensus produces from production
+validator weights before subnet incentives are allocated on the connected Bittensor network.
 
-For readers, rank names a specific part of that incentive picture, while Yuma Consensus names the
-consensus process that turns validator weights into the resulting incentives and dividends.
+The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
+separates mainnet, testnet, and localnet. A rank example from one environment should not be read as
+representing production miner evaluation on another network.
 
-## Reader Boundary
+## Rank Sums Post-Clip Weights by Stake
 
-Rank is a consensus-result term for miners after Yuma Consensus. It is not a universal quality
-label, reward guarantee, or one validator's raw score
+[Yuma Consensus: Miner emissions](https://docs.learnbittensor.org/learn/yuma-consensus#miner-emissions)
+documentation calculates each miner's aggregate rank as the stake-weighted sum of post-clip
+[validator weights](https://docs.learnbittensor.org/resources/glossary#validator-weights). Rank is
+therefore a merged miner-side result, not one validator's raw score on its own
 ([Glossary: Rank](https://docs.learnbittensor.org/resources/glossary#rank),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+[Glossary: Stake Weight](https://docs.learnbittensor.org/resources/glossary#stake-weight)).
 
-Specific rank examples belong to the subnet, network, validator set, and source that produced them.
+That formula keeps input and result vocabulary separate. Validator weights express what a validator
+scored; [stake weight](https://docs.learnbittensor.org/resources/glossary#stake-weight) scales how
+strongly each surviving post-clip signal counts when those evaluations are combined into rank.
+
+## Consensus Score Clips Before Rank Finalizes
+
+Before rank is calculated, Yuma Consensus compares validator weights against the stake-weighted
+[consensus score](https://docs.learnbittensor.org/resources/glossary#consensus-score) benchmark and
+clips values that exceed it. When a submitted weight exceeds the clipped benchmark for a miner,
+neither the miner nor the submitting validator receives emissions for the excess portion
+([Yuma Consensus: Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping)).
+
+Rank is read from the post-clip signal set.
+[Trust](https://docs.learnbittensor.org/resources/glossary#trust) then compares final rank to
+pre-rank support to show how much evaluation signal survived that filtering step rather than naming
+the benchmark itself.
+
+## Miner Incentives Normalize Rank Outcomes
+
+Miner-side [incentives](https://docs.learnbittensor.org/resources/glossary#incentives) are derived
+from rank after clipping and aggregation. Yuma Consensus normalizes those rank outcomes into the
+miner emission vector for the epoch, which is then allocated when tempo-bound distribution runs
+([Yuma Consensus: Miner emissions](https://docs.learnbittensor.org/learn/yuma-consensus#miner-emissions),
+[Emission](https://docs.learnbittensor.org/learn/emissions)).
+
+Rank therefore belongs to the miner evaluation path inside consensus, while emission vocabulary
+names the broader tokenomics flow that later distributes value from those outcomes.
 
 ## Rank Names the Miner Result After Weights Merge
 
@@ -187,56 +218,23 @@ matrix is the grouped set; rank is the miner-side outcome after consensus uses t
 ## Late Weight Submissions Can Miss the Current Epoch
 
 Subnet [hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters) include an
-activity cutoff measured in blocks within each epoch. Official documentation states that a validator
-that does not submit weights within the first activity-cutoff blocks of an epoch cannot participate
-until the next epoch.
+activity cutoff measured in blocks within each epoch. A validator that does not submit weights
+within the first activity-cutoff blocks of an epoch cannot participate until the next epoch
+([Glossary: Activity Cutoff](https://docs.learnbittensor.org/resources/glossary#activity-cutoff)).
 
 That timing rule affects which validator signals can enter the consensus pass that later produces
 rank. Validators who miss the early window sit out the current epoch rather than joining that round
 of aggregation
-([Glossary: Activity Cutoff](https://docs.learnbittensor.org/resources/glossary#activity-cutoff)).
+([Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)).
 
-## Relationship to Consensus Score
+## Reader Boundary
 
-Rank and consensus score are related but different Yuma Consensus terms. Consensus score names the
-agreement measure used when validator weights are combined and clipped, while rank names the
-miner-side evaluation summary that results from that consensus process
-([Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score),
-[Glossary: Rank](https://docs.learnbittensor.org/resources/glossary#rank),
+Rank is a consensus-result term for miners after Yuma Consensus. It is not a universal quality
+label, reward guarantee, or one validator's raw score
+([Glossary: Rank](https://docs.learnbittensor.org/resources/glossary#rank),
 [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
-For readers, consensus score belongs to the validator-weight agreement step inside Yuma Consensus,
-and rank belongs to the miner evaluation outcome that consensus produces. One describes how closely
-validator signals align before clipping, and the other describes where a miner stands after those
-signals are processed. They are linked in the same mechanism but name different objects.
-
-The terms should not be read as interchangeable reputation labels. A rank reading answers a
-different question than a consensus score reading, even though both are produced within the same
-subnet consensus flow described in official Yuma Consensus documentation.
-
-When comparing the two in subnet articles, keep miner evaluation vocabulary separate from
-validator-weight agreement vocabulary so each term stays attached to its own consensus role.
-
-## Relationship to Weight Matrix
-
-Rank and weight matrix are related but different Yuma Consensus terms. Rank names the
-consensus-adjusted miner-side result produced after validator signals are filtered and aggregated,
-while weight matrix names the subnet-level collection of validator weight vectors assembled for that
-consensus processing ([Glossary: Rank](https://docs.learnbittensor.org/resources/glossary#rank),
-[Glossary: Weight Matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix)).
-
-For readers, rank describes the miner-side outcome that follows Yuma Consensus and weight matrix
-describes the organized validator-input collection that feeds that process
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-A rank reading does not by itself reconstruct the full validator-input layout, because weight matrix
-vocabulary names the collection of validator weight vectors before aggregation produces miner-side
-results
-([Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#validator-weights)).
-
-Official Yuma Consensus documentation keeps miner-side rank outcome vocabulary separate from
-matrix-input vocabulary so each term stays tied to its step in the consensus pipeline
-([Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)).
+Specific rank examples belong to the subnet, network, validator set, and source that produced them.
 
 ## Further Reading
 
