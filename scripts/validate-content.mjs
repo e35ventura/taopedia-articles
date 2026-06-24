@@ -92,6 +92,31 @@ function validateTags(data, filePath) {
   }
 }
 
+function validateInfoboxFields(data, filePath) {
+  if (data.infoboxTitle !== undefined) {
+    validateTextField(data, "infoboxTitle", filePath, 80);
+  }
+  if (data.infoboxCaption !== undefined) {
+    validateTextField(data, "infoboxCaption", filePath, 120);
+  }
+  if (Array.isArray(data.infoboxRows)) {
+    if (data.infoboxRows.length > 8) {
+      throw new Error(`${filePath}: use at most 8 infoboxRows`);
+    }
+    for (const row of data.infoboxRows) {
+      if (typeof row?.label !== "string" || typeof row?.value !== "string") {
+        throw new Error(`${filePath}: infoboxRows must contain string label/value pairs`);
+      }
+      if (row.label.length > 40) {
+        throw new Error(`${filePath}: infoboxRows labels must be 40 characters or fewer`);
+      }
+      if (row.value.length > 120) {
+        throw new Error(`${filePath}: infoboxRows values must be 120 characters or fewer`);
+      }
+    }
+  }
+}
+
 function slugifyWikiLink(value) {
   return value
     .toLowerCase()
@@ -224,6 +249,7 @@ async function validateArticle(slug, articleDir, knownTargets) {
     );
   }
   validateTags(data, articlePath);
+  validateInfoboxFields(data, articlePath);
   for (const target of [...extractWikiLinks(content), ...extractWikiLinksFromValue(data)]) {
     const normalizedTarget = slugifyWikiLink(target);
     if (!knownTargets.has(normalizedTarget)) {
@@ -241,14 +267,6 @@ async function validateArticle(slug, articleDir, knownTargets) {
     throw new Error(
       `${articlePath}: published articles must not contain fenced code blocks; explain commands and configuration in prose`
     );
-  }
-
-  if (Array.isArray(data.infoboxRows)) {
-    for (const row of data.infoboxRows) {
-      if (typeof row?.label !== "string" || typeof row?.value !== "string") {
-        throw new Error(`${articlePath}: infoboxRows must contain string label/value pairs`);
-      }
-    }
   }
 }
 
