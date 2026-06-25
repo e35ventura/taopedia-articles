@@ -213,11 +213,29 @@ emissions.
 Subnet [hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters) include an
 activity cutoff measured in blocks within each epoch. A validator that does not submit weights
 within the first activity-cutoff blocks of an epoch cannot participate until the next epoch
-([Glossary: Activity Cutoff](https://docs.learnbittensor.org/resources/glossary#activity-cutoff)).
+([Subnet Hyperparameters: Activity Cutoff](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutoff)).
 
 That timing rule affects which validator rows can enter the matrix for the current consensus pass.
 Validators who miss the early window sit out the epoch rather than joining that round of aggregation
 ([Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)).
+
+## The Matrix Is Assembled From Rows, Not Set by One Party
+
+A useful way to read the weight matrix is as a stack of independently submitted rows rather than a
+single object any one participant controls. Documentation describes each validator submitting its
+own weight vector, with the subnet-level matrix formed by collecting those vectors as consensus
+input ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
+[Glossary: Weight Vector](https://docs.learnbittensor.org/resources/glossary#weight-vector)).
+
+For readers, this is why one validator's submission is only one row. A validator shapes its own row
+through weight setting, but the matrix as a whole reflects every participating validator's input for
+that epoch
+([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
+
+That row-based assembly also explains why timing rules apply per validator. The activity-cutoff
+window governs whether a given validator's row enters the current pass, so the matrix can include
+some validators' rows while excluding late ones
+([Subnet Hyperparameters: Activity Cutoff](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutoff)).
 
 ## Reader Boundary
 
@@ -236,7 +254,7 @@ setting is the per-validator `set_weights` action that submits one validator's w
 the weight matrix is the subnet-level collection that stacks those submitted vectors into the
 structured input Yuma Consensus processes, so each weight-setting call contributes one row to the
 matrix ([Glossary: Weight Matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix),
-[Glossary: Weight Setting](https://docs.learnbittensor.org/resources/glossary#weight-setting),
+[Glossary: Weight Vector](https://docs.learnbittensor.org/resources/glossary#weight-vector),
 [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
 - **Weight setting** — the action each validator uses to submit its weight vector.
