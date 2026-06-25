@@ -1,0 +1,167 @@
+---
+title: "Serving Rate Limit"
+summary:
+  "How the serving rate limit subnet hyperparameter paces how often miners can register or update
+  axon and prometheus endpoint information on a Bittensor subnet."
+category: "Subnets"
+tags: ["Subnets", "Mining"]
+infoboxTitle: Serving Rate Limit
+infoboxCaption: Pacing for miner endpoint registration.
+infoboxRows:
+  - label: Parameter
+    value: ServingRateLimit
+  - label: Type
+    value: u64
+  - label: Default
+    value: "50"
+  - label: Example
+    value: netuid 1
+  - label: Set by
+    value: Subnet owner
+---
+
+# Serving Rate Limit
+
+Serving rate limit is a per-subnet hyperparameter, listed in the documentation as
+`ServingRateLimit`, that rate-limits how often a miner can call the `serve_axon` and
+`serve_prometheus` extrinsics to register or update its network endpoint information on a subnet
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## What It Controls
+
+The hyperparameter paces miner-side endpoint registration, not validator weight submission. It does
+not define what work a
+[subnet miner](https://docs.learnbittensor.org/resources/glossary#subnet-miner) produces, how
+validators score that work, or how
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) distributes emissions. It
+only limits how frequently a miner can publish or refresh its on-chain serving metadata through the
+documented serving extrinsics.
+
+That makes serving rate limit a miner-serving pacing rule on a subnet such as netuid 1. It governs
+how often endpoint information can be rewritten on chain, not whether a miner is registered or
+whether its [axon](https://docs.learnbittensor.org/resources/glossary#axon) server is reachable at
+query time.
+
+## Documented Type, Default, and Setter
+
+The [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+reference lists `ServingRateLimit` as a `u64` with a default of `50` and the description "Rate limit
+for calling `serve_axon` and `serve_prometheus` extrinsics used by miners." It is changed through
+the `sudo_set_serving_rate_limit` extrinsic, exposed in tooling as
+`btcli sudo set --param serving_rate_limit`, and the reference marks the permission required to set
+it as subnet owner
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+The live value is per-subnet chain state and can differ from the documented default, so the current
+limit for a selected netuid should be read from that subnet's hyperparameter table rather than
+assumed from the reference default alone.
+
+## Subnet Context
+
+Serving rate limit is one of the
+[subnet hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters), the
+on-chain state variables that configure a single
+[subnet](https://docs.learnbittensor.org/resources/glossary#subnet), for example netuid 1. Because
+each subnet carries its own hyperparameters, the pacing rule is defined per subnet and applies only
+within that subnet's miner-serving path.
+
+The parameter therefore belongs to the protocol envelope around miner endpoint registration, not to
+the subnet task itself. It shapes how often serving metadata can be updated, while the incentive
+mechanism still defines what useful work miners should produce
+([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
+
+## Development Stage Context
+
+The
+[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
+describes subnet development as moving from localnet to testnet and then mainnet. For serving rate
+limit on a subnet such as netuid 1, that sequence changes how readers should interpret miner
+endpoint-registration pacing examples.
+
+In localnet, serving-rate-limit hyperparameters can be tested in an isolated environment. Local
+pacing values reflect local chain configuration rather than production miner serving rules.
+
+On testnet, axon and prometheus registration flows can be exercised in a shared non-production
+network. Testnet serving-rate-limit values and metagraph endpoint fields are separate from mainnet
+subnet state
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+On mainnet, serving rate limit is a live per-subnet hyperparameter on production subnets. Observed
+pacing rules depend on the selected subnet's on-chain hyperparameter state.
+
+The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
+separates mainnet, testnet, and localnet. A serving-rate-limit example from one environment should
+not be read as representing production miner endpoint pacing in another environment.
+
+## BTCLI Reads the Live Hyperparameter for a netuid
+
+Any user can read subnet hyperparameters for a selected netuid with
+`btcli subnet hyperparameters --netuid 1`. The command output includes the live `ServingRateLimit`
+value for that subnet at query time, along with other owner-set and root-set fields
+([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
+
+That read path keeps live pacing claims tied to a parseable netuid. A statement about serving rate
+limit on netuid 1 should be checked with the hyperparameter table for netuid 1 rather than inferred
+from the documented default alone.
+
+## Metagraph Records Registered Axon Endpoints
+
+The [Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph) documentation lists
+`axon_info` and `axons` fields that store network connection details for miner axon servers,
+including IP address and port information recorded on chain. Reading
+`btcli subnets metagraph --netuid 1 --network finney` returns the current endpoint snapshot for that
+subnet, which reflects the result of successful serving extrinsics rather than the pacing rule
+itself ([Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)).
+
+The hyperparameter names how often serving metadata may be updated; the metagraph snapshot names
+what endpoint information is currently recorded at one block height on netuid 1. Reachability of a
+live axon server is a separate operational question from the on-chain registration pacing limit.
+
+## Relationship to Axon and Synapse Communication
+
+Miners commonly expose an [axon](https://docs.learnbittensor.org/resources/glossary#axon) server so
+validators can send [synapse](https://docs.learnbittensor.org/resources/glossary#synapse) requests
+through [dendrite](https://docs.learnbittensor.org/resources/glossary#dendrite) clients
+([Understanding Neurons](https://docs.learnbittensor.org/learn/neurons#neuron-to-neuron-communication)).
+Serving rate limit sits on the chain-registration path for that communication model: it paces how
+often a miner can rewrite the on-chain endpoint record that other participants read before opening
+connections.
+
+For readers, axon names the server-side endpoint role, while serving rate limit names the minimum
+spacing between on-chain updates to that endpoint's published connection details.
+
+## Distinction from Weights Rate Limit
+
+The hyperparameters reference also lists
+[WeightsRateLimit](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#weightsratelimit--commitmentratelimit),
+which sets how long, in blocks, a validator must wait between weight commits. That setting paces
+validator [weight setting](https://docs.learnbittensor.org/resources/glossary#weight-setting), not
+miner endpoint registration. Serving rate limit belongs to the miner serving path; weights rate
+limit belongs to the validator weight-submission path on the same subnet
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+- **Serving rate limit** — how often a miner can update axon/prometheus serving metadata.
+- **Weights rate limit** — how long a validator must wait between weight commits.
+
+## Reader Boundary
+
+This page defines the concept at a high level. It does not report the live serving-rate-limit value
+on any particular subnet, whether a specific miner is currently rate-limited, or whether an axon
+endpoint is reachable on the network. Hyperparameter values should be checked for the relevant
+netuid with `btcli subnet hyperparameters --netuid 1`, while endpoint records belong in the
+metagraph snapshot for that same netuid. The documented default is 50 blocks, the type is `u64`, and
+the parameter is set by the subnet owner
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+That reading keeps serving rate limit separate from miner quality, validator scoring, and emission
+outcomes. It paces on-chain endpoint registration updates; it does not predict task performance or
+consensus results.
+
+## Further Reading
+
+- [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+- [Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)
+- [Glossary: Axon](https://docs.learnbittensor.org/resources/glossary#axon)
+- [Glossary: Subnet Miner](https://docs.learnbittensor.org/resources/glossary#subnet-miner)
+- [Understanding Neurons](https://docs.learnbittensor.org/learn/neurons#neuron-to-neuron-communication)
+- [Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)
