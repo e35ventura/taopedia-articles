@@ -1,0 +1,104 @@
+---
+title: "Mechanism Count"
+summary:
+  "How the mechanism count subnet hyperparameter sets how many incentive mechanisms a Bittensor
+  subnet runs."
+category: "Subnets"
+tags: ["Subnets", "Consensus"]
+infoboxTitle: Mechanism Count
+infoboxCaption: Number of incentive mechanisms on a subnet.
+infoboxRows:
+  - label: Parameter
+    value: MechanismCount
+  - label: Type
+    value: u8
+  - label: Default
+    value: "1"
+  - label: Example
+    value: netuid 1
+  - label: Set by
+    value: Subnet owner
+---
+
+# Mechanism Count
+
+Mechanism count is a per-subnet hyperparameter, listed in the documentation as `MechanismCount`,
+that sets how many incentive mechanisms a subnet runs. The reference describes it as the number of
+mechanisms on a subnet and notes that changing it requires keeping the product of mechanism count
+and the subnet's maximum UID count below 256
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## What It Controls
+
+The hyperparameter sets how many separate incentive mechanisms share a subnet's emissions. Each
+mechanism can run its own evaluation context and
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) path with separate bond
+pools, while miners and validators remain registered once for the subnet as a whole
+([Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets)).
+
+Mechanism count does not define the tasks inside each mechanism, how validators score miners, or how
+emissions are split among mechanisms after the count is set. Those belong to incentive-mechanism
+design and the separate mechanism-emission-split configuration documented for subnet owners
+([Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets)).
+
+## Documented Type, Default, and Setter
+
+The [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+reference lists `MechanismCount` as a `u8` with a default of `1`. It is changed through the
+`sudo_set_mechanism_count` extrinsic, and the reference marks the permission required to set it as
+subnet owner. The hyperparameter table lists no `btcli sudo set` helper for this field
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+Because each subnet carries its own hyperparameters, the mechanism count is defined per subnet. A
+default of `1` matches the backward-compatible case in which a subnet runs a single incentive
+mechanism
+([Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets)).
+
+## UID Capacity Constraint
+
+Before raising mechanism count, the hyperparameter reference requires that mechanism count
+multiplied by the subnet's maximum UID count stay below 256. If the product would exceed that
+threshold, the subnet owner must first lower
+[max allowed UIDs](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#maxalloweduids) or
+use [UID trimming](https://docs.learnbittensor.org/subnets/uid-trimming) to reduce live UID capacity
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets)).
+
+Mechanism count therefore interacts with subnet capacity planning. It names how many mechanisms run
+on the subnet; the UID ceiling names how many registered participants those mechanisms share.
+
+## Distinction from Multiple Incentive Mechanisms
+
+[Multiple incentive mechanisms](https://docs.learnbittensor.org/resources/glossary#multiple-incentive-mechanisms)
+name the general model in which one subnet can apportion emissions across more than one evaluation
+path. Mechanism count names the hyperparameter that sets how many such mechanisms the subnet is
+configured to run
+([Glossary: Multiple Incentive Mechanisms](https://docs.learnbittensor.org/resources/glossary#multiple-incentive-mechanisms)).
+
+- **Multiple incentive mechanisms** — the multi-mechanism subnet model.
+- **Mechanism count** — the on-chain count configured for a subnet.
+
+## Runtime Cap
+
+The multiple-mechanism documentation notes a current runtime limit of two mechanisms per subnet,
+with plans to raise the cap in the future. That limit is separate from the documented default of one
+mechanism and from the UID-product constraint above
+([Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets)).
+
+## BTCLI Reads the Live Value
+
+Any user can read subnet hyperparameters for a selected netuid with
+`btcli subnet hyperparameters --netuid 1`. The command output includes the live `MechanismCount`
+value for that subnet at query time
+([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
+
+Live values are network- and subnet-specific and can differ from the documented default, so a
+mechanism-count claim should be checked against the hyperparameter table for the relevant netuid and
+network rather than assumed from the reference default alone.
+
+## Further Reading
+
+- [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+- [Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets)
+- [Glossary: Multiple Incentive Mechanisms](https://docs.learnbittensor.org/resources/glossary#multiple-incentive-mechanisms)
+- [UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming)
