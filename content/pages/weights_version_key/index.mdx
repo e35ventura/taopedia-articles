@@ -92,8 +92,8 @@ consensus ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus
 ## The Version Rides on the set_weights Extrinsic
 
 Bittensor documents weight submission as a dispatchable
-[extrinsic](https://docs.learnbittensor.org/resources/glossary#extrinsics) call that carries both
-the [weight vector](https://docs.learnbittensor.org/resources/glossary#weight-vector) and a declared
+[extrinsic](https://docs.learnbittensor.org/subtensor-api/extrinsics) call that carries both the
+[weight vector](https://docs.learnbittensor.org/resources/glossary#weight-vector) and a declared
 version key. The weights version key hyperparameter compares that declared value against the subnet
 minimum before the runtime accepts the submission
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
@@ -127,18 +127,33 @@ That is a rollout tool rather than a scoring rule. It does not change how
 [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) aggregates accepted weights,
 but it can reject stale submissions until validators update the version they declare.
 
-## Relationship to Weight Setting
+## Relationship to Weight Vector
 
-The weights version key and weight setting act on the same submission as gate and action. The
-weights version key is the per-subnet hyperparameter that sets the minimum version a `set_weights`
-call must carry, while weight setting is the act of submitting that weight vector; a call carrying a
-version below the key is rejected before the weights are recorded
-([Glossary: Weight Setting](https://docs.learnbittensor.org/resources/glossary#weight-setting),
+The weights version key and weight vector submission act on the same extrinsic as gate and payload.
+The weights version key is the per-subnet hyperparameter that sets the minimum version a
+`set_weights` call must carry, while the weight vector is the scored targets the validator submits;
+a call carrying a version below the key is rejected before those weights are recorded
+([Glossary: Weight Vector](https://docs.learnbittensor.org/resources/glossary#weight-vector),
 [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
 [Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)).
 
 - **Weights version key** — the minimum version a weight submission must carry to be accepted.
-- **Weight setting** — the act of submitting the weight vector that the key gates.
+- **Weight vector** — the submitted scores the version key must accompany.
+
+## Version Key and Activity Cutoff Gate Different Submission Failures
+
+Documentation treats the weights version key and activity cutoff as separate rejection paths on the
+same `set_weights` boundary. A declared version below the subnet floor fails before weights are
+recorded, while a validator who misses the early-epoch activity window cannot participate in that
+epoch's consensus pass even with a current version
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)).
+
+For readers, version vocabulary answers whether client software is fresh enough to be accepted, and
+activity-cutoff vocabulary answers whether the validator acted inside the epoch window. Both can
+block influence, but they describe different clocks on the same submission lifecycle
+([Glossary: Epoch](https://docs.learnbittensor.org/resources/glossary#epoch),
+[Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)).
 
 ## Reader Boundary
 
