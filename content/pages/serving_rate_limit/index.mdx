@@ -59,7 +59,7 @@ applies only within that subnet's miner-serving path.
 The hyperparameters reference also lists
 [WeightsRateLimit](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#weightsratelimit--commitmentratelimit),
 which sets how long, in blocks, a validator must wait between weight commits. That setting paces
-validator [weight setting](https://docs.learnbittensor.org/resources/glossary#weight-setting), not
+validator [weight setting](https://docs.learnbittensor.org/resources/glossary#weight-vector), not
 miner endpoint registration
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
@@ -76,6 +76,23 @@ value for that subnet at query time
 Live values are network- and subnet-specific and can differ from the documented default, so a pacing
 claim should be checked against the hyperparameter table for the relevant netuid and network rather
 than assumed from the reference default alone.
+
+## Why Pace Endpoint Updates at All
+
+It can seem odd to limit how often a miner refreshes its own endpoint record. The reason is that the
+serving record is on-chain state every validator reads to reach the miner, so unrestricted rewrites
+would let one participant churn shared subnet state far faster than evaluation actually needs
+([Understanding Neurons](https://docs.learnbittensor.org/learn/neurons#neuron-to-neuron-communication)).
+
+For readers, this frames serving rate limit as protection for the subnet, not a restriction on
+mining effort. A miner rarely needs to change where it serves from moment to moment, so a pacing
+floor costs honest miners little while preventing rapid endpoint flipping
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+That framing also keeps the limit separate from reachability. The rule governs how often the
+on-chain address may change, not whether the live axon answers a request, so a stable endpoint and a
+healthy server are independent questions
+([Glossary: Axon](https://docs.learnbittensor.org/resources/glossary#axon)).
 
 ## Further Reading
 
