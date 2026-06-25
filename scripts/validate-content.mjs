@@ -1,5 +1,6 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import matter from "gray-matter";
 
 const root = process.cwd();
@@ -58,10 +59,15 @@ function validateSlug(slug) {
   }
 }
 
-function validateTextField(data, field, filePath, maxLength) {
+export function validateTextField(data, field, filePath, maxLength) {
   const value = data[field];
   if (typeof value !== "string" || !value.trim()) {
     throw new Error(`${filePath}: front matter field "${field}" is required`);
+  }
+  if (value !== value.trim()) {
+    throw new Error(
+      `${filePath}: front matter field "${field}" must not have leading or trailing whitespace`
+    );
   }
   if (value.length > maxLength) {
     throw new Error(
@@ -327,7 +333,10 @@ async function main() {
   console.log(`Validated ${count} articles`);
 }
 
-main().catch((error) => {
-  console.error(error.message);
-  process.exit(1);
-});
+const isMain = process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
+if (isMain) {
+  main().catch((error) => {
+    console.error(error.message);
+    process.exit(1);
+  });
+}
