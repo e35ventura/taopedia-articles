@@ -146,26 +146,33 @@ method, but success language should wait for the runtime evidence that belongs t
 network and block context ([Subtensor Events](https://docs.learnbittensor.org/subtensor-api/events),
 [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
 
-## Development Stage Context
+## Registration, Staking, and Weight Submission Pipeline
 
 The
-[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from localnet to testnet and then mainnet. Extrinsics are
-interpreted inside the selected Bittensor network environment where they were submitted
-([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+[Subtensor Pallets and Extrinsics](https://docs.learnbittensor.org/navigating-subtensor/subtensor-extrinsics)
+overview states that some submitted actions can trigger on-chain events when they succeed, such as
+confirming a successful [registration](https://docs.learnbittensor.org/resources/glossary#register)
+or recording an updated staking balance
+([Subtensor Events](https://docs.learnbittensor.org/subtensor-api/events)).
 
-Localnet extrinsic examples can test action wiring in isolation. Testnet examples add shared
-non-production chain history. Mainnet extrinsic interpretation concerns production Subtensor records
-on the active network.
+Registration extrinsics assign a
+[UID slot](https://docs.learnbittensor.org/resources/glossary#uid-slot) on a selected
+[netuid](https://docs.learnbittensor.org/resources/glossary#netuid). Staking extrinsics move TAO
+into subnet pool context on that netuid.
+[Weight setting](https://docs.learnbittensor.org/resources/glossary#weight-setting) extrinsics let
+validators submit
+[validator weights](https://docs.learnbittensor.org/resources/glossary#validator-weights) that later
+feed [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) at
+[tempo](https://docs.learnbittensor.org/resources/glossary#tempo) boundaries rather than paying out
+on every intermediate submission
+([Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics)).
 
-## Reader Boundary
-
-Extrinsics do not name an operator guide, interface tutorial, chain-read surface, or proof that an
-action succeeded ([Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics),
-[Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees)).
-
-Extrinsics identify runtime action vocabulary, while chain reads, storage, events, errors, fees,
-mempool, blocks, and network context describe neighboring parts of the system.
+For readers tracing registration, staking, or weight submission on a subnet such as netuid 1, the
+practical sequence is: name the submitted extrinsic and its parameters, inspect paired events for
+runtime confirmation, and use storage or error surfaces when the outcome needs stronger evidence
+than the event label alone
+([Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage),
+[Subtensor Error Codes](https://docs.learnbittensor.org/errors)).
 
 ## Calls Originate Outside the Runtime
 
@@ -184,10 +191,6 @@ That outside origin keeps extrinsics distinct from passive observation. Chain re
 state without asking the runtime to process a new action, while an extrinsic names the submitted
 request itself.
 
-References:
-[Subtensor Pallets and Extrinsics](https://docs.learnbittensor.org/navigating-subtensor/subtensor-extrinsics),
-[Glossary: Subtensor](https://docs.learnbittensor.org/resources/glossary#subtensor)
-
 ## The Extrinsic Catalog Follows Runtime Spec
 
 The [Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics) reference is
@@ -205,17 +208,13 @@ what the runtime can accept, while an extrinsic observed in a particular
 [block](https://docs.learnbittensor.org/resources/glossary#block) is evidence from that moment in
 chain history on the connected network.
 
-References: [Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics),
-[Inspecting the Chain with Polkadot.js](https://docs.learnbittensor.org/concepts/inspecting-the-chain)
-
 ## Parameters Complete the Submission
 
 The
 [Subtensor Pallets and Extrinsics](https://docs.learnbittensor.org/navigating-subtensor/subtensor-extrinsics)
-overview lists both a call method and its arguments for each dispatchable action. Official
-documentation also directs readers to the generated
-[Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics) reference for the
-complete parameter specification on the connected runtime.
+overview lists both a call method and its arguments for each dispatchable action. The generated
+[Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics) reference carries
+the complete parameter specification on the connected runtime.
 
 A method name therefore identifies an action family, but the filled-in arguments select the intended
 target and amount within that family. Staking, registration, and subnet-scoped actions often need a
@@ -226,9 +225,37 @@ Without those arguments attached, two submissions can share a method label while
 different subnet markets or account targets. Parameter fields therefore belong in the same reading
 step as the action name when precision matters.
 
-References:
-[Subtensor Pallets and Extrinsics](https://docs.learnbittensor.org/navigating-subtensor/subtensor-extrinsics),
-[Glossary: Netuid](https://docs.learnbittensor.org/resources/glossary#netuid)
+## Development Stage Context
+
+The
+[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
+describes subnet development as moving from localnet to testnet and then mainnet. For extrinsics on
+a subnet such as netuid 1, that sequence changes how readers should interpret registration, staking,
+and weight-submission examples.
+
+In localnet, extrinsic examples can test action wiring in an isolated environment. Local
+registration and staking on netuid 1 reflect local chain configuration rather than production
+Subtensor records.
+
+On testnet, extrinsics can be observed in a shared, non-production network. Testnet action history
+on a selected netuid is separate from mainnet Subtensor state
+([Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics)).
+
+On mainnet, extrinsic interpretation concerns production Subtensor records on the active Bittensor
+network for the connected subnet context.
+
+The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
+separates mainnet, testnet, and localnet. An extrinsic example from one environment should not be
+read as representing production action behavior on another network.
+
+## Reader Boundary
+
+Extrinsics do not name an operator guide, interface tutorial, chain-read surface, or proof that an
+action succeeded ([Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics),
+[Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees)).
+
+Extrinsics identify runtime action vocabulary, while chain reads, storage, events, errors, fees,
+mempool, blocks, and network context describe neighboring parts of the system.
 
 ## Further Reading
 
