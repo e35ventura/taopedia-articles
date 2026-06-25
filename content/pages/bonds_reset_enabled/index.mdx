@@ -1,0 +1,100 @@
+---
+title: "Bonds Reset Enabled"
+summary:
+  "How the bonds reset enabled subnet hyperparameter determines whether validator-miner bond history
+  can be periodically reset in Yuma Consensus."
+category: "Consensus"
+tags: ["Consensus", "Subnets"]
+infoboxTitle: Bonds Reset Enabled
+infoboxCaption: Periodic bond-reset toggle for a subnet.
+infoboxRows:
+  - label: Parameter
+    value: BondsResetEnabled
+  - label: Type
+    value: bool
+  - label: Default
+    value: "false"
+  - label: Example
+    value: netuid 1
+  - label: Set by
+    value: Subnet owner
+---
+
+# Bonds Reset Enabled
+
+Bonds reset enabled is a per-subnet hyperparameter, listed in the documentation as
+`BondsResetEnabled`, that determines whether bonds are reset-enabled on the subnet. The
+hyperparameter reference describes it as the setting that controls whether
+[validator-miner bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds)
+are periodically reset
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## What It Controls
+
+The hyperparameter toggles whether accumulated bond history on a subnet can be cleared on a periodic
+schedule. It does not define the subnet task, how validators score miners, or how
+[validator weights](https://docs.learnbittensor.org/resources/glossary#validator-weights) are
+submitted.
+
+When reset is enabled, the bonds mechanism can discard prior bond state instead of carrying every
+past evaluation forward indefinitely. When reset is disabled, bond values continue to evolve only
+through the normal
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus#bonding-mechanics) bonding
+path without that periodic clearing step
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+Bonds reset enabled therefore belongs to bond-state lifecycle configuration. It shapes whether
+long-running bond history persists across reset intervals, not how individual weight submissions are
+scored or clipped.
+
+## Documented Type, Default, and Setter
+
+The [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+reference lists `BondsResetEnabled` as a `bool` with a default of `false`. It is changed through the
+`sudo_set_bonds_reset_enabled` extrinsic, exposed in tooling as
+`btcli sudo set --param bonds_reset_enabled`, and the reference marks the permission required to set
+it as subnet owner
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+Because each subnet carries its own hyperparameters, the reset toggle is defined per subnet and
+applies only within that subnet's Yuma Consensus path.
+
+## Distinction from Bonds Moving Average
+
+[Bonds moving average](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#bondsmovingaverage)
+configures how each bond update is smoothed through an exponential moving average across consensus
+rounds. Bonds reset enabled names whether bond history can be periodically cleared rather than how
+each incremental update is averaged
+([Yuma Consensus: Bonding mechanics](https://docs.learnbittensor.org/learn/yuma-consensus#bonding-mechanics)).
+
+- **Bonds moving average** — smoothing factor for successive bond updates.
+- **Bonds reset enabled** — toggle for periodic clearing of accumulated bond history.
+
+## Distinction from Bonds Penalty
+
+[Bonds penalty](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#bondspenalty) sets
+the magnitude of the out-of-consensus penalty applied when a validator weight exceeds the consensus
+benchmark. Bonds reset enabled controls whether bond history is reset-enabled, not how far
+bond-weight is pulled toward consensus when a weight is too high
+([Yuma Consensus: Penalizing out-of-consensus bonds](https://docs.learnbittensor.org/learn/yuma-consensus#penalizing-out-of-consensus-bonds)).
+
+- **Bonds penalty** — penalty magnitude for out-of-consensus weights.
+- **Bonds reset enabled** — periodic bond-history reset toggle.
+
+## BTCLI Reads the Live Value
+
+Any user can read subnet hyperparameters for a selected netuid with
+`btcli subnet hyperparameters --netuid 1`. The command output includes the live `BondsResetEnabled`
+value for that subnet at query time
+([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
+
+Live values are network- and subnet-specific and can differ from the documented default, so a
+bond-reset claim should be checked against the hyperparameter table for the relevant netuid and
+network rather than assumed from the reference default alone.
+
+## Further Reading
+
+- [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+- [Yuma Consensus: Bonding mechanics](https://docs.learnbittensor.org/learn/yuma-consensus#bonding-mechanics)
+- [Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds)
+- [Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#validator-weights)
