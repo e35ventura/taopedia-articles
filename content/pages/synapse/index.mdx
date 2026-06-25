@@ -56,8 +56,8 @@ that can carry material between them
 ([Glossary: Subnet Miner](https://docs.learnbittensor.org/resources/glossary#subnet-miner),
 [Glossary: Subnet Validator](https://docs.learnbittensor.org/resources/glossary#subnet-validator)).
 
-The synapse itself does not decide whether a response is useful. A subnet's protocol and incentive
-mechanism explain how exchanged information is evaluated.
+The synapse itself does not decide whether a response is useful. A subnet's incentive mechanism
+explains how exchanged information is evaluated.
 
 ## Task-Specific Content
 
@@ -70,7 +70,7 @@ define different task contexts inside a subnet
 
 That boundary prevents synapse from becoming a universal description of every subnet payload. The
 term identifies the communication object; task-specific message content belongs to the relevant
-subnet protocol or API reference.
+subnet API reference.
 
 ## Incentive Mechanism Handoff
 
@@ -81,53 +81,18 @@ places miner work, validator evaluation, and emission outcomes inside subnet-spe
 That does not make synapse a reward rule. Synapse names the object carrying task information before
 the subnet's own evaluation logic turns responses into weights, scores, or other outcome signals.
 
-## Development Stage Context
-
-The
-[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from localnet to testnet and then mainnet. Synapse examples
-need that context because subnet communication belongs to the network where the exchange was
-observed ([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
-
-Localnet synapse examples can test message wiring in isolation. Testnet examples add shared
-non-production subnet conditions. Mainnet synapse behavior concerns production validator-to-miner
-communication on the active network.
-
-A synapse example from one environment should not be treated as proof about another environment.
-
-## Relationship to Yuma Consensus
-
-Synapse and Yuma Consensus describe related parts of Bittensor's incentive system. Yuma Consensus is
-the on-chain process that aggregates validator weight signals within a subnet into miner incentives
-and validator dividends, applying consensus clipping, bonding, and emission calculation
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-For readers, synapse names a specific part of that incentive picture, while Yuma Consensus names the
-consensus process that turns validator weights into the resulting incentives and dividends.
-
-## Reader Boundary
-
-Synapse does not name a miner role, a validator decision, a persistent chain record, a wallet
-operation, or a complete subnet protocol
-([Glossary: Synapse](https://docs.learnbittensor.org/resources/glossary#synapse),
-[Subtensor Events](https://docs.learnbittensor.org/subtensor-api/events),
-[Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage)).
-
-Synapse identifies what is exchanged, while axon, dendrite, subnet task, and incentive mechanism
-references describe neighboring parts of the system.
-
-## Subnet Protocols Define Synapse Fields
+## Subnet Creators Define Synapse Fields
 
 Incentive-mechanism documentation states that a
-[subnet creator](https://docs.learnbittensor.org/resources/glossary#subnet-creator) must define a
-protocol for how validators query miners and how miners respond. Those protocols are built using the
-Axon-Dendrite client-server model and
-[Synapse](https://docs.learnbittensor.org/resources/glossary#synapse) data objects
+[subnet creator](https://docs.learnbittensor.org/resources/glossary#subnet-creator) must define how
+validators query miners and how miners respond. Those query rules are built using the Axon-Dendrite
+client-server model and [Synapse](https://docs.learnbittensor.org/resources/glossary#synapse) data
+objects
 ([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
 
-The protocol therefore decides what belongs inside the synapse object for that subnet. Synapse
-naming identifies the shared message type, while the subnet protocol specifies which challenge
-fields a validator sends and which response fields a miner is expected to fill.
+The creator-defined query rules therefore decide what belongs inside the synapse object for that
+subnet. Synapse naming identifies the shared message type, while the subnet task specifies which
+challenge fields a validator sends and which response fields a miner is expected to fill.
 
 ## Challenge and Response Share One Object
 
@@ -140,6 +105,18 @@ message format.
 That pattern keeps synapse vocabulary tied to a single exchange cycle. The validator-side dendrite
 client sends the initialized object, the miner-side axon server receives it, and the returned
 synapse carries the miner's additions back to the validator for evaluation.
+
+## Miner Serving Completes the Query Cycle
+
+Miner serving vocabulary describes how a miner exposes an axon endpoint that accepts synapse traffic
+from validator dendrites. The synapse carries the task payload; the axon endpoint is the serving
+surface that receives it
+([Glossary: Subnet Miner](https://docs.learnbittensor.org/resources/glossary#subnet-miner),
+[Axon reference](https://docs.learnbittensor.org/python-api/html/autoapi/bittensor/core/axon/)).
+
+Within the incentive query pipeline, a validator dendrite sends a challenge synapse, the miner axon
+processes it, and the returned synapse supplies material for validator-side scoring. Serving and
+synapse vocabulary sit on the communication layer before weights or emissions are decided.
 
 ## On-Chain Weights Are Separate From Synapse Exchange
 
@@ -154,7 +131,7 @@ weight vector, an extrinsic, or a persistent chain record
 synapse transport therefore sit on different layers: communication objects move work between roles,
 while on-chain weight submission feeds the subnet consensus path.
 
-## Relationship to Dendrite
+## Synapse and Dendrite Layers
 
 Synapse and dendrite are related but different subnet communication terms. Synapse names the
 structured message object passed between validators and miners, while dendrite names the client
@@ -174,6 +151,39 @@ validator for evaluation.
 Readers should not treat a synapse type name as proof of dendrite behavior, or a dendrite mention as
 a substitute for the synapse schema that defines the message contents.
 
+## Development Stage Context
+
+The
+[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
+describes subnet development as moving from localnet to testnet and then mainnet. For synapse on a
+subnet such as netuid 1, that sequence changes how readers should interpret validator-to-miner
+exchange examples.
+
+In localnet, synapse wiring can be tested in isolation on a subnet such as netuid 1. Local examples
+show message shape but do not represent live public endpoint behavior.
+
+On testnet, synapse exchange can be observed in a shared non-production network. Testnet
+validator-to-miner communication is separate from mainnet endpoint behavior even when the same
+netuid number appears in both environments
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+On mainnet, synapse behavior concerns production validator-to-miner communication on the active
+network.
+
+A synapse example from one environment should not be treated as proof about endpoint behavior in
+another.
+
+## Reader Boundary
+
+Synapse does not name a miner role, a validator decision, a persistent chain record, a wallet
+operation, or a complete subnet task design
+([Glossary: Synapse](https://docs.learnbittensor.org/resources/glossary#synapse),
+[Subtensor Events](https://docs.learnbittensor.org/subtensor-api/events),
+[Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage)).
+
+Synapse identifies what is exchanged, while axon, dendrite, subnet task, and incentive mechanism
+references describe neighboring parts of the system.
+
 ## Further Reading
 
 - [Glossary: Synapse](https://docs.learnbittensor.org/resources/glossary#synapse)
@@ -181,7 +191,6 @@ a substitute for the synapse schema that defines the message contents.
 - [Synapse reference](https://docs.learnbittensor.org/python-api/html/autoapi/bittensor/core/synapse/)
 - [Axon reference](https://docs.learnbittensor.org/python-api/html/autoapi/bittensor/core/axon/)
 - [Dendrite reference](https://docs.learnbittensor.org/python-api/html/autoapi/bittensor/core/dendrite/)
-- [Glossary: Dendrite](https://docs.learnbittensor.org/resources/glossary#dendrite)
 - [Glossary: Subnet Miner](https://docs.learnbittensor.org/resources/glossary#subnet-miner)
 - [Glossary: Subnet Validator](https://docs.learnbittensor.org/resources/glossary#subnet-validator)
 - [Glossary: Subnet Task](https://docs.learnbittensor.org/resources/glossary#subnet-task)
