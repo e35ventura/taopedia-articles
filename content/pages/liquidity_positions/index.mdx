@@ -35,7 +35,7 @@ The distinction from staking matters. Staking attaches TAO or alpha support thro
 delegation model; a liquidity position supplies depth to the subnet pool for conversion use. Both
 involve subnet assets, but the role is different.
 
-## Pool Role
+## AMM Pool Structure Holds TAO and Alpha Reserves
 
 Bittensor subnets use liquidity pools with TAO and subnet alpha sides
 ([Understanding Subnets: Liquidity pools](https://docs.learnbittensor.org/subnets/understanding-subnets#liquidity-pools)).
@@ -91,6 +91,34 @@ validator support, while liquidity positions belong to pool-depth support inside
 liquidity model
 ([Liquidity Positions vs. Staking](https://docs.learnbittensor.org/liquidity-positions#liquidity-positions-vs-staking)).
 
+## Alpha and TAO Liquidity Moves With Subnet Price
+
+A liquidity position can hold TAO, alpha, or both at once, and the mix depends on where the subnet
+token price sits relative to the position's low and high bounds
+([User Liquidity Positions: Dynamic token composition](https://docs.learnbittensor.org/liquidity-positions#dynamic-token-composition)).
+
+When price falls below the range, the position becomes entirely alpha. When price rises above the
+range, it becomes entirely TAO. When price sits inside the range, the position keeps a mixed
+composition of both tokens.
+
+That behavior is not cosmetic. The same price-versus-range relationship decides which tokens are
+required when a position is created, which tokens return when liquidity is removed, and how fee
+accrual interacts with the position at different life-cycle stages
+([Managing User Liquidity Positions Tutorial](https://docs.learnbittensor.org/liquidity-positions/managing-liquidity-positions)).
+
+## Impermanent Loss Risk From Range-Based Supply
+
+Range-based subnet liquidity can diverge from simply holding the same TAO and alpha outside the
+pool. [Impermanent Loss](https://docs.learnbittensor.org/learn/impermanent-loss) describes how
+automated-market-maker pool mechanics can leave a liquidity supplier with a different asset mix than
+passive holding would have produced after price moves
+([User Liquidity Positions](https://docs.learnbittensor.org/liquidity-positions)).
+
+For readers, a liquidity position is a pool-depth commitment under a selected range, not a guarantee
+that supplied assets will track spot holdings. Impermanent-loss vocabulary belongs beside range and
+price movement; staking vocabulary belongs to validator support instead
+([Liquidity Positions vs. Staking](https://docs.learnbittensor.org/liquidity-positions#liquidity-positions-vs-staking)).
+
 ## Slippage and Fees
 
 Liquidity positions are related to slippage because both concern available pool depth. Slippage
@@ -124,45 +152,10 @@ The same distinction keeps liquidity-position language separate from reserve-rat
 ratio compares pool sides; liquidity position describes range-based depth supplied around those
 sides.
 
-## Development Stage Context
-
-The
-[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from localnet to testnet and then mainnet. Mainnet, testnet,
-and localnet are separate environments for observed pool data
-([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
-
-The liquidity-position concept can be explained across those environments, but an observed
-liquidity-position example belongs to the network and subnet where it was observed.
-
-Localnet examples can test range-based supply in isolation. Testnet examples add shared
-non-production pool state. Mainnet liquidity-position interpretation concerns production subnet
-pools on the active network.
-
-## Relationship to Yuma Consensus
-
-Liquidity Positions and Yuma Consensus describe related parts of Bittensor's incentive system. Yuma
-Consensus is the on-chain process that aggregates validator weight signals within a subnet into
-miner incentives and validator dividends, applying consensus clipping, bonding, and emission
-calculation ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-For readers, liquidity positions names a specific part of that incentive picture, while Yuma
-Consensus names the consensus process that turns validator weights into the resulting incentives and
-dividends.
-
-## Reader Boundary
-
-Liquidity positions are range-based liquidity commitments inside subnet pools
-([User Liquidity Positions](https://docs.learnbittensor.org/liquidity-positions)). They are not an
-earnings promise, staking guide, subnet quality signal, or operator procedure.
-
-When the focus is validator support, staking is the more precise concept. When the focus is pool
-depth and range-based liquidity, liquidity position is the more precise term.
-
 ## Coldkey and Hotkey Each Supply a Side
 
-Creating a liquidity position draws from two wallet roles rather than one balance. Official
-liquidity-position documentation states that TAO are taken from the user's
+Creating a liquidity position draws from two wallet roles rather than one balance.
+Liquidity-position documentation states that TAO are taken from the user's
 [coldkey](https://docs.learnbittensor.org/resources/glossary#coldkey), while
 [alpha](https://docs.learnbittensor.org/resources/glossary#alpha) tokens are taken from the
 [hotkey](https://docs.learnbittensor.org/resources/glossary#hotkey) on which the position was
@@ -178,33 +171,11 @@ composition formula as creation, so both keys can be involved again depending on
 price and selected range
 ([User Liquidity Positions: Modifying a Position](https://docs.learnbittensor.org/liquidity-positions#modifying-a-position)).
 
-References: [User Liquidity Positions](https://docs.learnbittensor.org/liquidity-positions),
-[Glossary: Coldkey](https://docs.learnbittensor.org/resources/glossary#coldkey)
-
-## Subnet Price Sets the Token Mix
-
-A liquidity position can hold TAO, alpha, or both at once, and the mix depends on where the subnet
-token price sits relative to the position's low and high bounds
-([User Liquidity Positions: Dynamic token composition](https://docs.learnbittensor.org/liquidity-positions#dynamic-token-composition)).
-
-When price falls below the range, the position becomes entirely alpha. When price rises above the
-range, it becomes entirely TAO. When price sits inside the range, the position keeps a mixed
-composition of both tokens.
-
-That behavior is not cosmetic. The same price-versus-range relationship decides which tokens are
-required when a position is created, which tokens return when liquidity is removed, and how fee
-accrual interacts with the position at different life-cycle stages
-([Managing User Liquidity Positions Tutorial](https://docs.learnbittensor.org/liquidity-positions/managing-liquidity-positions)).
-
-References:
-[User Liquidity Positions: Dynamic token composition](https://docs.learnbittensor.org/liquidity-positions#dynamic-token-composition),
-[Managing User Liquidity Positions Tutorial](https://docs.learnbittensor.org/liquidity-positions/managing-liquidity-positions)
-
 ## Fees Require an Active Withdrawal Step
 
 Liquidity-position fees are not paid out on the same
 [tempo](https://docs.learnbittensor.org/resources/glossary#tempo) cadence as
-[emission](https://docs.learnbittensor.org/resources/glossary#emission) rewards. Official guidance
+[emission](https://docs.learnbittensor.org/resources/glossary#emission) rewards. Documented guidance
 states that fees accumulate when others
 [stake](https://docs.learnbittensor.org/resources/glossary#stake) or unstake within the position's
 price range, but they are tracked separately from the position's supplied liquidity and reach the
@@ -217,11 +188,40 @@ remain locked until the creator performs one of those withdrawal actions.
 The same documentation also notes that a position does not accumulate fees from staking operations
 performed by the coldkey that owns it. Fee vocabulary therefore names activity by other participants
 inside the defined range, not every stake action tied to the same wallet pair
-([User Liquidity Positions](https://docs.learnbittensor.org/liquidity-positions)).
+([User Liquidity Positions: Fee Accumulation](https://docs.learnbittensor.org/liquidity-positions#fee-accumulation)).
 
-References:
-[User Liquidity Positions: Fee Distribution](https://docs.learnbittensor.org/liquidity-positions#fee-distribution),
-[User Liquidity Positions: Fee Accumulation](https://docs.learnbittensor.org/liquidity-positions#fee-accumulation)
+## Development Stage Context
+
+The
+[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
+describes subnet development as moving from localnet to testnet and then mainnet. For liquidity
+positions on a subnet such as netuid 1, that sequence changes how readers should interpret pool
+depth, range selection, and fee examples.
+
+In localnet, range-based supply on netuid 1 can be tested in isolation. Localnet pool observations
+reflect local chain state and local configuration rather than production subnet liquidity.
+
+On testnet, liquidity-position behavior can be observed on a shared non-production network. Testnet
+pool state on a selected netuid is useful for checking range and fee interactions under shared chain
+conditions while staying separate from mainnet state
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+On mainnet, liquidity-position interpretation concerns production subnet pools on the active network
+for the inspected netuid. Observed depth, price bounds, and fee accrual depend on that subnet's live
+pool history ([User Liquidity Positions](https://docs.learnbittensor.org/liquidity-positions)).
+
+The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
+separates mainnet, testnet, and localnet. An observed liquidity-position example from one
+environment should not be read as evidence of production pool behavior in another environment.
+
+## Reader Boundary
+
+Liquidity positions are range-based liquidity commitments inside subnet pools
+([User Liquidity Positions](https://docs.learnbittensor.org/liquidity-positions)). They are not an
+earnings promise, staking guide, subnet quality signal, or operator procedure.
+
+When the focus is validator support, staking is the more precise concept. When the focus is pool
+depth and range-based liquidity, liquidity position is the more precise term.
 
 ## Further Reading
 
@@ -230,5 +230,6 @@ References:
 - [Liquidity Positions vs. Staking](https://docs.learnbittensor.org/liquidity-positions#liquidity-positions-vs-staking)
 - [Understanding Subnets: Liquidity pools](https://docs.learnbittensor.org/subnets/understanding-subnets#liquidity-pools)
 - [Slippage](https://docs.learnbittensor.org/learn/slippage)
+- [Impermanent Loss](https://docs.learnbittensor.org/learn/impermanent-loss)
 - [Emission: Alpha reserve injection](https://docs.learnbittensor.org/learn/emissions#alpha-reserve-injection)
 - [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)
