@@ -50,14 +50,13 @@ transactions inside the block remain separate runtime actions with their own mea
 
 A block hash identifies the block as an ordered chain-history unit; it is not the same thing as the
 runtime action inside that block. The block glossary places the hash on the block itself, while
-extrinsic documentation describes the submitted calls that can be included within block history.
+extrinsic documentation describes the submitted calls that can be included within block history
+([Glossary: Block](https://docs.learnbittensor.org/resources/glossary#block),
+[Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics)).
 
 For readers, that means a block hash is useful for locating the chain context around activity. The
 meaning of the included transaction or call still comes from the relevant extrinsic, event, storage,
 or mechanism reference.
-
-References: [Glossary: Block](https://docs.learnbittensor.org/resources/glossary#block),
-[Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics)
 
 ## Timing Context
 
@@ -123,42 +122,6 @@ state-changing actions, events name runtime records, and storage exposes readabl
 [Subtensor Events](https://docs.learnbittensor.org/subtensor-api/events),
 [Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage)).
 
-## Development Stage Context
-
-The
-[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from localnet to testnet and then mainnet. Block examples
-need that context because chain history, inclusion records, and metagraph snapshots belong to the
-network where they were observed
-([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
-
-Localnet block examples are isolated development examples. Testnet examples add shared
-non-production chain history. Mainnet block interpretation concerns production Subtensor records on
-the active network.
-
-A block example from one environment should not be treated as proof about another environment. They
-use the same block concept, but not the same chain history.
-
-## Relationship to Yuma Consensus
-
-Block and Yuma Consensus describe related parts of Bittensor's incentive system. Yuma Consensus is
-the on-chain process that aggregates validator weight signals within a subnet into miner incentives
-and validator dividends, applying consensus clipping, bonding, and emission calculation
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-For readers, block names a specific part of that incentive picture, while Yuma Consensus names the
-consensus process that turns validator weights into the resulting incentives and dividends.
-
-## Reader Boundary
-
-Block should be read as chain-history vocabulary. It names a Bittensor blockchain data unit that
-contains transactions and has a block hash
-([Glossary: Block](https://docs.learnbittensor.org/resources/glossary#block),
-[Glossary: Subtensor](https://docs.learnbittensor.org/resources/glossary#subtensor)).
-
-Mempool, extrinsic, fee, storage, event, and network references remain useful because they explain
-nearby questions that the block term alone does not answer.
-
 ## Metagraph Snapshots Anchor to One Block Height
 
 The [Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph) documentation describes
@@ -179,15 +142,66 @@ marks when a participant entered a subnet, not only when a snapshot was taken.
 That timing field connects block units to participant lifecycle vocabulary. Registration block
 heights belong to chain history, while pending mempool activity still waits before inclusion.
 
-## Tempo Counts Blocks Between Emission Steps
+## Block Time, Tempo, Epoch, and Yuma Pipeline
 
-The [Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo) defines tempo as the
-subnet-specific block interval over which Yuma Consensus calculates emissions from the latest
-available ranking weight matrix. Metagraph metadata also exposes tempo and blocks-since-last-step
-fields tied to subnet update rhythm.
+Bittensor block time names how often Subtensor produces a new ordered chain record. Public-network
+documentation centers on a twelve-second cadence, while local development can use faster local modes
+([Glossary: Block](https://docs.learnbittensor.org/resources/glossary#block),
+[Glossary: Fast blocks](https://docs.learnbittensor.org/resources/glossary#fast-blocks)).
 
-Block numbers therefore mark both inclusion history and subnet timing boundaries. A tempo interval
-is measured in blocks, while each included transaction still lands inside one ordered block record.
+[Tempo](https://docs.learnbittensor.org/resources/glossary#tempo) counts blocks between subnet
+emission steps on a selected netuid. Metagraph metadata exposes tempo and blocks-since-last-step
+fields tied to that subnet update rhythm, so block numbers mark both inclusion history and subnet
+timing boundaries ([The Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)).
+
+[Epoch](https://docs.learnbittensor.org/resources/glossary#epoch) vocabulary names longer subnet
+timing windows that group many blocks together. Tempo is the subnet-specific block interval over
+which [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) calculates emissions
+from the latest available ranking weight matrix; epoch language helps readers place those tempo
+boundaries inside broader subnet cadence without treating every block as a reward event.
+
+The useful pipeline order on a subnet such as netuid 1 is therefore block production at chain
+cadence, included weight-setting extrinsics in chain history, tempo reaching its block interval,
+Yuma Consensus aggregating the latest validator weight matrix, and emission distribution crediting
+miner and validator shares at the tempo boundary
+([Emission](https://docs.learnbittensor.org/learn/emissions),
+[Weight Setting](https://docs.learnbittensor.org/resources/glossary#weight-setting)).
+
+Block vocabulary locates each included extrinsic in ordered chain history. Tempo counts how many
+blocks elapse before the next Yuma emission step; Yuma Consensus names the aggregation that turns
+validator weights into incentives and dividends once that interval closes.
+
+## Development Stage Context
+
+The
+[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
+describes subnet development as moving from localnet to testnet and then mainnet. Block examples on
+a subnet such as netuid 1 need that context because chain history, inclusion records, and metagraph
+snapshots belong to the network where they were observed
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+In localnet, block examples are isolated development records. Local block cadence and metagraph
+snapshots for netuid 1 reflect local chain configuration rather than production Subtensor history.
+
+On testnet, block inclusion and metagraph snapshots can be observed in a shared non-production
+network. Testnet block heights and tempo readings for netuid 1 are separate from mainnet chain state
+([The Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)).
+
+On mainnet, block interpretation concerns production Subtensor records on the active network,
+including subnet timing and weight-setting history on live subnets such as netuid 1.
+
+A block example from one environment should not be treated as proof about another environment. They
+use the same block concept, but not the same chain history.
+
+## Reader Boundary
+
+Block should be read as chain-history vocabulary. It names a Bittensor blockchain data unit that
+contains transactions and has a block hash
+([Glossary: Block](https://docs.learnbittensor.org/resources/glossary#block),
+[Glossary: Subtensor](https://docs.learnbittensor.org/resources/glossary#subtensor)).
+
+Mempool, extrinsic, fee, storage, event, and network references remain useful because they explain
+nearby questions that the block term alone does not answer.
 
 ## Further Reading
 
