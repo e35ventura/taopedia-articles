@@ -28,8 +28,8 @@ grouping, and every other economic effect that can appear near a transaction.
 
 ## Base Fee Components
 
-The official fee documentation describes base transaction fees as having weight and length
-components ([Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees)).
+Bittensor fee documentation describes base transaction fees as having weight and length components
+([Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees)).
 
 Weight is tied to computational load, while length is tied to transaction size. This base-fee
 context belongs to the state-changing action, not to passive observation.
@@ -109,87 +109,51 @@ Together, these neighboring concepts keep the transaction-fee term narrow. Reads
 swap fees are liquidity-linked, and batches describe grouped submission; none of those labels
 replace the base fee components.
 
-## Recycling and Network Context
+## Extrinsic Submission and Fee Pipeline
 
-The recycling and burning glossary entry describes collected transaction fees as recycled tokens
-deducted from the issuance record for future emission
-([Recycling and burning](https://docs.learnbittensor.org/resources/glossary#recycling-and-burning)).
+Transaction fees sit on the extrinsic submission path. A state-changing
+[extrinsic](https://docs.learnbittensor.org/resources/glossary#extrinsics) names the runtime call
+being submitted; fee documentation explains how that submission is charged before the chain records
+the resulting state change
+([Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics),
+[Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees)).
 
-That places transaction fees near issuance accounting. Recycling explains where collected fees go in
-the issuance record; it does not change what the fee was charged for.
+The useful pipeline order is therefore extrinsic selection, fee calculation from weight and length,
+payment from TAO free balance or alpha fallback, block inclusion of the accepted transaction, and
+downstream accounting of the collected fee. Fee language belongs to the submission and payment step;
+block inclusion confirms the charge landed in chain history without redefining what triggered it
+([Glossary: Block](https://docs.learnbittensor.org/resources/glossary#block)).
 
-The fee documentation also places paid base fees in that accounting context by describing collected
-base fees as deducted from `TotalIssuance`
-([Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees)).
-
-Bittensor documentation separates mainnet, testnet, and localnet contexts
-([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
-
-A fee example from one environment should not be treated as proof about another environment.
-Localnet examples can show controlled behavior, testnet examples can show shared non-production
-conditions, and mainnet references need separate support from mainnet-specific material.
-
-Network context is especially important for examples. A formula or category from the fee reference
-can describe the concept, while an observed fee from one environment remains an observation from
-that environment.
-
-## Development Stage Context
-
-The
-[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from localnet to testnet and then mainnet. For transaction
-fees, that sequence changes how readers should interpret fee quotes and RAO-denominated charges
-across environments.
-
-In localnet, transaction-fee examples can be exercised in an isolated environment. Local fee
-parameters reflect local chain configuration rather than production fee levels.
-
-On testnet, transaction fees can be observed in a shared, non-production network. Testnet fee quotes
-are separate from mainnet extrinsic costs
-([Understanding Fees](https://docs.learnbittensor.org/learn/fees)).
-
-On mainnet, transaction fees are live production charges for extrinsic length and weight on the
-connected Bittensor network
-([Glossary: RAO](https://docs.learnbittensor.org/resources/glossary#rao)).
-
-The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
-separates mainnet, testnet, and localnet. A fee example from one environment should not be read as
-representing production transaction costs in another environment.
-
-## Relationship to Yuma Consensus
-
-Transaction Fees and Yuma Consensus describe related parts of Bittensor's incentive system. Yuma
-Consensus is the on-chain process that aggregates validator weight signals within a subnet into
-miner incentives and validator dividends, applying consensus clipping, bonding, and emission
-calculation ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-For readers, transaction fees names a specific part of that incentive picture, while Yuma Consensus
-names the consensus process that turns validator weights into the resulting incentives and
-dividends.
-
-## Reader Boundary
-
-Transaction fees should not be read as a permanent quote for every action, a calculator result, or a
-complete description of all costs that can appear near a transaction. The term names
-chain-processing costs tied to state-changing extrinsics on Subtensor
-([Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees),
-[Glossary: Subtensor](https://docs.learnbittensor.org/resources/glossary#subtensor)).
-
-Use transaction fee language for base weight-and-length costs on state-changing actions. Use
-neighboring vocabulary when the question is a read, swap fee, batch wrapper, recycling accounting
-record, or a fee observation tied to one network environment
-([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
-
-## Weight Submissions Can Be Fee-Free
-
-Official [Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees) documentation
-lists fee-free extrinsics that pay neither the weight nor the length component, including
-`set_weights`, `commit_weights`, and `reveal_weights`. Consensus participation through weight
-submission therefore does not carry the same base fee formula as many other state-changing actions
-([Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#validator-weights)).
+Weight-setting extrinsics such as `set_weights`, `commit_weights`, and `reveal_weights` are listed
+as fee-free, so consensus participation through weight submission does not carry the same base fee
+formula as many other state-changing actions
+([Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#validator-weights),
+[Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees)).
 
 Fee-free listing is separate from swap fees or alpha fallback. It names extrinsics the chain does
 not charge through the standard weight-and-length base formula.
+
+## Fee Recycling, Burning, and Emission Pipeline
+
+Paid base fees are deducted from
+[TotalIssuance](https://docs.learnbittensor.org/resources/glossary#issuance), and the
+[Recycling and burning](https://docs.learnbittensor.org/resources/glossary#recycling-and-burning)
+glossary entry describes collected transaction fees as recycled tokens removed from the issuance
+record for future [emission](https://docs.learnbittensor.org/resources/glossary#emission)
+([Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees)).
+
+For readers, the pipeline order is: a fee-bearing extrinsic pays weight and length charges, the
+collected base fee reduces total issuance, recycling returns that value to the protocol supply path,
+and the broader emission process continues distributing newly minted value at the adjusted supply
+pace ([Emission](https://docs.learnbittensor.org/learn/emissions)).
+
+[Burning](https://docs.learnbittensor.org/resources/glossary#burning) is a separate supply movement
+that removes existing tokens from spendable circulation. Recycling transaction fees changes issuance
+accounting for fees already collected; burning addresses a different token exit path. Neither
+replaces the base fee formula that charged the extrinsic in the first place.
+
+That accounting path explains where base fees go after payment. It does not change what triggered
+the fee, but it connects chain charges to broader tokenomics vocabulary.
 
 ## Staking and Unstaking Swap Fees Are Separate
 
@@ -203,16 +167,42 @@ amount
 Transaction fee vocabulary should stay attached to the chain-processing charge, while swap fee
 vocabulary belongs to the pool conversion side of the same user action.
 
-## Collected Base Fees Reduce Total Issuance
+## Development Stage Context
 
-Fee documentation states that paid base fees are deducted from total issuance, and the
-[Recycling and burning](https://docs.learnbittensor.org/resources/glossary#recycling-and-burning)
-glossary entry describes collected transaction fees as recycled tokens removed from the issuance
-record for future emission
-([Glossary: Emission](https://docs.learnbittensor.org/resources/glossary#emission)).
+The
+[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
+describes subnet development as moving from localnet to testnet and then mainnet. For transaction
+fees on a subnet such as netuid 1, that sequence changes how readers should interpret fee quotes,
+RAO-denominated charges, and stake-related swap fees across environments.
 
-That accounting path explains where base fees go after payment. It does not change what triggered
-the fee, but it connects chain charges to broader tokenomics vocabulary.
+In localnet, transaction-fee examples can be exercised in an isolated environment. Local fee
+parameters and staking swap examples on netuid 1 reflect local chain configuration rather than
+production fee levels.
+
+On testnet, transaction fees can be observed in a shared, non-production network. Testnet fee quotes
+and stake-related swap charges for netuid 1 are separate from mainnet extrinsic costs
+([Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees)).
+
+On mainnet, transaction fees are live production charges for extrinsic length and weight on the
+connected Bittensor network, including stake-related actions on production subnet pools such as
+netuid 1 ([Glossary: RAO](https://docs.learnbittensor.org/resources/glossary#rao)).
+
+The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
+separates mainnet, testnet, and localnet. A fee example from one environment should not be read as
+representing production transaction costs in another environment.
+
+## Reader Boundary
+
+Transaction fees should not be read as a permanent quote for every action, a calculator result, or a
+complete description of all costs that can appear near a transaction. The term names
+chain-processing costs tied to state-changing extrinsics on Subtensor
+([Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees),
+[Glossary: Subtensor](https://docs.learnbittensor.org/resources/glossary#subtensor)).
+
+Use transaction fee language for base weight-and-length costs on state-changing actions. Use
+neighboring vocabulary when the question is a read, swap fee, batch wrapper, recycling accounting
+record, or a fee observation tied to one network environment
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
 
 ## Further Reading
 
