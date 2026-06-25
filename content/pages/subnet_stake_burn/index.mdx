@@ -21,7 +21,7 @@ infoboxRows:
 # Subnet Stake Burn
 
 Subnet stake burn is a Bittensor mechanism that adds TAO to a subnet reserve while permanently
-removing alpha from circulation. The official
+removing alpha from circulation. The
 [Subnet Stake Burn](https://docs.learnbittensor.org/concepts/stake-burn) page describes it as a
 voluntary subnet buyback mechanism.
 
@@ -60,17 +60,6 @@ mechanism that can reduce that circulating alpha by burning a calculated amount
 The concepts are connected but not identical. Alpha outstanding is a supply quantity, while subnet
 stake burn is a mechanism that changes supply through a reserve action.
 
-## Tempo Boundary
-
-The official stake-burn page describes the mechanism as rate-limited per subnet and tied to tempo
-([Subnet Stake Burn](https://docs.learnbittensor.org/concepts/stake-burn),
-[Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo)). That timing detail is
-a protocol boundary, not an invitation to reproduce execution steps in a concept article.
-
-For Taopedia, the important point is that subnet stake burn is not an unrestricted repeated action.
-Its use is bounded by the source mechanism and should be interpreted through the official stake-burn
-documentation.
-
 ## Pool Context
 
 Subnet stake burn belongs beside subnet-pool vocabulary because it updates reserve context. A subnet
@@ -93,7 +82,7 @@ alpha so that a staked balance cannot be reduced below the locked amount
 This boundary matters because burning and locking are not interchangeable. A burn reduces
 circulating alpha; a lock constrains movement of alpha that remains staked.
 
-## Coinbase Context
+## Coinbase and Emission Context
 
 Coinbase is another adjacent mechanism. The coinbase documentation describes a per-block protocol
 process for TAO emission, pending-emission accounting, and epoch-boundary activity
@@ -101,93 +90,79 @@ process for TAO emission, pending-emission accounting, and epoch-boundary activi
 
 Both coinbase and subnet stake burn can be discussed near subnet reserves, but they move through
 different mechanism paths. Coinbase is part of recurring emission flow; subnet stake burn is a
-separate alpha-burning mechanism.
+separate alpha-burning mechanism that changes pool reserves without re-emitting the removed alpha.
 
-## Relationship to Yuma Consensus
+## Registration Burn, Stake Burn, and Recycling Pipeline
 
-Subnet Stake Burn and Yuma Consensus describe related parts of Bittensor's incentive system. Yuma
-Consensus is the on-chain process that aggregates validator weight signals within a subnet into
-miner incentives and validator dividends, applying consensus clipping, bonding, and emission
-calculation ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+Bittensor uses several burn-adjacent flows that share vocabulary but differ in supply outcome.
+[Subnet registration](https://docs.learnbittensor.org/subnets/subnet-registration) recycles TAO
+through dynamic burn bounds when a subnet is created, returning deducted TAO toward future issuance
+rather than permanently removing it
+([Glossary: Burn Cost](https://docs.learnbittensor.org/resources/glossary#burn-cost),
+[Glossary: Recycling and burning](https://docs.learnbittensor.org/resources/glossary#recycling-and-burning)).
 
-For readers, subnet stake burn names a specific part of that incentive picture, while Yuma Consensus
-names the consensus process that turns validator weights into the resulting incentives and
-dividends.
+Subnet stake burn sits on the opposite side of that split. Submitted TAO enters the subnet reserve
+while an equivalent [alpha](https://docs.learnbittensor.org/resources/glossary#alpha) amount is
+removed from circulation within the same transaction on a subnet such as netuid 1
+([Subnet Stake Burn](https://docs.learnbittensor.org/concepts/stake-burn)). The burn is permanent
+for the alpha side: it reduces
+[alpha outstanding](https://docs.learnbittensor.org/resources/glossary#alpha-outstanding) and
+updates the pool ratio rather than recycling tokens toward later emission.
 
-## Reader Boundary
-
-Subnet stake burn should be read as a subnet tokenomics mechanism. It adds TAO to subnet reserve
-context, removes alpha from circulation, and is bounded by the official stake-burn rules
+The useful pipeline order on a selected netuid is therefore registration or recycled TAO flows at
+subnet creation, ongoing coinbase and
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) emission distribution at
+[tempo](https://docs.learnbittensor.org/resources/glossary#tempo) boundaries, and optional subnet
+stake burn as a separate owner-initiated reserve action that removes alpha from circulation. Stake
+burn is rate-limited per subnet to one `add_stake_burn` extrinsic each tempo, about 360 blocks; a
+second call inside the same tempo on netuid 1 returns a rate-limit error
 ([Subnet Stake Burn](https://docs.learnbittensor.org/concepts/stake-burn)).
-
-The stable article-level point is that subnet stake burn connects reserve adjustment with permanent
-alpha removal. Exact execution behavior, rejected attempts, and troubleshooting details belong in
-the official mechanism documentation.
-
-## Development Stage Context
-
-The
-[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from localnet to testnet and then mainnet. For Subnet Stake
-Burn, this sequence gives readers a boundary for interpreting stake-burn examples and
-subnet-registration notes.
-
-Localnet examples are isolated and reflect local chain state, so they are useful for controlled
-experiments rather than evidence of live Bittensor behavior. Testnet examples add shared
-non-production conditions, which can reveal integration behavior without touching mainnet state.
-
-On mainnet, Subnet Stake Burn examples should be read as live production subnet-registration
-behavior on the production Bittensor network.
-
-The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
-separates mainnet, testnet, and localnet, so outcomes from one environment should not be treated as
-proof of behavior in another.
-
-## Source Scope
-
-The official references scope Subnet Stake Burn to a specific Bittensor context rather than a
-universal account, market, or operational signal. The article's primary source is
-[Subnet Stake Burn](https://docs.learnbittensor.org/concepts/stake-burn), while
-[Glossary: Recycling and burning](https://docs.learnbittensor.org/resources/glossary#recycling-and-burning)
-supplies the adjacent system context used to interpret the term.
-
-For readers, the useful boundary is that Subnet Stake Burn explains the referenced mechanism or
-concept at the level the sources describe it. Current chain values, wallet state, subnet-specific
-outcomes, or production measurements still belong to the relevant network, block, account, or tool
-output at the time of observation.
-
-## Owner Calls add_stake_burn Once Per Tempo
-
-Official [Subnet Stake Burn](https://docs.learnbittensor.org/concepts/stake-burn) documentation
-states that the `add_stake_burn` extrinsic is rate-limited per subnet to one call each
-[tempo](https://docs.learnbittensor.org/resources/glossary#tempo), about 360 blocks. On a subnet
-such as netuid 1, a second call inside the same tempo returns a rate-limit error.
 
 That cap keeps stake burn tied to subnet-owner timing rather than to unlimited repeated burns on the
 same [netuid](https://docs.learnbittensor.org/resources/glossary#netuid).
 
-## TAO Enters the Reserve While Alpha Burns
-
-The stake-burn reference describes a sequence on a subnet such as netuid 1 in which submitted TAO is
-added to the subnet's TAO reserve while an equivalent
-[alpha](https://docs.learnbittensor.org/resources/glossary#alpha) amount is removed from circulation
-within the same transaction.
-
-Subnet stake burn therefore changes both sides of the pool ratio: more TAO in reserve, less
-circulating
-[alpha outstanding](https://docs.learnbittensor.org/resources/glossary#alpha-outstanding). The price
-update follows the new reserve balance rather than leaving alpha supply unchanged.
-
 ## Slippage Limits Apply to the Stake Step
 
-The same documentation warns that the staking step inside stake burn executes against the subnet
+The stake-burn reference warns that the staking step inside stake burn executes against the subnet
 automated market maker and can move the alpha price, especially when liquidity is thin or the TAO
-amount is large on a netuid such as netuid 1. Official guidance recommends limit-price or slippage
+amount is large on a netuid such as netuid 1. Documentation recommends limit-price or slippage
 tolerance controls on the operation.
 
 Slippage vocabulary therefore belongs to stake-burn reading. The burn removes alpha from
 circulation, but the amount acquired for burning can differ from a pre-trade estimate when the pool
 moves during execution ([Understanding Slippage](https://docs.learnbittensor.org/learn/slippage)).
+
+## Development Stage Context
+
+The
+[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
+describes subnet development as moving from localnet to testnet and then mainnet. Subnet stake burn
+examples on netuid 1 need that context because reserve state, tempo limits, and burn outcomes belong
+to the network where they were observed
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+In localnet, stake-burn examples are isolated development records. Local pool reserves and tempo
+readings for netuid 1 reflect local chain configuration rather than production subnet behavior.
+
+On testnet, stake burn can be exercised in a shared non-production network. Testnet reserve updates
+and rate-limit behavior for netuid 1 are separate from mainnet subnet state
+([Subnet Stake Burn](https://docs.learnbittensor.org/concepts/stake-burn)).
+
+On mainnet, subnet stake burn concerns live production reserve actions on the active Bittensor
+network, including alpha removal and pool ratio updates on subnets such as netuid 1.
+
+A stake-burn example from one environment should not be treated as proof about another environment.
+They use the same mechanism vocabulary, but not the same reserve state.
+
+## Reader Boundary
+
+Subnet stake burn should be read as a subnet tokenomics mechanism. It adds TAO to subnet reserve
+context, removes alpha from circulation, and is bounded by the stake-burn rules described in
+[Subnet Stake Burn](https://docs.learnbittensor.org/concepts/stake-burn).
+
+The stable article-level point is that subnet stake burn connects reserve adjustment with permanent
+alpha removal. Exact execution behavior, rejected attempts, and troubleshooting details belong in
+the stake-burn documentation and the relevant network context at observation time.
 
 ## Further Reading
 
