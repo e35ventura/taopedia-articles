@@ -1,0 +1,143 @@
+---
+title: "Max Allowed UIDs"
+summary:
+  "How the max allowed UIDs subnet hyperparameter sets the ceiling on how many neurons a Bittensor
+  subnet can hold."
+category: "Subnets"
+tags: ["Subnets", "Registration"]
+infoboxTitle: Max Allowed UIDs
+infoboxCaption: Ceiling on neuron slots per subnet.
+infoboxRows:
+  - label: Parameter
+    value: MaxAllowedUids
+  - label: Type
+    value: u16
+  - label: Default
+    value: "256"
+  - label: Set by
+    value: Subnet owner
+---
+
+# Max Allowed UIDs
+
+Max allowed UIDs is a per-subnet hyperparameter, listed in the documentation as `MaxAllowedUids`,
+that sets the maximum number of neurons a subnet can hold. Each registered neuron occupies one
+[[UID Slot]], so this value is the ceiling on how many [[UID|UIDs]] can exist on a subnet at once
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## What It Controls
+
+The parameter bounds capacity, not behavior. It does not change how a [[Neuron]] registers, what
+registration costs, or how rewards are calculated. It only fixes how many UID slots the subnet
+exposes. Once the subnet holds that many neurons, it is full, and further entry depends on
+displacement rather than on free space
+([Glossary: UID Slot](https://docs.learnbittensor.org/resources/glossary#uid-slot)).
+
+That makes max allowed UIDs a structural limit. It defines the size of the competitive set on a
+subnet: every miner and validator on that subnet shares the same fixed pool of slots.
+
+## Documented Type, Default, and Setter
+
+The [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+reference lists `MaxAllowedUids` as a `u16` with a default of `256` and the description "Maximum
+number of neurons on a subnet." It is changed through the `sudo_trim_to_max_allowed_uids` extrinsic,
+exposed in tooling as `btcli sudo set --param sudo_trim_to_max_allowed_uids` and the
+`btcli sudo trim` command, and the reference marks the permission required to set it as subnet
+owner.
+
+The setter name carries an operational caveat. Because it is a trim operation, lowering the cap
+below the current neuron count removes excess UIDs rather than leaving them in place, so a reduction
+is not a passive setting change. Raising or lowering the value is governed at the subnet-owner level
+rather than freely tuned by individual participants
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## Capacity and the Competitive Pool
+
+Because the slot count is fixed, max allowed UIDs determines how many participants can hold a place
+on the subnet simultaneously. A subnet at its default holds up to 256 neurons across both miners and
+validators. The cap is shared: validators and miners are not given separate UID pools by this
+parameter, so the total population draws from one ceiling
+([Glossary: Neuron](https://docs.learnbittensor.org/resources/glossary#neuron)).
+
+This is why the value matters for newcomers. On a full subnet, claiming a slot is not simply a
+matter of paying to [[Register]]; it requires displacing an existing occupant under the subnet's
+displacement rules.
+
+## Behavior When the Subnet Is Full
+
+When every UID is occupied, a new registration does not expand the subnet. Instead it displaces the
+neuron with the lowest [[Pruning Score]], subject to protection from the [[Immunity Period]], which
+shields recently registered neurons from being pruned for a configured window
+([Mining: Miner deregistration](https://docs.learnbittensor.org/miners#miner-deregistration)).
+
+The displaced neuron loses its slot through [[Deregistration]], and the incoming registrant takes
+the freed UID. Max allowed UIDs names the ceiling that makes this competition necessary, while the
+pruning score and immunity period decide which occupant is removed when the ceiling is reached
+([Glossary: UID Slot](https://docs.learnbittensor.org/resources/glossary#uid-slot)).
+
+## Relationship to UID Trimming
+
+[[UID Trimming]] is the act of removing UID slots, and max allowed UIDs is the target that act aims
+at. The `sudo_trim_to_max_allowed_uids` extrinsic ties the two together by name: trimming reduces
+the live UID set down to the configured ceiling. The hyperparameter states the desired capacity, and
+trimming is how the chain enforces a lower one when the value is reduced
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+For readers, the distinction is between the number and the operation. Max allowed UIDs is the cap;
+trimming is the mechanism that brings an oversized UID set into line with that cap.
+
+## Relationship to Max Validators
+
+Max allowed UIDs is not the same ceiling as [[Max Validators]]. The hyperparameters reference lists
+`MaxAllowedValidators` as a separate `u16`, defaulting to `64` and set at the root level, with the
+description "Maximum validators on a subnet." Max allowed UIDs bounds the total neuron population,
+while max validators bounds how many of those neurons can hold a [[Validator Permit]]
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+The two caps therefore answer different questions. One sets how many participants can exist on the
+subnet at all; the other sets how many of them can act as validators within that population.
+
+## Relationship to Registration Allowed
+
+Max allowed UIDs and [[Registration Allowed]] sit on the same registration path as ceiling and
+switch. Registration allowed is the Boolean that decides whether a subnet accepts new registrations
+at all, while max allowed UIDs sets how many slots exist when registration is permitted. A subnet
+can have registration open yet still be full, in which case entry depends on displacement rather
+than spare capacity
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+- **Registration allowed** — whether new entry is currently open.
+- **Max allowed UIDs** — how many neuron slots the subnet exposes.
+
+## Per-Subnet Hyperparameter
+
+Max allowed UIDs is one of the [[Subnet Hyperparameters]], the on-chain state variables that
+configure a single [[Subnet]]. Because each subnet carries its own hyperparameters, the UID ceiling
+is defined per subnet and applies only within that subnet. The implementation of these per-subnet
+values lives in the Subtensor pallet
+([opentensor/subtensor](https://github.com/opentensor/subtensor/tree/main/pallets/subtensor)).
+
+The documented default of 256 is a starting point, not a guarantee for any specific subnet. The live
+ceiling is chain state and can differ from the default, so the current value should be read for the
+relevant subnet rather than assumed.
+
+## Reader Boundary
+
+This page defines the concept at a high level. It does not report the live UID ceiling on any
+particular subnet, which is on-chain state that should be checked for the relevant netuid. The
+documented default is 256, the type is `u16`, and the parameter is set by the subnet owner through a
+trim extrinsic
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+That reading keeps max allowed UIDs separate from registration cost and reward mechanics. It bounds
+how many neurons a subnet can hold; it does not predict who will hold those slots or what they will
+earn.
+
+## Further Reading
+
+- [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+- [Glossary: UID Slot](https://docs.learnbittensor.org/resources/glossary#uid-slot)
+- [Glossary: Neuron](https://docs.learnbittensor.org/resources/glossary#neuron)
+- [Mining: Miner registration](https://docs.learnbittensor.org/miners#miner-registration)
+- [Mining: Miner deregistration](https://docs.learnbittensor.org/miners#miner-deregistration)
+- [opentensor/subtensor](https://github.com/opentensor/subtensor/tree/main/pallets/subtensor)
