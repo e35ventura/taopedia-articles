@@ -40,10 +40,10 @@ validator, or application running inside every subnet.
 ## Selection Rule
 
 When the cap is full, the eligible subnet with the lowest exponential moving average price is the
-removal candidate. EMA price is a smoothed alpha-price signal, so the rule is tied to market value
-over time rather than a one-moment price tick
-([Subnet Deregistration](https://docs.learnbittensor.org/subnets/subnet-deregistration),
-[Glossary: Alpha Price](https://docs.learnbittensor.org/resources/glossary#alpha-price)).
+removal candidate. EMA price is a smoothed
+[alpha price](https://docs.learnbittensor.org/resources/glossary#alpha-price) signal, so the rule is
+tied to market value over time rather than a one-moment price tick
+([Subnet Deregistration](https://docs.learnbittensor.org/subnets/subnet-deregistration)).
 
 That distinction matters for interpretation. "Lowest EMA price" is the documented comparison, while
 "weak subnet" is only shorthand. The mechanism does not require a manual content review, a social
@@ -51,10 +51,11 @@ vote, or a broad quality essay about the subnet.
 
 ## Immunity and Timing
 
-Newer subnets can be protected by an immunity window, which keeps a freshly created subnet out of
-the removal comparison while it has time to establish price history. Deregistration is also paced by
-rate limits, so slot turnover belongs to the same family of delayed, bounded network actions as
-other sensitive subnet lifecycle changes
+Newer subnets can be protected by an
+[immunity period](https://docs.learnbittensor.org/resources/glossary#immunity-period), which keeps a
+freshly created subnet out of the removal comparison while it has time to establish price history.
+Deregistration is also paced by rate limits, so slot turnover belongs to the same family of delayed,
+bounded network actions as other sensitive subnet lifecycle changes
 ([Subnet Deregistration](https://docs.learnbittensor.org/subnets/subnet-deregistration),
 [Rate Limits in Bittensor](https://docs.learnbittensor.org/learn/chain-rate-limits)).
 
@@ -70,32 +71,86 @@ pair is easier to read as "create a slot" and "free a slot" rather than as unrel
 ([Subnet Deregistration](https://docs.learnbittensor.org/subnets/subnet-deregistration),
 [Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet)).
 
-This boundary separates deregistration from ordinary subnet analysis. A reader can understand the
-mechanism without listing every possible subnet, comparing teams, or turning the article into a
-status dashboard.
-
 ## Development Stage Context
 
-Localnet, testnet, and mainnet examples do not carry the same weight. A localnet example can show
-how the lifecycle rule behaves in an isolated development environment, while testnet and mainnet
-belong to separate network contexts with separate histories
-([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks),
-[Introduction to Bittensor: Subnet development](https://docs.learnbittensor.org/learn/introduction#subnet-development)).
+The
+[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
+describes subnet development as moving from localnet to testnet and then mainnet. For subnet
+deregistration, that sequence changes how readers should interpret cap-full examples, immunity
+windows, and liquidation outcomes.
 
-Localnet examples are isolated development examples. Testnet examples are shared non-production
-examples. Mainnet deregistration interpretation concerns production subnet lifecycle on the active
-network.
+In localnet, deregistration mechanics can be tested in an isolated environment. Local lifecycle
+events reflect local chain configuration rather than production subnet markets.
 
-## Relationship to Yuma Consensus
+On testnet, deregistration behavior can be observed in a shared, non-production network. Testnet
+subnet-cap and EMA-price readings are separate from mainnet subnet state.
 
-Subnet Deregistration and Yuma Consensus describe related parts of Bittensor's incentive system.
-Yuma Consensus is the on-chain process that aggregates validator weight signals within a subnet into
-miner incentives and validator dividends, applying consensus clipping, bonding, and emission
-calculation ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+On mainnet, subnet deregistration is the live mechanism that can remove an entire subnet market when
+the 128-slot cap is full and a new subnet registration attempts to enter.
 
-For readers, subnet deregistration names a specific part of that incentive picture, while Yuma
-Consensus names the consensus process that turns validator weights into the resulting incentives and
-dividends.
+The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
+separates mainnet, testnet, and localnet. A deregistration example from one environment should not
+be read as representing production subnet lifecycle behavior in another environment.
+
+## Subnet Registration Triggers Removal at Capacity
+
+[Subnet registration](https://docs.learnbittensor.org/subnets/create-a-subnet) creates a new subnet
+by paying a registration burn to receive a unique netuid. When the subnet cap is already full, that
+registration attempt can trigger subnet deregistration, selecting the eligible subnet with the
+lowest EMA of alpha price for removal so the incoming subnet can take the slot.
+
+The newly registered subnet then receives an immunity period, which protects it from being
+immediately selected as a candidate for future subnet deregistration.
+
+## Participant Deregistration Vacates One UID
+
+[Participant deregistration](https://docs.learnbittensor.org/resources/glossary#deregistration)
+removes one miner or validator from a continuing subnet when registration pressure requires slot
+turnover. Subnet deregistration removes the entire subnet context: every UID assignment within it
+ends simultaneously rather than one participant at a time.
+
+Subnet deregistration should be kept separate from miner or validator deregistration inside a subnet
+that continues to exist.
+
+## A Full Cap With All Subnets Immune Blocks Entry
+
+When every occupied subnet is still inside its immunity window, the selection step returns no
+removal candidate, registration fails with a subnet-limit error, and no subnet is deregistered until
+at least one becomes eligible
+([Subnet Deregistration](https://docs.learnbittensor.org/subnets/subnet-deregistration)).
+
+A full 128-slot network can still refuse a new subnet registration if every incumbent remains
+immune.
+
+## Liquidation Converts Alpha Back to TAO Holders
+
+When a subnet is deregistered, alpha in the subnet is converted through the pool and distributed to
+alpha holders, with the subnet's TAO reserve allocated pro-rata. Alpha tokens in that subnet are
+destroyed as part of dissolution rather than continuing as a live subnet asset.
+
+Deregistration therefore ends the subnet market and settles holder balances through the subnet
+liquidity pool conversion path.
+
+## Zero Emissions Do Not Automatically Remove a Subnet
+
+[Emission](https://docs.learnbittensor.org/learn/emissions) documentation notes that emissions and
+deregistration are intentionally decoupled: subnets with zero flow-based injection can still remain
+registered, while subnet deregistration continues to use lowest alpha-price EMA among eligible
+subnets when the cap is full.
+
+Negative or zero cross-subnet emission share does not, by itself, trigger the subnet-slot removal
+rule described in deregistration documentation.
+
+## Yuma Consensus Stops With the Subnet Market
+
+Yuma Consensus aggregates validator weight signals within a subnet into miner incentives and
+validator dividends. Subnet deregistration ends that subnet market entirely, so the consensus and
+emission path for that netuid stops with the subnet context rather than continuing for individual
+participants inside a live subnet
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+Subnet deregistration names market removal; Yuma Consensus names the incentive aggregation that
+operated inside the market while it existed.
 
 ## Reader Boundary
 
@@ -107,41 +162,7 @@ removal, and from predictions about future removals
 
 The documented comparison is lowest alpha-price EMA among eligible subnets, not a manual quality
 review or social vote. Immunity windows, rate limits, and creation pressure are part of the concept,
-not optional timing details
-([Subnet Deregistration](https://docs.learnbittensor.org/subnets/subnet-deregistration),
-[Rate Limits in Bittensor](https://docs.learnbittensor.org/learn/chain-rate-limits)).
-
-## A Full Cap With All Subnets Immune Blocks Entry
-
-[Subnet Deregistration](https://docs.learnbittensor.org/subnets/subnet-deregistration) documentation
-describes a case where every occupied subnet is still inside its immunity window. When that happens,
-the selection step returns no removal candidate, registration fails with a subnet-limit error, and
-no subnet is deregistered until at least one becomes eligible.
-
-That edge case keeps deregistration vocabulary tied to eligibility rather than to automatic
-turnover. A full 128-slot network can still refuse a new subnet registration if every incumbent
-remains immune.
-
-## Liquidation Converts Alpha Back to TAO Holders
-
-When a subnet is deregistered, official documentation states that alpha in the subnet is converted
-through the pool and distributed to alpha holders, with the subnet's TAO reserve allocated pro-rata.
-Alpha tokens in that subnet are destroyed as part of dissolution rather than continuing as a live
-subnet asset.
-
-Deregistration therefore ends the subnet market and settles holder balances. It is not the same as
-miner or validator deregistration inside a subnet that continues to exist
-([Glossary: Deregistration](https://docs.learnbittensor.org/resources/glossary#deregistration)).
-
-## Zero Emissions Do Not Automatically Remove a Subnet
-
-Official [Emission](https://docs.learnbittensor.org/learn/emissions) documentation notes that
-emissions and de-registration are intentionally decoupled: subnets with zero flow-based injection
-can still remain registered, while subnet deregistration continues to use lowest alpha-price EMA
-among eligible subnets when the cap is full.
-
-That split keeps two vocabulary paths separate. Negative or zero cross-subnet emission share does
-not, by itself, trigger the subnet-slot removal rule described in deregistration documentation.
+not optional timing details.
 
 ## Further Reading
 
