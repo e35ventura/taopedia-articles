@@ -151,9 +151,6 @@ uses after creation and after any permitted updates
 ([Subtensor Constants](https://docs.learnbittensor.org/subtensor-api/constants),
 [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
-References: [Subtensor Constants](https://docs.learnbittensor.org/subtensor-api/constants),
-[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
-
 ## Crowdloan Constants Bound Campaigns
 
 Beyond subnet examples, the constants page lists a `crowdloan` runtime area with deposit, duration,
@@ -162,9 +159,9 @@ and refund-batch limits for collective funding campaigns
 rules such as the creator deposit required to open a campaign, the minimum and maximum block
 duration a campaign may span, and how many contributors can be refunded in one refund pass.
 
-Official crowdloan guidance ties those bounds to real campaign design. Campaign duration must stay
-within the minimum and maximum window on production-style networks, where the documented range maps
-to about seven days at the low end and about sixty days at the high end
+Crowdloan guidance ties those bounds to real campaign design. Campaign duration must stay within the
+minimum and maximum window on production-style networks, where the documented range maps to about
+seven days at the low end and about sixty days at the high end
 ([Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans),
 [Create a Subnet with a Crowdloan](https://docs.learnbittensor.org/subnets/crowdloans/crowdloans-tutorial)).
 
@@ -172,9 +169,6 @@ Readers therefore meet crowdloan limits in two related places. Constants expose 
 reference values, while crowdloan documentation explains how contributors fund an action such as
 subnet registration and how failed campaigns return deposits
 ([Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans)).
-
-References: [Subtensor Constants](https://docs.learnbittensor.org/subtensor-api/constants),
-[Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans)
 
 ## Slot Duration Anchors Block Time
 
@@ -195,40 +189,86 @@ into an approximate time estimate
 ([Subtensor Constants](https://docs.learnbittensor.org/subtensor-api/constants),
 [Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
 
-References: [Subtensor Constants](https://docs.learnbittensor.org/subtensor-api/constants),
-[Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)
-
 ## Development Stage Context
 
 The
 [Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
 describes subnet development as moving from localnet to testnet and then mainnet. For Subtensor
-Constants, that sequence changes how an example should be read, because the surrounding network
-state differs at each stage.
+constants on a subnet such as netuid 1, that sequence changes how an example should be read, because
+the surrounding network state and hyperparameter values differ at each stage.
 
-In localnet, subtensor Constants can be exercised in an isolated development environment, where the
-surrounding chain state reflects local configuration rather than production history.
+In localnet, Subtensor constants can be exercised in an isolated development environment. Constants
+read from a local netuid 1 reflect local configuration rather than production runtime defaults or
+live hyperparameter history.
 
-On testnet, subtensor Constants can be observed in a shared, non-production network whose state is
-kept separate from mainnet.
+On testnet, Subtensor constants can be observed in a shared, non-production network whose state is
+kept separate from mainnet. Testnet constant readings for netuid 1 do not represent mainnet subnet
+timing or registration limits
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
-On mainnet, subtensor Constants applies on the live, production Bittensor network, where the
-surrounding state is real and persistent.
+On mainnet, Subtensor constants apply on the live, production Bittensor network, where the
+surrounding state is real and persistent. Observed values for netuid 1 depend on current
+hyperparameter settings rather than on initial compile-time defaults alone.
 
 The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
-separates mainnet, testnet, and localnet. A subtensor Constants example from one environment should
+separates mainnet, testnet, and localnet. A Subtensor constants example from one environment should
 not be read as representing another environment.
 
-## Relationship to Yuma Consensus
+## Registration Limits From Initial Constants
 
-Subtensor Constants and Yuma Consensus describe related parts of Bittensor's incentive system. Yuma
-Consensus is the on-chain process that aggregates validator weight signals within a subnet into
-miner incentives and validator dividends, applying consensus clipping, bonding, and emission
-calculation ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+The constants listing includes Subtensor-module entries such as `initialMaxAllowedUids` and
+`initialImmunityPeriod` that name compile-time defaults for subnet participation limits
+([Subtensor Constants](https://docs.learnbittensor.org/subtensor-api/constants)). Those values seed
+how many UIDs a new subnet can hold and how long a newly registered miner may remain protected
+before deregistration pressure applies.
 
-For readers, subtensor constants names a specific part of that incentive picture, while Yuma
-Consensus names the consensus process that turns validator weights into the resulting incentives and
-dividends.
+Live registration limits on a subnet such as netuid 1 are tracked through
+[subnet hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters) rather than
+through a one-time constant lookup alone. Constants name the runtime default; hyperparameters show
+what that subnet uses after creation and after any permitted updates.
+
+That pipeline keeps registration vocabulary in order. Initial constants identify startup defaults,
+hyperparameters carry the live subnet limits, and registration documentation explains the
+reader-facing behavior those limits shape
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## Tempo Constants Anchor Subnet Timing
+
+The constants page lists `initialTempo` among the Subtensor-module startup defaults
+([Subtensor Constants](https://docs.learnbittensor.org/subtensor-api/constants)). Tempo names the
+block interval between subnet consensus distribution passes, so this constant seeds the default
+timing rhythm a new subnet begins with.
+
+Current tempo on netuid 1 is a live
+[subnet hyperparameter](https://docs.learnbittensor.org/subnets/subnet-hyperparameters) measured in
+blocks ([Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo)). Readers
+comparing tempo to wall-clock time can also use `api.consts.aura.slotDuration` from the Aura area to
+translate block counts into approximate milliseconds
+([Subtensor Constants](https://docs.learnbittensor.org/subtensor-api/constants)).
+
+Tempo therefore sits in a constants-to-hyperparameters-to-distribution pipeline. Initial tempo names
+the runtime default, hyperparameters show the live subnet interval, and emission and Yuma
+documentation explain what happens when that interval closes
+([Emission](https://docs.learnbittensor.org/learn/emissions)).
+
+## Weight Parameters In the Yuma Pipeline
+
+Subtensor-module constants such as `alphaHigh` and `alphaLow` name runtime reference bounds
+connected to weight and consensus vocabulary
+([Subtensor Constants](https://docs.learnbittensor.org/subtensor-api/constants)). Those values help
+readers identify the parameter space around validator weight signals before
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) clips, bonds, and aggregates
+those signals into miner incentives and validator dividends.
+
+For readers, weight-related constants are upstream reference labels. Validator weights are the live
+signals validators submit; Yuma is the on-chain process that turns those signals into role-facing
+emission outcomes at tempo boundaries
+([Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#validator-weights),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+A constant lookup does not by itself quote a miner's incentive or a validator's dividend. It names a
+runtime bound or default that sits earlier in the same pipeline Yuma uses when subnet distribution
+runs.
 
 ## Reader Boundary
 
@@ -238,8 +278,6 @@ feature-status values, but they are not a complete guide to the feature that use
 
 When a concrete question depends on behavior, the constant should be read beside the relevant
 concept page and any related storage or event context.
-
-## Network and Block Context
 
 Subtensor constants belong to a runtime and network context. Mainnet, testnet, and localnet are
 separate environments, so examples should keep the environment label attached
