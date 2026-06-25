@@ -186,36 +186,70 @@ Without that wrapper context, the same event list can be harder to interpret.
 
 The
 [Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from localnet to testnet and then mainnet. A batch example
-belongs to the Bittensor network where it is observed
-([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+describes subnet development as moving from localnet to testnet and then mainnet. For batch
+transactions on a subnet such as netuid 1, that sequence changes how readers should interpret
+grouped extrinsic submissions and their observed outcomes.
 
-Localnet batch examples can test grouped extrinsic wiring in isolation. Testnet examples add shared
-non-production chain history. Mainnet batch interpretation concerns production Subtensor records on
-the active network.
+In localnet, batch examples can test grouped extrinsic wiring in isolation. Localnet batch records
+on netuid 1 reflect local configuration rather than production chain history.
 
-Observed behavior from one environment should not stand in for another network's chain history.
-
-## Relationship to Yuma Consensus
-
-Batch Transactions and Yuma Consensus describe related parts of Bittensor's incentive system. Yuma
-Consensus is the on-chain process that aggregates validator weight signals within a subnet into
-miner incentives and validator dividends, applying consensus clipping, bonding, and emission
-calculation ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-For readers, batch transactions names a specific part of that incentive picture, while Yuma
-Consensus names the consensus process that turns validator weights into the resulting incentives and
-dividends.
-
-## Reader Boundary
-
-Batch transactions identify grouping behavior. They are not a fee waiver, a guarantee that every
-inner call succeeds, or a replacement for the individual action references
+On testnet, batch transactions can be exercised in a shared non-production network. Testnet grouped
+submissions on a selected netuid are separate from mainnet chain state
 ([Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions),
-[Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics)).
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
 
-Use the batch term when the grouping behavior matters. Use the individual extrinsic reference when
-the question is what a particular inner call does.
+On mainnet, batch interpretation concerns production Subtensor records on the active network.
+Observed wrapper variant, inner extrinsics, and resulting events depend on the connected netuid and
+block context.
+
+The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
+separates mainnet, testnet, and localnet. A batch example from one environment should not be read as
+representing production chain activity in another environment.
+
+## Extrinsics Batching Pipeline
+
+Batch transactions sit between client submission and
+[Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics) evaluation. A
+client wraps one or more runtime calls inside a utility-pallet batch extrinsic; the wrapper explains
+group-level failure behavior while each inner call keeps its own method meaning
+([Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions)).
+
+The useful pipeline order is therefore wrapper selection, inner extrinsic identification, signer and
+fee checks, runtime evaluation, and event or error inspection. The batch wrapper names how calls
+were grouped; the extrinsic reference names what each inner call requested; events and errors name
+what the runtime recorded after evaluation
+([Subtensor Events](https://docs.learnbittensor.org/subtensor-api/events),
+[Subtensor Error Codes](https://docs.learnbittensor.org/errors)).
+
+## Fee Efficiency for Grouped Submissions
+
+Batching can reduce submission overhead when several state-changing actions share one outer
+transaction, but fee documentation still treats inner calls as chargeable work. Batch fees aggregate
+inner-action fee behavior and add wrapper overhead rather than exempting every grouped call
+([Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees),
+[Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions)).
+
+That keeps fee efficiency vocabulary separate from fee-free action lists. Some extrinsics such as
+weight submissions may be fee-free on their own, while other grouped calls still incur the fees that
+belong to their method family. Fee analysis therefore follows the inner extrinsic list, not the
+batch label alone.
+
+## Registration and Staking Through Batching
+
+Participants sometimes batch subnet-entry and staking actions into one submission. A grouped
+transaction might combine [register](https://docs.learnbittensor.org/resources/glossary#register)
+with a [stake](https://docs.learnbittensor.org/resources/glossary#stake) call on a selected
+[netuid](https://docs.learnbittensor.org/resources/glossary#netuid), but the batch wrapper still
+preserves each inner call's authority and failure boundary
+([Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions),
+[Bittensor CLI: Permissions Guide](https://docs.learnbittensor.org/btcli/btcli-permissions)).
+
+The practical reading path is: identify the batch variant, read each inner extrinsic for
+registration burn and stake target, then inspect paired events for runtime confirmation
+([Subtensor Events](https://docs.learnbittensor.org/subtensor-api/events)). A `batch_all` wrapper on
+netuid 1 means all inner calls must succeed together; a partial failure under `batch` or
+`force_batch` can leave registration confirmed while a later stake call fails, so outcome claims
+need wrapper-aware evidence rather than assuming every listed call took effect.
 
 ## Atomic Batch Stops at the First Failed Inner Call
 
@@ -231,6 +265,16 @@ listed call.
 Batch wrappers group inner extrinsics, but fee documentation still treats the submission as a
 state-changing action on chain. Batch grouping changes execution shape, not whether chain processing
 can incur fees ([Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees)).
+
+## Reader Boundary
+
+Batch transactions identify grouping behavior. They are not a fee waiver, a guarantee that every
+inner call succeeds, or a replacement for the individual action references
+([Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions),
+[Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics)).
+
+Use the batch term when the grouping behavior matters. Use the individual extrinsic reference when
+the question is what a particular inner call does.
 
 ## Further Reading
 
