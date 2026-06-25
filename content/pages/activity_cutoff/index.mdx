@@ -96,7 +96,7 @@ Activity cutoff and the validator permit are two different gates on whether a va
 count in a consensus pass. Activity cutoff is the early-epoch block window that sets when weights
 must arrive to be included, while the validator permit is the permission flag that records whether a
 UID may submit validator weights at all
-([Glossary: Activity Cutoff](https://docs.learnbittensor.org/resources/glossary#activity-cutoff),
+([Subnet Hyperparameters: ActivityCutoff](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutoff),
 [Glossary: Validator Permit](https://docs.learnbittensor.org/resources/glossary#validator-permit)).
 
 The two gates are checked separately. A permitted validator still has to submit inside the window,
@@ -108,8 +108,8 @@ miss the current consensus pass
 
 Activity cutoff and last update are read as a pair. Activity cutoff sets how many blocks a neuron
 may go without updating, while last update is the block timestamp from which that window is measured
-([Glossary: Activity Cutoff](https://docs.learnbittensor.org/resources/glossary#activity-cutoff),
-[Glossary: Last Update](https://docs.learnbittensor.org/resources/glossary#last-update)).
+([Subnet Hyperparameters: ActivityCutoff](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutoff),
+[Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)).
 
 On its own neither value decides activity. Activity cutoff supplies the "how long" and last update
 supplies the "when," so a neuron counts as inactive only when the gap since its last update exceeds
@@ -156,6 +156,45 @@ hyperparameter state
 
 An activity-cutoff example from one environment should not be read as representing production
 participation rules in another environment.
+
+## Three Submission Gates Sit on the Same Weight Path
+
+Official epoch documentation describes validator influence as passing through separate checks before
+weights affect Yuma Consensus. Validator permit vocabulary decides whether a neuron may submit
+non-self weights at all. Activity cutoff vocabulary decides whether that submission arrived inside
+the opening block window of the current epoch. Version-key hyperparameters can reject submissions
+whose declared client version is below the subnet floor
+([Glossary: Validator Permit](https://docs.learnbittensor.org/resources/glossary#validator-permit),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)).
+
+For readers, those gates answer different failure modes on the same extrinsic boundary. Missing the
+permit is an authorization failure. Missing the activity window is a timing failure inside the
+tempo-sized epoch. Carrying a stale version is a compatibility failure. A validator can satisfy one
+gate while failing another on the same round
+([Glossary: Weight Vector](https://docs.learnbittensor.org/resources/glossary#weight-vector),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+That ordering keeps role vocabulary, hyperparameter timing, and client-version rollout as separate
+ideas rather than one blended active-validator label
+([Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)).
+
+## Activity Cutoff Is Measured in Blocks, Not Wall-Clock Time
+
+Subnet hyperparameter documentation describes activity cutoff as a block count inside each epoch.
+Because epoch length is set by tempo on the same subnet, the wall-clock duration of the submission
+window changes with network block production rather than with a fixed minute timer
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo)).
+
+For readers, activity cutoff vocabulary always pairs with block height and metagraph last-update
+fields. Comparing schedules across subnets requires reading each subnet's tempo and cutoff together
+instead of assuming identical real-time windows
+([Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph),
+[Glossary: Epoch](https://docs.learnbittensor.org/resources/glossary#epoch)).
+
+Missed submissions wait for the next epoch rather than retroactively joining the current pass
+([Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)).
 
 ## Reader Boundary
 
