@@ -60,7 +60,7 @@ evaluates work, and the mechanism connects that evaluation to the signals valida
 connection is the same work-and-reward path covered by Bittensor's incentive-mechanism overview
 ([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
 
-## Signal Path
+## Off-Chain Evaluation Feeds On-Chain Weights
 
 Incentive-mechanism documentation describes validators computing weight vectors after evaluating
 miner work. Those weight vectors become the chain-facing signal that later contributes to consensus
@@ -75,17 +75,22 @@ assessment, while the weight vector is the compact signal that carries validator
 consensus path. Weight-vector vocabulary gives that submitted signal a specific Bittensor term
 ([Glossary: Weight Vector](https://docs.learnbittensor.org/resources/glossary#weight-vector)).
 
-## Consensus Boundary
+## Yuma Consensus Input
 
-Yuma Consensus is downstream of off-chain validation. It uses validator rankings of miner
-performance to compute incentive and dividend outcomes, while off-chain validation describes how
-subnet-specific evaluation produces the signals validators submit
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
-[Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) is downstream of off-chain
+validation. It uses validator rankings of miner performance to compute incentive and dividend
+outcomes, while off-chain validation describes how subnet-specific evaluation produces the signals
+validators submit
+([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
 
 Off-chain validation judges work; consensus aggregates submitted signals. A statement about how a
 subnet scores work belongs to the validation system or incentive mechanism, while a statement about
 how validator signals are combined belongs to consensus.
+
+The pipeline runs from off-chain evaluation to on-chain weight vectors to Yuma's aggregation step.
+Validators evaluate miner work off chain, submit weight signals, and Yuma Consensus reads those
+signals as its ranking input before emission allocation
+([Glossary: Weight Matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix)).
 
 ## Task and Scoring Context
 
@@ -114,41 +119,30 @@ logic run.
 
 The
 [Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from localnet to testnet and then mainnet. Off-chain
-validation examples belong to the environment where the miner work, validator evaluation, and
-weight-signal behavior were observed
+describes subnet development as moving from localnet to testnet and then mainnet. For off-chain
+validation on a subnet such as netuid 1, that sequence changes which evaluation context a reader
+should assume when interpreting validator scoring and weight-signal behavior.
+
+In localnet, off-chain validation can be tested in an isolated environment. Localnet evaluation
+examples on netuid 1 reflect local chain state and local configuration rather than production
+Bittensor behavior.
+
+On testnet, off-chain validation can be exercised on a shared non-production network. Testnet
+weight-signal behavior on a selected netuid is useful for checking evaluation wiring under shared
+chain conditions while staying separate from mainnet state
 ([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
 
-Localnet examples can test evaluation wiring in isolation. Testnet examples add shared
-non-production subnet state. Mainnet off-chain validation interpretation concerns production subnet
-evaluation on the active network.
+On mainnet, off-chain validation concerns live production subnet evaluation on the selected
+[netuid](https://docs.learnbittensor.org/resources/glossary#netuid) that feeds Yuma Consensus.
 
-## Relationship to Yuma Consensus
-
-Off-Chain Validation Systems and Yuma Consensus describe related parts of Bittensor's incentive
-system. Yuma Consensus is the on-chain process that aggregates validator weight signals within a
-subnet into miner incentives and validator dividends, applying consensus clipping, bonding, and
-emission calculation ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-For readers, off-chain validation systems names a specific part of that incentive picture, while
-Yuma Consensus names the consensus process that turns validator weights into the resulting
-incentives and dividends.
-
-## Reader Boundary
-
-Off-chain validation systems are concept vocabulary for subnet-specific evaluation. They are not a
-universal benchmark, a status claim, or a substitute for the mechanism documentation of a specific
-subnet ([Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets),
-[Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
-
-The stable article-level point is the evaluation path: subnet work is produced, evaluated off chain,
-converted into validator weight signals, and then processed by Bittensor's consensus and reward
-machinery.
+The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
+separates mainnet, testnet, and localnet. An evaluation example from one environment should not be
+read as representing production consensus behavior in another environment.
 
 ## Misaligned Scoring Lowers Validator Emissions
 
-Official incentive-mechanism documentation states that validators are incentivized to accurately
-score miners' work according to the subnet's models because the algorithm penalizes departure from
+Incentive-mechanism documentation states that validators are incentivized to accurately score
+miners' work according to the subnet's models because the algorithm penalizes departure from
 consensus in miner scores with lower emissions
 ([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
 
@@ -167,23 +161,16 @@ Off-chain validation therefore carries accuracy stakes rooted in
 design preference. A validation system that produces outlier miner scores can reduce validator-side
 rewards after consensus compares submitted signals.
 
-References:
-[Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism),
-[Glossary: Incentive Mechanism](https://docs.learnbittensor.org/resources/glossary#incentive-mechanism)
-
 ## Protocol Exchange Precedes Judgment
 
-An incentive mechanism must supply a protocol for how validators query miners and how miners
+An incentive mechanism must supply interaction rules for how validators query miners and how miners
 respond, alongside the task definition and scoring method
 ([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
 
-Official documentation describes those interaction rules as a
-[subnet protocol](https://docs.learnbittensor.org/resources/glossary#subnet-protocol): a unique set
-of rules defining how tasks are queried and responses are provided between
+Those rules define how tasks are queried and responses are provided between
 [subnet validators](https://docs.learnbittensor.org/resources/glossary#subnet-validator) and
-[subnet miners](https://docs.learnbittensor.org/resources/glossary#subnet-miner).
-
-Those protocols are built using the Axon-Dendrite client-server model and
+[subnet miners](https://docs.learnbittensor.org/resources/glossary#subnet-miner). They are built
+using the Axon-Dendrite client-server model and
 [Synapse](https://docs.learnbittensor.org/resources/glossary#synapse) data objects as the structured
 exchange vehicle between the two roles
 ([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
@@ -191,10 +178,6 @@ exchange vehicle between the two roles
 Off-chain validation sits after that exchange. Validators receive miner responses through the
 protocol path, then apply the subnet's scoring method to judge returned work before forming
 [weight vectors](https://docs.learnbittensor.org/resources/glossary#weight-vector).
-
-References:
-[Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism),
-[Glossary: Subnet Protocol](https://docs.learnbittensor.org/resources/glossary#subnet-protocol)
 
 ## Reference Material Can Stay Validator-Side
 
@@ -217,9 +200,16 @@ The example is subnet-specific, but the separation is general. Off-chain validat
 hidden reference material, returned miner work, and a scoring method without publishing every
 evaluation input to miners.
 
-References:
-[Walkthrough of Example Subnet](https://docs.learnbittensor.org/subnets/walkthrough-prompting),
-[Glossary: Subnet Scoring Model](https://docs.learnbittensor.org/resources/glossary#subnet-scoring-model)
+## Reader Boundary
+
+Off-chain validation systems are concept vocabulary for subnet-specific evaluation. They are not a
+universal benchmark, a status claim, or a substitute for the mechanism documentation of a specific
+subnet ([Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets),
+[Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
+
+The stable article-level point is the evaluation path: subnet work is produced, evaluated off chain,
+converted into validator weight signals, and then processed by Bittensor's consensus and reward
+machinery.
 
 ## Further Reading
 
