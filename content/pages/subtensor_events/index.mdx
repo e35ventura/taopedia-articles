@@ -90,7 +90,7 @@ values are present ([Subtensor Events](https://docs.learnbittensor.org/subtensor
 These examples show why event names are useful but limited. They identify what the runtime emitted,
 not the whole explanation of the related mechanism.
 
-## Events, Storage, and Extrinsics
+## Extrinsics, Events, and Storage
 
 Events sit between submitted actions and readable state. Extrinsics name actions submitted to the
 runtime, events name records emitted while the runtime processes activity, and storage exposes state
@@ -114,6 +114,47 @@ while events describe emitted records from runtime activity
 ([Subtensor Error Codes](https://docs.learnbittensor.org/errors),
 [Subtensor Events](https://docs.learnbittensor.org/subtensor-api/events)).
 
+## Registration and Staking Confirmation Pipeline
+
+The
+[Subtensor Pallets and Extrinsics](https://docs.learnbittensor.org/navigating-subtensor/subtensor-extrinsics)
+overview states that some submitted actions can trigger on-chain events when they succeed, such as
+confirming a successful [registration](https://docs.learnbittensor.org/resources/glossary#register)
+or recording an updated staking balance.
+
+That pattern clarifies why event records often appear next to a known submitted action. The
+extrinsic names the submission, while the emitted event names the runtime's success record rather
+than duplicating the submission itself
+([Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics),
+[Subtensor Events](https://docs.learnbittensor.org/subtensor-api/events)).
+
+Failure can involve error information instead of or alongside those success-oriented records
+([Subtensor Error Codes](https://docs.learnbittensor.org/errors)). Confirmation events and rejection
+signals therefore belong to related but different reading paths.
+
+For readers tracing registration or staking on a subnet, the practical sequence is: name the
+submitted extrinsic, inspect paired events for runtime confirmation, and use storage or error
+surfaces when the outcome needs stronger evidence than the event label alone.
+
+## Weight-Setting Event Evidence
+
+[Weight setting](https://docs.learnbittensor.org/resources/glossary#weight-setting) names the
+validator process of scoring miners inside a subnet. Validators submit weight extrinsics; the
+runtime can emit events while those submissions are processed
+([Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics),
+[Subtensor Events](https://docs.learnbittensor.org/subtensor-api/events)).
+
+Events therefore sit beside weight-setting vocabulary rather than replacing it. An event name can
+show that the runtime recorded a weight-related action, while
+[validator weights](https://docs.learnbittensor.org/resources/glossary#validator-weights) and
+consensus outcomes still need the subnet and tempo context that produced them
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+A weight-setting investigation on a selected
+[netuid](https://docs.learnbittensor.org/resources/glossary#netuid) typically moves from submitted
+extrinsic to emitted event to later metagraph or storage inspection, not from event label alone to
+consensus result.
+
 ## Network and Block Context
 
 Emitted event records belong to the network and block context where they were produced. Mainnet,
@@ -136,46 +177,22 @@ elsewhere
 The
 [Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
 describes subnet development as moving from localnet to testnet and then mainnet. For Subtensor
-Events, that sequence changes how an example should be read, because the surrounding network state
-differs at each stage.
+events on a subnet such as netuid 1, that sequence changes how an example should be read, because
+the surrounding network state differs at each stage.
 
-In localnet, subtensor Events can be exercised in an isolated development environment, where the
-surrounding chain state reflects local configuration rather than production history.
+In localnet, Subtensor events can be exercised in an isolated development environment. Local event
+records reflect local configuration rather than production chain history on the selected netuid.
 
-On testnet, subtensor Events can be observed in a shared, non-production network whose state is kept
-separate from mainnet.
+On testnet, Subtensor events can be observed in a shared, non-production network. Testnet event
+records on a selected netuid are separate from mainnet chain history
+([Subtensor Events](https://docs.learnbittensor.org/subtensor-api/events)).
 
-On mainnet, subtensor Events applies on the live, production Bittensor network, where the
-surrounding state is real and persistent.
+On mainnet, Subtensor events apply on the live, production Bittensor network, where the surrounding
+state is real and persistent for the connected subnet context.
 
 The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
-separates mainnet, testnet, and localnet. A subtensor Events example from one environment should not
+separates mainnet, testnet, and localnet. A Subtensor events example from one environment should not
 be read as representing another environment.
-
-## Relationship to Yuma Consensus
-
-Subtensor Events and Yuma Consensus describe related parts of Bittensor's incentive system. Yuma
-Consensus is the on-chain process that aggregates validator weight signals within a subnet into
-miner incentives and validator dividends, applying consensus clipping, bonding, and emission
-calculation ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-For readers, subtensor events names a specific part of that incentive picture, while Yuma Consensus
-names the consensus process that turns validator weights into the resulting incentives and
-dividends.
-
-## Reader Boundary
-
-Subtensor events should not be read as proof of off-chain intent, a complete mechanism explanation,
-or a substitute for storage inspection. They name runtime records that show what Subtensor emitted
-while processing chain activity
-([Subtensor Events](https://docs.learnbittensor.org/subtensor-api/events),
-[Glossary: Subtensor](https://docs.learnbittensor.org/resources/glossary#subtensor)).
-
-When success, failure, or changed state matters, event vocabulary should be read alongside the
-submitted extrinsic, related error information, and any relevant storage value
-([Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics),
-[Subtensor Error Codes](https://docs.learnbittensor.org/errors),
-[Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage)).
 
 ## Catalog Entries Name Types, Not Observed History
 
@@ -213,10 +230,6 @@ The explorer path therefore supports observation rather than catalog lookup alon
 from ordered chain activity to submitted action to emitted record without treating an event name as
 an isolated label.
 
-References:
-[Inspecting the Chain with Polkadot.js](https://docs.learnbittensor.org/concepts/inspecting-the-chain),
-[Glossary: Block](https://docs.learnbittensor.org/resources/glossary#block)
-
 ## The Event Catalog Follows Runtime Spec
 
 The [Subtensor Events](https://docs.learnbittensor.org/subtensor-api/events) reference is generated
@@ -233,30 +246,19 @@ the runtime can emit, while an event observed in a particular block is evidence 
 chain history on the connected
 [Subtensor](https://docs.learnbittensor.org/resources/glossary#subtensor) network.
 
-References: [Subtensor Events](https://docs.learnbittensor.org/subtensor-api/events),
-[Inspecting the Chain with Polkadot.js](https://docs.learnbittensor.org/concepts/inspecting-the-chain)
+## Reader Boundary
 
-## Registration and Staking Can Emit Confirmation Events
+Subtensor events should not be read as proof of off-chain intent, a complete mechanism explanation,
+or a substitute for storage inspection. They name runtime records that show what Subtensor emitted
+while processing chain activity
+([Subtensor Events](https://docs.learnbittensor.org/subtensor-api/events),
+[Glossary: Subtensor](https://docs.learnbittensor.org/resources/glossary#subtensor)).
 
-The
-[Subtensor Pallets and Extrinsics](https://docs.learnbittensor.org/navigating-subtensor/subtensor-extrinsics)
-overview states that some submitted actions can trigger on-chain events when they succeed, such as
-confirming a successful [registration](https://docs.learnbittensor.org/resources/glossary#register)
-or recording an updated staking balance.
-
-That pattern clarifies why event records often appear next to a known submitted action. The
-extrinsic names the submission, while the emitted event names the runtime's success record rather
-than duplicating the submission itself
+When success, failure, or changed state matters, event vocabulary should be read alongside the
+submitted extrinsic, related error information, and any relevant storage value
 ([Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics),
-[Subtensor Events](https://docs.learnbittensor.org/subtensor-api/events)).
-
-Failure can involve error information instead of or alongside those success-oriented records
-([Subtensor Error Codes](https://docs.learnbittensor.org/errors)). Confirmation events and rejection
-signals therefore belong to related but different reading paths.
-
-References:
-[Subtensor Pallets and Extrinsics](https://docs.learnbittensor.org/navigating-subtensor/subtensor-extrinsics),
-[Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register)
+[Subtensor Error Codes](https://docs.learnbittensor.org/errors),
+[Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage)).
 
 ## Further Reading
 
