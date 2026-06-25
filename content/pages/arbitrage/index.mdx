@@ -23,18 +23,16 @@ infoboxRows:
 Arbitrage is profiting from a price difference for the same thing in two places, by buying where it
 is cheaper and selling where it is dearer. In Bittensor it appears because each subnet's alpha
 trades in its own pool, so an alpha price can drift apart from how the broader market values it, and
-traders can act on the gap.
-
-References: [User Liquidity Positions](https://docs.learnbittensor.org/liquidity-positions)
+traders can act on the gap
+([User Liquidity Positions](https://docs.learnbittensor.org/liquidity-positions)).
 
 ## Where the Gaps Come From
 
 A subnet's alpha price is set inside its own automated market maker pool, by the ratio of TAO to
 alpha held in reserve. Because each subnet prices its token separately, the same kind of asset can
 sit at different effective prices across subnets, or differ between a subnet's on-chain pool and an
-outside market. Those differences are the openings an arbitrageur looks for.
-
-References: [Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)
+outside market. Those differences are the openings an arbitrageur looks for
+([Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)).
 
 ## How It Works Here
 
@@ -42,9 +40,8 @@ The documentation notes that liquidity provision creates opportunities for arbit
 from price discrepancies across subnets or between on-chain and off-chain markets. An arbitrageur
 buys the underpriced side and sells the overpriced one, pocketing the gap. The trade is ordinary
 swapping; what makes it arbitrage is that it targets a mismatch rather than a directional bet on
-where a price will go next.
-
-References: [User Liquidity Positions](https://docs.learnbittensor.org/liquidity-positions)
+where a price will go next
+([User Liquidity Positions](https://docs.learnbittensor.org/liquidity-positions)).
 
 ## Why It Helps Keep Prices Honest
 
@@ -52,61 +49,8 @@ Arbitrage is not only extraction. Buying the cheap side and selling the dear sid
 prices toward each other, so the act of capturing a gap also closes it. In aggregate,
 self-interested arbitrage keeps a subnet's pool price tracking the broader market rather than
 drifting freely, which is part of why deeper, more liquid pools tend to show tighter, more
-consistent prices.
-
-References: [User Liquidity Positions](https://docs.learnbittensor.org/liquidity-positions),
-[Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)
-
-## Relationship to Liquidity and Slippage
-
-Arbitrage leans on the same pool mechanics as any trade. Each arbitrage swap moves the pool price
-and pays slippage, so a gap is only worth closing while the profit outweighs that cost. Thin pools
-show larger gaps but punish size with slippage, while deeper pools show smaller gaps that are
-quicker to arbitrage away. Liquidity, slippage, and arbitrage therefore move together.
-
-References: [Slippage](https://docs.learnbittensor.org/learn/slippage)
-
-## Development Stage Context
-
-The
-[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from localnet to testnet and then mainnet. For arbitrage,
-that sequence changes how readers should interpret pool-price gaps, slippage costs, and cross-venue
-spread examples.
-
-In localnet, arbitrage mechanics can be tested in an isolated environment. Localnet pool depth and
-price gaps do not represent production market conditions.
-
-On testnet, arbitrage flows can be exercised in a shared non-production network. Testnet pool prices
-and liquidity are separate from mainnet subnet state.
-
-On mainnet, arbitrage concerns live production subnet pools and any off-chain venues traders compare
-against on-chain alpha prices. Observed spreads depend on the selected subnet, pool reserves, and
-trading costs at the time of the trade
-([User Liquidity Positions](https://docs.learnbittensor.org/liquidity-positions)).
-
-The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
-separates mainnet, testnet, and localnet. An arbitrage example from one environment should not be
-read as representing production price behavior in another environment.
-
-## Relationship to Yuma Consensus
-
-Arbitrage and Yuma Consensus describe related parts of Bittensor's incentive system. Yuma Consensus
-is the on-chain process that aggregates validator weight signals within a subnet into miner
-incentives and validator dividends, applying consensus clipping, bonding, and emission calculation
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-For readers, arbitrage names a specific part of that incentive picture, while Yuma Consensus names
-the consensus process that turns validator weights into the resulting incentives and dividends.
-
-## Reader Boundary
-
-This page defines the concept at a high level and is not trading advice. Whether any gap exists, and
-whether acting on it is profitable after costs, depends on live prices and liquidity that change
-continuously. The durable point is the role arbitrage plays: turning price differences into a force
-that pulls pool prices back into line.
-
-References: [User Liquidity Positions](https://docs.learnbittensor.org/liquidity-positions)
+consistent prices ([User Liquidity Positions](https://docs.learnbittensor.org/liquidity-positions),
+[Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)).
 
 ## On-Chain and Off-Chain Markets Can Diverge
 
@@ -146,8 +90,75 @@ That role is separate from adversarial transaction ordering.
 concerns value extracted by reordering or observing pending transactions, while arbitrage concerns
 profiting from price differences that already exist between venues or pools.
 
+## AMM Pools, Slippage, and Liquidity Routing Pipeline
+
+Arbitrage in Bittensor follows the same reserve-based path as any subnet swap. The useful pipeline
+order on a subnet such as netuid 1 is an independent per-subnet automated market maker pool, a
+discovered alpha price from the TAO-to-alpha reserve ratio, a visible price gap across subnets or
+against an off-chain venue, and a routing trade that buys the cheaper side and sells the dearer one
+until slippage and fees consume the remaining spread
+([User Liquidity Positions](https://docs.learnbittensor.org/liquidity-positions),
+[Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)).
+
+Each subnet prices [alpha](https://docs.learnbittensor.org/resources/glossary#alpha) inside its own
+pool, so arbitrage vocabulary covers cross-venue gaps rather than only two swaps inside one reserve
+pair. A trader closes the mismatch by routing liquidity toward the underpriced side and away from
+the overpriced one
+([User Liquidity Positions](https://docs.learnbittensor.org/liquidity-positions)).
+
+[Slippage](https://docs.learnbittensor.org/resources/glossary#slippage) sets the cost of that
+routing step. Every arbitrage swap moves pool reserves and pays the difference between expected and
+received amounts, so a gap is worth closing only while expected profit exceeds slippage and fees
+([Understanding Slippage](https://docs.learnbittensor.org/learn/slippage)).
+
+Thin pools on netuid 1 can show larger gaps but punish size with heavier slippage, while deeper
+pools tend to show smaller gaps that are cheaper to trade away. Liquidity depth, slippage cost, and
+arbitrage opportunity therefore move together inside the same AMM mechanics
+([User Liquidity Positions](https://docs.learnbittensor.org/liquidity-positions)).
+
+[Price discovery](https://docs.learnbittensor.org/resources/glossary#price-discovery) names the
+emergent pool price that arbitrage pushes back toward alignment. Self-interested gap closing is not
+the same as adversarial transaction ordering:
+[MEV](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value) vocabulary
+concerns value extracted by reordering or observing pending transactions, while arbitrage concerns
+profiting from price differences that already exist between venues or pools.
+
+## Development Stage Context
+
+The
+[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
+describes subnet development as moving from localnet to testnet and then mainnet. For arbitrage on a
+subnet such as netuid 1, that sequence changes how readers should interpret pool-price gaps,
+slippage costs, and cross-venue spread examples
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+In localnet, arbitrage mechanics can be tested in an isolated environment. Localnet pool depth and
+price gaps on netuid 1 do not represent production market conditions.
+
+On testnet, arbitrage flows can be exercised in a shared non-production network. Testnet pool prices
+and liquidity on netuid 1 are separate from mainnet subnet state.
+
+On mainnet, arbitrage concerns live production subnet pools and any off-chain venues traders compare
+against on-chain alpha prices. Observed spreads on netuid 1 depend on the selected subnet's pool
+reserves, liquidity, and trading costs at the time of the trade
+([User Liquidity Positions](https://docs.learnbittensor.org/liquidity-positions)).
+
+The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
+separates mainnet, testnet, and localnet. An arbitrage example from one environment should not be
+read as representing production price behavior in another environment.
+
+## Reader Boundary
+
+This page defines the concept at a high level and is not trading advice. Whether any gap exists, and
+whether acting on it is profitable after costs, depends on live prices and liquidity that change
+continuously. The durable point is the role arbitrage plays: turning price differences into a force
+that pulls pool prices back into line
+([User Liquidity Positions](https://docs.learnbittensor.org/liquidity-positions)).
+
 ## Further Reading
 
 - [User Liquidity Positions](https://docs.learnbittensor.org/liquidity-positions)
 - [Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)
 - [Slippage](https://docs.learnbittensor.org/learn/slippage)
+- [Glossary: Price Discovery](https://docs.learnbittensor.org/resources/glossary#price-discovery)
+- [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)
