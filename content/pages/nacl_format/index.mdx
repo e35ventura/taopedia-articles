@@ -112,39 +112,81 @@ separate recovery words and current key-handling guidance. A NaCl-format file sh
 be treated as the same thing as a mnemonic, a regenerated key, or proof that recovery material has
 been preserved.
 
+## NaCl Key Encoding, Hotkey Signing, and Axon/Dendrite Transport Pipeline
+
+The [Glossary: NaCl Format](https://docs.learnbittensor.org/resources/glossary#nacl-format)
+describes NaCl Format as encryption used around legacy Bittensor wallet files. The term therefore
+belongs to local file-protection vocabulary rather than to on-chain roles or subnet participation
+labels ([Bittensor wallet documentation](https://docs.learnbittensor.org/keys/wallets)).
+
+Readers should keep NaCl Format on the stored-file side of wallet security. It names how some legacy
+wallet material is protected at rest, not what that material can do after unlock.
+
+[Working with Keys](https://docs.learnbittensor.org/keys/working-with-keys) documentation covers how
+keys are used once available, while NaCl Format names only the legacy wrapper around stored wallet
+files. A protected file format can limit casual disclosure of file contents; it does not replace
+private-key handling or transaction review
+([Glossary: Private Key](https://docs.learnbittensor.org/resources/glossary#private-key)).
+
+Authorization still follows whichever key material signs an action after the wallet is unlocked. The
+[Glossary: Hotkey](https://docs.learnbittensor.org/resources/glossary#hotkey) describes the
+operational key that signs routine network actions such as registration and weight submission on a
+subnet such as netuid 1. NaCl Format protects the stored hotkey file; hotkey signing authorizes
+those actions once the wallet is unlocked
+([Working with Keys](https://docs.learnbittensor.org/keys/working-with-keys)).
+
+That separation keeps file-format vocabulary distinct from runtime signing. NaCl Format names the
+legacy encryption wrapper around stored key material; hotkey vocabulary names the operational key
+that signs after unlock.
+
+Subnet communication adds a transport layer downstream of signing. The
+[Glossary: Dendrite](https://docs.learnbittensor.org/resources/glossary#dendrite) is the client-side
+component that sends requests to axon endpoints, while the
+[Glossary: Axon](https://docs.learnbittensor.org/resources/glossary#axon) is the server-side
+endpoint that receives those requests in the axon-dendrite communication path
+([Dendrite reference](https://docs.learnbittensor.org/python-api/html/autoapi/bittensor/core/dendrite/),
+[Axon reference](https://docs.learnbittensor.org/python-api/html/autoapi/bittensor/core/axon/)).
+
+Hotkey signing authorizes operational actions; axon and dendrite vocabulary names how structured
+[synapse](https://docs.learnbittensor.org/resources/glossary#synapse) messages move between subnet
+participants after keys are available. NaCl Format does not describe that transport path—it protects
+the stored key files that later enable it.
+
+NaCl Format concerns legacy wallet-file encryption, while
+[Handle Seed Phrase](https://docs.learnbittensor.org/keys/handle-seed-phrase) guidance covers
+mnemonic recovery material. The two belong to wallet security but answer different questions: file
+format at rest versus regeneration after loss
+([Glossary: Mnemonic](https://docs.learnbittensor.org/resources/glossary#mnemonic)).
+
+Readers should not treat a NaCl-format label as interchangeable with seed-phrase backup vocabulary.
+
 ## Development Stage Context
 
 The
 [Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
 describes subnet development as moving from localnet to testnet and then mainnet. For NaCl Format,
 that sequence mainly matters when legacy wallet-file examples are drawn from different network
-environments during development or testing.
+environments during development or testing on a subnet such as netuid 1.
 
 In localnet, NaCl Format examples can be exercised with local wallet files in an isolated
 environment. Local file-protection behavior does not represent production wallet custody on live
-networks.
+networks. Hotkey signing and axon-dendrite wiring tested on netuid 1 in localnet reflect local
+configuration rather than production endpoint behavior.
 
 On testnet, legacy wallet files used in shared testing can demonstrate format compatibility under
 non-production conditions while staying separate from mainnet wallet state
-([Bittensor wallet documentation](https://docs.learnbittensor.org/keys/wallets)).
+([Bittensor wallet documentation](https://docs.learnbittensor.org/keys/wallets)). Testnet hotkey
+files and subnet communication on netuid 1 are separate from mainnet wallet and endpoint state.
 
 On mainnet, NaCl Format vocabulary still describes legacy wallet-file protection on the production
 network context where those files are used
-([Glossary: NaCl Format](https://docs.learnbittensor.org/resources/glossary#nacl-format)).
+([Glossary: NaCl Format](https://docs.learnbittensor.org/resources/glossary#nacl-format)). Mainnet
+hotkey signing and axon-dendrite traffic on netuid 1 use production keys and endpoints, not local or
+testnet wallet files.
 
 The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
 separates mainnet, testnet, and localnet. A wallet-file example from one environment should not be
 read as representing production file custody in another environment.
-
-## Relationship to Yuma Consensus
-
-NaCl Format and Yuma Consensus describe related parts of Bittensor's incentive system. Yuma
-Consensus is the on-chain process that aggregates validator weight signals within a subnet into
-miner incentives and validator dividends, applying consensus clipping, bonding, and emission
-calculation ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-For readers, nacl format names a specific part of that incentive picture, while Yuma Consensus names
-the consensus process that turns validator weights into the resulting incentives and dividends.
 
 ## Reader Boundary
 
@@ -157,36 +199,6 @@ status, subnet participation, balance state, validator status, or wallet-tool be
 The stable article-level point is that NaCl Format is format vocabulary. It does not name a recovery
 process, wallet procedure, subnet action, address, public key, private key, or balance state.
 
-## Legacy Files Use NaCl-Style Encryption at Rest
-
-The [Glossary: NaCl Format](https://docs.learnbittensor.org/resources/glossary#nacl-format)
-describes NaCl Format as encryption used around legacy Bittensor wallet files. The term therefore
-belongs to local file-protection vocabulary rather than to on-chain roles or subnet participation
-labels ([Bittensor wallet documentation](https://docs.learnbittensor.org/keys/wallets)).
-
-Readers should keep NaCl Format on the stored-file side of wallet security. It names how some legacy
-wallet material is protected at rest, not what that material can do after unlock.
-
-## Format Protection Does Not Authorize Transactions
-
-[Working with Keys](https://docs.learnbittensor.org/keys/working-with-keys) documentation covers how
-keys are used once available, while NaCl Format names only the legacy wrapper around stored wallet
-files. A protected file format can limit casual disclosure of file contents; it does not replace
-private-key handling or transaction review
-([Glossary: Private Key](https://docs.learnbittensor.org/resources/glossary#private-key)).
-
-Authorization still follows whichever key material signs an action after the wallet is unlocked.
-
-## Mnemonic Recovery Stays a Separate Security Surface
-
-NaCl Format concerns legacy wallet-file encryption, while
-[Handle Seed Phrase](https://docs.learnbittensor.org/keys/handle-seed-phrase) guidance covers
-mnemonic recovery material. The two belong to wallet security but answer different questions: file
-format at rest versus regeneration after loss
-([Glossary: Mnemonic](https://docs.learnbittensor.org/resources/glossary#mnemonic)).
-
-Readers should not treat a NaCl-format label as interchangeable with seed-phrase backup vocabulary.
-
 ## Further Reading
 
 - [Glossary: NaCl Format](https://docs.learnbittensor.org/resources/glossary#nacl-format)
@@ -198,3 +210,6 @@ Readers should not treat a NaCl-format label as interchangeable with seed-phrase
 - [Handle your Seed Phrase/Mnemonic Securely](https://docs.learnbittensor.org/keys/handle-seed-phrase)
 - [Glossary: Public Key](https://docs.learnbittensor.org/resources/glossary#public-key)
 - [Glossary: Private Key](https://docs.learnbittensor.org/resources/glossary#private-key)
+- [Glossary: Hotkey](https://docs.learnbittensor.org/resources/glossary#hotkey)
+- [Glossary: Axon](https://docs.learnbittensor.org/resources/glossary#axon)
+- [Glossary: Dendrite](https://docs.learnbittensor.org/resources/glossary#dendrite)
