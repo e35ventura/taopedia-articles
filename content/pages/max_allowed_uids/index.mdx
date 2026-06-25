@@ -25,8 +25,8 @@ infoboxRows:
 Max allowed UIDs is a per-subnet hyperparameter, listed in the documentation as `MaxAllowedUids`,
 that sets the maximum number of neurons a subnet can hold. Each registered neuron occupies one
 [UID slot](https://docs.learnbittensor.org/resources/glossary#uid-slot), so this value is the
-ceiling on how many [UIDs](https://docs.learnbittensor.org/resources/glossary#uid) can exist on a
-subnet at once
+ceiling on how many [UID slots](https://docs.learnbittensor.org/resources/glossary#uid-slot) can
+exist on a subnet at once
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
 ## What It Controls
@@ -229,13 +229,40 @@ identity expensive even while the subnet still has spare slots, and a full subne
 displacement when immunity protects the lowest scorer
 ([Understanding Neurons](https://docs.learnbittensor.org/learn/neurons)).
 
+## Metagraph Row Count Reflects Live Occupancy, Not the Ceiling Alone
+
+[Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph) documentation exposes how many
+neuron rows a subnet currently holds. Max allowed UIDs names the configured upper bound, while the
+metagraph shows how many of those slots are occupied at the block being read
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Glossary: Neuron](https://docs.learnbittensor.org/resources/glossary#neuron)).
+
+For readers, spare capacity is the gap between live occupancy and the ceiling. Registration can add
+rows without displacement only while that gap exists; once occupancy meets the ceiling, entry shifts
+to pruning-ranked replacement vocabulary
+([Mining: Miner registration](https://docs.learnbittensor.org/miners#miner-registration),
+[Mining: Miner deregistration](https://docs.learnbittensor.org/miners#miner-deregistration)).
+
+## Owner Trim Moves the Ceiling Downward Over Time
+
+[UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming) documentation describes subnet
+owners lowering max allowed UIDs when they want a smaller live population. Trimming therefore
+changes the target ceiling rather than redefining what a UID slot represents
+([Subnet Hyperparameters: MaxAllowedUids](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#maxalloweduids),
+[Glossary: Subnet Owner](https://docs.learnbittensor.org/resources/glossary#subnet-owner)).
+
+For readers, max allowed UIDs is a hyperparameter value set per subnet, not a network-wide constant.
+Observed occupancy and configured ceiling should be read together when judging whether a subnet is
+full at the time of observation
+([Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)).
+
 ## Reader Boundary
 
 This page defines the concept at a high level. It does not report the live UID ceiling on any
 particular subnet or how many slots are currently occupied. Those are on-chain state values that
-should be checked for the relevant netuid with `btcli subnet hyperparameters --netuid 1` and the
-metagraph read path for that same netuid. The documented default is 256, the type is `u16`, and the
-parameter is set by the subnet owner through a trim extrinsic
+should be checked for the relevant netuid through subnet hyperparameter and metagraph read paths.
+The documented default is 256, the type is `u16`, and the parameter is set by the subnet owner
+through a trim extrinsic
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
 That reading keeps max allowed UIDs separate from registration cost and reward mechanics. It bounds
