@@ -66,26 +66,6 @@ For readers, that keeps account retention separate from custody and action cost.
 deposit threshold answers whether enough TAO remains for account representation; wallet-security and
 fee questions need their own sources.
 
-## Difference from Fees
-
-Existential deposit is not the same as a transaction fee. Fees relate to the cost of an action,
-while existential deposit is a retained-balance threshold. The
-[Transaction Fees](https://docs.learnbittensor.org/learn/fees) reference provides fee context, which
-keeps the two account-balance ideas separate.
-
-## Difference from Staking
-
-Existential deposit is also different from staking.
-[Staking and delegation](https://docs.learnbittensor.org/staking-and-delegation/delegation) concerns
-TAO placed behind validator support, while existential deposit concerns the minimum account balance
-boundary. A staking amount and an account-retention threshold answer different questions.
-
-This distinction matters when comparing wallet balances: existential deposit asks whether an account
-keeps enough TAO to remain represented, while staking asks whether TAO has been delegated for
-validator support. Both involve TAO balances, but they describe different balance states and should
-not be combined into one threshold
-([Staking and delegation](https://docs.learnbittensor.org/staking-and-delegation/delegation)).
-
 ## Network Scope
 
 Bittensor network references separate localnet, testnet, and mainnet environments
@@ -113,16 +93,45 @@ Account retention is also separate from wallet identity. A wallet's
 that wallet regardless of balance; existential deposit only determines whether the underlying
 account stays represented in chain state once its balance falls below the threshold.
 
-## Storage and Fee Boundary
+## Account Balance, Transfer, Staking, and Fee Pipeline
 
-Subtensor storage is the better reference point for reading whether account state is represented,
-while fee documentation explains the separate cost of submitting an action
-([Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage),
-[Transaction Fees](https://docs.learnbittensor.org/learn/fees)).
+Existential deposit sits at the account-balance floor of Bittensor wallet activity. The
+[Glossary: Existential Deposit](https://docs.learnbittensor.org/resources/glossary#existential-deposit)
+states that accounts with balances below the threshold can be reaped, or removed, to conserve
+network resources and prevent blockchain bloat from dust accounts. The term therefore names an
+account-retention boundary, not a recommended wallet balance.
 
-That boundary matters because an account can be discussed in storage terms without turning the
-existential deposit into the fee for a particular transaction. The deposit names the
-retained-balance condition; fees name the cost side of an extrinsic.
+The same glossary entry describes existential deposit as a runtime constant in the Balances pallet
+configuration. Documentation gives a default of 500 RAO in runtime code while noting that the actual
+on-chain value should be read from the `Balances::ExistentialDeposit` constant rather than assumed
+from examples alone ([Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage)).
+
+The useful pipeline order is therefore free-balance observation, comparison against the queried
+retention threshold, and downstream effects on whether the account remains represented. A balance
+can still be valid [TAO](https://docs.learnbittensor.org/resources/glossary#tao-tau) while falling
+below the retention threshold that keeps the account represented on chain.
+
+[Transfer](https://docs.learnbittensor.org/resources/glossary#transfer) vocabulary sits on the same
+balance path. Outbound transfers reduce the sender's free balance, while inbound transfers increase
+the receiver's balance, so ordinary movement can leave an account closer to the retention boundary.
+Transfer names the movement action; existential deposit names the minimum retained balance required
+for account representation ([Transaction Fees](https://docs.learnbittensor.org/learn/fees)).
+
+[Staking and delegation](https://docs.learnbittensor.org/staking-and-delegation/delegation) concerns
+TAO placed behind validator support, while existential deposit concerns the minimum account balance
+boundary. A staking amount and an account-retention threshold answer different questions. Both
+involve TAO balances, but they describe different balance states and should not be combined into one
+threshold.
+
+[Transaction Fees](https://docs.learnbittensor.org/learn/fees) belong to a separate extrinsic-cost
+path. Fees relate to the cost of submitting a state-changing action, while existential deposit is a
+retained-balance threshold. Subtensor storage is the better reference point for reading whether
+account state is represented, while fee documentation explains the separate cost of submitting an
+action ([Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage)).
+
+An account can be discussed in storage terms without turning the existential deposit into the fee
+for a particular transaction. The deposit names the retained-balance condition; fees name the cost
+side of an extrinsic.
 
 ## Development Stage Context
 
@@ -130,10 +139,14 @@ The
 [Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
 describes subnet development as moving from localnet to testnet and then mainnet. For existential
 deposit, that sequence changes how readers should interpret minimum-balance thresholds and account
-retention examples.
+retention examples. Existential deposit is a network-level account rule rather than a
+subnet-specific action on a subnet such as netuid 1, but the environment separation still applies to
+every balance observation and to fee or staking actions that can move balances toward the threshold.
 
 In localnet, existential-deposit examples can be exercised in an isolated environment. Local
-threshold values reflect local chain configuration rather than production account rules.
+threshold values reflect local chain configuration rather than production account rules. Local fee
+and staking examples on netuid 1 can move balances without representing production retention
+thresholds.
 
 On testnet, existential-deposit behavior can be observed in a shared, non-production network.
 Testnet minimum-balance thresholds are separate from mainnet account state
@@ -146,17 +159,6 @@ The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-netw
 separates mainnet, testnet, and localnet. A balance-threshold example from one environment should
 not be read as representing production account-retention rules in another environment.
 
-## Relationship to Yuma Consensus
-
-Existential Deposit and Yuma Consensus describe related parts of Bittensor's incentive system. Yuma
-Consensus is the on-chain process that aggregates validator weight signals within a subnet into
-miner incentives and validator dividends, applying consensus clipping, bonding, and emission
-calculation ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-For readers, existential deposit names a specific part of that incentive picture, while Yuma
-Consensus names the consensus process that turns validator weights into the resulting incentives and
-dividends.
-
 ## Reader Boundary
 
 Existential deposit should be read as balance-threshold vocabulary. It identifies the minimum TAO
@@ -165,39 +167,9 @@ provide nearby context
 ([Glossary: Existential Deposit](https://docs.learnbittensor.org/resources/glossary#existential-deposit),
 [Glossary: TAO](https://docs.learnbittensor.org/resources/glossary#tao-tau)).
 
-## Balances Below the Threshold Can Be Reaped
-
-The
-[Glossary: Existential Deposit](https://docs.learnbittensor.org/resources/glossary#existential-deposit)
-states that accounts with balances below the threshold can be reaped, or removed, to conserve
-network resources and prevent blockchain bloat from dust accounts. The term therefore names an
-account-retention boundary, not a recommended wallet balance.
-
-That reaping behavior is why small leftover balances matter in account vocabulary. A balance can
-still be valid [TAO](https://docs.learnbittensor.org/resources/glossary#tao-tau) while falling below
-the retention threshold that keeps the account represented on chain.
-
-## The Threshold Is a Queryable Runtime Constant
-
-The same glossary entry describes existential deposit as a runtime constant in the Balances pallet
-configuration. Official material gives a default of 500 RAO in runtime code while noting that the
-actual on-chain value should be read from the `Balances::ExistentialDeposit` constant rather than
-assumed from examples alone.
-
-Existential deposit reading should therefore treat the figure as chain-configured state. Wallet and
-fee prose can mention the concept without quoting a live threshold unless the value was queried for
-the network in scope ([Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage)).
-
-## Transfers Can Move Balances Toward the Threshold
-
-The [Glossary: Transfer](https://docs.learnbittensor.org/resources/glossary#transfer) describes
-transfer as sending TAO between wallet addresses. Outbound transfers reduce the sender's free
-balance, while inbound transfers increase the receiver's balance, so ordinary movement can leave an
-account closer to the retention boundary described by existential deposit.
-
-That keeps transfer and existential deposit as separate terms that interact through balance effects.
-Transfer names the movement action; existential deposit names the minimum retained balance required
-for account representation ([Transaction Fees](https://docs.learnbittensor.org/learn/fees)).
+Existential deposit reading should treat the figure as chain-configured state. Wallet and fee prose
+can mention the concept without quoting a live threshold unless the value was queried for the
+network in scope.
 
 ## Further Reading
 
@@ -205,6 +177,7 @@ for account representation ([Transaction Fees](https://docs.learnbittensor.org/l
 - [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)
 - [Glossary: Existential Deposit](https://docs.learnbittensor.org/resources/glossary#existential-deposit)
 - [Glossary: TAO](https://docs.learnbittensor.org/resources/glossary#tao-tau)
+- [Glossary: Transfer](https://docs.learnbittensor.org/resources/glossary#transfer)
 - [Transaction Fees](https://docs.learnbittensor.org/learn/fees)
 - [Staking and delegation overview](https://docs.learnbittensor.org/staking-and-delegation/delegation)
 - [Wallets and Keys](https://docs.learnbittensor.org/keys/wallets)
