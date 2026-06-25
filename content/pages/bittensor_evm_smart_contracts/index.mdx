@@ -73,37 +73,32 @@ gives the miner-validator market frame that remains separate from EVM contract e
 
 ## Most EVM Contracts Deploy Without Rewriting
 
-Official [Bittensor EVM Smart Contracts](https://docs.learnbittensor.org/evm-tutorials)
-documentation states that users can deploy most EVM smart contracts on Subtensor without changing
-the contract code. That portability names the deployment step, not a move to Ethereum mainnet:
-familiar Ethereum-style contract patterns can be represented on Bittensor while execution and chain
-history still belong to [Subtensor](https://docs.learnbittensor.org/resources/glossary#subtensor).
+[Bittensor EVM Smart Contracts](https://docs.learnbittensor.org/evm-tutorials) documentation states
+that users can deploy most EVM smart contracts on Subtensor without changing the contract code. That
+portability names the deployment step, not a move to Ethereum mainnet: familiar Ethereum-style
+contract patterns can be represented on Bittensor while execution and chain history still belong to
+[Subtensor](https://docs.learnbittensor.org/resources/glossary#subtensor).
 
 The same overview treats that compatibility as one capability inside a Bittensor-hosted EVM runtime.
 Readers can therefore separate contract source portability from settlement location. A contract
 written for Ethereum-style tooling may deploy on Subtensor without a rewrite, yet its effects still
 record on the Bittensor chain rather than on Ethereum.
 
-References: [Bittensor EVM Smart Contracts](https://docs.learnbittensor.org/evm-tutorials),
-[Glossary: Subtensor](https://docs.learnbittensor.org/resources/glossary#subtensor)
-
 ## Address Conversion Does Not Create Signing Keys
 
-Official Bittensor EVM documentation explains that an
+Bittensor EVM documentation explains that an
 [H160 address](https://docs.learnbittensor.org/resources/glossary#h160-address) and an SS58 address
 can be converted between representations, but that conversion does not yield the corresponding
 private key. A native Bittensor wallet therefore cannot authorize EVM smart-contract activity from a
 converted display address alone, and an EVM wallet cannot authorize native Subtensor actions through
 the same kind of mapping
-([Bittensor EVM Smart Contracts](https://docs.learnbittensor.org/evm-tutorials)).
+([Bittensor EVM Smart Contracts](https://docs.learnbittensor.org/evm-tutorials),
+[Convert Ethereum H160 Address to Substrate SS58](https://docs.learnbittensor.org/evm-tutorials/convert-h160-to-ss58)).
 
 That signing boundary sits beside address-format compatibility. Two addresses may look related after
 conversion, yet control still depends on which key material created the account in its own wallet
 model. Address conversion helps readers connect account views; it does not merge the two signing
 authorities.
-
-References: [Bittensor EVM Smart Contracts](https://docs.learnbittensor.org/evm-tutorials),
-[Convert Ethereum H160 Address to Substrate SS58](https://docs.learnbittensor.org/evm-tutorials/convert-h160-to-ss58)
 
 ## Metagraph Precompile Queries Stay Read-Only
 
@@ -111,7 +106,8 @@ Bittensor EVM documentation describes a metagraph precompile that lets smart con
 [metagraph](https://docs.learnbittensor.org/resources/glossary#metagraph) information such as neuron
 stakes, ranks, trust scores, and consensus values. The
 [Metagraph Precompile](https://docs.learnbittensor.org/evm-tutorials/metagraph-precompile) page
-states that its functions are read-only operations that do not modify chain state.
+states that its functions are read-only operations that do not modify chain state
+([The Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)).
 
 That read-only boundary matters when a contract example inspects subnet neuron metrics from inside
 the EVM layer. The precompile supplies observation vocabulary for current metagraph fields; the
@@ -119,36 +115,69 @@ query itself does not count as a state-changing subnet action. Reading metagraph
 contract therefore stays separate from submitting native subnet operations that change recorded
 state.
 
-References:
-[Metagraph Precompile](https://docs.learnbittensor.org/evm-tutorials/metagraph-precompile),
-[The Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)
+## EVM Contracts, H160 Addresses, and Token Bridging Pipeline
+
+Bittensor EVM smart contracts sit inside a wider account-and-asset pipeline on one chain. The useful
+order for readers is Subtensor as base layer, EVM contract execution through Ethereum JSON-RPC,
+[H160 address](https://docs.learnbittensor.org/resources/glossary#h160-address) account context for
+EVM wallets, and [token bridging](https://docs.learnbittensor.org/evm-tutorials/bridge-vtao) that
+moves the same TAO between SS58 and H160 account formats so it can interact with those contracts
+([Bittensor EVM Smart Contracts](https://docs.learnbittensor.org/evm-tutorials)).
+
+Contract deployment is the application step in that pipeline. Most Ethereum-style contract source
+can deploy on Subtensor without a rewrite, yet settlement and history still belong to Bittensor
+rather than Ethereum mainnet
+([Bittensor EVM Smart Contracts](https://docs.learnbittensor.org/evm-tutorials)).
+
+H160 addresses name the EVM-side wallet format, while SS58 addresses name native Bittensor wallet
+context. Conversion between representations can help a transfer or account view cross that boundary,
+but it does not produce the corresponding private key, so wallet control still follows whichever key
+material can sign in the intended environment
+([Convert Ethereum H160 Address to Substrate SS58](https://docs.learnbittensor.org/evm-tutorials/convert-h160-to-ss58),
+[Glossary: SS58 Encoded](https://docs.learnbittensor.org/resources/glossary#ss58-encoded)).
+
+Token bridging connects TAO across those account contexts on the same Bittensor blockchain. The
+[Token Bridging](https://docs.learnbittensor.org/evm-tutorials/bridge-vtao) documentation describes
+moving the same TAO between SS58 and H160 formats and representing staked TAO as vTAO inside the EVM
+layer. Bridging therefore names how TAO reaches H160 context for contract use, not a transfer to a
+separate Ethereum network.
+
+The metagraph precompile adds a read-only observation step for contracts that need current subnet
+neuron metrics. It lets an EVM contract inspect fields such as stake, rank, trust, and consensus on
+a subnet such as netuid 1 without submitting native state-changing subnet actions
+([Metagraph Precompile](https://docs.learnbittensor.org/evm-tutorials/metagraph-precompile)).
+
+For readers, EVM vocabulary names contract execution and wallet context on Bittensor. H160 and
+bridging vocabulary names how accounts and TAO connect to that layer. Subnet incentive mechanisms
+and Yuma Consensus reward math remain separate native processes even when a contract reads metagraph
+data through the precompile
+([Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)).
 
 ## Development Stage Context
 
 The
 [Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from localnet to testnet and then mainnet. EVM contract
-examples should stay attached to the network environment where they run
+describes subnet development as moving from localnet to testnet and then mainnet. For Bittensor EVM
+smart contracts, that sequence changes how readers should interpret contract deployment, address
+conversion, bridging, and metagraph-precompile examples on a subnet such as netuid 1
 ([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
 
-Localnet examples can test contract wiring in isolation. Testnet examples add shared non-production
-chain history. Mainnet EVM interpretation concerns production Subtensor execution on the active
-network.
+In localnet, EVM contract examples can be tested in an isolated environment. Localnet deployment,
+H160 conversion, and token bridging on netuid 1 reflect local chain configuration rather than
+production Bittensor EVM state.
 
-Mainnet, testnet, and localnet are separate Bittensor contexts, and behavior observed in one
-environment should not stand in for another network's chain history
+On testnet, EVM contract activity can be exercised in a shared non-production network. Testnet
+contract history, bridged TAO representation, and metagraph-precompile reads on netuid 1 are
+separate from mainnet chain state.
+
+On mainnet, Bittensor EVM smart contracts describe live production contract execution on Subtensor,
+where bridged TAO, H160 wallet context, and read-only metagraph queries on subnets such as netuid 1
+concern the active network
 ([Bittensor EVM Smart Contracts](https://docs.learnbittensor.org/evm-tutorials)).
 
-## Relationship to Yuma Consensus
-
-Bittensor EVM Smart Contracts and Yuma Consensus describe related parts of Bittensor's incentive
-system. Yuma Consensus is the on-chain process that aggregates validator weight signals within a
-subnet into miner incentives and validator dividends, applying consensus clipping, bonding, and
-emission calculation ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-For readers, bittensor evm smart contracts names a specific part of that incentive picture, while
-Yuma Consensus names the consensus process that turns validator weights into the resulting
-incentives and dividends.
+The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
+separates mainnet, testnet, and localnet. An EVM example from one environment should not be read as
+representing production contract behavior in another environment.
 
 ## Reader Boundary
 
@@ -166,4 +195,7 @@ format, and interface context together rather than relying on the EVM label alon
 - [Bittensor EVM Smart Contracts](https://docs.learnbittensor.org/evm-tutorials)
 - [Glossary: Subtensor](https://docs.learnbittensor.org/resources/glossary#subtensor)
 - [Glossary: H160 Address](https://docs.learnbittensor.org/resources/glossary#h160-address)
+- [Token Bridging](https://docs.learnbittensor.org/evm-tutorials/bridge-vtao)
+- [Convert Ethereum H160 Address to Substrate SS58](https://docs.learnbittensor.org/evm-tutorials/convert-h160-to-ss58)
+- [Metagraph Precompile](https://docs.learnbittensor.org/evm-tutorials/metagraph-precompile)
 - [Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)
