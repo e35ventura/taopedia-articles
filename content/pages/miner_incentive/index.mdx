@@ -38,15 +38,6 @@ The incentive is distinct from validator dividends. Validators receive dividends
 consensus role and staked support position; miners receive incentives based on the quality of their
 work as evaluated by validators.
 
-## Consensus Role
-
-Miner incentives connect to the Yuma Consensus process. Validators submit weights that assess miner
-performance, and consensus aggregates those evaluations into incentive outcomes for miners
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-An incentive follows from positive validator evaluation through consensus. It does not replace the
-validator weight, miner rank, or trust vocabulary used inside the consensus process.
-
 ## Subnet Context
 
 Miner incentives are subnet-specific. Each subnet defines the task miners perform, and validators in
@@ -56,37 +47,84 @@ that subnet evaluate whether the work meets the subnet's quality standard
 This keeps miner incentive from being a generic mining reward. The term is tied to a specific
 subnet's evaluation context and its portion of the emission distribution process.
 
+## Miner Rewards, Emission Distribution, and Yuma Scoring Pipeline
+
+Miner incentives connect to the
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) process. Validators submit
+weights that assess miner performance, and consensus aggregates those evaluations into incentive
+outcomes for miners. An incentive follows from positive validator evaluation through consensus; it
+does not replace the validator weight, miner rank, or trust vocabulary used inside the consensus
+process.
+
+[Yuma Consensus: Miner emissions](https://docs.learnbittensor.org/learn/yuma-consensus#miner-emissions)
+documentation derives each miner's incentive share from an aggregate rank built inside the subnet.
+That rank is the stake-weighted sum of consensus-clipped validator weights aimed at the miner, not
+one validator's raw score copied forward unchanged. The
+[Glossary: Rank](https://docs.learnbittensor.org/resources/glossary#rank) states that ranks are
+calculated from consensus-clipped weights and directly determine emissions to miners.
+
+Miner-side allocation is a proportional split. Each miner's incentive portion equals that miner's
+share of the total aggregate rank across miners in the subnet. Stronger relative rank therefore
+means a larger slice of the miner-side emission pool for that epoch, while weak or filtered support
+yields a smaller slice.
+[Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)
+documentation adds that final normalized ranks become the miner-side incentive shares before
+emission amounts are applied across the subnet's miners.
+
+[Emission: Distribution](https://docs.learnbittensor.org/learn/emissions#distribution) documentation
+describes tempo-end distribution inside each subnet, where alpha accumulated during the tempo is
+allocated to subnet participants after Yuma Consensus runs. Miner incentive belongs to that
+subnet-side payout path rather than to a standalone TAO transfer label.
+[Emission](https://docs.learnbittensor.org/learn/emissions) documentation places subnet rewards
+inside Bittensor's two-level emission model: network-level TAO flow supports reserve injection,
+while subnets emit
+[Glossary: Alpha Tokens](https://docs.learnbittensor.org/resources/glossary#alpha-tokens) for
+role-facing rewards to miners, validators, and stakers. Miner incentive names the miner-facing slice
+of that subnet alpha flow. Alpha distribution and TAO reserve injection are related parts of the
+broader emissions process, but miner incentive language stays with the subnet alpha share assigned
+to miners after Yuma Consensus determines miner-side outcomes.
+
+[Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)
+documentation states that Yuma Consensus calculates emissions within each incentive mechanism and
+that those results are finalized and credited to participants' hotkeys at the end of each
+[Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo). The glossary defines
+tempo as the subnet-specific interval over which Yuma Consensus calculates emissions from the latest
+available ranking weight matrix. Miner incentive therefore arrives on that boundary schedule rather
+than on a separate reward clock outside subnet epoch timing.
+[Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase)
+documentation describes coinbase as the per-block process that advances emission processing and
+triggers epoch-boundary activity. Validators may submit weights throughout the tempo, but the
+miner-facing share that incentive vocabulary names is credited when epoch processing completes, not
+at every intermediate submission.
+
+For readers on a subnet such as netuid 1, the pipeline order is: validator weight submission and
+consensus clipping, aggregate rank calculation, proportional miner-side share within the subnet
+alpha pool, tempo-bound distribution after Yuma Consensus, and alpha credited to miner hotkeys.
+Miner incentive vocabulary names the miner-facing outcome; Yuma vocabulary names the consensus
+aggregation that produces it.
+
 ## Development Stage Context
 
 The
 [Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
 describes subnet development as moving from localnet to testnet and then mainnet. For miner
-incentive, that sequence changes how readers should interpret emission-share and ranking examples.
+incentive on a subnet such as netuid 1, that sequence changes how readers should interpret
+emission-share and ranking examples.
 
 In localnet, miner incentive flows can be tested in an isolated environment. Localnet incentive
-shares do not represent production subnet rewards.
+shares on netuid 1 reflect local chain configuration rather than production subnet rewards.
 
 On testnet, miner ranking and emission distribution can be exercised in a shared non-production
-network. Testnet incentive outcomes are separate from mainnet subnet state.
+network. Testnet incentive outcomes on a selected netuid are separate from mainnet subnet state
+([Emission](https://docs.learnbittensor.org/learn/emissions)).
 
-On mainnet, miner incentive describes live production reward shares on subnets. Observed amounts
-depend on the selected subnet's consensus and emission context
+On mainnet, miner incentive describes live production reward shares on subnets such as netuid 1.
+Observed amounts depend on the selected subnet's consensus and emission context
 ([Emission](https://docs.learnbittensor.org/learn/emissions)).
 
 The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
 separates mainnet, testnet, and localnet. A miner-incentive example from one environment should not
 be read as representing production reward shares in another environment.
-
-## Relationship to Yuma Consensus
-
-Miner Incentive and Yuma Consensus describe related parts of Bittensor's incentive system. Yuma
-Consensus is the on-chain process that aggregates validator weight signals within a subnet into
-miner incentives and validator dividends, applying consensus clipping, bonding, and emission
-calculation ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-For readers, miner Incentive names a specific part of that incentive picture, while Yuma Consensus
-names the consensus process that turns validator weights into the resulting incentives and
-dividends.
 
 ## Reader Boundary
 
@@ -98,71 +136,9 @@ Actual incentive amounts depend on subnet context, emission configuration, valid
 and the selected environment. Mainnet, testnet, and localnet are separate contexts
 ([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
 
-## Rank Share Sets Each Miner's Incentive Portion
-
-Official
-[Yuma Consensus: Miner emissions](https://docs.learnbittensor.org/learn/yuma-consensus#miner-emissions)
-documentation derives each miner's incentive share from an aggregate rank built inside the subnet.
-That rank is the stake-weighted sum of consensus-clipped validator weights aimed at the miner, not
-one validator's raw score copied forward unchanged.
-
-The same page describes miner-side allocation as a proportional split. Each miner's incentive
-portion equals that miner's share of the total aggregate rank across miners in the subnet. Stronger
-relative rank therefore means a larger slice of the miner-side emission pool for that epoch, while
-weak or filtered support yields a smaller slice.
-
-The [Glossary: Rank](https://docs.learnbittensor.org/resources/glossary#rank) states that ranks are
-calculated from consensus-clipped weights and directly determine emissions to miners.
-[Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)
-documentation adds that final normalized ranks become the miner-side incentive shares before
-emission amounts are applied across the subnet's miners.
-
-References:
-[Yuma Consensus: Miner emissions](https://docs.learnbittensor.org/learn/yuma-consensus#miner-emissions),
-[Glossary: Rank](https://docs.learnbittensor.org/resources/glossary#rank)
-
-## Alpha Tokens Carry Subnet Miner Payouts
-
-Official [Emission: Distribution](https://docs.learnbittensor.org/learn/emissions#distribution)
-documentation describes tempo-end distribution inside each subnet, where alpha accumulated during
-the tempo is allocated to subnet participants after Yuma Consensus runs. Miner incentive belongs to
-that subnet-side payout path rather than to a standalone TAO transfer label.
-
-[Emission](https://docs.learnbittensor.org/learn/emissions) documentation places subnet rewards
-inside Bittensor's two-level emission model: network-level TAO flow supports reserve injection,
-while subnets emit
-[Glossary: Alpha Tokens](https://docs.learnbittensor.org/resources/glossary#alpha-tokens) for
-role-facing rewards to miners, validators, and stakers. Miner incentive names the miner-facing slice
-of that subnet alpha flow.
-
-Alpha distribution and TAO reserve injection are related parts of the broader emissions process, but
-miner incentive language stays with the subnet alpha share assigned to miners after Yuma Consensus
-determines miner-side outcomes.
-
-References: [Emission: Distribution](https://docs.learnbittensor.org/learn/emissions#distribution),
-[Glossary: Alpha Tokens](https://docs.learnbittensor.org/resources/glossary#alpha-tokens)
-
-## Tempo Boundaries Credit Final Miner Incentives
-
-Official
-[Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)
-documentation states that Yuma Consensus calculates emissions within each incentive mechanism and
-that those results are finalized and credited to participants' hotkeys at the end of each
-[Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo).
-
-The glossary defines tempo as the subnet-specific interval over which Yuma Consensus calculates
-emissions from the latest available ranking weight matrix. Miner incentive therefore arrives on that
-boundary schedule rather than on a separate reward clock outside subnet epoch timing.
-
-[Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase)
-documentation describes coinbase as the per-block process that advances emission processing and
-triggers epoch-boundary activity. Validators may submit weights throughout the tempo, but the
-miner-facing share that incentive vocabulary names is credited when epoch processing completes, not
-at every intermediate submission.
-
-References:
-[Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism),
-[Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase)
+Miner incentive names the miner-facing emission outcome after Yuma Consensus resolves ranks. It does
+not replace rank, weight, or trust vocabulary used inside the consensus process
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
 ## Further Reading
 
