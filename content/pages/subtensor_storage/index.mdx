@@ -81,48 +81,60 @@ similarly named state surfaces can carry different context in different runtime 
 For readers, the runtime area is the first layer of interpretation. The area says which part of the
 runtime owns the entry before the entry name and type narrow the meaning.
 
-## Development Stage Context
+## Chain Storage Holds Mutable Runtime State
 
-The
-[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from localnet to testnet and then mainnet. For Subtensor
-storage, that sequence changes which network and block context a reader should assume when
-interpreting a storage read.
+Chain storage is the mutable state layer that Subtensor updates as blocks are processed. Storage
+entries name the readable surfaces inside that layer rather than describing every extrinsic or event
+that changed them ([Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage),
+[Glossary: Subtensor](https://docs.learnbittensor.org/resources/glossary#subtensor)).
 
-In localnet, storage surfaces can be inspected against an isolated local blockchain. Localnet
-storage values do not represent production chain state.
+For readers, a storage read answers what the runtime recorded at a selected network and block
+height. It does not by itself prove why the value changed; that interpretation belongs beside
+submitted actions and emitted events
+([Subtensor Events](https://docs.learnbittensor.org/subtensor-api/events),
+[Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics)).
 
-On testnet, storage reads can be exercised in a shared non-production network. Testnet entries are
-separate from mainnet state
+## Metagraph State Surfaces Through SubtensorModule
+
+The [Glossary: Metagraph](https://docs.learnbittensor.org/resources/glossary#metagraph) describes
+the metagraph as a subnet snapshot with neuron records, stakes, and weights. Much of that snapshot
+is backed by `subtensorModule` storage entries keyed by
+[netuid](https://docs.learnbittensor.org/resources/glossary#netuid) and participant identifiers
+([The Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph),
+[Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage)).
+
+A metagraph view summarizes one subnet at a block, while individual storage reads expose the keyed
+rows that compose that summary. Readers should keep metagraph vocabulary on the subnet snapshot side
+and storage vocabulary on the named chain-state surface side
 ([Inspecting the Chain with Polkadot.js](https://docs.learnbittensor.org/concepts/inspecting-the-chain)).
 
-On mainnet, Subtensor storage concerns live production chain state at the selected block height on
-the connected network ([Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage)).
+## Registration Timing Lives in Keyed Storage
 
-The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
-separates mainnet, testnet, and localnet. A storage example from one environment should not be read
-as representing production chain state in another environment.
+Registration-related limits and grace windows appear as subnet-scoped storage maps rather than as
+global single values. Inspection guidance notes that a surface such as immunity period belongs to
+one netuid at a time and needs that key before a read can return a value
+([Inspecting the Chain with Polkadot.js](https://docs.learnbittensor.org/concepts/inspecting-the-chain),
+[Glossary: Immunity Period](https://docs.learnbittensor.org/resources/glossary#immunity-period)).
 
-## Relationship to Yuma Consensus
+For readers, registration vocabulary names the entry event, while keyed storage names the on-chain
+fields that record timing and slot state afterward
+([Miner Registration](https://docs.learnbittensor.org/miners#miner-registration),
+[Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage)).
 
-Subtensor Storage and Yuma Consensus describe related parts of Bittensor's incentive system. Yuma
-Consensus is the on-chain process that aggregates validator weight signals within a subnet into
-miner incentives and validator dividends, applying consensus clipping, bonding, and emission
-calculation ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+## Weight Parameters Feed Consensus Storage
 
-For readers, subtensor storage names a specific part of that incentive picture, while Yuma Consensus
-names the consensus process that turns validator weights into the resulting incentives and
-dividends.
-
-## Reader Boundary
-
-The storage listing tells readers where state is exposed. A chain read or inspection view can then
-show a value from a selected network and block context
+Subnet [hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters) and weight-
+related settings appear among `subtensorModule` storage entries alongside the weight signals that
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) later aggregates into miner
+incentives and validator dividends
 ([Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage),
-[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+[Weight Setting](https://docs.learnbittensor.org/learn/weight-setting)).
 
-The entry name tells readers which surface was inspected; the returned value tells readers what that
-surface showed in the chain context where the read happened.
+Storage therefore exposes both the configured bounds and the stored weight context that consensus
+reads at a block. A weight-parameter read names a configured limit or stored field; Yuma vocabulary
+names how clipped validator signals become role-facing emission outcomes inside the same subnet
+([Glossary: Incentives](https://docs.learnbittensor.org/resources/glossary#incentives),
+[Glossary: Dividends](https://docs.learnbittensor.org/resources/glossary#dividends)).
 
 ## Storage, Events, and Extrinsics
 
@@ -159,10 +171,6 @@ That key step sits between the storage listing and the returned value. The catal
 name and type shape, while the supplied key narrows which row of mutable chain state is being read
 ([Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage)).
 
-References:
-[Inspecting the Chain with Polkadot.js](https://docs.learnbittensor.org/concepts/inspecting-the-chain),
-[Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage)
-
 ## The Storage Catalog Follows Runtime Spec
 
 The [Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage) reference is
@@ -180,9 +188,6 @@ entry names a surface the runtime can expose, while a value returned from a part
 block belongs to that moment in chain history on the connected
 [Subtensor](https://docs.learnbittensor.org/resources/glossary#subtensor) network.
 
-References: [Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage),
-[Inspecting the Chain with Polkadot.js](https://docs.learnbittensor.org/concepts/inspecting-the-chain)
-
 ## Runtime Calls Are Not Storage Reads
 
 Direct storage queries read named state surfaces from chain storage. The same inspection guide
@@ -191,18 +196,15 @@ read-only path that executes functions which may involve computation rather than
 stored value alone
 ([Inspecting the Chain with Polkadot.js](https://docs.learnbittensor.org/concepts/inspecting-the-chain)).
 
-Official examples include bundled subnet information that covers price, emission, and reserve-
+Documented examples include bundled subnet information that covers price, emission, and reserve-
 related fields, along with fee estimation for a proposed extrinsic length. Those answers can draw on
 storage internally, but they are returned as computed read-only results rather than as one labeled
 storage item from the catalog.
 
 When a question needs a catalogued state surface, storage vocabulary is the natural starting point.
 When the question needs a derived or bundled answer, runtime-call vocabulary may fit better even
-though both paths stay on the inspection side of the chain.
-
-References:
-[Inspecting the Chain with Polkadot.js](https://docs.learnbittensor.org/concepts/inspecting-the-chain),
-[Runtime Calls](https://docs.learnbittensor.org/subtensor-api/runtime)
+though both paths stay on the inspection side of the chain
+([Runtime Calls](https://docs.learnbittensor.org/subtensor-api/runtime)).
 
 ## Network and Block Context
 
@@ -221,6 +223,41 @@ prove off-chain intent or fully explain why that state changed
 When a concrete question depends on cause or result, the storage value should be read alongside the
 submitted action, emitted events, and the relevant concept page. That gives readers more context
 than the storage entry name alone.
+
+## Development Stage Context
+
+The
+[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
+describes subnet development as moving from localnet to testnet and then mainnet. For Subtensor
+storage on a subnet such as netuid 1, that sequence changes which network and block context a reader
+should assume when interpreting a storage read.
+
+In localnet, storage surfaces on netuid 1 can be inspected against an isolated local blockchain.
+Localnet storage values do not represent production chain state and reflect local configuration
+rather than live subnet history.
+
+On testnet, storage reads for a selected netuid can be exercised in a shared non-production network.
+Testnet entries are separate from mainnet state and are useful for checking keyed map reads under
+shared chain conditions
+([Inspecting the Chain with Polkadot.js](https://docs.learnbittensor.org/concepts/inspecting-the-chain)).
+
+On mainnet, Subtensor storage concerns live production chain state at the selected block height on
+the connected network for the inspected netuid
+([Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage)).
+
+The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
+separates mainnet, testnet, and localnet. A storage example from one environment should not be read
+as representing production chain state in another environment.
+
+## Reader Boundary
+
+The storage listing tells readers where state is exposed. A chain read or inspection view can then
+show a value from a selected network and block context
+([Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+The entry name tells readers which surface was inspected; the returned value tells readers what that
+surface showed in the chain context where the read happened.
 
 ## Further Reading
 
