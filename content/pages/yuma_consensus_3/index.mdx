@@ -31,6 +31,89 @@ validator evaluations into miner incentives and validator dividends; YC3 is a bo
 refinement inside that process, not a separate subnet or a general validator operating mode
 ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
+## The First Version Struggled With Rounding and Early Recognition
+
+YC3 is documented as the third iteration of Yuma Consensus's bonding logic, not the first attempt at
+the problem. Official material describes the original version as distributing validator rewards
+based on stake and consensus weight, but with two documented limitations: small validators faced
+unfair rounding issues, and the design had limited ways to recognize validators who identified
+promising miners early
+([How Yuma Consensus 3 Makes Bittensor More Fair](https://docs.learnbittensor.org/learn/yc3-blog)).
+
+Both limitations trace back to the same root causes YC3 was later built to address: a uniform
+treatment of all validator-miner bonds, and a storage approach that rounded away small validators'
+fractional bond contributions.
+
+## The Second Version Added Smoothing but Kept a Serious Bond-Freeze Bug
+
+The next iteration introduced exponential-moving-average bonding, which improved on the first
+version without resolving its core problems. Documentation lists the same rounding disadvantage for
+small validators, still-insufficient rewards for early recognition, and a uniform adjustment rate
+applied to every validator-miner relationship regardless of how that relationship actually performed
+([How Yuma Consensus 3 Makes Bittensor More Fair](https://docs.learnbittensor.org/learn/yc3-blog)).
+
+That version also carried a documented bug with more serious consequences. Bonds were only
+redistributed when validators holding at least half of total stake actively voted for a given miner.
+When stake-weighted participation fell below that threshold, the recorded result was that bonds
+would freeze entirely: historical allocations could persist for months even after the validators
+behind them had stopped evaluating that miner, new evaluators were locked out of bond formation
+until enough high-stake validators resumed voting, and a miner becoming relevant again could pay
+stale bond holders who were no longer evaluating it while active evaluators received minimal bonds
+([How Yuma Consensus 3 Makes Bittensor More Fair](https://docs.learnbittensor.org/learn/yc3-blog)).
+
+## Per-Bond Treatment Replaces the Uniform Adjustment Rate
+
+YC3's documented fix is to give each validator-miner bond pair its own adjustment rate instead of
+applying one rate network-wide. That per-pair treatment is what lets individual relationships evolve
+at different speeds based on how that specific pair's evaluation history compares with consensus
+([How Yuma Consensus 3 Makes Bittensor More Fair](https://docs.learnbittensor.org/learn/yc3-blog)).
+
+How that per-pair rate is calculated depends on whether Liquid Alpha is enabled. With Liquid Alpha
+enabled, the system calculates each pair's adjustment rate through a sigmoid function evaluated
+against the difference between a validator's submitted weight and network consensus for that miner.
+With Liquid Alpha disabled, the calculation falls back to a uniform rate based on the bonds moving
+average parameter instead
+([How Yuma Consensus 3 Makes Bittensor More Fair](https://docs.learnbittensor.org/learn/yc3-blog),
+[Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)).
+
+That sigmoid behavior is also what targets early recognition specifically. A validator whose
+submitted weight diverges from current consensus, in the direction that later proves correct, sees
+its bond-adjustment rate respond to that divergence rather than being held to the same pace as every
+other bond on the subnet.
+
+## Bond Storage Precision Addresses the Small-Validator Disadvantage
+
+The rounding problem named in both earlier versions traces to how bond values were stored. YC3 is
+documented as computing bond values with fixed-point arithmetic before converting them to a
+sixteen-bit storage format, preserving fractional relationships that earlier rounding behavior could
+erase for validators contributing a small bond share
+([How Yuma Consensus 3 Makes Bittensor More Fair](https://docs.learnbittensor.org/learn/yc3-blog)).
+
+That storage change is separate from the per-bond adjustment-rate change described above, even
+though both address fairness for smaller validators. One fixes how finely a bond value can be
+recorded; the other fixes how quickly that recorded value can respond to a validator's own
+evaluation history.
+
+The migration guide names the specific failure mode that precision fix targets: insufficient integer
+precision for bond accumulation could previously leave some validators with no recorded bond at all,
+despite having submitted weight for the miner in question. The documented fix is the same
+fixed-point arithmetic described above, applied so every contributing validator's fractional share
+is preserved rather than rounded down to nothing
+([Yuma Consensus 3 (YC3) Migration Guide](https://docs.learnbittensor.org/learn/yuma3-migration-guide)).
+
+## Early Recognition Pays an Extra Reward, Not Just a Faster Bond
+
+The early-recognition behavior described above has a concrete reward consequence beyond bond speed.
+Migration documentation states that, when the relevant conditions are met, validators receive an
+additional reward specifically for voting for miners that are not yet receiving votes from other
+validators
+([Yuma Consensus 3 (YC3) Migration Guide](https://docs.learnbittensor.org/learn/yuma3-migration-guide)).
+
+That extra reward is distinct from the per-bond adjustment-rate mechanism itself. The adjustment
+rate changes how quickly a validator's bond with a miner can grow; the early-recognition reward is
+an additional payment tied specifically to backing a miner before broader validator recognition
+arrives, reinforcing the same incentive from a different angle.
+
 ## Bond Scaling
 
 YC3 centers on per-bond exponential moving average scaling. Instead of applying one adjustment rate
