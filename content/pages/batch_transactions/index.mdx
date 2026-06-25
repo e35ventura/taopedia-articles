@@ -260,6 +260,26 @@ do not run after that failure point.
 That keeps batch reading tied to grouped execution order rather than to independent success of every
 listed call.
 
+## SDK Helpers Are Not Batch Extrinsics
+
+[Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions) documentation
+distinguishes utility-pallet batch wrappers from SDK helpers that submit multiple actions in
+sequence. The SDK's `add_stake_multiple` and `unstake_multiple` send individual extrinsics one after
+another, so each transaction settles independently rather than as one grouped on-chain batch.
+
+Readers therefore should not treat a helper name containing "multiple" as proof that a single
+`batch`, `batch_all`, or `force_batch` extrinsic was used. When all-or-nothing semantics or one
+outer transaction fee for the group matters, the documentation points to composing a
+`Utility.batch_all` call through the low-level pallet path instead
+([Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions)).
+
+The same page notes a proxy-type boundary for that pattern. A `Staking` proxy allowlist covers
+specific staking extrinsics but does not permit `Utility::batch_all` as the outer call, so batch
+staking through a `Staking` proxy can fail with `CallFiltered`. Documentation recommends a
+`NonTransfer` proxy for batch staking because it blocks balance transfers and coldkey swaps while
+allowing batch wrappers; `NonCritical` also works but is more permissive than most users need
+([Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions)).
+
 ## Fees Still Apply Through the Wrapper Path
 
 Batch wrappers group inner extrinsics, but fee documentation still treats the submission as a
