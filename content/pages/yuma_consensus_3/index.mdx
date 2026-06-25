@@ -45,17 +45,6 @@ view. The mechanism is meant to distinguish independent evaluation from simple a
 already dominant consensus signal
 ([The Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor)).
 
-## Yuma Consensus Context
-
-YC3 depends on the older Yuma Consensus frame. In Bittensor, validators evaluate miners, submit
-weight information, and participate in a consensus process that influences miner incentives and
-validator dividends ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-The distinction matters because YC3 is not the whole reward system. Yuma Consensus names the
-aggregation and allocation process; YC3 names a refinement to how validator-miner bonds respond
-inside that process. A statement about YC3 is therefore strongest when it says whether it concerns
-bond movement, validator evaluation, miner incentives, or dividend calculation.
-
 ## Liquid Alpha and EMA Context
 
 YC3 sits near Liquid Alpha because both ideas concern bond responsiveness. Liquid Alpha changes bond
@@ -97,16 +86,63 @@ environment is evidence about that environment, not automatic proof of the same 
 elsewhere ([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks),
 [Introduction to Bittensor: Subnet development](https://docs.learnbittensor.org/learn/introduction#subnet-development)).
 
-## Relationship to Yuma Consensus
+## Clipping, Bonds, Weight Matrix, and Emission Pipeline
 
-Yuma Consensus 3 and Yuma Consensus describe related parts of Bittensor's incentive system. Yuma
-Consensus is the on-chain process that aggregates validator weight signals within a subnet into
-miner incentives and validator dividends, applying consensus clipping, bonding, and emission
-calculation ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) aggregates validator weight
+signals within a subnet into miner incentives and validator dividends at
+[tempo](https://docs.learnbittensor.org/resources/glossary#tempo) boundaries. YC3 refines how
+[validator-miner bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds)
+respond inside that pipeline rather than replacing the aggregation step itself.
 
-For readers, yuma consensus 3 names a specific part of that incentive picture, while Yuma Consensus
-names the consensus process that turns validator weights into the resulting incentives and
-dividends.
+The useful order on a subnet such as netuid 1 is therefore validators submitting weights into the
+latest ranking [weight matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix),
+consensus clipping trimming outlying scores toward stake-weighted agreement, bond-weight blending
+submitted weights with consensus values using penalty factor β, and emission distribution crediting
+miner and validator shares once the tempo interval closes
+([Yuma Consensus: Miner emissions](https://docs.learnbittensor.org/learn/yuma-consensus#miner-emissions),
+[Emission](https://docs.learnbittensor.org/learn/emissions)).
+
+YC3 adds per-bond EMA scaling and improved fixed-point bond storage on a 0–65535 scale so smaller
+validators can accumulate bond mass that earlier 16-bit rounding could erase
+([Yuma Consensus 3 (YC3) Migration Guide](https://docs.learnbittensor.org/learn/yuma3-migration-guide)).
+The migration guide also corrects bond upscaling when
+[consensus](https://docs.learnbittensor.org/resources/glossary#consensus-score) equals zero,
+replacing behavior that produced unfair bond distribution with enhanced EMA smoothing in that edge
+case
+([How Yuma Consensus 3 Makes Bittensor More Fair](https://docs.learnbittensor.org/learn/yc3-blog)).
+
+The β penalty that pulls overstated validator weights back toward the network median remains in
+place under YC3. Faster independent bond building and anti-fraud clipping therefore coexist in the
+same upgrade rather than trading against each other
+([How Yuma Consensus 3 Makes Bittensor More Fair](https://docs.learnbittensor.org/learn/yc3-blog)).
+
+That boundary keeps YC3 distinct from visibility tools such as
+[Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal). Commit Reveal changes when
+weight information becomes visible; β and clipping change how far an already submitted weight can
+influence bond formation after consensus is known.
+
+## Development Stage Context
+
+The
+[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
+describes subnet development as moving from localnet to testnet and then mainnet. Yuma Consensus 3
+examples on netuid 1 need that context because bond behavior, clipping outcomes, and emission
+results belong to the network where they were observed
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+In localnet, YC3 bond mechanics can be tested in an isolated environment. Local bond accumulation
+and consensus clipping for netuid 1 reflect local configuration rather than production validator
+agreement.
+
+On testnet, YC3 flows can be exercised in a shared non-production network. Testnet bond movement and
+weight-matrix outcomes for netuid 1 are separate from mainnet subnet state
+([Yuma Consensus 3 (YC3) Migration Guide](https://docs.learnbittensor.org/learn/yuma3-migration-guide)).
+
+On mainnet, YC3 concerns live production consensus behavior on the active Bittensor network,
+including bond scaling and emission distribution on subnets such as netuid 1.
+
+A YC3 example from one environment should not be treated as proof about another environment. They
+use the same consensus vocabulary, but not the same validator set or chain state.
 
 ## Reader Boundary
 
@@ -116,73 +152,6 @@ receive incentives. Those questions depend on the selected subnet, mechanism, ne
 and chain state
 ([How Yuma Consensus 3 Makes Bittensor More Fair](https://docs.learnbittensor.org/learn/yc3-blog),
 [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-## Development Stage Context
-
-The
-[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from localnet to testnet and then mainnet. Yuma Consensus 3
-applies across the Bittensor lifecycle: consensus behavior on testnet is separate from mainnet, and
-weight anti-copying or validator evaluation outcomes from one environment do not represent live
-production consensus results in another. The
-[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
-separates mainnet, testnet, and localnet, so outcomes from one environment should not be treated as
-proof of behavior in another.
-
-## Fixed-Point Bonds Serve Smaller Validators
-
-Earlier Yuma Consensus bond handling could leave smaller validators with weaker bond outcomes simply
-because rounding erased small fractional values
-([How Yuma Consensus 3 Makes Bittensor More Fair](https://docs.learnbittensor.org/learn/yc3-blog),
-[Yuma Consensus 3 (YC3) Migration Guide](https://docs.learnbittensor.org/learn/yuma3-migration-guide)).
-
-The migration guide states that some validators previously received no bonds even after assigning
-weight to miners, because earlier 16-bit integer precision was not enough for bond accumulation. YC3
-addresses that with fixed-point arithmetic so bond values can represent finer relationships before
-they are stored on a 0–65535 scale for efficiency
-([Yuma Consensus 3 (YC3) Migration Guide](https://docs.learnbittensor.org/learn/yuma3-migration-guide)).
-
-That precision change is separate from per-bond responsiveness. A validator with less
-[stake](https://docs.learnbittensor.org/resources/glossary#stake) can still participate in
-[validator-miner bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds)
-when small bond increments are preserved rather than rounded away. YC3 therefore fixes a fairness
-gap in bond allocation math, not only the speed at which bonds can move.
-
-## Zero-Consensus Upscaling Was Corrected
-
-The YC3 migration guide identifies a separate bond-distribution problem: bond upscaling when
-[consensus](https://docs.learnbittensor.org/resources/glossary#consensus-score) equals zero had been
-producing unfair outcomes
-([Yuma Consensus 3 (YC3) Migration Guide](https://docs.learnbittensor.org/learn/yuma3-migration-guide)).
-
-YC3 replaces that behavior with corrected bond mechanics and enhanced
-[exponential moving average (EMA)](https://docs.learnbittensor.org/resources/glossary#exponential-moving-average-ema)
-smoothing so bond movement stays more predictable in that edge case
-([How Yuma Consensus 3 Makes Bittensor More Fair](https://docs.learnbittensor.org/learn/yc3-blog)).
-
-That fix matters because zero-consensus moments are not the same as ordinary disagreement among
-validators. When no usable consensus signal exists for a miner, upscaling rules can still change how
-bond mass is distributed across relationships. YC3 treats that situation as part of bond mechanics
-rather than as a reason to amplify bonds in ways the migration guide describes as unfair.
-
-## Beta Penalty Still Bounds Outlier Weights
-
-Official [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) documentation
-penalizes bonds when a validator's submitted weight for a miner exceeds that miner's consensus
-evaluation. The bond-weight blends the submitted weight with the consensus value using penalty
-factor β so overstated evaluations are pulled back toward the network median.
-
-The YC3 overview states that this bonds penalty factor remains in place while YC3 adds per-bond EMA
-scaling and improved precision. Faster independent bond building and anti-fraud protection are
-therefore both part of the same upgrade rather than traded against each other
-([How Yuma Consensus 3 Makes Bittensor More Fair](https://docs.learnbittensor.org/learn/yc3-blog)).
-
-That boundary keeps YC3 distinct from visibility tools such as
-[Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal). Commit Reveal changes when
-weight information becomes visible; β changes how far an already submitted weight can influence bond
-formation after consensus is known. A validator can still build bond history through consistent
-evaluation, but sustained overstatement relative to consensus remains costly inside the bond-weight
-step.
 
 ## Further Reading
 
