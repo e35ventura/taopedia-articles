@@ -61,33 +61,6 @@ A block is the chain data unit that contains transactions and has a block hash
 MEV Shield operates before that final block evidence exists. Block evidence can later show inclusion
 and ordering, while MEV Shield explains protection for sensitive details during the waiting period.
 
-## Network Context
-
-Bittensor documentation separates mainnet, testnet, and localnet contexts
-([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
-
-An MEV Shield example should therefore keep the selected environment attached. A protection example
-from one environment is not evidence about pending visibility in another environment.
-
-## Relationship to Yuma Consensus
-
-MEV Shield and Yuma Consensus describe related parts of Bittensor's incentive system. Yuma Consensus
-is the on-chain process that aggregates validator weight signals within a subnet into miner
-incentives and validator dividends, applying consensus clipping, bonding, and emission calculation
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-For readers, mev shield names a specific part of that incentive picture, while Yuma Consensus names
-the consensus process that turns validator weights into the resulting incentives and dividends.
-
-## Reader Boundary
-
-The MEV Shield source supports claims about encrypted mempool protection for sensitive transaction
-contents ([MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield/)).
-
-It does not make every transaction risk disappear, prove final inclusion, or replace the relevant
-runtime and block evidence. The article-level point is the protection of sensitive pending details
-before block inclusion.
-
 ## Pending Privacy Boundary
 
 MEV Shield protects sensitive pending transaction details before block inclusion; it should not be
@@ -100,32 +73,39 @@ That boundary keeps two protections distinct. MEV Shield is about pending visibi
 protection is about response to movement during staking or unstaking
 ([MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield/)).
 
-## Development Stage Context
+## Transaction Ordering and MEV Defense Pipeline
 
-The
-[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from localnet to testnet and then mainnet. For MEV Shield,
-this sequence gives readers a boundary for interpreting transaction-protection examples and
-network-routing assumptions.
+[MEV](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value) attacks on
+Bittensor often begin with visible pending
+[staking](https://docs.learnbittensor.org/resources/glossary#staking) activity. Staking guidance
+explains that an observer who sees a stake before it lands can
+[front-run](https://docs.learnbittensor.org/resources/glossary#front-running) by buying subnet alpha
+first and pushing the price up, or run a
+[sandwich attack](https://docs.learnbittensor.org/resources/glossary#sandwich-attack) by buying
+before the victim trade and selling after it
+([Managing Your Stakes](https://docs.learnbittensor.org/staking-and-delegation/managing-stake-sdk)).
 
-Localnet examples are isolated and reflect local chain state, so they are useful for controlled
-experiments rather than evidence of live Bittensor behavior. Testnet examples add shared
-non-production conditions, which can reveal integration behavior without touching mainnet state.
+Those patterns depend on predictable pending details rather than on a failed final settlement. A
+sandwich attack wraps the victim between two attacker trades; both legs require foreknowledge of the
+pending conversion before block inclusion
+([Glossary: Sandwich Attack](https://docs.learnbittensor.org/resources/glossary#sandwich-attack)).
 
-On mainnet, MEV Shield examples should be read as live production transaction protection on the
-production Bittensor network.
+MEV Shield addresses that observation window by encrypting the signed submission so its contents
+stay hidden until inclusion, which removes the foreknowledge those attacks require
+([MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield/),
+[Managing Your Stakes](https://docs.learnbittensor.org/staking-and-delegation/managing-stake-sdk)).
 
-The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
-separates mainnet, testnet, and localnet, so outcomes from one environment should not be treated as
-proof of behavior in another.
+The attack vocabulary therefore names concrete mempool-risk shapes that stake and unstake readers
+may encounter, while MEV Shield names the pending-privacy response applied before those trades
+become public chain history. Shielding reduces visibility during the pending window, but block
+inclusion and runtime rules still decide whether the later revealed action succeeds.
 
 ## Coldkey-Signed Actions Fit MEV Shield
 
-Official [MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield/) guidance limits the
-feature to transactions signed by a
-[coldkey](https://docs.learnbittensor.org/resources/glossary#coldkey). Attempts to route
-[hotkey](https://docs.learnbittensor.org/resources/glossary#hotkey)-signed submissions through MEV
-Shield are expected to fail rather than silently protect pending details.
+[MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield/) guidance limits the feature to
+transactions signed by a [coldkey](https://docs.learnbittensor.org/resources/glossary#coldkey).
+Attempts to route [hotkey](https://docs.learnbittensor.org/resources/glossary#hotkey)-signed
+submissions through MEV Shield are expected to fail rather than silently protect pending details.
 
 That signing boundary follows how Bittensor separates account roles. A coldkey controls ownership
 and high-value actions, while a hotkey is meant for subnet participation rather than holding
@@ -136,9 +116,6 @@ The same source notes that funding a hotkey to work around the rule enters untes
 possible asset-loss consequences. MEV Shield reading should stay on coldkey-signed submissions where
 encryption and pending privacy are designed to apply
 ([Using MEV Shield with the Bittensor SDK](https://docs.learnbittensor.org/sdk/mev-protection)).
-
-References: [MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield/),
-[Glossary: Coldkey](https://docs.learnbittensor.org/resources/glossary#coldkey)
 
 ## Validators Hold the Pending Decryption Key
 
@@ -159,55 +136,36 @@ while it remains pending, because decryption and execution follow inclusion rath
 broadcast
 ([Managing Your Stakes](https://docs.learnbittensor.org/staking-and-delegation/managing-stake-sdk)).
 
-References: [MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield/),
-[Glossary: Mempool](https://docs.learnbittensor.org/resources/glossary#mempool)
+## Development Stage Context
 
-## Front-Running and Sandwich Attacks Target Stakers
+The
+[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
+describes subnet development as moving from localnet to testnet and then mainnet. For MEV Shield on
+a subnet such as netuid 1, that sequence gives readers a boundary for interpreting
+transaction-protection examples and network-routing assumptions.
 
-[MEV](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value) attacks on
-Bittensor often begin with visible pending
-[staking](https://docs.learnbittensor.org/resources/glossary#staking) activity. Official staking
-guidance explains that an observer who sees a stake before it lands can
-[front-run](https://docs.learnbittensor.org/resources/glossary#front-running) by buying subnet alpha
-first and pushing the price up, or run a
-[sandwich attack](https://docs.learnbittensor.org/resources/glossary#sandwich-attack) by buying
-before the victim trade and selling after it.
+Localnet examples are isolated and reflect local chain state, so they are useful for controlled
+experiments rather than evidence of live Bittensor behavior on netuid 1 mainnet pools.
 
-Those patterns depend on predictable pending details rather than on a failed final settlement. MEV
-Shield addresses that observation window by encrypting the signed submission so its contents stay
-hidden until inclusion, which removes the foreknowledge those attacks require
-([Managing Your Stakes](https://docs.learnbittensor.org/staking-and-delegation/managing-stake-sdk),
-[MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield/)).
+On testnet, MEV Shield flows can be exercised in a shared non-production network. Testnet
+pending-transaction visibility is separate from mainnet state even when the same netuid number
+appears in both environments.
 
-The attack vocabulary therefore names concrete mempool-risk shapes that stake and unstake readers
-may encounter, while MEV Shield names the pending-privacy response applied before those trades
-become public chain history.
+On mainnet, MEV Shield examples should be read as live production transaction protection on the
+production Bittensor network.
 
-References:
-[Managing Your Stakes](https://docs.learnbittensor.org/staking-and-delegation/managing-stake-sdk),
-[Glossary: Front-Running](https://docs.learnbittensor.org/resources/glossary#front-running)
+The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
+separates mainnet, testnet, and localnet, so outcomes from one environment should not be treated as
+proof of behavior in another.
 
-## Relationship to Sandwich Attack
+## Reader Boundary
 
-MEV Shield and sandwich attack are related but different terms in Bittensor transaction safety.
-Sandwich attack names an observer placing trades before and after a victim's pending transaction,
-while MEV Shield names encrypted mempool protection that hides sensitive pending details until
-inclusion
-([Glossary: Sandwich Attack](https://docs.learnbittensor.org/resources/glossary#sandwich-attack),
-[MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield/),
-[Glossary: MEV](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value)).
+The MEV Shield source supports claims about encrypted mempool protection for sensitive transaction
+contents ([MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield/)).
 
-For readers, sandwich attack belongs to the risk pattern that depends on seeing pending intent, and
-MEV Shield belongs to the protection step applied while that transaction is still pending. One
-describes how an attack is structured around visible stake activity; the other describes how pending
-contents can stay hidden before the chain records them.
-
-The terms should not be read as guarantees. MEV Shield reduces visibility during the pending window,
-but block inclusion and runtime rules still decide whether the later revealed action succeeds
-([MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield/)).
-
-Readers should keep attack-pattern language separate from pending-privacy protection so each term
-stays tied to its own place in the transaction path.
+It does not make every transaction risk disappear, prove final inclusion, or replace the relevant
+runtime and block evidence. The article-level point is the protection of sensitive pending details
+before block inclusion.
 
 ## Further Reading
 
