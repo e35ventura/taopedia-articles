@@ -156,6 +156,97 @@ without replacing the permit article itself.
 Reading permit status from a metagraph snapshot requires the netuid and block context. The boolean
 field describes chain-recorded permit state at one height, not a live guarantee for later blocks.
 
+## Stake Fields Split Into Combined, Alpha, and TAO Components
+
+The Subnet Metagraph documentation lists `total_stake` as the combined stake weight across alpha and
+TAO components for a neuron, and separately lists per-neuron Alpha Stake and Tao Stake fields for
+each token's component on its own
+([The Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)).
+
+For readers, a single "stake" figure read from a metagraph can come from more than one underlying
+field. The combined total-stake figure is a different recorded value than the alpha-only or TAO-only
+component fields for the same neuron.
+
+## Rank, Trust, Consensus, and Incentive Are Separate Recorded Fields
+
+The Subnet Metagraph documentation lists Ranks, Trust, Consensus, and Incentive as separate
+neuron-level fields: ranks are described as final performance scores after consensus weight
+clipping, trust as a consensus-alignment ratio, consensus as a stake-weighted median threshold per
+neuron, and incentive as normalized ranks representing miner-side incentive allocation
+([The Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph),
+[Glossary: Rank](https://docs.learnbittensor.org/resources/glossary#rank),
+[Glossary: Trust](https://docs.learnbittensor.org/resources/glossary#trust),
+[Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score),
+[Glossary: Incentives](https://docs.learnbittensor.org/resources/glossary#incentives)).
+
+For readers, these four columns name different recorded outputs rather than one blended score. A
+metagraph row can report a different value in each of these fields for the same neuron at the same
+block.
+
+## Validator Trust Measures Influence Separately From Miner Trust
+
+The Subnet Metagraph documentation separately lists Validator Trust as the sum of clipped weights
+set by each validator, describing validator-side influence rather than the miner-facing trust value
+covered above ([The Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph),
+[Glossary: Validator Trust](https://docs.learnbittensor.org/resources/glossary#validator-trust)).
+
+Reading the two trust-named fields together without distinguishing them can blend a validator's
+influence measure with a miner's consensus-alignment measure, even though the documentation lists
+them as separate columns.
+
+## Bonds Record the Validator-Miner Investment Matrix
+
+The Subnet Metagraph documentation lists Bonds as an inter-neuronal matrix representing validator
+investments in miners, separate from the Weights matrix that records validator evaluation input
+([The Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph),
+[Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds)).
+
+For readers, the Bonds field and the Weights field sit side by side in the same snapshot but record
+different things: weights are what a validator submitted, while bonds are the smoothed investment
+relationship built up from earlier submissions over time.
+
+## n and max_uids Bound the Registered Neuron Count
+
+The Subnet Metagraph documentation lists `n` as the total number of neurons registered on the subnet
+and `max_uids` as the maximum allowed neuron count for that subnet, typically 256
+([The Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)).
+
+That pair gives a metagraph reading a registered-count figure and a structural ceiling figure
+together. A subnet's registered neuron count can sit anywhere from zero up to its max_uids figure,
+and the two fields describe different things: how many slots are filled versus how many slots exist.
+
+## Pruning Score Connects the Snapshot to Deregistration
+
+The Subnet Metagraph documentation lists `pruning_score` as a per-neuron score based on emissions
+that is used for deregistration, separate from the rank, trust, consensus, and incentive fields
+already covered above ([The Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph),
+[Glossary: Deregistration](https://docs.learnbittensor.org/resources/glossary#deregistration)).
+
+This field is the metagraph-level companion to deregistration vocabulary: deregistration removes a
+neuron from a UID slot, and pruning score names the recorded emissions-based value involved in that
+decision.
+
+## Last Update and Active Track Participation Timing
+
+The Subnet Metagraph documentation lists `last_update` as the per-neuron last-update block number
+used for staleness detection, and lists `active` as activity status measured within the
+activity_cutoff window ([The Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph),
+[Glossary: Active UID](https://docs.learnbittensor.org/resources/glossary#active-uid)).
+
+For readers, these two fields are the metagraph-level record of participation timing: a neuron's
+last_update field is the block-level value that activity-cutoff timing rules are checked against,
+while the active field reports the resulting status.
+
+## Block at Registration Supports the Immunity Period
+
+The Subnet Metagraph documentation lists `block_at_registration` as a per-neuron list of
+registration blocks used for immunity period calculations
+([The Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)).
+
+That field is the metagraph-level record behind immunity period vocabulary: the immunity window for
+a given UID is measured from the block recorded in this field, not from the current snapshot block
+alone.
+
 ## Multiple Mechanisms Add Per-Mechanism Fields
 
 Subnets with multiple incentive mechanisms can carry mechanism-specific incentive state. The
@@ -234,3 +325,10 @@ the removed neuron
 - [Introduction to Bittensor: Subnet development](https://docs.learnbittensor.org/learn/introduction#subnet-development)
 - [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)
 - [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
+- [Glossary: Rank](https://docs.learnbittensor.org/resources/glossary#rank)
+- [Glossary: Trust](https://docs.learnbittensor.org/resources/glossary#trust)
+- [Glossary: Validator Trust](https://docs.learnbittensor.org/resources/glossary#validator-trust)
+- [Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score)
+- [Glossary: Incentives](https://docs.learnbittensor.org/resources/glossary#incentives)
+- [Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds)
+- [Glossary: Active UID](https://docs.learnbittensor.org/resources/glossary#active-uid)
