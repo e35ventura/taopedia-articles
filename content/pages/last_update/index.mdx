@@ -21,18 +21,14 @@ infoboxRows:
 # Last Update
 
 Last update is a per-neuron value in a subnet's metagraph that records the block at which a neuron's
-data was most recently updated. Official documentation presents it as the marker of a neuron's
-latest update and ties it directly to whether that neuron counts as currently active.
-
-References: [The Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)
+data was most recently updated. Documentation presents it as the marker of a neuron's latest update
+and ties it directly to whether that neuron counts as currently active.
 
 ## What It Records
 
 The value is a block height, not a wall-clock time. It captures the most recent point at which a
 neuron's state changed on the subnet, such as a validator setting weights. Because it is measured in
 blocks, its meaning is read against the current block rather than against a calendar.
-
-Reference: [The Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)
 
 ## Determining Activity
 
@@ -41,9 +37,6 @@ inactive once its last update is far enough in the past: when the last update pl
 cutoff is below the current block, the neuron is treated as inactive. Until that point it is still
 within the active window.
 
-References: [The Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph),
-[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
-
 ## Relationship to Activity Cutoff
 
 Last update supplies the "when," and the activity cutoff supplies the "how long." On their own
@@ -51,17 +44,12 @@ neither decides activity; together they do. The cutoff sets how many blocks a ne
 updating, and last update is the timestamp the cutoff is measured from, so the two values are always
 read as a pair.
 
-References: [The Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph),
-[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
-
 ## Why It Matters
 
 The point of tracking last update is to keep consensus based on participants that are currently
 contributing. A neuron whose last update has fallen outside the activity window is treated as
 inactive, so a stale or absent participant does not keep influencing an epoch's outcome. This is how
 the network distinguishes recently active neurons from ones that have gone quiet.
-
-Reference: [The Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)
 
 ## Development Stage Context
 
@@ -88,41 +76,50 @@ read as representing production neuron activity in another environment.
 ## Metagraph Views Expose Last Update Per Neuron
 
 [The Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph) presents subnet neurons as
-structured rows within a [metagraph](https://docs.learnbittensor.org/resources/glossary#metagraph)
-snapshot. Last update is one of the per-neuron fields readers encounter when inspecting that row
-data alongside stake, rank, and incentive-related values.
+structured rows within a metagraph snapshot. Last update is one of the per-neuron fields readers
+encounter when inspecting that row data alongside stake, rank, and incentive-related values.
 
 That placement keeps last update in observation vocabulary. It is a field returned with other neuron
 state in a subnet snapshot, not a separate wallet label or account setting.
 
-References: [The Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph),
-[Glossary: Metagraph](https://docs.learnbittensor.org/resources/glossary#metagraph)
-
 ## Snapshots Are Tied to a Block Height
 
-Subnet metagraph documentation describes the metagraph as a snapshot of subnet state at a particular
-[block](https://docs.learnbittensor.org/resources/glossary#block). Last update uses the same block-
-height vocabulary: it records the block of a neuron's most recent change, which readers then compare
-against the snapshot's current block context.
+[The Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph) describes the metagraph as
+a snapshot of subnet state at a particular block. Last update uses the same block-height vocabulary:
+it records the block of a neuron's most recent change, which readers then compare against the
+snapshot's current block context.
 
 Because both values are block-based, the field is meant to be read inside chain timing rather than
 as a calendar timestamp.
 
-References: [The Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph),
-[Inspecting the Chain with Polkadot.js](https://docs.learnbittensor.org/concepts/inspecting-the-chain)
-
 ## Activity Fields Sit Beside Incentive Metrics
 
-Official metagraph material groups last update with other neuron activity and incentive-related
-values such as ranks, trust, and consensus scores. The activity test that combines last update with
-activity cutoff therefore sits among the same row of chain-derived performance fields rather than in
-a separate identity record.
+Metagraph material groups last update with other neuron activity and incentive-related values such
+as ranks, trust, and consensus scores. The activity test that combines last update with activity
+cutoff therefore sits among the same row of chain-derived performance fields rather than in a
+separate identity record.
 
 Readers comparing whether a neuron is active should keep that row context in view. Last update is
 one activity input within a broader metagraph snapshot, not a standalone status badge.
 
-References: [The Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph),
-[Understanding Neurons](https://docs.learnbittensor.org/learn/neurons)
+## Metagraph Exposes `active` Beside `last_update`
+
+[The Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph) lists both `last_update`
+and `active` as per-neuron fields in a subnet snapshot. The `last_update` field records the block
+number of a neuron's most recent update for staleness detection, while `active` reports whether the
+neuron is still within the subnet's `activity_cutoff` window.
+
+Readers inspecting neuron rows should treat those fields as a pair. The `last_update` value supplies
+the block timestamp, the `activity_cutoff` hyperparameter supplies the allowed inactivity span, and
+`active` is the derived status that combines them in the metagraph view
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## Hyperparameters Carry the Activity Cutoff Threshold
+
+A subnet metagraph snapshot also exposes its hyperparameters, including `activity_cutoff` as an
+owner-settable value. That block window is paired with each neuron's `last_update` when deciding
+whether the neuron still counts as active on the selected netuid
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
 ## Reader Boundary
 
