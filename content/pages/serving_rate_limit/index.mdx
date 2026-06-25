@@ -1,0 +1,85 @@
+---
+title: "Serving Rate Limit"
+summary:
+  "How the serving rate limit subnet hyperparameter paces how often miners can register or update
+  axon and prometheus endpoint information on a Bittensor subnet."
+category: "Subnets"
+tags: ["Subnets", "Mining"]
+infoboxTitle: Serving Rate Limit
+infoboxCaption: Pacing for miner endpoint registration.
+infoboxRows:
+  - label: Parameter
+    value: ServingRateLimit
+  - label: Type
+    value: u64
+  - label: Default
+    value: "50"
+  - label: Example
+    value: netuid 1
+  - label: Set by
+    value: Subnet owner
+---
+
+# Serving Rate Limit
+
+Serving rate limit is a per-subnet hyperparameter, listed in the documentation as
+`ServingRateLimit`, that rate-limits how often a miner can call the `serve_axon` and
+`serve_prometheus` extrinsics to register or update its network endpoint information on a subnet
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## What It Controls
+
+The hyperparameter paces miner-side endpoint registration, not validator weight submission. It does
+not define what work a
+[subnet miner](https://docs.learnbittensor.org/resources/glossary#subnet-miner) produces or how
+validators score that work. It only limits how frequently a miner can publish or refresh its
+on-chain serving metadata through the documented serving extrinsics.
+
+Miners commonly expose an [axon](https://docs.learnbittensor.org/resources/glossary#axon) server so
+validators can reach them over the subnet communication path. Serving rate limit governs how often
+the on-chain endpoint record for that axon may be rewritten, not whether the miner is registered or
+whether the live server is reachable at query time
+([Understanding Neurons](https://docs.learnbittensor.org/learn/neurons#neuron-to-neuron-communication)).
+
+## Documented Type, Default, and Setter
+
+The [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+reference lists `ServingRateLimit` as a `u64` with a default of `50` and the description "Rate limit
+for calling `serve_axon` and `serve_prometheus` extrinsics used by miners." It is changed through
+the `sudo_set_serving_rate_limit` extrinsic, exposed in tooling as
+`btcli sudo set --param serving_rate_limit`, and the reference marks the permission required to set
+it as subnet owner
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+Because each subnet carries its own hyperparameters, the pacing rule is defined per subnet and
+applies only within that subnet's miner-serving path.
+
+## Distinction from Weights Rate Limit
+
+The hyperparameters reference also lists
+[WeightsRateLimit](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#weightsratelimit--commitmentratelimit),
+which sets how long, in blocks, a validator must wait between weight commits. That setting paces
+validator [weight setting](https://docs.learnbittensor.org/resources/glossary#weight-setting), not
+miner endpoint registration
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+- **Serving rate limit** — how often a miner can update axon/prometheus serving metadata.
+- **Weights rate limit** — how long a validator must wait between weight commits.
+
+## BTCLI Reads the Live Value
+
+Any user can read subnet hyperparameters for a selected netuid with
+`btcli subnet hyperparameters --netuid 1`. The command output includes the live `ServingRateLimit`
+value for that subnet at query time
+([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
+
+Live values are network- and subnet-specific and can differ from the documented default, so a pacing
+claim should be checked against the hyperparameter table for the relevant netuid and network rather
+than assumed from the reference default alone.
+
+## Further Reading
+
+- [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+- [Glossary: Axon](https://docs.learnbittensor.org/resources/glossary#axon)
+- [Glossary: Subnet Miner](https://docs.learnbittensor.org/resources/glossary#subnet-miner)
+- [Understanding Neurons](https://docs.learnbittensor.org/learn/neurons#neuron-to-neuron-communication)
