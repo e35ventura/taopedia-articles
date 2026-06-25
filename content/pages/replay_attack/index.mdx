@@ -71,6 +71,32 @@ The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-netw
 separates mainnet, testnet, and localnet. A replay-attack example from one environment should not be
 read as describing production nonce behavior on another network.
 
+## Signature Validity Alone Does Not Defeat Replay Checks
+
+A replayed synapse can still carry a mathematically valid signature. Axon-side documentation treats
+nonce freshness and ordering as separate acceptance checks, so a receiver can reject a signed
+payload that verifies cryptographically but fails freshness rules
+([Glossary: Synapse](https://docs.learnbittensor.org/resources/glossary#synapse),
+[Glossary: Axon](https://docs.learnbittensor.org/resources/glossary#axon)).
+
+For readers, replay defense therefore sits after signature verification. The durable point is that
+acceptance requires both a valid signer and a nonce the receiver has not already consumed within the
+allowed time window ([Glossary: Hotkey](https://docs.learnbittensor.org/resources/glossary#hotkey),
+[Glossary: Dendrite](https://docs.learnbittensor.org/resources/glossary#dendrite)).
+
+## Mempool Re-Entry Is a Separate Replay Surface on Chain
+
+On Subtensor, a duplicated extrinsic can re-enter the transaction queue but should fail
+account-nonce checks before execution. That path is distinct from axon synapse replay, yet both
+defend against the same misuse pattern: executing the same signed intent twice
+([Glossary: Mempool](https://docs.learnbittensor.org/resources/glossary#mempool),
+[Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees),
+[Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics)).
+
+For readers, replay vocabulary spans off-chain neuron traffic and on-chain extrinsic submission.
+Nonce checking is the shared defense theme even though the two layers use different freshness rules
+([Subtensor](https://docs.learnbittensor.org/resources/glossary#subtensor)).
+
 ## Reader Boundary
 
 This page defines the concept and the role of nonce checking at a high level. It does not specify
@@ -88,7 +114,7 @@ Bittensor's [Glossary: Dendrite](https://docs.learnbittensor.org/resources/gloss
 off-chain request path: a dendrite sends a signed synapse to an
 [axon](https://docs.learnbittensor.org/resources/glossary#axon), which verifies the signature before
 responding. Replay risk sits in that signed message path, not only in chain
-[extrinsics](https://docs.learnbittensor.org/resources/glossary#extrinsics).
+[extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics).
 
 The axon-side documentation referenced in this article focuses on nonce checking at the receiver.
 The dendrite and synapse vocabulary names the complementary sender side where a valid signed payload
@@ -110,8 +136,7 @@ actions such as staking or registration, while axon nonce checking protects sign
 traffic between neurons. Both resist message reuse, but they apply to different layers of Bittensor
 activity.
 
-References: [Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics),
-[Glossary: Extrinsics](https://docs.learnbittensor.org/resources/glossary#extrinsics)
+References: [Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics)
 
 ## Freshness Windows Reject Stale Nonces
 
