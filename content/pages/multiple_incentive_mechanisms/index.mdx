@@ -147,6 +147,82 @@ Multiple incentive mechanisms therefore name subnet-internal structure on netuid
 consensus step that turns each mechanism's signals into its own emission outcome rather than one
 shared payout pool.
 
+## Validators Must Validate Every Mechanism or Lose Emissions
+
+Running more than one mechanism does not give a validator a choice of which ones to evaluate without
+consequence. Official documentation states that a validator's dividends are calculated as a weighted
+sum of that validator's performance across all of a subnet's mechanisms, and that a validator who
+does not validate on every mechanism receives proportionally reduced emissions rather than simply
+forgoing the share tied to the skipped mechanism alone
+([Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets)).
+
+That rule keeps multi-mechanism participation from becoming optional in practice. A validator's
+stake weight stays identical across every mechanism on the subnet, so skipping evaluation work on
+one mechanism still costs dividends calculated against the full weighted sum, not against a reduced
+set of mechanisms the validator chose to cover.
+
+The operational load follows from the same separation. A validator must set weights independently
+for each mechanism and apply that mechanism's own evaluation criteria, since the mechanisms are
+documented as requiring separate assessment rather than one shared scoring pass
+([Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets)).
+
+## Validators and Miners Participate Automatically, Not by Opt-In
+
+Multiple mechanisms do not create a separate enrollment step for either role. Documentation
+describes every validator on a subnet as participating in every one of that subnet's mechanisms with
+identical stake weight, and every miner registered on the subnet as eligible to participate in any
+of its mechanisms without a separate registration step
+([Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets)).
+
+A miner also keeps the same UID across every mechanism on the subnet rather than receiving a
+distinct identity per mechanism. Performance still stays independent per mechanism, so a miner's
+standing in one mechanism does not change its standing in another, but the underlying registration
+and identity are shared
+([Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets)).
+
+For a staker, this automatic participation means delegated stake applies across all of a validator's
+mechanisms equally rather than being split or chosen per mechanism. Stake delegated to a validator
+on a multi-mechanism subnet follows that validator's combined performance, not a single mechanism
+selected in advance.
+
+## Multiple Mechanisms Redistribute Emissions Rather Than Multiply Them
+
+Adding mechanisms to a subnet does not change how much the subnet receives in total. Official
+documentation states that a subnet's total emissions remain unchanged when it runs multiple
+mechanisms; the mechanisms only redistribute that same total internally among participating miners
+and validators
+([Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets)).
+
+That framing keeps multiple incentive mechanisms from being read as an emissions-increasing feature.
+The subnet-level emission amount is set by the broader emission process described elsewhere; running
+several mechanisms changes how that fixed amount is divided among evaluation tracks, not its size.
+
+## Mechanism Count Is Bounded by Available UID Slots
+
+A subnet cannot add mechanisms without limit. The documented constraint is that the number of
+mechanisms multiplied by the subnet's maximum UID count must stay below a fixed ceiling, since each
+mechanism needs its own slot accounting within that shared UID space
+([Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets),
+[UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming)).
+
+That constraint ties mechanism count directly to UID capacity rather than treating the two as
+unrelated settings. Raising the number of mechanisms a subnet runs requires enough UID headroom to
+satisfy the same inequality, which is why mechanism count and UID trimming belong to the same
+capacity-planning picture rather than separate topics.
+
+## Weights Become a Two-Dimensional Structure
+
+Weight setting itself changes shape once a subnet has more than one mechanism. Each validator sets
+weights for each miner on each mechanism separately, so the weight data for a multi-mechanism subnet
+is two-dimensional: one axis for miners and one axis for mechanisms, rather than the single weight
+vector a one-mechanism subnet uses
+([Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets)).
+
+The metagraph reflects that same structure. Documentation describes the metagraph gaining separate
+columns for mechanism weights and mechanism-level incentives once a subnet runs more than one
+mechanism, so a reader inspecting metagraph data for such a subnet should expect per-mechanism
+columns rather than one combined weight and incentive column.
+
 ## Development Stage Context
 
 The
