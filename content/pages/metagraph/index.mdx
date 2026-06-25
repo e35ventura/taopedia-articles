@@ -18,58 +18,72 @@ infoboxRows:
 
 # Metagraph
 
-The metagraph is Bittensor's structured view of state for a selected subnet. The official glossary
-defines it as a data structure containing comprehensive information about a subnet's neurons and
-notes that it helps calculate emissions.
+The metagraph is Bittensor's structured view of state for a selected subnet. The
+[Glossary: Metagraph](https://docs.learnbittensor.org/resources/glossary#metagraph) defines it as a
+data structure containing comprehensive information about a subnet's neurons and notes that it helps
+calculate emissions. The [Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)
+reference describes it as a snapshot of subnet state at a particular block height rather than a
+timeless network summary.
 
-References: [Glossary: Metagraph](https://docs.learnbittensor.org/resources/glossary#metagraph),
-[The Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)
-
-## Subnet Context
+## Subnet Context and netuid Selection
 
 A metagraph belongs to a specific subnet context. The subnet metagraph documentation uses netuid 1
-as an example of that context and describes the metagraph as a snapshot of subnet state at a
-particular block. This makes the term different from a general network summary: it is about the
-state of the selected subnet.
+as an example and describes the metagraph as a snapshot of subnet state at a particular block
+([The Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)). A
+[netuid](https://docs.learnbittensor.org/resources/glossary#netuid) selects which subnet market the
+snapshot represents; a metagraph for one netuid does not describe neuron state across every subnet
+at once.
 
-Reference: [The Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)
+Subnet comparisons should use separate metagraph readings per netuid rather than mixing fields from
+different subnet snapshots. Each netuid keeps its own neuron list and incentive fields in metagraph
+vocabulary.
 
 ## Neuron State Fields
 
-Official references describe the metagraph as carrying information about neurons in the selected
-subnet. That state includes consensus and incentive-related values: stake-related state, weights,
-ranks, trust, consensus, incentives, dividends, emissions, activity state, and bonds. These values
-describe chain-derived subnet state, not editorial ratings.
+The metagraph carries information about neurons in the selected subnet. That state includes
+consensus and incentive-related values: stake-related state, weights, ranks, trust, consensus,
+incentives, dividends, emissions, activity state, and bonds
+([The Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph),
+[Understanding Neurons](https://docs.learnbittensor.org/learn/neurons)). These values describe
+chain-derived subnet state, not editorial ratings.
 
-References: [The Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph),
-[Understanding Neurons](https://docs.learnbittensor.org/learn/neurons)
+The [Glossary: Metagraph](https://docs.learnbittensor.org/resources/glossary#metagraph) notes that
+the metagraph helps calculate emissions. It carries neuron-level incentive fields that feed subnet
+reward processing, making the metagraph an accounting snapshot for incentive flow rather than a
+miner-quality rating by itself.
 
-## Subnet State Role
+## Snapshot at a Particular Block
 
-The metagraph gives readers a common term for subnet-level state used around Bittensor incentives.
-Yuma Consensus explains how validator evaluations aggregate into miner incentives and validator
-dividends; the metagraph is where those subnet-level results are represented as a structured
-snapshot.
+The [Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph) documentation describes
+the metagraph as a snapshot of subnet state at a particular block height. That timing detail matters
+because metagraph readings are block-specific, not timeless summaries of a subnet.
 
-References: [Yuma Consensus](https://docs.learnbittensor.org/yuma-consensus/),
-[Glossary: Metagraph](https://docs.learnbittensor.org/resources/glossary#metagraph)
+A metagraph statement should keep both the selected netuid and the block context attached. Without
+that pair, the snapshot can be misread as current live state when it is only state as of one
+recorded block. A [block](https://docs.learnbittensor.org/resources/glossary#block) names one point
+in chain progression; a metagraph names subnet neuron state as represented at that chain-height
+context for a selected netuid.
+
+Later blocks can change neuron fields, so comparing metagraphs requires comparing like block heights
+or noting that the snapshots come from different points in chain history.
 
 ## Development Stage Context
 
 The
 [Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from local testing to testchain and then mainchain. For a
-metagraph, that sequence changes what kind of subnet-state evidence a reader is seeing.
+describes subnet development as moving from localnet to testnet and then mainnet. For a metagraph on
+a subnet such as netuid 1, that sequence changes what kind of subnet-state evidence a reader is
+seeing.
 
-In local testing, a metagraph can show whether a subnet's participant state, weights, and
+In localnet, a metagraph can show whether a subnet's participant state, weights, and
 incentive-related fields are being represented in a controlled environment. That is useful for
 understanding the shape of subnet state, but it remains isolated development evidence.
 
-On testchain, a metagraph can reflect subnet state in a shared testing network. This gives readers
-stronger evidence about how participants and validator signals appear together than a private local
-run, while still keeping the snapshot separate from production mainchain state.
+On testnet, a metagraph can reflect subnet state in a shared non-production network. This gives
+readers stronger evidence about how participants and validator signals appear together than a
+private local run, while still keeping the snapshot separate from production mainnet state.
 
-On mainchain, a metagraph belongs to live Bittensor subnet state. The
+On mainnet, a metagraph belongs to live Bittensor subnet state. The
 [Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph) documentation describes the
 metagraph as a snapshot at a particular block, so production readings should keep both the selected
 netuid and the block-height context attached.
@@ -78,229 +92,32 @@ The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-netw
 separates mainnet, testnet, and localnet. A metagraph observed in one environment should therefore
 not be read as the same kind of evidence as a metagraph observed in another environment.
 
-That distinction also protects block-height language. A local block height, a testchain block
-height, and a mainchain block height can each locate a metagraph snapshot, but they locate it inside
-different network histories.
+That distinction also protects block-height language. A local block height, a testnet block height,
+and a mainnet block height can each locate a metagraph snapshot, but they locate it inside different
+network histories. Local, testnet, and mainnet metagraphs can all describe subnet state, but they do
+not carry the same interpretive weight.
 
-For readers, this keeps subnet-state examples from sounding stronger than their environment
-supports. Local, testchain, and mainchain metagraphs can all describe subnet state, but they do not
-carry the same interpretive weight.
+## Register Populates the Neuron Rows
 
-## Snapshot at a Particular Block
+[Register](https://docs.learnbittensor.org/resources/glossary#register) describes the subnet-entry
+process that grants a [UID slot](https://docs.learnbittensor.org/resources/glossary#uid-slot). After
+participants enter a subnet, they appear as neuron rows inside the metagraph snapshot for the
+selected netuid. A metagraph therefore exposes subnet state after entry rather than describing the
+registration transaction itself.
 
-The [Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph) documentation describes
-the metagraph as a snapshot of subnet state at a particular block height. That timing detail matters
-because metagraph readings are block-specific, not timeless summaries of a subnet.
-
-A metagraph statement should therefore keep both the selected netuid and the block context attached.
-Without that pair, the snapshot can be misread as current live state when it is only state as of one
-recorded block.
-
-Later blocks can change neuron fields, so comparing metagraphs requires comparing like block heights
-or noting that the snapshots come from different points in chain history.
-
-References: [The Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph),
-[Glossary: Metagraph](https://docs.learnbittensor.org/resources/glossary#metagraph)
-
-## Emission Calculation Context
-
-The [Glossary: Metagraph](https://docs.learnbittensor.org/resources/glossary#metagraph) notes that
-the metagraph helps calculate emissions. It carries neuron-level incentive fields such as weights,
-ranks, trust, consensus, incentives, dividends, and emissions that feed subnet reward processing.
-
-That makes the metagraph an accounting snapshot for incentive flow, not a miner-quality rating by
-itself. The fields describe chain-derived subnet state at the snapshot block.
-
-Those values are produced by subnet consensus and validator evaluation flow rather than by editorial
-ranking language.
-
-References: [Glossary: Metagraph](https://docs.learnbittensor.org/resources/glossary#metagraph),
-[Understanding Neurons](https://docs.learnbittensor.org/learn/neurons)
-
-## Netuid Selects the Subnet View
-
-A metagraph belongs to one subnet at a time. Official examples use a specific netuid, such as netuid
-1, to show which subnet's neuron state is being described
-([The Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)).
-
-Netuid therefore selects the subnet lens for the snapshot. A metagraph for one netuid does not
-describe neuron state across every subnet at once.
-
-Subnet comparisons should use separate metagraph readings per netuid rather than mixing fields from
-different subnet snapshots.
-
-Each netuid keeps its own neuron list and incentive fields in metagraph vocabulary.
-
-References: [The Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph),
-[Glossary: Netuid](https://docs.learnbittensor.org/resources/glossary#netuid)
-
-## Relationship to Multiple Mechanisms
-
-A metagraph snapshot usually describes one subnet context at a time, but subnets with multiple
-incentive mechanisms can carry mechanism-specific incentive state. The official documentation
-describes additional metagraph fields for per-mechanism weights and incentives when a subnet runs
-more than one evaluation path.
-
-For readers, the metagraph is still a subnet state view rather than a scoring rule. Multiple
-mechanisms mean some weight and incentive values should be read in the context of a particular
-mechanism, not as one blended score across every task the subnet supports.
-
-References:
-[Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets),
-[Glossary: Multiple Incentive Mechanisms](https://docs.learnbittensor.org/resources/glossary#multiple-incentive-mechanisms)
-
-## Relationship to Netuid
-
-A metagraph and a netuid are related but different parts of Bittensor subnet vocabulary. A netuid
-selects which subnet context is in scope, while a metagraph names the structured subnet state view
-for that selected subnet. The
-[Glossary: Netuid](https://docs.learnbittensor.org/resources/glossary#netuid) places netuid at the
-subnet level, and the
-[Glossary: Metagraph](https://docs.learnbittensor.org/resources/glossary#metagraph) describes
-comprehensive information about a subnet's neurons.
-
-For readers, netuid answers which subnet market is being discussed, while a metagraph answers what
-subnet-level neuron state looks like inside that selection. Metagraph language should stay paired
-with the netuid that selects the subnet context.
-
-References: [Glossary: Netuid](https://docs.learnbittensor.org/resources/glossary#netuid),
-[Glossary: Metagraph](https://docs.learnbittensor.org/resources/glossary#metagraph)
-
-## Relationship to UID Slot
-
-A metagraph and a UID slot are related but different parts of subnet participant vocabulary. A UID
-slot describes a participant position inside a subnet, while a metagraph carries subnet-level state
-that includes values associated with those positions. The
-[Glossary: UID Slot](https://docs.learnbittensor.org/resources/glossary#uid-slot) describes a
-participant position, and the [Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)
-documentation describes neuron state fields for participants in a selected subnet.
-
-For readers, a UID slot names the position itself, while a metagraph names the broader subnet state
-view in which that position appears alongside stake, activity, and incentive-related values.
-
-References: [Glossary: UID Slot](https://docs.learnbittensor.org/resources/glossary#uid-slot),
-[The Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)
-
-## Relationship to Active UID
-
-A metagraph and an active UID are related but different parts of subnet participation vocabulary. An
-active UID describes activity status for a participant slot, while a metagraph exposes subnet state
-fields such as activity-related values for neurons in a selected subnet. The
-[Glossary: Active UID](https://docs.learnbittensor.org/resources/glossary#active-uid) describes a
-slot whose participant is considered active, and the
-[Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph) documentation names activity
-state among the fields in a subnet snapshot.
-
-For readers, an active UID names the activity concept for one slot, while a metagraph names the
-subnet-level state view that can include activity information for many slots at once.
-
-References: [Glossary: Active UID](https://docs.learnbittensor.org/resources/glossary#active-uid),
-[The Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)
-
-## Relationship to Block
-
-A metagraph and a block are related through subnet state timing. Official metagraph documentation
-describes the metagraph as a snapshot of subnet state at a particular block height. The
-[Glossary: Block](https://docs.learnbittensor.org/resources/glossary#block) describes a block as a
-unit of chain data on Subtensor, and the
-[Glossary: Metagraph](https://docs.learnbittensor.org/resources/glossary#metagraph) describes
-comprehensive subnet neuron information used around incentive calculations.
-
-For readers, a block names one point in chain progression, while a metagraph names subnet neuron
-state as represented at that kind of chain-height context for a selected netuid.
-
-References: [Glossary: Block](https://docs.learnbittensor.org/resources/glossary#block),
-[Glossary: Metagraph](https://docs.learnbittensor.org/resources/glossary#metagraph),
-[The Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)
-
-## Relationship to Neuron
-
-A metagraph and a neuron are related but different parts of Bittensor subnet state vocabulary. A
-neuron names a registered participant in a subnet, while a metagraph exposes comprehensive subnet
-neuron information as a state snapshot for a selected netuid. The
-[Glossary: Neuron](https://docs.learnbittensor.org/resources/glossary#neuron) describes a registered
-subnet participant, and the
-[Glossary: Metagraph](https://docs.learnbittensor.org/resources/glossary#metagraph) describes
-comprehensive subnet neuron information used around incentive calculations.
-
-For readers, a neuron names one registered participant, while a metagraph names the subnet-level
-view that can include many neurons at once.
-
-References: [Glossary: Neuron](https://docs.learnbittensor.org/resources/glossary#neuron),
-[Glossary: Metagraph](https://docs.learnbittensor.org/resources/glossary#metagraph)
-
-## Relationship to Subnet Miner
-
-A metagraph and a subnet miner are related but different parts of Bittensor subnet vocabulary. A
-subnet miner names the task-performing role inside a subnet, while a metagraph exposes subnet state
-fields that can include information about participants serving in miner roles for a selected netuid.
-The [Glossary: Subnet Miner](https://docs.learnbittensor.org/resources/glossary#subnet-miner)
-describes the work-producing role, and the
-[Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph) documentation describes the
-subnet state snapshot that includes neuron fields.
-
-For readers, a subnet miner names one work role, while a metagraph names the subnet-level state view
-that can represent many participants and their roles together.
-
-References:
-[Glossary: Subnet Miner](https://docs.learnbittensor.org/resources/glossary#subnet-miner),
-[The Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)
-
-## Relationship to Subnet Validator
-
-A metagraph and a subnet validator are related but different parts of Bittensor subnet vocabulary. A
-subnet validator names the evaluation role inside a subnet, while a metagraph exposes subnet state
-fields that can include information about participants serving in validator roles for a selected
-netuid. The
-[Glossary: Subnet Validator](https://docs.learnbittensor.org/resources/glossary#subnet-validator)
-describes the evaluation role, and the
-[Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph) documentation describes the
-subnet state snapshot that includes neuron fields.
-
-For readers, a subnet validator names one evaluation role, while a metagraph names the subnet-level
-state view that can represent many participants and their roles together.
-
-References:
-[Glossary: Subnet Validator](https://docs.learnbittensor.org/resources/glossary#subnet-validator),
-[The Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)
-
-## Relationship to Register
-
-A metagraph and register are related but different parts of the subnet participation lifecycle.
-Register describes the subnet-entry process that grants a UID slot, while a metagraph exposes subnet
-state after participants have entered and appear in the subnet snapshot for a selected netuid. The
-[Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register) describes subnet
-entry, and the [Glossary: Metagraph](https://docs.learnbittensor.org/resources/glossary#metagraph)
-describes comprehensive subnet neuron information used around incentive calculations.
-
-For readers, register names how a participant enters a subnet, while a metagraph names the subnet
-state view that can include participants after entry.
-
-References: [Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register),
-[Glossary: Metagraph](https://docs.learnbittensor.org/resources/glossary#metagraph)
-
-## Relationship to Yuma Consensus
-
-Metagraph and Yuma Consensus describe related parts of Bittensor's incentive system. Yuma Consensus
-is the on-chain process that aggregates validator weight signals within a subnet into miner
-incentives and validator dividends, applying consensus clipping, bonding, and emission calculation
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-For readers, metagraph names a specific part of that incentive picture, while Yuma Consensus names
-the consensus process that turns validator weights into the resulting incentives and dividends.
-
-## Reader Boundary
-
-This page defines the term at a high level. It does not report current subnet membership, current
-stake, current emissions, wallet ownership, or live identity fields. Those values change with chain
-state and should be checked for the relevant netuid when current data is needed.
+Each [neuron](https://docs.learnbittensor.org/resources/glossary#neuron) names one registered
+participant; the metagraph names the subnet-level view that can include many neurons at once. A
+[subnet miner](https://docs.learnbittensor.org/resources/glossary#subnet-miner) or
+[subnet validator](https://docs.learnbittensor.org/resources/glossary#subnet-validator) role
+describes what a participant does inside the subnet, while the metagraph exposes the chain-derived
+fields associated with those participants in one snapshot.
 
 ## Hotkey and Coldkey Fields Identify Each Neuron Row
 
 The [Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph) documentation lists
 `hotkeys` and `coldkeys` among metagraph fields for neurons on a selected subnet. On a subnet such
-as netuid 1, each row ties a [UID](https://docs.learnbittensor.org/resources/glossary#uid-slot) to
-the operational [hotkey](https://docs.learnbittensor.org/resources/glossary#hotkey) and owning
+as netuid 1, each row ties a UID to the operational
+[hotkey](https://docs.learnbittensor.org/resources/glossary#hotkey) and owning
 [coldkey](https://docs.learnbittensor.org/resources/glossary#coldkey) addresses recorded at the
 snapshot block.
 
@@ -320,6 +137,14 @@ miner endpoint was registered at the recorded block, separate from
 [rank](https://docs.learnbittensor.org/resources/glossary#rank) or
 [emission](https://docs.learnbittensor.org/resources/glossary#emission) values.
 
+## Active UID and Activity Fields
+
+An [active UID](https://docs.learnbittensor.org/resources/glossary#active-uid) describes activity
+status for one participant slot. The metagraph exposes activity-related values for neurons across
+the selected subnet at once
+([The Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)). Active status in a
+snapshot is block-specific: a slot marked active at one height may differ at a later block.
+
 ## Validator Permit Appears as a Metagraph Flag
 
 The subnet metagraph table includes `validator_permit` as a boolean array indicating whether each
@@ -330,6 +155,38 @@ without replacing the permit article itself.
 
 Reading permit status from a metagraph snapshot requires the netuid and block context. The boolean
 field describes chain-recorded permit state at one height, not a live guarantee for later blocks.
+
+## Multiple Mechanisms Add Per-Mechanism Fields
+
+Subnets with multiple incentive mechanisms can carry mechanism-specific incentive state. The
+[Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets)
+documentation describes additional metagraph fields for per-mechanism weights and incentives when a
+subnet runs more than one evaluation path
+([Glossary: Multiple Incentive Mechanisms](https://docs.learnbittensor.org/resources/glossary#multiple-incentive-mechanisms)).
+
+Some weight and incentive values should be read in the context of a particular mechanism, not as one
+blended score across every task the subnet supports. The metagraph remains a subnet state view
+rather than a scoring rule.
+
+## Yuma Consensus Writes Incentive Fields Into the Snapshot
+
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) aggregates validator weight
+signals within a subnet into miner incentives and validator dividends, applying consensus clipping,
+bonding, and emission calculation at epoch boundaries. The metagraph is where those subnet-level
+results appear as structured neuron fields such as weights, ranks, trust, consensus, incentives,
+dividends, and emissions at the snapshot block.
+
+For readers, Yuma Consensus names the on-chain process that produces the incentive numbers a
+metagraph exposes. The metagraph does not replace Yuma documentation: it records the outcome of that
+process for a selected netuid at one block height. Comparing metagraph incentive fields across
+blocks tracks how consensus output changed; comparing them without block context can misread stale
+state as current.
+
+## Reader Boundary
+
+This page defines the term at a high level. It does not report current subnet membership, current
+stake, current emissions, wallet ownership, or live identity fields. Those values change with chain
+state and should be checked for the relevant netuid when current data is needed.
 
 ## Further Reading
 
