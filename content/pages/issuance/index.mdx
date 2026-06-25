@@ -143,24 +143,26 @@ Pool structure and circulating-supply accounting remain separate readings of rel
 
 The
 [Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from localnet to testnet and then mainnet. For issuance, that
-sequence changes how readers should interpret circulating-TAO and halving-threshold examples.
+describes subnet development as moving from localnet to testnet and then mainnet. For issuance on a
+subnet such as netuid 1, that sequence changes how readers should interpret circulating-TAO totals,
+pool-reserve inclusion, and halving-threshold examples.
 
-In localnet, issuance accounting can be tested in an isolated environment. Localnet supply totals do
-not represent production TAO circulation.
+In localnet, issuance accounting can be tested in an isolated environment. Localnet supply totals
+and pool reserves on netuid 1 reflect local configuration rather than production TAO circulation.
 
 On testnet, emission and supply metrics can be exercised in a shared non-production network. Testnet
-issuance figures are separate from mainnet chain state.
+issuance figures and netuid 1 pool reserves are separate from mainnet chain state
+([Emission](https://docs.learnbittensor.org/learn/emissions)).
 
 On mainnet, issuance describes live production circulating TAO across the network. Observed totals
-depend on current emission, recycling, and halving history
+on netuid 1 depend on current emission, recycling, and halving history
 ([Glossary: Issuance](https://docs.learnbittensor.org/resources/glossary#issuance)).
 
 The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
 separates mainnet, testnet, and localnet. An issuance example from one environment should not be
 read as representing production supply totals in another environment.
 
-## Relationship to Maximum Supply
+## Maximum Supply Bounds Circulating TAO
 
 Issuance and maximum supply are related but different tokenomics terms. Issuance names the
 circulating amount of TAO counted in the network, while maximum supply names the protocol's 21
@@ -173,35 +175,56 @@ it moves toward. Supply-based halvings slow how quickly new TAO is issued, so ci
 rises toward the documented 21 million TAO cap
 ([Halving Mechanisms](https://docs.learnbittensor.org/concepts/halving)).
 
-These terms sit on different sides of supply accounting. Maximum supply is the lifetime ceiling,
-while issuance is the live circulating measure read at a given moment; recycling can return deducted
-amounts to future emission, which pushes back when the next threshold toward the cap is reached
+Maximum supply is the lifetime ceiling, while issuance is the live circulating measure read at a
+given moment; recycling can return deducted amounts to future emission, which pushes back when the
+next threshold toward the cap is reached
 ([Emission](https://docs.learnbittensor.org/learn/emissions)).
 
 Readers should not treat current issuance as the maximum supply, or read the 21 million TAO cap as
 the amount circulating now. Issuance names what is circulating, while maximum supply bounds the
 total TAO that will ever exist.
 
-## Relationship to Yuma Consensus
+## Yuma Allocates Rewards From Emission Input
 
-Issuance and Yuma Consensus describe related parts of Bittensor's incentive system. Yuma Consensus
-is the on-chain process that aggregates validator weight signals within a subnet into miner
-incentives and validator dividends, applying consensus clipping, bonding, and emission calculation
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-For readers, issuance names a specific part of that incentive picture, while Yuma Consensus names
-the consensus process that turns validator weights into the resulting incentives and dividends.
-
-## Reader Boundary
-
-Issuance is high-level Bittensor tokenomics terminology. It is not a reward rule, subnet scoring
-concept, or report of exact network totals
+Issuance names the circulating-supply record that halving milestones and emission accounting read
+against. [Emission](https://docs.learnbittensor.org/learn/emissions) creates and injects new TAO
+from that supply path each block, and accumulated value later reaches subnet reward distribution
 ([Glossary: Issuance](https://docs.learnbittensor.org/resources/glossary#issuance),
 [Emission](https://docs.learnbittensor.org/learn/emissions)).
 
-Issuance fits circulating TAO supply. Emission fits creation and allocation flow, halving fits
-emission-rate rules, recycling fits return-to-emission accounting, and burning fits removal from
-spendable circulation.
+At tempo boundaries, [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) turns
+validator weight signals into miner
+[incentives](https://docs.learnbittensor.org/resources/glossary#incentives) and validator
+[dividends](https://docs.learnbittensor.org/resources/glossary#dividends). That reward pipeline runs
+downstream of issuance: issuance tracks how much TAO is circulating, emission adds new TAO to subnet
+pools, and Yuma allocates role-facing outcomes from accumulated emission
+([Yuma Consensus: Miner emissions](https://docs.learnbittensor.org/learn/yuma-consensus#miner-emissions)).
+
+For readers, issuance is upstream supply accounting. It does not name miner incentives or validator
+dividends directly, but the circulating total it measures is the backdrop against which emission
+rates, halving cuts, and subnet reward allocation all operate.
+
+## Halving Cuts Emission as Issuance Grows
+
+Issuance and halving are related but different tokenomics terms. Issuance names the circulating
+amount of TAO counted in the network, while halving names the supply-triggered emission-rate cut
+that slows how quickly new TAO is issued as cumulative issuance crosses documented thresholds
+([Glossary: Issuance](https://docs.learnbittensor.org/resources/glossary#issuance),
+[Glossary: Halving](https://docs.learnbittensor.org/resources/glossary#halving)).
+
+For readers, issuance is the live circulating measure and halving is the threshold event that
+reduces the per-block mint rate as that circulating total climbs toward the documented TAO ceiling
+([Halving Mechanisms](https://docs.learnbittensor.org/concepts/halving)).
+
+An issuance reading does not by itself state when the next halving threshold arrives, because
+halving vocabulary names the supply event that lowers future issuance rates rather than the
+circulating total alone
+([Glossary: Block Reward](https://docs.learnbittensor.org/resources/glossary#block-reward)).
+
+Circulating-supply accounting vocabulary stays separate from threshold-triggered rate-cut vocabulary
+so readers can tell which term applies to the live total and which applies to issuance slowdown
+events
+([Glossary: Maximum Supply](https://docs.learnbittensor.org/resources/glossary#maximum-supply)).
 
 ## Alpha Halving Milestones Stay Subnet-Scoped
 
@@ -222,40 +245,16 @@ the network circulating-supply accounting measure
 
 That keeps pool structure and circulating-supply accounting as separate readings of related TAO.
 
-## Environment Evidence
+## Reader Boundary
 
-Bittensor separates mainnet, testnet, and localnet environments. Issuance examples from one
-environment belong to that environment because supply state and testing conditions can differ
-([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks),
-[Introduction to Bittensor: Subnet development](https://docs.learnbittensor.org/learn/introduction#subnet-development)).
-
-Localnet examples are isolated development examples. Testnet examples are shared non-production
-examples. Mainnet issuance interpretation concerns production Bittensor tokenomics behavior.
-
-Specific totals need the network, source, and timing that produced them. The issuance concept
-travels across environments; measured supply belongs to one environment.
-
-## Relationship to Halving
-
-Issuance and halving are related but different tokenomics terms. Issuance names the circulating
-amount of TAO counted in the network, while halving names the supply-triggered emission-rate cut
-that slows how quickly new TAO is issued as cumulative issuance crosses documented thresholds
+Issuance is high-level Bittensor tokenomics terminology. It is not a reward rule, subnet scoring
+concept, or report of exact network totals
 ([Glossary: Issuance](https://docs.learnbittensor.org/resources/glossary#issuance),
-[Glossary: Halving](https://docs.learnbittensor.org/resources/glossary#halving)).
+[Emission](https://docs.learnbittensor.org/learn/emissions)).
 
-For readers, issuance is the live circulating measure and halving is the threshold event that
-reduces the per-block mint rate as that circulating total climbs toward the documented TAO ceiling
-([Halving Mechanisms](https://docs.learnbittensor.org/concepts/halving)).
-
-An issuance reading does not by itself state when the next halving threshold arrives, because
-halving vocabulary names the supply event that lowers future issuance rates rather than the
-circulating total alone
-([Glossary: Block Reward](https://docs.learnbittensor.org/resources/glossary#block-reward)).
-
-Official halving documentation keeps circulating-supply accounting vocabulary separate from
-threshold-triggered rate-cut vocabulary so readers can tell which term applies to the live total and
-which applies to issuance slowdown events
-([Glossary: Maximum Supply](https://docs.learnbittensor.org/resources/glossary#maximum-supply)).
+Issuance fits circulating TAO supply. Emission fits creation and allocation flow, halving fits
+emission-rate rules, recycling fits return-to-emission accounting, and burning fits removal from
+spendable circulation.
 
 ## Further Reading
 
