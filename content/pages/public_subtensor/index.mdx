@@ -84,18 +84,6 @@ That keeps public access separate from signing authority. A reader can use a pub
 observe data, but changing state still belongs to the relevant wallet, role, fee, and extrinsic
 requirements.
 
-## Relationship to Chain Reads
-
-Public Subtensor can be the access route used for chain reads, but the two terms answer different
-questions. Public Subtensor describes publicly reachable access to the Subtensor chain layer, while
-Subtensor storage documentation describes the readable chain surfaces exposed through that layer
-([Subtensor Nodes](https://docs.learnbittensor.org/subtensor-nodes),
-[Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage)).
-
-For readers, the access context should stay separate from the read action. Public Subtensor names
-where the chain is reached; a chain read names the read-only inspection performed through an
-available access path.
-
 ## Access Evidence Layers
 
 Public Subtensor examples are easiest to read when the access route, query surface, chain context,
@@ -141,32 +129,38 @@ That boundary keeps the article conceptual. The
 supports public-access claims, while mechanism claims should still use the mechanism's own
 documentation and identify the relevant network context.
 
-## Relationship to Yuma Consensus
+## Chain Reads Start at Public Endpoints
 
-Public Subtensor and Yuma Consensus describe related parts of Bittensor's incentive system. Yuma
-Consensus is the on-chain process that aggregates validator weight signals within a subnet into
-miner incentives and validator dividends, applying consensus clipping, bonding, and emission
-calculation ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+Public Subtensor can be the access route used for chain reads, but the two terms answer different
+questions. Public Subtensor describes publicly reachable access to the Subtensor chain layer, while
+[Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage) documentation describes
+the readable chain surfaces exposed through that layer
+([Subtensor Nodes](https://docs.learnbittensor.org/subtensor-nodes)).
 
-For readers, public subtensor names a specific part of that incentive picture, while Yuma Consensus
-names the consensus process that turns validator weights into the resulting incentives and
-dividends.
+The useful pipeline order is therefore public endpoint, RPC or node connection, storage or event
+query, and finally the chain-state claim. Public Subtensor names where the chain is reached; a chain
+read names the read-only inspection performed through an available access path. Storage, events, and
+extrinsics each answer a different evidence question once the public access route is in place
+([Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage),
+[Subtensor Events](https://docs.learnbittensor.org/subtensor-api/events)).
 
-## Reader Boundary
+## RPC Access Carries Queries to Runtime Surfaces
 
-Public Subtensor should not be read as private key access, wallet custody, or a guarantee about any
-particular endpoint operator. It names publicly reachable chain-layer access vocabulary
-([Glossary: Public Subtensor](https://docs.learnbittensor.org/resources/glossary#public-subtensor)).
+Public Subtensor vocabulary sits at the front of the query path rather than inside runtime logic.
+[Subtensor Nodes](https://docs.learnbittensor.org/subtensor-nodes) documentation describes how
+participants reach Bittensor chain infrastructure, and RPC access is the transport layer that
+carries read and write requests to Subtensor once a public endpoint is selected.
 
-## Public Access Differs From Signing Authority
+That keeps the access label separate from the query label. A public endpoint explains how the chain
+is reached; RPC access explains how a client submits a storage read, event lookup, or extrinsic
+through that endpoint ([Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage),
+[Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics)).
 
 The [Bittensor CLI: Permissions Guide](https://docs.learnbittensor.org/btcli/btcli-permissions)
 separates permissionless chain reads from actions that require wallet keys. Public Subtensor
-vocabulary therefore covers observation and query surfaces, not authorization to move balances or
-set weights.
-
-Readers inspecting public chain data still need the appropriate coldkey or hotkey material to submit
-state-changing extrinsics.
+vocabulary therefore covers observation and query surfaces reached through RPC, not authorization to
+move balances or set weights. Readers inspecting public chain data still need the appropriate
+coldkey or hotkey material to submit state-changing extrinsics.
 
 ## Subtensor Nodes Name the Connection Layer
 
@@ -175,28 +169,40 @@ participants reach Bittensor chain infrastructure. Public Subtensor sits in that
 as shared access to chain state rather than as a subnet participant role
 ([Glossary: Subtensor](https://docs.learnbittensor.org/resources/glossary#subtensor)).
 
-Network environment still matters: public access on testnet does not describe mainnet state.
+Network environment still matters: public access on testnet does not describe mainnet state. A node
+connection on one network exposes that network's chain layer only
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
 
 ## Development Stage Context
 
 The
 [Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
 describes subnet development as moving from localnet to testnet and then mainnet. For Public
-Subtensor, that sequence determines which network's shared chain access is being described.
+Subtensor and chain reads against a subnet such as netuid 1, that sequence determines which
+network's shared chain access is being described.
 
 In localnet, chain access is isolated rather than public. Localnet observations reflect private
-local chain activity and do not represent publicly reachable Bittensor chain state.
+local chain activity and do not represent publicly reachable Bittensor chain state. A storage read
+against netuid 1 on localnet belongs to the isolated local chain only.
 
 On testnet, publicly reachable access to the testnet chain layer is available. Testnet public chain
-access exposes testnet state, which is separate from mainnet chain state.
+access exposes testnet state for a selected netuid such as netuid 1, which is separate from mainnet
+chain state ([Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage)).
 
 On mainnet, Public Subtensor is the live, publicly reachable access to the production Bittensor
 chain layer. The [Subtensor Nodes](https://docs.learnbittensor.org/subtensor-nodes) documentation
-describes the connection context for reaching the production network.
+describes the connection context for reaching the production network, including subnet-scoped reads
+for netuid 1.
 
 The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
 separates mainnet, testnet, and localnet. Public chain access on one network should not be read as
 representative of chain state on another network.
+
+## Reader Boundary
+
+Public Subtensor should not be read as private key access, wallet custody, or a guarantee about any
+particular endpoint operator. It names publicly reachable chain-layer access vocabulary
+([Glossary: Public Subtensor](https://docs.learnbittensor.org/resources/glossary#public-subtensor)).
 
 ## Further Reading
 
