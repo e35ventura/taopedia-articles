@@ -135,39 +135,6 @@ That boundary keeps rate-limit language away from passive observation. Read-only
 can show public state, but the rate-limit rule belongs to accepted chain actions that are subject to
 the relevant cooldown.
 
-## Development Stage Context
-
-The
-[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from localnet to testnet and then mainnet. A documented block
-count can explain the rate-limit category, while a claim about a specific mainnet, testnet, or
-localnet outcome still needs that network context attached
-([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits),
-[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
-
-Localnet rate-limit examples can test cooldown mechanics in isolation. Testnet examples add shared
-non-production chain history. Mainnet rate-limit interpretation concerns production Subtensor pacing
-on the active network.
-
-## Relationship to Yuma Consensus
-
-Rate Limits and Yuma Consensus describe related parts of Bittensor's incentive system. Yuma
-Consensus is the on-chain process that aggregates validator weight signals within a subnet into
-miner incentives and validator dividends, applying consensus clipping, bonding, and emission
-calculation ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-For readers, rate limits names a specific part of that incentive picture, while Yuma Consensus names
-the consensus process that turns validator weights into the resulting incentives and dividends.
-
-## Reader Boundary
-
-Rate limits do not name a general retry guide, a universal pause for every chain action, or a full
-diagnosis of why an operation failed
-([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits),
-[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor)).
-
-Use the term for block-based pacing rules attached to accepted chain actions.
-
 ## Cooldowns Count Blocks, Not Wall-Clock Time
 
 [Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits) documentation describes
@@ -178,12 +145,60 @@ That keeps rate-limit reading tied to chain cadence rather than to assumed wall-
 
 ## Rate Limits Apply to Action Families
 
-Official examples group rate limits by action family such as registration, staking moves, and
+Rate-limit examples group pacing by action family such as registration, staking moves, and
 subnet-creation steps rather than by every read-only inspection path
 ([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
 
 Use neighboring references when the question is a subnet hyperparameter, transaction fee, or
 read-only inspection result instead.
+
+## Action Families, Hyperparameters, and Errors in One Pacing Pipeline
+
+A rate-limited submission starts with identifying the action family and whether the rule is global
+or subnet-configurable ([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+
+Global examples such as staking moves or general transaction pacing apply across the chain, while
+subnet-scoped limits on a subnet such as netuid 1 tie cooldowns to
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters) for weight
+setting, serving updates, and related validator activity. A successful accepted action starts the
+block countdown; a too-soon repeat surfaces a rate-limit error through
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor).
+
+Read-only [chain reads](https://docs.learnbittensor.org/concepts/inspecting-the-chain) and free
+storage inspection stay outside that pacing path
+([Transaction Fees](https://docs.learnbittensor.org/learn/fees)). Rate limits pace state-changing
+submissions, not passive observation of public chain state.
+
+## Development Stage Context
+
+The
+[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
+describes subnet development as moving from localnet to testnet and then mainnet. For rate limits on
+a subnet such as netuid 1, that sequence changes how subnet-configurable cooldowns should be read.
+
+In localnet, rate-limit examples can test cooldown mechanics in isolation. Localnet block counts for
+weight setting or serving updates on netuid 1 reflect that test chain's hyperparameter state rather
+than production pacing.
+
+On testnet, subnet-scoped limits on netuid 1 apply in a shared non-production network where
+hyperparameter defaults and observed block history are separate from mainnet.
+
+On mainnet, rate-limit interpretation concerns production Subtensor pacing on the active network,
+where global cooldowns and subnet-specific limits on netuid 1 both govern accepted chain actions
+([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+
+The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
+separates mainnet, testnet, and localnet. A rate-limit example from one environment should not be
+read as pacing behavior on another network.
+
+## Reader Boundary
+
+Rate limits do not name a general retry guide, a universal pause for every chain action, or a full
+diagnosis of why an operation failed
+([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor)).
+
+Use the term for block-based pacing rules attached to accepted chain actions.
 
 ## Further Reading
 
