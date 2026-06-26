@@ -1,0 +1,106 @@
+---
+title: "Commit Reveal Period"
+summary:
+  "How the commit reveal period subnet hyperparameter sets how many tempos must elapse before
+  committed validator weights are revealed under the commit-reveal weight scheme."
+category: "Consensus"
+tags: ["Consensus", "Subnets"]
+infoboxTitle: Commit Reveal Period
+infoboxCaption: Tempos between committing and revealing weights.
+infoboxRows:
+  - label: Parameter
+    value: CommitRevealPeriod
+  - label: Type
+    value: u64
+  - label: Default
+    value: "1"
+  - label: Measured in
+    value: Tempos
+  - label: Set by
+    value: Subnet owner
+---
+
+# Commit Reveal Period
+
+Commit reveal period is a per-subnet hyperparameter, listed in the documentation as
+`CommitRevealPeriod`, that sets how many
+[tempos](https://docs.learnbittensor.org/resources/glossary#tempo) must elapse before committed
+validator weights are revealed under the
+[commit-reveal](https://docs.learnbittensor.org/concepts/commit-reveal) weight scheme. The
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters) reference
+describes it as the number of tempos, or epochs, that must elapse before validator weights are
+revealed.
+
+## What It Controls
+
+The hyperparameter sets the delay, counted in tempos, between when a validator commits an encrypted
+weight set and when that weight set is revealed and usable in consensus. Commit-reveal exists so
+that [validator weights](https://docs.learnbittensor.org/resources/glossary#weight-vector) are
+hidden while they are fresh, which reduces weight copying; the period is the length of that hidden
+window ([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)).
+
+It does not enable or disable the scheme itself. Whether commit-reveal is on is a separate boolean
+setting; commit reveal period only governs how long the reveal is deferred once the scheme is active
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## Documented Type, Default, and Setter
+
+The [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+reference lists `CommitRevealPeriod` as a `u64` with a default of `1`, meaning one tempo elapses
+before reveal by default. Because each subnet carries its own hyperparameters, the period is defined
+per subnet and applies only within that subnet's weight-setting path.
+
+The value in force is per-subnet chain state and can differ from the documented default, so a
+subnet's real reveal delay should be read for that subnet rather than assumed from the reference
+value.
+
+## Distinction from Commit Reveal
+
+Commit-reveal is the weight-privacy scheme that hides committed weights until reveal, while commit
+reveal period sets how many tempos that hidden window lasts. One names the mechanism; the other sets
+its timing ([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+- **Commit reveal** — the scheme that commits encrypted weights and later reveals them.
+- **Commit reveal period** — the number of tempos before the reveal happens.
+
+## Distinction from Tempo
+
+Tempo is the block-length cadence of a subnet's consensus cycle, while commit reveal period is
+measured in those tempos. Tempo sets how long one epoch is; commit reveal period sets how many of
+those epochs pass before a reveal
+([Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo)).
+
+- **Tempo** — the length of one consensus cycle, in blocks.
+- **Commit reveal period** — a count of tempos until weights are revealed.
+
+## BTCLI Reads the Live Value
+
+Any user can read subnet hyperparameters for a selected netuid with
+`btcli subnet hyperparameters --netuid 1`. The output includes the live `CommitRevealPeriod` value
+for that subnet at query time
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+Live values are network- and subnet-specific and can differ from the documented default, so a
+reveal- delay claim should be checked against the hyperparameter table for the relevant netuid
+rather than assumed from the reference default alone.
+
+## Why a Reveal Delay Exists
+
+The delay exists to blunt weight copying. If weights were visible the moment they were set, a
+copying validator could read and resubmit them without doing its own evaluation. Hiding weights for
+a defined number of tempos removes that fresh signal, so a copier cannot ride the latest weights
+before they reveal ([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)).
+
+For readers, commit reveal period is the dial that trades freshness for protection. A longer period
+hides weights for more epochs, while the default of one tempo applies the minimum documented
+deferral
+([Glossary: Commit Reveal](https://docs.learnbittensor.org/resources/glossary#commit-reveal)).
+
+## Further Reading
+
+- [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+- [Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)
+- [Glossary: Commit Reveal](https://docs.learnbittensor.org/resources/glossary#commit-reveal)
+- [Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo)
+- [Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#weight-vector)
