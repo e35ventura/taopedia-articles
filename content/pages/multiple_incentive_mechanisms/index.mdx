@@ -200,8 +200,8 @@ several mechanisms changes how that fixed amount is divided among evaluation tra
 ## Mechanism Count Is Bounded by Available UID Slots
 
 A subnet cannot add mechanisms without limit. The documented constraint is that the number of
-mechanisms multiplied by the subnet's maximum UID count must stay below a fixed ceiling, since each
-mechanism needs its own slot accounting within that shared UID space
+mechanisms multiplied by the subnet's maximum UID count must not exceed 256, since each mechanism
+needs its own slot accounting within that shared UID space
 ([Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets),
 [UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming)).
 
@@ -312,6 +312,60 @@ rather than blending unlike evaluation tracks into one pool
 
 Multiple mechanisms change how many parallel consensus passes a subnet runs, not the basic role of
 Yuma inside each pass.
+
+## Distinction from Mechanism Count
+
+Multiple incentive mechanisms name the subnet model in which more than one evaluation path runs in
+parallel inside one subnet. Mechanism count names the `MechanismCount` hyperparameter that sets how
+many such paths a subnet is configured to run
+([Glossary: Multiple Incentive Mechanisms](https://docs.learnbittensor.org/resources/glossary#multiple-incentive-mechanisms),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+For readers on a subnet such as netuid 1, the model explains why weights, bond pools, and rank stay
+separated by evaluation track. The hyperparameter answers how many tracks that subnet runs according
+to its hyperparameter table, which can be read with `btcli subnet hyperparameters --netuid 1`
+([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters),
+[Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets)).
+
+- **Multiple incentive mechanisms** — parallel evaluation paths inside one subnet.
+- **Mechanism count** — the configured number of those paths.
+
+## Distinction from Max Allowed UIDs
+
+Multiple incentive mechanisms and max allowed UIDs answer different capacity questions on the same
+subnet. Multiple incentive mechanisms names how many evaluation paths share the subnet's UID
+population, while max allowed UIDs sets the ceiling on how many registered neurons that population
+can hold on a subnet such as netuid 1
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets)).
+
+Official documentation ties the two through a product rule: mechanism count multiplied by max
+allowed UIDs must not exceed 256. Adding mechanisms therefore shrinks the UID headroom available
+under the same ceiling, so capacity planning on netuid 1 should read both hyperparameters together
+rather than in isolation
+([Subnet Hyperparameters: MaxAllowedUIDs](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#maxalloweduids)).
+
+- **Multiple incentive mechanisms** — parallel evaluation structure inside one subnet.
+- **Max allowed UIDs** — the ceiling on registered UID slots those mechanisms share.
+
+## Distinction from UID Trimming
+
+Multiple incentive mechanisms and UID trimming both touch subnet capacity, but they name different
+layers. Multiple incentive mechanisms describes how many evaluation paths run inside a subnet, while
+UID trimming is the owner action documented for bringing an oversized UID set back under the
+configured ceiling on a subnet such as netuid 1
+([UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming),
+[Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets)).
+
+For readers, trimming addresses live over-capacity relative to max allowed UIDs. Raising the number
+of mechanisms can require lowering that ceiling first because the product of mechanism count and max
+allowed UIDs must not exceed 256. Trimming is the documented reduction path; multiple-mechanism
+structure names how many evaluation paths share whatever capacity remains
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+- **Multiple incentive mechanisms** — parallel evaluation paths inside one subnet.
+- **UID trimming** — the documented action that brings live UID count back under the configured
+  ceiling.
 
 ## Reader Boundary
 
