@@ -1,0 +1,105 @@
+---
+title: "Alpha Sigmoid Steepness"
+summary:
+  "How the alpha sigmoid steepness subnet hyperparameter shapes how sharply liquid alpha responds to
+  validator consensus alignment when smoothing validator-miner bonds in Yuma Consensus."
+category: "Consensus"
+tags: ["Consensus", "Subnets"]
+infoboxTitle: Alpha Sigmoid Steepness
+infoboxCaption: Sharpness of the liquid-alpha response curve.
+infoboxRows:
+  - label: Parameter
+    value: AlphaSigmoidSteepness
+  - label: Type
+    value: i16
+  - label: Default
+    value: "1000"
+  - label: Example
+    value: netuid 1
+  - label: Set by
+    value: Subnet owner
+---
+
+# Alpha Sigmoid Steepness
+
+Alpha sigmoid steepness is a per-subnet hyperparameter, listed in the documentation as
+`AlphaSigmoidSteepness`, that shapes how alpha values are assigned based on validator voting
+alignment in [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus). The
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters) reference
+lists it as the control that determines how alpha values are assigned according to how a validator's
+weights align with consensus.
+
+## What It Controls
+
+The hyperparameter sets the steepness of the sigmoid curve that maps a validator's consensus
+alignment to the alpha used when smoothing
+[validator-miner bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds).
+It works together with the liquid alpha feature, which varies the bond-smoothing factor between an
+`alpha_low` and `alpha_high` bound rather than holding it constant
+([Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)).
+
+A steeper curve makes the assigned alpha shift more sharply as a validator moves toward or away from
+consensus, while a gentler curve spreads that response over a wider alignment range. It does not set
+the alpha bounds themselves, which belong to the liquid alpha range.
+
+## Documented Type, Default, and Setter
+
+The [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+reference lists `AlphaSigmoidSteepness` as an `i16` with a default of `1000`. Because each subnet
+carries its own hyperparameters, the steepness is defined per subnet and applies only within that
+subnet's bond-smoothing path.
+
+The value in force is per-subnet chain state and can differ from the documented default, so a
+subnet's real steepness should be read for that subnet rather than assumed from the reference value.
+
+## Distinction from Liquid Alpha
+
+Liquid alpha is the feature that varies the bond-smoothing factor by consensus alignment, while
+alpha sigmoid steepness sets how sharp that variation is across the alignment range
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)).
+
+- **Liquid alpha** — enables a variable, consensus-aligned bond-smoothing factor.
+- **Alpha sigmoid steepness** — sets how steeply that factor responds to alignment.
+
+## Distinction from Bonds Moving Average
+
+Alpha sigmoid steepness and bonds moving average both touch the bond path but answer different
+questions. Steepness shapes the response curve that assigns alpha from consensus alignment, while
+bonds moving average sets the moving-average behavior applied to validator-miner bonds over time
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+- **Alpha sigmoid steepness** — the sharpness of the alpha-assignment curve.
+- **Bonds moving average** — the smoothing applied to bonds across epochs.
+
+## BTCLI Reads the Live Value
+
+Any user can read subnet hyperparameters for a selected netuid with
+`btcli subnet hyperparameters --netuid 1`. The output includes the live `AlphaSigmoidSteepness`
+value for that subnet at query time
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+Live values are network- and subnet-specific and can differ from the documented default, so a
+steepness claim should be checked against the hyperparameter table for the relevant netuid rather
+than assumed from the reference default alone.
+
+## Why Steepness Belongs to the Bond Path
+
+The steepness control matters because liquid alpha decides how fast bonds adapt to a validator's
+alignment, and a sigmoid is what turns a continuous alignment signal into the assigned alpha.
+Steepness sets how decisively that mapping reacts near the consensus boundary
+([Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights),
+[Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds)).
+
+For readers, this places alpha sigmoid steepness inside the validator bond-smoothing mechanics
+rather than in miner-incentive ranking. It tunes how alignment is translated into bond adaptation,
+not what task a subnet rewards
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+## Further Reading
+
+- [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+- [Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)
+- [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
+- [Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds)
