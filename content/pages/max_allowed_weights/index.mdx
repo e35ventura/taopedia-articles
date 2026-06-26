@@ -1,0 +1,85 @@
+---
+title: "Max Allowed Weights"
+summary:
+  "How the max allowed weights subnet hyperparameter caps the number of UIDs a validator can include
+  in a single weight-setting call on a subnet."
+category: "Subnets"
+tags: ["Subnets", "Validation"]
+infoboxTitle: Max Allowed Weights
+infoboxCaption: Per-call UID count ceiling for weight submissions.
+infoboxRows:
+  - label: Parameter
+    value: MaxAllowedWeights
+  - label: Measured in
+    value: UIDs
+  - label: Set by
+    value: Subnet owner
+---
+
+# Max Allowed Weights
+
+Max allowed weights is a per-subnet integer hyperparameter, listed as `MaxAllowedWeights` in
+Bittensor documentation, that caps the number of UIDs a validator can include in a single
+weight-setting call on the subnet. The
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters) reference
+lists `MaxAllowedWeights` alongside `MinAllowedWeights`, which together define the valid range for
+the number of UIDs a validator may weight per submission.
+
+Each subnet stores its own `MaxAllowedWeights` value as per-subnet chain state, so the cap on one
+subnet is independent of the cap on another.
+
+## What It Controls
+
+`MaxAllowedWeights` sets the maximum number of UIDs that a validator can assign weights to in a
+single weight-setting call. The parameter operates at the submission level: it bounds the UID count
+per call, not a running total across an epoch
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+Because the value is stored per-subnet, a subnet owner can tune the ceiling independently of
+settings on other subnets. The active value for one subnet is not a proxy for the ceiling in effect
+on any other subnet.
+
+## Relation to Min Allowed Weights
+
+`MinAllowedWeights` sets the minimum number of UIDs that a validator must include in a
+weight-setting call. `MaxAllowedWeights` is the corresponding upper bound. Together the two
+parameters define a valid UID count range for weight submissions on the subnet: a submission with
+fewer UIDs than `MinAllowedWeights` or more UIDs than `MaxAllowedWeights` falls outside the subnet's
+accepted weight submission range
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+The floor and ceiling are independent values that can be set to match the subnet's validator
+population and scoring design.
+
+## Relation to Max Allowed UIDs
+
+`MaxAllowedUids` controls how many neurons can register on the subnet at one time.
+`MaxAllowedWeights` controls how many of those registered UIDs a validator can include in a single
+weight submission. The two parameters operate at different layers: `MaxAllowedUids` governs the
+registration roster, while `MaxAllowedWeights` governs the weight-setting call
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+A validator on a subnet with a large `MaxAllowedUids` count may still be limited by a smaller
+`MaxAllowedWeights` value when assembling a single weight submission.
+
+## Documented Type
+
+The [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+reference lists `MaxAllowedWeights` as an integer subnet hyperparameter. The value represents a
+count of UIDs, not a weight magnitude or a weight vector length measured in score units. Each subnet
+holds its own value as per-subnet chain state, and that value can differ across subnets.
+
+## Network and Environment Scope
+
+The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
+separates mainnet, testnet, and localnet environments. A `MaxAllowedWeights` reading from one
+environment is not evidence for the same cap on another environment, because each network maintains
+independent subnet hyperparameter state.
+
+On mainnet, `MaxAllowedWeights` is the live per-subnet integer that governs the maximum UID count
+per weight-setting call for the selected subnet.
+
+## Further Reading
+
+- [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+- [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)
