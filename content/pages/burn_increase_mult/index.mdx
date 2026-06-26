@@ -1,0 +1,105 @@
+---
+title: "Burn Increase Mult"
+summary:
+  "How the burn increase mult subnet hyperparameter raises a subnet's dynamic registration burn cost
+  each time a registration succeeds, making registration more expensive as demand rises."
+category: "Subnets"
+tags: ["Subnets", "Registration"]
+infoboxTitle: Burn Increase Mult
+infoboxCaption: Step-up factor applied to the registration burn on each registration.
+infoboxRows:
+  - label: Parameter
+    value: BurnIncreaseMult
+  - label: Context
+    value: Registration burn
+  - label: Trigger
+    value: Successful registration
+  - label: Example
+    value: netuid 1
+  - label: Set by
+    value: Subnet owner
+---
+
+# Burn Increase Mult
+
+Burn increase mult is a per-subnet hyperparameter, listed in the documentation as
+`BurnIncreaseMult`, that raises a subnet's dynamic registration burn cost when a registration
+succeeds. The
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters) reference
+describes it as the factor by which the current neuron registration burn cost is multiplied when a
+registration succeeds, which is what makes registration more expensive as demand rises.
+
+## What It Controls
+
+The hyperparameter sets the step-up applied to the live
+[burn cost](https://docs.learnbittensor.org/resources/glossary#burn-cost) after each successful
+registration. Registration burns TAO, and that cost is dynamic: it rises with registrations and
+eases back during quieter periods. Burn increase mult names the upward side of that movement, while
+[burn half life](https://docs.learnbittensor.org/subnets/subnet-hyperparameters) names the downward
+decay ([Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register)).
+
+It does not set the floor or ceiling of the burn. Those are the separate min burn and max burn
+hyperparameters, and the live burn moves between them as the increase multiplier pushes it up and
+the half life pulls it down
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## Documented Description and Setter
+
+The [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+reference lists `BurnIncreaseMult` as a registration-burn hyperparameter and describes it as the
+factor by which the current burn is multiplied on a successful registration. Because each subnet
+carries its own hyperparameters, the step-up factor is defined per subnet and applies only within
+that subnet's registration path.
+
+The value in force is per-subnet chain state, so a subnet's real step-up behavior should be read for
+that subnet rather than assumed from another subnet's setting.
+
+## Distinction from Burn Half Life
+
+Burn increase mult and burn half life are paired controls that move the same dynamic burn in
+opposite directions. Burn increase mult steps the live burn up on each registration, while burn half
+life decays it back toward the floor between registrations
+([Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register)).
+
+- **Burn increase mult** — raises the burn when a registration succeeds.
+- **Burn half life** — decays the burn back down during quiet periods.
+
+## Distinction from Min Burn and Max Burn
+
+Min burn and max burn fix the lower and upper bounds of the registration-burn band, while burn
+increase mult moves the live burn upward inside that band as registrations occur
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register)).
+
+- **Min burn / max burn** — the floor and ceiling of the burn range.
+- **Burn increase mult** — the per-registration step that climbs within that range.
+
+## BTCLI Reads the Live Value
+
+Any user can read subnet hyperparameters for a selected netuid with
+`btcli subnet hyperparameters --netuid 1`. The output includes the live registration-burn
+hyperparameter values for that subnet at query time
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+Live values are network- and subnet-specific, so a registration-cost claim should be checked against
+the hyperparameter table for the relevant netuid rather than assumed from the documented default.
+
+## Why a Per-Registration Step Exists
+
+The step-up exists so that registration cost reflects demand. When registrations cluster, each
+success multiplies the burn upward, which raises the price of the next slot and naturally throttles
+a registration rush
+([Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register)).
+
+For readers, this means burn increase mult is a demand-response control rather than a fixed fee. The
+cost a registrant actually pays depends on recent registration activity and on how the multiplier,
+half life, and burn bounds interact for that subnet
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Emission](https://docs.learnbittensor.org/learn/emissions)).
+
+## Further Reading
+
+- [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+- [Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register)
+- [Glossary: Burn Cost](https://docs.learnbittensor.org/resources/glossary#burn-cost)
+- [Miner registration](https://docs.learnbittensor.org/miners#miner-registration)
