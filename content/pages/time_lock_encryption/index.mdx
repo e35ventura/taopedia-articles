@@ -1,0 +1,92 @@
+---
+title: "Time-Lock Encryption"
+summary:
+  "How time-lock encryption lets Bittensor validators commit weights that cannot be decrypted until
+  a future point, underpinning the commit-reveal weight scheme."
+category: "Consensus"
+tags: ["Consensus", "Safety"]
+infoboxTitle: Time-Lock Encryption
+infoboxCaption: Encryption that unlocks only after a set time.
+infoboxRows:
+  - label: Context
+    value: Commit-reveal weights
+  - label: Mechanism
+    value: Drand-based
+  - label: Purpose
+    value: Hide weights until reveal
+  - label: Related
+    value: Commit Reveal
+---
+
+# Time-Lock Encryption
+
+Time-lock encryption is the cryptographic technique that lets a value be encrypted so it cannot be
+decrypted until a future point, which is what allows Bittensor's
+[commit-reveal](https://docs.learnbittensor.org/concepts/commit-reveal) weight scheme to hide
+validator weights until their reveal time. The
+[Glossary: Drand / Time-Lock Encryption](https://docs.learnbittensor.org/resources/glossary#drandtime-lock-encryption)
+entry describes the drand-based scheme used to time-lock committed weights.
+
+## What It Does
+
+Time-lock encryption encrypts a committed value against a future condition so that no one, including
+the committer, can read it before that condition is met. In commit-reveal, a validator's
+[weight vector](https://docs.learnbittensor.org/resources/glossary#weight-vector) is time-locked
+when committed and becomes readable only at reveal
+([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)).
+
+It is the cryptographic primitive behind the hidden window, not the policy that sets the window's
+length. How long weights stay hidden is governed by the commit-reveal period, while time-lock
+encryption is what makes the hiding enforceable
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## Drand as the Time Source
+
+The documented scheme relies on drand, a publicly verifiable randomness beacon, as the external time
+reference. Committed weights are encrypted so they can only be decrypted once drand publishes the
+value tied to the reveal round, which gives the subnet a trust-minimized clock rather than relying
+on any single party to release the data
+([Glossary: Drand / Time-Lock Encryption](https://docs.learnbittensor.org/resources/glossary#drandtime-lock-encryption)).
+
+Because the decryption condition is external and public, no validator can reveal early and no
+operator has to be trusted to hold and release the weights at the right moment.
+
+## Distinction from Commit Reveal
+
+Commit-reveal is the overall weight-setting scheme — commit now, reveal later — while time-lock
+encryption is the cryptographic mechanism that enforces the "reveal later" part. One is the
+protocol; the other is the primitive it depends on
+([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
+[Glossary: Commit Reveal](https://docs.learnbittensor.org/resources/glossary#commit-reveal)).
+
+- **Commit reveal** — the commit-then-reveal weight scheme.
+- **Time-lock encryption** — the crypto that keeps committed weights unreadable until reveal.
+
+## Distinction from Weight Copying
+
+Weight copying is the behavior time-lock encryption is meant to deter: a validator reading another's
+weights and resubmitting them without independent evaluation. Time-lock encryption removes the fresh
+plaintext a copier would need by keeping committed weights encrypted until reveal
+([Glossary: Weight Copying](https://docs.learnbittensor.org/resources/glossary#weight-copying)).
+
+- **Weight copying** — riding another validator's revealed weights.
+- **Time-lock encryption** — hiding weights so there is nothing fresh to copy.
+
+## Why It Matters for Consensus
+
+Time-lock encryption matters because it makes weight privacy enforceable without a trusted releaser.
+A subnet using commit-reveal can keep validator weights confidential during the sensitive window,
+then have them revealed automatically when the drand condition is met
+([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)).
+
+For readers, time-lock encryption is the cryptographic foundation that makes commit-reveal credible.
+The commit-reveal period decides how long weights stay hidden, but time-lock encryption is what
+guarantees they actually stay hidden for that long
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+## Further Reading
+
+- [Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)
+- [Glossary: Drand / Time-Lock Encryption](https://docs.learnbittensor.org/resources/glossary#drandtime-lock-encryption)
+- [Glossary: Commit Reveal](https://docs.learnbittensor.org/resources/glossary#commit-reveal)
+- [Glossary: Weight Copying](https://docs.learnbittensor.org/resources/glossary#weight-copying)
