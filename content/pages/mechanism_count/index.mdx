@@ -25,7 +25,7 @@ infoboxRows:
 Mechanism count is a per-subnet hyperparameter, listed in the documentation as `MechanismCount`,
 that sets how many incentive mechanisms a subnet runs. The reference describes it as the number of
 mechanisms on a subnet and notes that changing it requires keeping the product of mechanism count
-and the subnet's maximum UID count below 256
+and the subnet's maximum UID count must not exceed 256
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
 ## What It Controls
@@ -57,7 +57,7 @@ mechanism
 ## UID Capacity Constraint
 
 Before raising mechanism count, the hyperparameter reference requires that mechanism count
-multiplied by the subnet's maximum UID count stay below 256. If the product would exceed that
+multiplied by the subnet's maximum UID count must not exceed 256. If the product would exceed that
 threshold, the subnet owner must first lower
 [max allowed UIDs](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#maxalloweduids) or
 use [UID trimming](https://docs.learnbittensor.org/subnets/uid-trimming) to reduce live UID capacity
@@ -78,6 +78,42 @@ configured to run
 - **Multiple incentive mechanisms** — the multi-mechanism subnet model.
 - **Mechanism count** — the on-chain count configured for a subnet.
 
+## Distinction from Max Allowed UIDs
+
+Mechanism count and max allowed UIDs are separate subnet hyperparameters that share a documented
+capacity constraint. Mechanism count sets how many incentive mechanisms run on the subnet, while max
+allowed UIDs sets the ceiling on how many registered neurons those mechanisms share. The reference
+requires that mechanism count multiplied by max allowed UIDs must not exceed 256, so raising
+mechanism count can force lowering the UID ceiling before the change is accepted
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets)).
+
+For readers, max allowed UIDs answers how many participants the subnet can hold, while mechanism
+count answers how many evaluation paths share that population. A subnet can keep a high UID ceiling
+with a mechanism count of one, but adding mechanisms shrinks the UID headroom the product rule
+allows
+([Subnet Hyperparameters: MaxAllowedUIDs](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#maxalloweduids)).
+
+- **Mechanism count** — how many incentive mechanisms run on the subnet.
+- **Max allowed UIDs** — the ceiling on registered UID slots those mechanisms share.
+
+## Distinction from UID Trimming
+
+Mechanism count and UID trimming both touch subnet capacity, but they name different operations.
+Mechanism count is the hyperparameter that sets how many incentive mechanisms run, while UID
+trimming is the owner action that removes excess UIDs when live registration exceeds the configured
+ceiling ([UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+For readers, trimming reduces an oversized UID set to fit max allowed UIDs. Mechanism count changes
+can require that ceiling to move first because the product of mechanism count and max allowed UIDs
+must not exceed 256. Trimming addresses live over-capacity; mechanism count addresses how many
+evaluation paths share whatever capacity remains
+([Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets)).
+
+- **Mechanism count** — the configured number of incentive mechanisms on a subnet.
+- **UID trimming** — the action that brings live UID count back under the configured ceiling.
+
 ## Runtime Cap
 
 The multiple-mechanism documentation notes a current runtime limit of two mechanisms per subnet,
@@ -88,13 +124,23 @@ mechanism and from the UID-product constraint above
 ## BTCLI Reads the Live Value
 
 Any user can read subnet hyperparameters for a selected netuid with
-`btcli subnet hyperparameters --netuid 1`. The command output includes the live `MechanismCount`
-value for that subnet at query time
+`btcli subnet hyperparameters --netuid <NETUID>`. The command output includes the live
+`MechanismCount` value for that subnet at query time
 ([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
 
 Live values are network- and subnet-specific and can differ from the documented default, so a
 mechanism-count claim should be checked against the hyperparameter table for the relevant netuid and
 network rather than assumed from the reference default alone.
+
+## Reader Boundary
+
+This page defines the concept at a high level. It does not report the live mechanism count on any
+particular subnet, how emissions are split among mechanisms, or whether a proposed count change
+would pass the UID-product constraint. Those are live chain state and subnet-design choices that
+should be checked for the relevant netuid with `btcli subnet hyperparameters --netuid <NETUID>` and
+the multiple-mechanism documentation for that subnet
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets)).
 
 ## Further Reading
 
