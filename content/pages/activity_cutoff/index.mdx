@@ -196,28 +196,66 @@ instead of assuming identical real-time windows
 Missed submissions wait for the next epoch rather than retroactively joining the current pass
 ([Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)).
 
+## Distinction from Last Update
+
+On metagraph rows, activity cutoff is the owner-settable block-count hyperparameter and last update
+is the block field readers compare against it
+([Subnet Hyperparameters: ActivityCutoff](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutoff),
+[Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)).
+
+Official hyperparameter documentation describes activity cutoff as the number of blocks for stake to
+become inactive for the purpose of epoch in Yuma Consensus
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## Distinction from Tempo and Epoch
+
+These timing labels answer different reader questions on the same subnet pass:
+
+| Term            | What it names              | Why readers check it                                     |
+| --------------- | -------------------------- | -------------------------------------------------------- |
+| Tempo           | Block count for one epoch  | Sets how long each epoch lasts on the subnet             |
+| Epoch           | Consensus period           | Bounds the pass where Yuma participation is evaluated    |
+| Activity cutoff | Block-count hyperparameter | Documented stake-inactivity rule for epoch participation |
+
+([Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo),
+[Glossary: Epoch](https://docs.learnbittensor.org/resources/glossary#epoch),
+[Subnet Hyperparameters: ActivityCutoff](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutoff)).
+
+When a validator misses the cutoff window, the failure is about stake inactivity for that epoch
+cycle—not about how many blocks define the epoch itself
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
 ## Distinction from Weights Rate Limit
 
-Activity cutoff and weights rate limit answer different timing questions. Activity cutoff is
-measured in blocks within each epoch and governs whether a validator's weight submission arrives
-early enough to count for the current Yuma Consensus pass, while weights rate limit is measured in
-blocks between commits and governs how soon the same validator can submit again after a prior weight
-commit ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+Activity cutoff is the hyperparameter that defines how many blocks stake may remain inactive for
+epoch purposes in Yuma Consensus. Weights rate limit is the blocks a validator must wait between
+weight commits
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Subnet Hyperparameters: ActivityCutoff](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutoff)).
 
-- **Activity cutoff** — whether a submission arrives inside the current epoch window.
-- **Weights rate limit** — how long a validator must wait before the next commit.
+- **Activity cutoff** — block-count rule for epoch participation in hyperparameter documentation.
+- **Weights rate limit** — blocks between weight commits from the same validator.
 
 ## Distinction from Immunity Period
 
-Activity cutoff and immunity period are different block-counted windows. Activity cutoff is the
-early-epoch block window within which a validator must submit weights to count in the current Yuma
-Consensus pass, while immunity period is the grace window that protects a newly registered neuron
-from deregistration for a number of blocks
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
-[Glossary: Immunity Period](https://docs.learnbittensor.org/resources/glossary#immunity-period)).
+Immunity period shields a newly registered neuron from deregistration for a fixed number of blocks.
+Activity cutoff is a separate hyperparameter that governs epoch participation timing
+([Glossary: Immunity Period](https://docs.learnbittensor.org/resources/glossary#immunity-period),
+[Subnet Hyperparameters: ActivityCutoff](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutoff)).
 
-- **Activity cutoff** — blocks within the epoch for a weight submission to count.
-- **Immunity period** — blocks a new neuron is shielded from deregistration.
+- **Immunity period** — deregistration shield for a new neuron.
+- **Activity cutoff** — epoch-participation hyperparameter on the subnet.
+
+## Distinction from Validator Permit
+
+Validator permit records whether a UID may submit validator weights at all. Activity cutoff is a
+separate hyperparameter read from subnet state
+([Glossary: Validator Permit](https://docs.learnbittensor.org/resources/glossary#validator-permit),
+[Subnet Hyperparameters: ActivityCutoff](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutoff)).
+
+Readers tracing a failed participation check should compare permit status and cutoff hyperparameter
+values on the same netuid rather than treating either field as a full activity verdict by itself
+([Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)).
 
 ## Reader Boundary
 
