@@ -1,0 +1,128 @@
+---
+title: "Target Registrations Per Interval"
+summary:
+  "How the target registrations per interval subnet hyperparameter sets the reference registration
+  count used to drive dynamic burn cost adjustments during each adjustment window."
+category: "Subnets"
+tags: ["Subnets", "Registration"]
+infoboxTitle: Target Registrations Per Interval
+infoboxCaption: Reference count for burn cost recalibration.
+infoboxRows:
+  - label: Parameter
+    value: TargetRegistrationsPerInterval
+  - label: Context
+    value: Registration burn
+  - label: Unit
+    value: Registration count
+  - label: Example
+    value: netuid 1
+  - label: Set by
+    value: Subnet owner
+---
+
+# Target Registrations Per Interval
+
+Target registrations per interval is a per-subnet hyperparameter, listed as
+`TargetRegistrationsPerInterval` in Bittensor documentation, that sets the reference registration
+count used to drive dynamic burn cost adjustments. The
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters) reference
+lists `TargetRegistrationsPerInterval` alongside the adjustment interval parameter that sets the
+block window over which registrations are counted
+([Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register)).
+
+The term names the registration target, not the current burn cost or the actual registration count
+for a given period. It is the reference value the adjustment mechanism compares against actual
+registrations when deciding whether the burn cost should rise, fall, or hold.
+
+## What It Controls
+
+The hyperparameter sets how many registrations the burn adjustment mechanism is calibrated toward
+during each adjustment window. When actual registrations during the interval exceed this target, the
+burn cost rises for the next interval. When actual registrations fall short of the target, the burn
+cost eases toward the floor
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Glossary: Burn Cost](https://docs.learnbittensor.org/resources/glossary#burn-cost)).
+
+The parameter shapes registration demand pressure on netuid 1 and other active subnets by setting
+the threshold that separates cost-increasing periods from cost-decreasing periods. A higher target
+means registration demand must be larger before the burn rises; a lower target means smaller
+registration volumes trigger a cost increase.
+
+The target does not set the burn cost directly. It is the comparison value inside the recalibration
+logic; the burn floor and ceiling parameters define the range within which adjustments can move the
+actual cost.
+
+## Relation to Adjustment Interval
+
+Target registrations per interval and adjustment interval define the two sides of the demand
+comparison: the target sets the reference count, and the adjustment interval sets the block window
+over which that count is measured
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+The adjustment fires when the interval ends. At that point, actual registrations during the window
+are compared against the target. Changing the target shifts what counts as excess or deficit demand
+without changing how frequently the recalibration runs. Changing the adjustment interval changes the
+window length without changing the reference count.
+
+A subnet owner can configure both parameters independently to shape how the burn cost responds to
+registration activity on a given subnet.
+
+## Documented Type and Setter
+
+The [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+reference lists `TargetRegistrationsPerInterval` among the registration-related hyperparameters that
+subnet owners can set. Because each subnet carries its own hyperparameter state, the target for
+netuid 1 can differ from the target configured on another subnet.
+
+The active value is the per-subnet chain state for that subnet. A target reading from one subnet
+should not be treated as evidence for the registration target or cost behavior on any other subnet.
+
+## Registration Path Context
+
+The [Mining: Miner registration](https://docs.learnbittensor.org/miners#miner-registration)
+documentation describes the registration path that a miner follows to obtain a UID slot on a subnet.
+Target registrations per interval sits in the background of that path as the hyperparameter that
+calibrates cost pressure over time rather than governing any individual registration event.
+
+Individual miners encounter the burn cost produced by the adjustment mechanism rather than
+interacting directly with the target value. The target shapes the cost environment over many
+registration periods on the subnet
+([Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)).
+
+## Network and Environment Scope
+
+The
+[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
+describes subnet development as moving from localnet to testnet and then mainnet. Target
+registrations per interval applies across that lifecycle: subnet owners can configure the
+registration target in isolated localnet environments, shared testnet deployments, and live mainnet
+subnets.
+
+The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
+separates mainnet, testnet, and localnet. A target registration example from one environment should
+not be read as representative of production registration cost behavior on another network.
+
+On mainnet, target registrations per interval is the live per-subnet chain parameter that governs
+production burn cost calibration for the selected netuid.
+
+## Evidence Boundary
+
+Target registrations per interval is a reference count hyperparameter. It does not name a current
+burn cost, a live registration count, or a miner's eligibility status. Those are outcomes and events
+inside the registration path; the target is an input parameter that shapes the recalibration
+comparison
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Mining: Miner registration](https://docs.learnbittensor.org/miners#miner-registration)).
+
+A precise claim about target registrations per interval should name the relevant subnet and its
+current hyperparameter configuration. The target in force for netuid 1 is that subnet's own chain
+state and cannot be assumed to apply to other subnets.
+
+## Further Reading
+
+- [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+- [Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register)
+- [Glossary: Burn Cost](https://docs.learnbittensor.org/resources/glossary#burn-cost)
+- [Mining: Miner registration](https://docs.learnbittensor.org/miners#miner-registration)
+- [Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)
+- [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)
