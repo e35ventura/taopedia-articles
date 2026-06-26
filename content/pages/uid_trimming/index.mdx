@@ -111,14 +111,6 @@ low emitters and clears their on-chain records before the remaining UIDs are pac
 contiguous set ([UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming),
 [Glossary: Deregistration](https://docs.learnbittensor.org/resources/glossary#deregistration)).
 
-## Deregistration Replaces One Slot at Registration Time
-
-Trimming is distinct from
-[deregistration](https://docs.learnbittensor.org/resources/glossary#deregistration). Deregistration
-replaces the single lowest performer when a new registration arrives on a full subnet, while
-trimming is an owner-initiated bulk reduction of the UID set down to a target size. A trimmed UID's
-data is permanently deleted from the blockchain rather than left as an empty index.
-
 ## Emission Ranking Connects Trimming to Yuma Outcomes
 
 Trimming selects UIDs by emission scores, which reflect how Yuma Consensus and subnet emission
@@ -161,23 +153,25 @@ documented chain cost separate from registration burn economics.
 Fee vocabulary stays separate from emission ranking. Trimming selects low emitters first, but
 executing the owner sudo action still pays the fees the chain charges for the extrinsic.
 
-## Trimming Is Owner-Initiated, Not Automatic Pruning
+## Distinction from Deregistration
 
-A useful distinction is that UID trimming is a subnet-owner resize action rather than the automatic
-displacement that happens when a full subnet receives a new registration. Documentation describes
-trimming as lowering capacity and removing low emitters by owner choice, while pruning score governs
-competition-driven deregistration when someone new registers
+UID trimming and deregistration are both ways a neuron can leave a subnet, but they answer different
+operational questions. Deregistration recycles one incumbent slot when a full subnet admits a new
+registration, while UID trimming is a subnet-owner sudo action that lowers the live UID count toward
+a chosen maximum and removes many low emitters in one pass
 ([UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming),
-[Mining in Bittensor](https://docs.learnbittensor.org/miners)).
+[Glossary: Deregistration](https://docs.learnbittensor.org/resources/glossary#deregistration),
+[Mining: Miner deregistration](https://docs.learnbittensor.org/miners#miner-deregistration)).
 
-For readers, this separates two ways a UID can disappear. Automatic deregistration recycles one slot
-for an incoming registrant; trimming compresses the subnet down to a new maximum the owner sets
-([Glossary: Deregistration](https://docs.learnbittensor.org/resources/glossary#deregistration)).
+For readers on a subnet such as netuid 1, deregistration is competition-driven displacement tied to
+registration events, while trimming is a bulk resize that compresses survivors into consecutive
+indices. Trimming also deletes listed on-chain neuron data — weights, bonds, axon information, and
+last-update records — rather than freeing a single slot for one incoming registrant
+([The Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph),
+[UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming)).
 
-That distinction also explains why trimming deletes on-chain neuron data explicitly. Because the
-operation removes listed UIDs and compacts survivors, documentation lists weights, bonds, axon data,
-and last-update records as deleted material rather than leaving empty placeholders
-([The Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)).
+- **UID trimming** — owner-initiated bulk reduction to a target count with survivor compression.
+- **Deregistration** — one incumbent removed when a full subnet accepts a new registration.
 
 ## Distinction from Pruning Score
 
@@ -229,6 +223,44 @@ A trim can delete on-chain neuron data for removed UIDs, then compress the survi
 vocabulary alone does not describe that deletion-and-compression workflow
 ([Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register),
 [UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming)).
+
+## Distinction from Register
+
+UID trimming and register sit on opposite sides of the same participant lifecycle. Register is the
+subnet-entry path that assigns a UID after a participant pays the registration burn, while trimming
+removes low emitters and forces trimmed participants to enter again through that same path if they
+want to return ([Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register),
+[UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming),
+[Mining: Miner registration](https://docs.learnbittensor.org/miners#miner-registration)).
+
+For readers, a trimmed UID does not keep its old slot or historical scores. Documentation states
+that the participant must register again, receives a new UID number, and starts with default scores
+after compression renumbers the survivors. Register therefore names re-entry after trimming, not the
+owner resize action itself
+([Glossary: Burn Cost](https://docs.learnbittensor.org/resources/glossary#burn-cost),
+[Glossary: Emission](https://docs.learnbittensor.org/resources/glossary#emission)).
+
+- **UID trimming** — owner-initiated removal and compression of low emitters.
+- **Register** — subnet entry that assigns a UID, including re-entry after a trim.
+
+## Distinction from Sudo
+
+UID trimming and sudo name different layers of owner authority. Sudo is the privileged control mode
+that lets the subnet owner perform owner-only chain actions, while UID trimming is one specific sudo
+operation that resizes the participant set down to a chosen maximum
+([Glossary: Sudo](https://docs.learnbittensor.org/resources/glossary#sudo),
+[UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming)).
+
+For readers, not every sudo action is a trim. Trimming is documented as a manual owner resize with
+its own emission ranking rules, immune-UID protections, minimum target count, and rate limit between
+passes. Sudo vocabulary names who may act; trimming vocabulary names this particular capacity
+reduction on netuid 1
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Glossary: Immunity Period](https://docs.learnbittensor.org/resources/glossary#immunity-period)).
+
+- **UID trimming** — the owner sudo action that removes low emitters and compresses survivors.
+- **Sudo** — the privileged owner control mode that authorizes trimming and other owner-only
+  actions.
 
 ## Reader Boundary
 
