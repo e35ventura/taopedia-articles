@@ -1,0 +1,123 @@
+---
+title: "Max Registrations Per Block"
+summary:
+  "How the max registrations per block subnet hyperparameter caps the number of new registrations
+  that can be accepted into a subnet during a single block."
+category: "Subnets"
+tags: ["Subnets", "Registration"]
+infoboxTitle: Max Registrations Per Block
+infoboxCaption: Per-block cap on new subnet registrations.
+infoboxRows:
+  - label: Parameter
+    value: MaxRegistrationsPerBlock
+  - label: Context
+    value: Subnet registration
+  - label: Unit
+    value: Registrations per block
+  - label: Example
+    value: netuid 1
+  - label: Set by
+    value: Subnet owner
+---
+
+# Max Registrations Per Block
+
+Max registrations per block is a per-subnet hyperparameter, listed as `MaxRegistrationsPerBlock` in
+Bittensor documentation, that caps the number of new registrations accepted into a subnet during a
+single block. The
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters) reference
+lists `MaxRegistrationsPerBlock` alongside the other registration-related hyperparameters that shape
+how participants enter a subnet
+([Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register)).
+
+The term names a per-block hard limit on registration throughput. It does not control the burn cost,
+the target registration rate, or the adjustment interval. It sets the ceiling on how many
+registrations can clear in any single block on the subnet.
+
+## What It Controls
+
+The hyperparameter prevents more than the configured number of registrations from being accepted in
+a single block on netuid 1 and other active subnets. Registrations submitted in the same block that
+would push the total past the cap are deferred or rejected; they do not automatically carry over to
+the next block
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+This per-block cap separates the throughput limit from the cost limit. The burn cost controls how
+expensive registration is; max registrations per block controls how many registrations can clear per
+block regardless of cost. A subnet with a high burn cost and a low per-block cap limits
+registrations both by price and by throughput.
+
+The parameter is set by the subnet owner as part of the subnet's registration configuration. Each
+subnet carries its own value, so the cap on one subnet can differ from the cap on another subnet.
+
+## Relation to Registration Cost Parameters
+
+Max registrations per block is a throughput constraint that operates alongside the cost-based
+registration parameters. Burn cost, min burn, max burn, adjustment interval, and target
+registrations per interval all shape the economic dimension of registration, while max registrations
+per block sets an independent throughput ceiling
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Glossary: Burn Cost](https://docs.learnbittensor.org/resources/glossary#burn-cost)).
+
+The two constraint types address different aspects of subnet entry. A subnet owner might set a low
+per-block cap to limit rapid UID slot turnover even if the current burn cost would permit many
+registrations. A high per-block cap allows faster UID slot fill rates when the burn cost is low and
+demand is high.
+
+## Documented Type and Setter
+
+The [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+reference lists `MaxRegistrationsPerBlock` among the registration-related hyperparameters that
+subnet owners can configure. Each subnet holds its own hyperparameter state, so the max
+registrations per block for netuid 1 can differ from the value set on another subnet.
+
+The active value is the per-subnet chain state for the selected netuid. A reading from one subnet
+should not be treated as evidence for the registration throughput limit on any other subnet.
+
+## Registration Path Context
+
+The [Mining: Miner registration](https://docs.learnbittensor.org/miners#miner-registration)
+documentation describes the process a miner follows to obtain a UID slot. Max registrations per
+block is a background constraint in that path: individual miners submitting a registration encounter
+the current burn cost, and the per-block cap governs whether their transaction can clear in the
+target block or must wait
+([Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)).
+
+The cap therefore affects timing and ordering of registration transactions in periods of high
+demand, independent of the burn cost level.
+
+## Network and Environment Scope
+
+The
+[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
+describes subnet development as moving from localnet to testnet and then mainnet. Max registrations
+per block applies across that lifecycle: subnet owners can configure the throughput cap in isolated
+localnet development environments, shared testnet deployments, and live mainnet subnets.
+
+The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
+separates mainnet, testnet, and localnet. A per-block registration cap from one environment should
+not be read as representative of production registration throughput behavior on another network.
+
+On mainnet, max registrations per block is the live per-subnet chain parameter that governs
+production registration throughput for the selected netuid.
+
+## Evidence Boundary
+
+Max registrations per block is a per-block throughput limit. It does not name a burn cost value, a
+miner's registration status, or a UID slot allocation. Those are outcomes inside the registration
+path; max registrations per block is an input parameter that sets the ceiling on how many
+registrations can clear in a single block
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Mining: Miner registration](https://docs.learnbittensor.org/miners#miner-registration)).
+
+A claim about max registrations per block should name the relevant subnet. The cap in force for
+netuid 1 is that subnet's own chain state and cannot be assumed to apply to other subnets.
+
+## Further Reading
+
+- [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+- [Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register)
+- [Glossary: Burn Cost](https://docs.learnbittensor.org/resources/glossary#burn-cost)
+- [Mining: Miner registration](https://docs.learnbittensor.org/miners#miner-registration)
+- [Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)
+- [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)
