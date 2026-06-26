@@ -84,6 +84,43 @@ The commit-reveal period decides how long weights stay hidden, but time-lock enc
 guarantees they actually stay hidden for that long
 ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
+## Relationship to Commit Reveal Period
+
+Time-lock encryption and the commit reveal period work together: the period sets how long weights
+stay hidden, while time-lock encryption enforces that they actually stay hidden for that long. The
+commit reveal period is the documented `CommitRevealPeriod` hyperparameter — the number of tempos
+that must elapse before committed weights are revealed under the commit-reveal scheme — and
+time-lock encryption is the cryptographic primitive that keeps the committed weights unreadable
+across that window
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)).
+
+The two answer different questions. The period is a policy choice about how many tempos of
+concealment to require, while time-lock encryption is the mechanism that makes the chosen
+concealment enforceable without trusting anyone to hold the weights. A longer period extends the
+window; time-lock encryption guarantees the window holds
+([Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo)).
+
+- **Commit reveal period** — how many tempos committed weights stay hidden.
+- **Time-lock encryption** — the crypto that enforces that concealment for the full period.
+
+## Distinction from Standard Encryption
+
+Time-lock encryption differs from ordinary encryption in what unlocks it. Standard encryption is
+unlocked by whoever holds the decryption key, so the holder can decrypt at any time. Time-lock
+encryption is unlocked by a future public condition — in Bittensor, a drand round — so not even the
+committer can read the value before that condition is met
+([Glossary: Drand / Time-Lock Encryption](https://docs.learnbittensor.org/resources/glossary#drandtime-lock-encryption)).
+
+That property is exactly what the commit-reveal scheme needs. If a validator could decrypt its own
+committed weights early, it could selectively reveal or adapt them; because time-lock encryption
+ties decryption to an external drand round rather than a held key, the concealment applies equally
+to everyone, including the committer, until reveal
+([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)).
+
+- **Standard encryption** — unlocked by holding the decryption key.
+- **Time-lock encryption** — unlocked by a future public condition, not by any key holder.
+
 ## Further Reading
 
 - [Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)
