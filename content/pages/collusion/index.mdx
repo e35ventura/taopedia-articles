@@ -76,30 +76,6 @@ The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-netw
 separates mainnet, testnet, and localnet. A collusion-resistance example from one environment should
 not be read as representing production consensus behavior in another environment.
 
-## Weight Copying Can Raise Agreement Without Coordination
-
-The [Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor)
-describes validators reusing visible weight signals instead of independently evaluating miners.
-Copied weights can make separate validators look aligned even when no group agreed to coordinate.
-
-Collusion instead names validators acting together to push inflated ratings toward chosen miners.
-Similar-looking weight patterns therefore do not, by themselves, prove collusion; the distinction is
-whether the alignment came from coordinated inflation or from copied signals
-([Glossary: Weight Copying](https://docs.learnbittensor.org/resources/glossary#weight-copying),
-[Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor)).
-
-## Sybil Attacks Target UID Count, Not Coordinated Weights
-
-A Sybil attack tries to gain leverage by registering many separate identities that appear
-independent. Collusion instead tries to move the consensus outcome by coordinating validator weights
-toward favored miners
-([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
-
-The two threats should be kept separate in safety reading. Multiplying UIDs is an identity-flooding
-pattern; collusion is a coordinated scoring pattern inside an existing validator set
-([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
 ## Clipped Weights Lose Reward at Tempo Boundaries
 
 [Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)
@@ -149,6 +125,68 @@ still matter at the tempo boundary where emissions resolve
 
 Similar-looking weight matrices therefore remain ambiguous until stake context is included
 ([Glossary: Trust](https://docs.learnbittensor.org/resources/glossary#trust)).
+
+## Distinction from Sybil Attack
+
+Collusion and a Sybil attack both try to capture more reward than honest participation would allow,
+but they operate on different layers of the subnet. A Sybil actor multiplies identities at
+registration, hoping that more UID slots translate into more influence, while a colluding group
+coordinates validator weights toward favored miners inside an existing participant set. Identity
+flooding pays per-registration burn and competes for slot ceilings; coordinated weighting must move
+the stake-weighted agreement point and survive clipping
+([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+For readers tracing defenses, Sybil resistance is mostly economic at entry — burn cost, max allowed
+UIDs, and low-stake headcount — whereas collusion resistance lands inside the weight-aggregation
+pass where clipping trims inflated scores before tempo-bound emissions resolve. Similar bad outcomes
+therefore require different evidence: registration history and slot pressure for Sybil reading,
+stake-backed coalition size and outlier weight patterns for collusion reading
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Glossary: UID Slot](https://docs.learnbittensor.org/resources/glossary#uid-slot),
+[Glossary: Stake Weight](https://docs.learnbittensor.org/resources/glossary#stake-weight)).
+
+- **Collusion** — multiple validators coordinating inflated weights toward chosen miners.
+- **Sybil attack** — one actor registering many identities to seek leverage from numbers.
+
+## Distinction from Weight Copying
+
+Collusion and weight copying can both make separate validators look aligned in a weight matrix, but
+the motive and mechanism differ. Collusion is validators acting together to push inflated ratings
+toward chosen miners, while weight copying is validators reusing visible weight signals instead of
+independently evaluating miners — alignment without a coordinating group
+([Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor),
+[Glossary: Weight Copying](https://docs.learnbittensor.org/resources/glossary#weight-copying)).
+
+For readers investigating suspicious agreement, copied weights can mimic coalition behavior even
+when no private coordination occurred. Collusion instead requires coordinated inflation that must
+still clear stake-weighted clipping before extra reward lands at the tempo boundary. Timing defenses
+such as commit reveal add a separate layer by delaying visible signals, which makes copied alignment
+less useful than independent evaluation
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
+[Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo)).
+
+- **Collusion** — coordinated inflation of weights toward shared targets.
+- **Weight copying** — reusing another validator's visible weights without independent evaluation.
+
+## Distinction from Validator Permit
+
+Collusion and the validator permit sit on the same submission path but name different ideas.
+Collusion is coordinated bias in how permitted validators score miners, while the validator permit
+is the on-chain flag that records whether a UID may submit non-self weights that count in consensus
+at all
+([Glossary: Validator Permit](https://docs.learnbittensor.org/resources/glossary#validator-permit),
+[Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
+
+For readers, holding a permit is necessary but not sufficient for a colluding coalition to matter. A
+coordinated group still has to submit inflated weights, clear stake-weighted clipping, and survive
+tempo-bound distribution before extra emissions arrive. A permitted validator acting alone faces the
+same clipping path; collusion adds coalition stake, not a bypass around permit or clipping rules
+([Yuma Consensus: Clipping excess weights](https://docs.learnbittensor.org/learn/yuma-consensus#clipping-excess-weights),
+[Emission](https://docs.learnbittensor.org/learn/emissions)).
+
+- **Collusion** — coordinated validator bias in weight submissions.
+- **Validator permit** — the on-chain right to submit non-self weights that count in consensus.
 
 ## Distinction from Kappa
 
