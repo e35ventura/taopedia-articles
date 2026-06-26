@@ -71,18 +71,36 @@ The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-netw
 separates mainnet, testnet, and localnet. A replay-attack example from one environment should not be
 read as describing production nonce behavior on another network.
 
-## Hotkey Scope Limits Which Nonces Apply
+## Axon Nonces Track Dendrite Endpoint Keys
 
-Replay defenses are evaluated per signing hotkey. Axon documentation describes nonce checking in the
-context of a dendrite synapse signed by a specific hotkey, so a replayed message cannot borrow
-freshness from a different key's nonce stream
-([Glossary: Hotkey](https://docs.learnbittensor.org/resources/glossary#hotkey),
+Axon verification in the Bittensor SDK tracks nonce state per dendrite endpoint key, not by hotkey
+alone. Documentation for `bittensor.core.axon` describes checking both freshness and monotonic
+increase for the `dendrite.hotkey:dendrite.uuid` pair associated with a synapse
+([bittensor.core.axon](https://docs.learnbittensor.org/python-api/html/autoapi/bittensor/core/axon/),
 [Glossary: Dendrite](https://docs.learnbittensor.org/resources/glossary#dendrite)).
 
-For readers, that scope matters when comparing chain extrinsics and off-chain synapses. Extrinsic
-account nonces protect wallet-level chain actions, while axon nonce rules protect subnet neuron
-traffic for the hotkey that produced the signature
+For readers, that scope differs from Subtensor account nonces. Extrinsic replay defenses protect
+wallet-level chain actions keyed to the submitting account, while axon nonce rules protect off-chain
+synapse traffic for the specific dendrite endpoint that produced the signature
 ([Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics)).
+
+## Distinction from Extrinsic Account Nonces
+
+Subtensor extrinsics use account-level nonce expectations so a signed chain transaction cannot be
+accepted twice on the same account path
+([Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics)).
+
+Axon verification applies separate nonce tracking to dendrite endpoint keys in signed synapse
+traffic
+([bittensor.core.axon](https://docs.learnbittensor.org/python-api/html/autoapi/bittensor/core/axon/),
+[Glossary: Synapse](https://docs.learnbittensor.org/resources/glossary#synapse)).
+
+- **Extrinsic account nonce** — chain replay protection for a submitting account.
+- **Axon endpoint nonce** — freshness and monotonic checks for `dendrite.hotkey:dendrite.uuid`.
+
+A replay failure on the axon path therefore reflects stale or reused endpoint nonce state rather
+than proof that the hotkey signature was cryptographically invalid
+([Glossary: Hotkey](https://docs.learnbittensor.org/resources/glossary#hotkey)).
 
 ## Signed Payload Reuse Is Not Signature Forgery
 
