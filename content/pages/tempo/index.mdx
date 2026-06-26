@@ -186,16 +186,61 @@ period. Both the cadence and the early-submission window share the same block-ba
 validator's timing has to be reasoned about in blocks, not seconds
 ([Subnet Hyperparameters: Activity Cutoff](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutoff)).
 
-## Distinction from Weights Rate Limit
+## Distinction from Epoch
 
-Tempo and weights rate limit are different block-interval hyperparameters. Tempo is the block-based
-interval over which rewards accumulate before Yuma Consensus distributes them at the boundary, while
-weights rate limit is the number of blocks a validator must wait between weight commits
+Readers often swap epoch and tempo because both appear in subnet timing discussions. Tempo is the
+hyperparameter that counts how many blocks make up one consensus cycle; epoch names the consensus
+period in which validators submit weights and Yuma settles outcomes at the cycle boundary
+([Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo),
+[Glossary: Epoch](https://docs.learnbittensor.org/resources/glossary#epoch),
+[Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)).
+
+Use tempo when the question is the block count for one cycle. Use epoch when the question is the
+full window from submission through boundary settlement.
+
+## Distinction from Block
+
+A block is one step of chain progression. Tempo counts how many blocks pass before the next subnet
+emission step ([Glossary: Block](https://docs.learnbittensor.org/resources/glossary#block),
+[Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo)).
+
+Blocks advance continuously; tempo groups them into the interval used for periodic distribution.
+
+## Distinction from Emission
+
+Emission names both injection and distribution. Injection can run every block, while distribution
+from accumulated alpha waits for the tempo boundary
+([Emission](https://docs.learnbittensor.org/learn/emissions),
+[Emission: Injection and distribution](https://docs.learnbittensor.org/learn/emissions#injection-and-distribution-two-stages-of-the-emissions-process)).
+
+If the reader is asking when pooled rewards are credited to participants, tempo is the timing
+label—not the whole emission model.
+
+## Distinction from Yuma Consensus
+
+Yuma Consensus turns submitted weights into miner incentives and validator dividends at tempo
+boundaries. Tempo only names the block cadence between those runs
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
+[Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo)).
+
+Timing and aggregation are separate questions. Tempo answers when the boundary arrives; Yuma answers
+what happens to weights there.
+
+## Distinction from Weights Rate Limit and Activity Cutoff
+
+These block-count settings are easy to confuse with tempo because all are measured in blocks:
+
+| Term               | What it names                                                               |
+| ------------------ | --------------------------------------------------------------------------- |
+| Tempo              | Block interval for accumulation and distribution at the boundary            |
+| Weights rate limit | Blocks a validator must wait between weight commits                         |
+| Activity cutoff    | Early blocks in the epoch when weights must arrive to join the current pass |
+
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+[Subnet Hyperparameters: Activity Cutoff](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutoff)).
 
-- **Tempo** — the block interval that bounds reward accumulation and distribution.
-- **Weights rate limit** — the blocks a validator must wait between weight commits.
+Tempo sets how long the epoch lasts. Activity cutoff sets how early a validator must act inside that
+epoch. Weights rate limit spaces repeated commits from the same validator.
 
 ## Reader Boundary
 
@@ -207,40 +252,6 @@ for rewards, epochs, and related subnet processes
 The article-level point is stable even when specific values differ by subnet: tempo is the cadence
 that helps turn block progression into periodic subnet consensus and emission timing
 ([Emission](https://docs.learnbittensor.org/learn/emissions)).
-
-## Relationship to Yuma Consensus
-
-Tempo is the block interval that groups periodic subnet processes. Yuma Consensus runs at those
-boundaries to turn validator weights into miner incentives and validator dividends
-([Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
-[Emission](https://docs.learnbittensor.org/learn/emissions)).
-
-Readers comparing timing to outcomes should keep both terms separate. Tempo counts blocks between
-processing steps, while Yuma Consensus explains what happens to submitted weights at the step
-boundary ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
-[Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#weight-vector)).
-
-Use tempo when the article needs the block cadence on a netuid; use Yuma Consensus when it needs how
-weights become miner incentives and validator dividends
-([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism),
-[Glossary: Incentives](https://docs.learnbittensor.org/resources/glossary#incentives)).
-
-Cadence and aggregation answer different reader questions inside the same subnet timing path
-([Glossary: Epoch](https://docs.learnbittensor.org/resources/glossary#epoch)).
-
-## Relationship to Rate Limits
-
-Tempo and rate limits are both block-counted timers that pace different things. Tempo is the block
-interval that defines a subnet's epoch and paces consensus and emission, while a rate limit is the
-block-based cooldown that spaces repeated chain actions from the same key, so tempo gates how often
-the subnet settles a round and rate limits gate how often an action may repeat
-([Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo),
-[Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits),
-[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
-
-- **Tempo** — the block interval pacing each subnet epoch's consensus and emission.
-- **Rate limits** — block-based cooldowns spacing repeated actions from one key.
 
 ## Further Reading
 
