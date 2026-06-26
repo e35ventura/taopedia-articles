@@ -88,22 +88,6 @@ because the newcomer itself held the lowest score
 
 Pruning score therefore belongs on the incumbent side of registration pressure.
 
-## Immunity Exceptions Can Affect Eligibility
-
-[Mining: Miner deregistration](https://docs.learnbittensor.org/miners#miner-deregistration) lists
-immunity-period exceptions among the eligibility rules that can affect which participant is removed
-when a subnet is full. Immunity does not change what pruning score measures; it changes who is
-eligible for removal at a given moment while the score still reflects emission standing.
-
-## UID Trimming Ranks by Emission Instead
-
-[UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming) describes a separate
-owner-initiated bulk reduction ranked by emission scores. Pruning score names the standing used when
-a full subnet must displace one participant to admit a new registration.
-
-Trimming is a manual resize with compression rules; pruning score is the performance signal cited in
-mining documentation for single-slot replacement on a full subnet.
-
 ## Emissions From Yuma Feed the Score
 
 Yuma Consensus aggregates validator weight signals within a subnet into miner
@@ -144,6 +128,96 @@ incumbent looks weakest when documented deregistration ranking is needed to free
 ([Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph),
 [Glossary: Deregistration](https://docs.learnbittensor.org/resources/glossary#deregistration)).
 
+## Distinction from UID Trimming
+
+Pruning score and UID trimming both rank participants by emission standing, but they trigger
+different removal paths. Pruning score names the earnings-based standing used when a full subnet
+must displace one incumbent to admit a new registration, while UID trimming is a subnet-owner sudo
+action that removes many low emitters down to a chosen maximum and compresses survivors into
+consecutive indices
+([Mining: Miner deregistration](https://docs.learnbittensor.org/miners#miner-deregistration),
+[UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming)).
+
+For readers on a subnet such as netuid 1, pruning score belongs to automatic single-slot replacement
+at registration time, while trimming is a bulk owner resize with immune-UID protections and explicit
+neuron-data deletion rules. Both use emission ranking, but only trimming compresses the survivor set
+in one sudo pass ([Glossary: Emission](https://docs.learnbittensor.org/resources/glossary#emission),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+- **Pruning score** — earnings standing for one-slot displacement on a full subnet.
+- **UID trimming** — owner-initiated bulk reduction to a target count.
+
+## Distinction from Deregistration
+
+Pruning score and deregistration describe the same capacity event from different angles. Pruning
+score is the per-neuron earnings standing that ranks which incumbent looks weakest when a full
+subnet must free one slot, while deregistration is the removal event that recycles that slot for an
+incoming registration ([Mining in Bittensor](https://docs.learnbittensor.org/miners),
+[Glossary: Deregistration](https://docs.learnbittensor.org/resources/glossary#deregistration),
+[Mining: Miner deregistration](https://docs.learnbittensor.org/miners#miner-deregistration)).
+
+For readers comparing standing to removal on netuid 1, pruning score names who is closest to
+displacement, while deregistration names the replacement step when capacity rules require one
+incumbent to leave. The newcomer is not removed because it held the lowest score; the lowest-scoring
+eligible incumbent is
+([Glossary: UID Slot](https://docs.learnbittensor.org/resources/glossary#uid-slot),
+[Glossary: Incentives](https://docs.learnbittensor.org/resources/glossary#incentives)).
+
+- **Pruning score** — earned emission standing among current participants.
+- **Deregistration** — removal of an incumbent when a full subnet admits a new registration.
+
+## Distinction from Immunity Period
+
+Pruning score and the immunity period both affect who can be displaced, but they measure different
+things. Pruning score reflects how much a neuron has been earning and therefore how close it sits to
+displacement ranking, while the immunity period is the post-registration grace window that can
+shield a newcomer from removal even when its earnings are still low
+([Glossary: Immunity Period](https://docs.learnbittensor.org/resources/glossary#immunity-period),
+[Mining: Miner deregistration](https://docs.learnbittensor.org/miners#miner-deregistration)).
+
+For readers, immunity does not change what pruning score measures; it changes who is eligible for
+removal at a given moment. Once the grace window passes, the same earn-to-keep expectation applies:
+the participant earning the least among eligible incumbents is the displacement candidate when the
+subnet is full ([Understanding Neurons](https://docs.learnbittensor.org/learn/neurons)).
+
+- **Pruning score** — emission standing that ranks displacement risk.
+- **Immunity period** — post-registration protection from ordinary pruning or trimming.
+
+## Distinction from Register
+
+Pruning score and register meet at the moment a full subnet admits someone new. Register is the
+subnet-entry path that assigns a UID after a participant pays the registration burn, while pruning
+score ranks which eligible incumbent must leave so that entry can succeed
+([Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register),
+[Mining: Miner registration](https://docs.learnbittensor.org/miners#miner-registration)).
+
+For readers, registration pressure applies to the incumbent side, not the newcomer. Documentation
+identifies the existing participant with the lowest pruning score as the displacement candidate; the
+incoming registrant receives the slot after that removal, not because the newcomer itself held the
+lowest standing
+([Glossary: Burn Cost](https://docs.learnbittensor.org/resources/glossary#burn-cost),
+[Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)).
+
+- **Pruning score** — earnings ranking that selects which incumbent gives way.
+- **Register** — subnet entry that triggers single-slot replacement when capacity is full.
+
+## Distinction from Subnet Validator
+
+Pruning score and the subnet validator meet at deregistration eligibility on netuid 1. Pruning score
+is the per-neuron earnings value that ranks which UID is removed first when the subnet is full,
+while a subnet validator is a neuron that evaluates miners and submits weights in that subnet
+([Glossary: Subnet Validator](https://docs.learnbittensor.org/resources/glossary#subnet-validator),
+[Mining in Bittensor](https://docs.learnbittensor.org/miners)).
+
+For readers, validators are not exempt from the same standing metric. A low-scoring validator
+outside its immunity window can be displaced like any other low scorer, so pruning score applies to
+validators as well as miners when slot competition turns on registration pressure
+([Mining: Miner deregistration](https://docs.learnbittensor.org/miners#miner-deregistration),
+[Validating: Validator deregistration](https://docs.learnbittensor.org/validators#validator-deregistration)).
+
+- **Pruning score** — role-neutral earnings standing for displacement ranking.
+- **Subnet validator** — a neuron that evaluates miners and submits weights on the subnet.
+
 ## Reader Boundary
 
 This page describes the concept at a high level. Which participant actually stands lowest on a given
@@ -164,40 +238,6 @@ The two also differ in scope. Pruning score is role-neutral: the neuron with the
 or validator, risks replacement when all UID slots are occupied, so validator deregistration is only
 the validator-side case of a ranking that applies to any neuron
 ([Glossary: Deregistration](https://docs.learnbittensor.org/resources/glossary#deregistration)).
-
-## Relationship to Subnet Validator
-
-Pruning score and the subnet validator meet at deregistration eligibility. Pruning score is the
-per-neuron value that ranks which UID is removed first when the subnet is full, while a subnet
-validator is a neuron that evaluates miners and submits weights in a subnet
-([Glossary: Subnet Validator](https://docs.learnbittensor.org/resources/glossary#subnet-validator)).
-
-A subnet validator is not exempt from that ranking. A low-scoring validator outside its immunity
-window can be displaced like any other low scorer, so pruning score applies to validators as well as
-miners
-([Mining: Miner deregistration](https://docs.learnbittensor.org/miners#miner-deregistration)).
-
-## Relationship to Deregistration
-
-Pruning score reflects how much a subnet participant has been earning when slots are contested.
-Deregistration is the removal of a low-performing entrant when capacity and replacement rules apply
-([Mining in Bittensor](https://docs.learnbittensor.org/miners),
-[Glossary: Deregistration](https://docs.learnbittensor.org/resources/glossary#deregistration),
-[Mining: Miner deregistration](https://docs.learnbittensor.org/miners#miner-deregistration)).
-
-Readers comparing standing to removal need both terms on the same netuid. Pruning score names the
-earnings-based standing that can put a participant closest to displacement, while deregistration
-names the replacement event when a slot must be freed
-([Glossary: UID Slot](https://docs.learnbittensor.org/resources/glossary#uid-slot),
-[Glossary: Incentives](https://docs.learnbittensor.org/resources/glossary#incentives)).
-
-Use pruning score when discussing earned standing among participants; use deregistration when
-covering the removal step rather than the standing metric itself
-([Glossary: Immunity Period](https://docs.learnbittensor.org/resources/glossary#immunity-period),
-[Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)).
-
-Standing metric and removal event answer different reader questions when subnet capacity is full
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
 ## Further Reading
 
