@@ -141,6 +141,64 @@ recent update does not change when the neuron registered
 - **Last update** — the block of a neuron's most recent data update on netuid 1.
 - **Registration block** — the block at which the neuron first registered to the subnet.
 
+## Distinction from Activity Cutoff
+
+Last update and activity cutoff are always read as a pair, but they record different kinds of subnet
+state. Last update is the per-neuron block height of the neuron's most recent on-chain change, while
+activity cutoff is the owner-settable hyperparameter that sets how many blocks of inactivity are
+allowed before stake is treated as inactive for epoch participation in Yuma Consensus
+([The Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph),
+[Subnet Hyperparameters: Activity Cutoff](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutoff)).
+
+For readers, last update answers when the neuron last acted; activity cutoff answers how long
+silence is tolerated before that neuron stops counting as active. Neither field alone decides status
+— the comparison is whether the gap from `last_update` to the current block exceeds the subnet's
+cutoff window
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)).
+
+- **Last update** — the block of a neuron's most recent data update.
+- **Activity cutoff** — the hyperparameter span that defines allowed inactivity before epoch
+  exclusion.
+
+## Distinction from Active Status
+
+Last update and the metagraph `active` field sit on the same neuron row but name different layers of
+the activity test. `last_update` records the block timestamp of the neuron's latest change, while
+`active` is the derived boolean that reports whether that neuron still falls inside the subnet's
+activity window at the snapshot block
+([The Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+For readers inspecting a metagraph export, `last_update` is the raw staleness input and `active` is
+the computed outcome after the cutoff rule is applied. A neuron can have a recent `last_update` yet
+still read inactive if the subnet's cutoff is short, and a stale `last_update` should not be read
+without the hyperparameter that defines the allowed gap
+([The Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)).
+
+- **Last update** — the block height of the neuron's most recent on-chain update.
+- **Active** — the metagraph flag showing whether the neuron is inside the activity window.
+
+## Distinction from Immunity Period
+
+Last update and the immunity period both use block heights, but they gate different lifecycle
+questions. Last update tracks whether a neuron has contributed recently enough to count as active,
+while the immunity period is the post-registration grace window that shields a newly assigned UID
+from ordinary pruning or trimming for a documented block span
+([Glossary: Immunity Period](https://docs.learnbittensor.org/resources/glossary#immunity-period),
+[The Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)).
+
+For readers, immunity protects entry timing — a young registration may be safe from displacement
+even before it has built performance history — whereas last update measures ongoing participation
+after the neuron exists. A neuron inside immunity can still have a stale last update, and a recent
+last update does not extend or replace the immunity window counted from registration
+([UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming),
+[Understanding Neurons](https://docs.learnbittensor.org/learn/neurons)).
+
+- **Last update** — whether the neuron has updated recently enough to count as active.
+- **Immunity period** — the post-registration block window that protects a new UID from pruning or
+  trimming.
+
 ## Reader Boundary
 
 This page defines the concept at a high level. It does not report the last update of any particular
