@@ -1,318 +1,276 @@
 ---
-title: "Max Allowed UIDs"
+title: "Sandwich Attack"
 summary:
-  "How the max allowed UIDs subnet hyperparameter sets the ceiling on how many neurons a Bittensor
-  subnet can hold."
-category: "Subnets"
-tags: ["Subnets", "Registration"]
-infoboxTitle: Max Allowed UIDs
-infoboxCaption: Ceiling on neuron slots per subnet.
+  "How a sandwich attack names a transaction ordering exploit that wraps a target transaction
+  between two adversarial ones in Bittensor."
+category: "Safety"
+tags: ["Safety", "Transactions", "Tokenomics"]
+infoboxTitle: Sandwich Attack
+infoboxCaption: Target transaction wrapped between two adversarial transactions.
 infoboxRows:
-  - label: Parameter
-    value: MaxAllowedUids
-  - label: Type
-    value: u16
-  - label: Default
-    value: "256"
-  - label: Example
-    value: netuid 1
-  - label: Set by
-    value: Subnet owner
+  - label: Context
+    value: Mempool and pool operations
+  - label: Exploit type
+    value: Transaction ordering
+  - label: Related term
+    value: MEV
+  - label: Article scope
+    value: Concept only
 ---
 
-# Max Allowed UIDs
+# Sandwich Attack
 
-Max allowed UIDs is a per-subnet hyperparameter, listed in the documentation as `MaxAllowedUids`,
-that sets the maximum number of neurons a subnet can hold. Each registered neuron occupies one
-[UID slot](https://docs.learnbittensor.org/resources/glossary#uid-slot), so this value is the
-ceiling on how many [UIDs](https://docs.learnbittensor.org/resources/glossary#uid-slot) can exist on
-a subnet at once
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+A sandwich attack is a transaction ordering exploit where an attacker places two transactions around
+a target transaction — one before and one after — to profit from the price movement the target
+transaction causes
+([Glossary: Sandwich attack](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value)).
 
-## What It Controls
+The term is a specific form of MEV (Maximal Extractable Value) in Bittensor pool operations. It is
+not a network consensus attack or a validator scoring issue.
 
-The hyperparameter bounds capacity, not behavior. It does not change how a
-[neuron](https://docs.learnbittensor.org/resources/glossary#neuron)
-[registers](https://docs.learnbittensor.org/resources/glossary#register), what registration costs,
-or how rewards are calculated. It only fixes how many UID slots the subnet exposes. Once the subnet
-holds that many neurons, it is full, and further entry depends on displacement rather than on free
-space ([Glossary: UID Slot](https://docs.learnbittensor.org/resources/glossary#uid-slot)).
+## Mechanism Overview
 
-That makes max allowed UIDs a structural limit. It defines the size of the competitive set on a
-subnet such as netuid 1: every miner and validator on that subnet shares the same fixed pool of
-slots.
+In a sandwich attack, the attacker observes a pending target transaction that will move a pool
+price. The attacker submits a transaction ahead of the target to take a position, allows the target
+to execute and move the price, then submits a second transaction to close the position at the
+improved rate
+([Glossary: Sandwich attack](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value)).
 
-## Documented Type, Default, and Setter
+The two adversarial transactions wrap around the target — hence the sandwich framing. The attacker
+extracts the price movement that the target transaction creates in the pool.
 
-The [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
-reference lists `MaxAllowedUids` as a `u16` with a default of `256` and the description "Maximum
-number of neurons on a subnet." It is changed through the `sudo_trim_to_max_allowed_uids` extrinsic,
-exposed in tooling as `btcli sudo set --param sudo_trim_to_max_allowed_uids` and the
-`btcli sudo trim` command, and the reference marks the permission required to set it as subnet
-owner.
+## MEV Relationship
 
-The setter name carries an operational caveat. Because it is a trim operation, lowering the cap
-below the current neuron count removes excess UIDs rather than leaving them in place, so a reduction
-is not a passive setting change. Raising or lowering the value is governed at the subnet-owner level
-rather than freely tuned by individual participants
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+A sandwich attack is one type of MEV. MEV names the broader category of value extractable through
+transaction ordering. A sandwich attack is the specific pattern where the extraction uses a
+before-and-after pair of transactions around the victim
+([Glossary: MEV](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value)).
 
-## Subnet Context
+MEV Shield addresses mempool-visibility risk more broadly. The sandwich attack is the specific
+threat pattern that uses a two-sided wrap rather than a single front-running transaction
+([Understanding Slippage](https://docs.learnbittensor.org/learn/slippage)).
 
-Max allowed UIDs is one of the
-[subnet hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters), the
-on-chain state variables that configure a single
-[subnet](https://docs.learnbittensor.org/resources/glossary#subnet), for example netuid 1. Because
-each subnet carries its own hyperparameters, the UID ceiling is defined per subnet and applies only
-within that subnet.
+## Pool Context
 
-The documented default of 256 is a starting point, not a guarantee for any specific subnet. The live
-ceiling is chain state and can differ from the default, so the current value should be read for the
-relevant netuid rather than assumed.
+Sandwich attacks are most relevant in subnet pool operations where large transactions move alpha
+prices. The attacker profits from the pool's price sensitivity to transaction size
+([Understanding Slippage](https://docs.learnbittensor.org/learn/slippage)).
+
+This keeps the term in pool-operation vocabulary. Sandwich attack risk is specific to operations
+that interact with subnet pool pricing and require mempool visibility.
+
+## Visible Stake Activity Can Be Sandwiched
+
+[Managing Your Stakes](https://docs.learnbittensor.org/staking-and-delegation/managing-stake-sdk)
+documentation describes a
+[Glossary: Sandwich Attack](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value)
+in which an observer buys subnet alpha before a visible victim trade and sells after it. That
+two-sided sequence extracts value from the victim's execution rather than from ordinary reserve
+movement alone.
+
+The
+[Glossary: MEV (Maximal Extractable Value)](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value)
+states that MEV attacks can affect both
+[Glossary: Staking](https://docs.learnbittensor.org/resources/glossary#staking) and
+[Glossary: Unstaking](https://docs.learnbittensor.org/resources/glossary#unstaking) operations when
+knowledge of pending transactions lets another party manipulate token prices. Sandwich vocabulary
+therefore names a documented ordering threat around stake and unstake flows, not a generic pool
+label detached from participant actions.
+
+Those operations move value through subnet pool pricing while details may still be readable in the
+[Glossary: Mempool](https://docs.learnbittensor.org/resources/glossary#mempool) waiting period.
+Sandwich attack reading stays with that visible pending stake and unstake context rather than with
+every pool conversion that simply returns a different amount than a static quote.
+
+## Price Protection Limits Losses Without Hiding Pending Trades
+
+[Managing Your Stakes](https://docs.learnbittensor.org/staking-and-delegation/managing-stake-sdk)
+documentation draws a separate line between
+[Price Protection](https://docs.learnbittensor.org/learn/price-protection) and defenses against
+sandwich attacks. Price protection caps how much adverse price movement a staking or unstaking
+action will accept, which can limit losses when execution lands at a worse rate than expected.
+
+The same guidance states that price protection does not prevent sandwich attacks entirely, while
+[MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield/) does so by encrypting sensitive
+pending transaction contents until block inclusion. A sandwich attack still depends on observing
+pending trade details before settlement; price protection reacts when movement is measured at
+execution time rather than hiding those details from observers.
+
+[Price Protection](https://docs.learnbittensor.org/learn/price-protection) documentation describes
+strict, partial, and unsafe handling when measured movement exceeds a selected tolerance. Those
+choices govern how the action proceeds after pool movement is known, not whether another party could
+see the pending trade and order around it. Sandwich attack vocabulary stays with ordering
+foreknowledge; price protection vocabulary stays with tolerated execution outcomes.
+
+## Back-Running Uses Only the After Side
+
+The
+[Glossary: MEV (Maximal Extractable Value)](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value)
+lists three common ordering attack shapes alongside sandwich attacks.
+[Glossary: Front-Running](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value)
+names observing a pending transaction and submitting a similar one with higher priority to execute
+first. Back-running names submitting immediately after a target transaction to capitalize on its
+effects.
+
+A sandwich attack requires both sides of the victim trade — entry before and exit after — to profit
+from the price movement the victim causes when the pool absorbs the larger trade. Back-running adds
+only the after side and does not wrap the target between two adversarial transactions.
+
+Front-running covers the before-only case, sandwich attack covers the before-and-after pair, and
+back-running covers the after-only shape named in the same glossary list. Keeping those labels
+separate prevents reading every post-trade ordering profit as a sandwich pattern.
+
+## Relationship to MEV Shield
+
+Sandwich attack and MEV Shield are related but different parts of Bittensor transaction-protection
+vocabulary. Sandwich attack names an ordering exploit that profits from a victim trade's price
+impact, while MEV Shield names encrypted mempool protection that hides sensitive transaction details
+before block inclusion
+([Glossary: Sandwich attack](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value),
+[MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield/)).
+
+For readers, sandwich attack describes adversarial ordering around a visible trade, and MEV Shield
+describes a mitigation that reduces mempool visibility for protected submissions. One is exploit
+vocabulary; the other is pre-inclusion protection vocabulary. They belong to the same MEV risk
+domain but name different roles.
+
+## Mempool Ordering, Pool Trades, and Yuma on netuid 1
+
+On a subnet such as netuid 1, a sandwich attack targets visible pending
+[staking](https://docs.learnbittensor.org/resources/glossary#staking) or
+[unstaking](https://docs.learnbittensor.org/resources/glossary#unstaking) activity that moves subnet
+pool pricing in the [mempool](https://docs.learnbittensor.org/resources/glossary#mempool)
+([Managing Your Stakes](https://docs.learnbittensor.org/staking-and-delegation/managing-stake-sdk)).
+
+That exploit path sits on transaction ordering and pool conversion, not on
+[validator weights](https://docs.learnbittensor.org/resources/glossary#weight-vector) or
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) scoring on netuid 1
+([Emission](https://docs.learnbittensor.org/learn/emissions)).
+
+Sandwich attack vocabulary therefore names adversarial pool ordering; subnet incentive outcomes
+remain a separate reading path.
 
 ## Development Stage Context
 
 The
 [Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from localnet to testnet and then mainnet. For max allowed
-UIDs on a subnet such as netuid 1, that sequence changes how readers should interpret slot-capacity
-and displacement examples.
+describes subnet development as moving from localnet to testnet and then mainnet. For sandwich
+attacks on a subnet such as netuid 1, that sequence changes how mempool visibility and pool-ordering
+examples should be read.
 
-In localnet, max-allowed-UIDs hyperparameters can be tested in an isolated environment. Local slot
-ceilings reflect local chain configuration rather than production subnet participant limits.
+In localnet, sandwich mechanics on netuid 1 can be tested in isolation. Localnet pending transaction
+visibility does not represent production ordering behavior.
 
-On testnet, registration and displacement behavior can be observed in a shared non-production
-network. Testnet UID ceilings and metagraph counts are separate from mainnet subnet state
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+On testnet, MEV-related flows on netuid 1 can be exercised in a shared non-production network.
+Testnet pool and mempool conditions are separate from mainnet state.
 
-On mainnet, max allowed UIDs is a live per-subnet hyperparameter on production subnets. Observed
-slot ceilings depend on the selected subnet's on-chain hyperparameter state.
+On mainnet, sandwich attack concerns on netuid 1 involve live production subnet pools and the
+protections traders use on the public network
+([MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield/)).
 
 The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
-separates mainnet, testnet, and localnet. A max-allowed-UIDs example from one environment should not
-be read as representing production slot limits in another environment.
+separates mainnet, testnet, and localnet. A sandwich attack example from one environment should not
+be read as representing production transaction behavior in another environment.
 
-## BTCLI Reads the Live Hyperparameter for a netuid
+## A Sandwich Needs Three Ordered Trades, Not Just Bad Slippage
 
-Any user can read subnet hyperparameters for a selected netuid with
-`btcli subnet hyperparameters --netuid 1`. The command output includes the live `MaxAllowedUids`
-value for that subnet at query time, along with other owner-set and root-set fields
-([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
+Documentation distinguishes a sandwich attack from ordinary slippage by the ordering pattern. An
+attacker places trades before and after a victim's swap to move the pool price against the victim,
+which requires observing the pending transaction rather than merely accepting pool depth
+([Glossary: MEV](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value),
+[Understanding Slippage](https://docs.learnbittensor.org/learn/slippage)).
 
-That read path keeps live ceiling claims tied to a parseable netuid. A statement about max allowed
-UIDs on netuid 1 should be checked with the hyperparameter table for netuid 1 rather than inferred
-from the documented default alone.
+For readers, this is why protection targets pending visibility and tolerance. Price protection and
+MEV Shield narrow how much an attacker can move the price around a victim's trade, rather than
+eliminating all pool movement
+([Price Protection](https://docs.learnbittensor.org/learn/price-protection)).
 
-## Metagraph Count Shows How Many Slots Are Occupied
+That three-trade framing also keeps sandwich vocabulary inside pool operations. It is an adversarial
+ordering exploit around swaps, not a failure of subnet consensus or validator scoring
+([MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield)).
 
-The [Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph) documentation describes
-the metagraph as the complete subnet state at a block, including all registered neurons. Reading
-`btcli subnets metagraph --netuid 1 --network finney` returns the current participant set for that
-subnet, which can be compared against the configured `MaxAllowedUids` ceiling from the
-hyperparameter table for the same netuid
-([Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)).
+## Distinction from Slippage
 
-The hyperparameter names the ceiling; the metagraph snapshot names how many slots are occupied at
-one block height. When occupied count reaches the ceiling, further registration depends on
-displacement rules rather than spare capacity
-([Mining: Miner deregistration](https://docs.learnbittensor.org/miners#miner-deregistration)).
+Slippage is the ordinary price impact when a trade moves through pool depth. A sandwich attack adds
+adversarial ordering around a victim trade so the attacker profits from that movement
+([Understanding Slippage](https://docs.learnbittensor.org/learn/slippage),
+[Glossary: MEV](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value)).
 
-## Behavior When the Subnet Is Full
+Wide slippage alone is not proof of a sandwich; the exploit label requires the before-and-after
+ordering pattern.
 
-When every UID is occupied on a subnet such as netuid 1, a new registration does not expand the
-subnet. Instead it displaces the neuron with the lowest
-[pruning score](https://docs.learnbittensor.org/miners#miner-deregistration), subject to protection
-from the [immunity period](https://docs.learnbittensor.org/resources/glossary#immunity-period),
-which shields recently registered neurons from being pruned for a configured window
-([Mining: Miner deregistration](https://docs.learnbittensor.org/miners#miner-deregistration)).
+## Distinction from Front-Running and Back-Running
 
-The displaced neuron loses its slot through
-[deregistration](https://docs.learnbittensor.org/resources/glossary#deregistration), and the
-incoming registrant takes the freed UID. Max allowed UIDs names the ceiling that makes this
-competition necessary, while the pruning score and immunity period decide which occupant is removed
-when the ceiling is reached
-([Glossary: UID Slot](https://docs.learnbittensor.org/resources/glossary#uid-slot)).
+Front-running names a before-only ordering attack. Back-running names an after-only ordering profit.
+A sandwich attack wraps the victim with trades on both sides
+([Glossary: MEV](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value)).
 
-## Relationship to UID Trimming
+Readers should name which ordering shape they mean before calling every MEV profit a sandwich.
 
-[UID trimming](https://docs.learnbittensor.org/subnets/uid-trimming) is a subnet-owner operation
-that reduces the live UID set down to a chosen maximum, and max allowed UIDs is the configured
-ceiling that trimming and the `sudo_trim_to_max_allowed_uids` extrinsic enforce. The hyperparameter
-states the desired capacity, while trimming is how the chain removes low emitters and compacts
-survivors when the owner lowers that capacity
-([UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming)).
+## Distinction from Price Protection
 
-For readers, the distinction is between the number and the operation. Max allowed UIDs is the cap;
-trimming is the mechanism that brings an oversized UID set into line with that cap on a subnet such
-as netuid 1.
+Price protection lets a trader set tolerance on their own staking or unstaking order. Sandwich
+attack names adversarial ordering around someone else's visible trade
+([Price Protection](https://docs.learnbittensor.org/learn/price-protection)).
 
-## Relationship to Max Validators
+Protection limits what a caller accepts; it does not rename mempool ordering risk for other parties.
 
-Max allowed UIDs is not the same ceiling as
-[max validators](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#maxallowedvalidators).
-The hyperparameters reference lists `MaxAllowedValidators` as a separate `u16`, defaulting to `64`
-and set at the root level, with the description "Maximum validators on a subnet." Max allowed UIDs
-bounds the total neuron population, while max validators bounds how many of those neurons can hold a
-[validator permit](https://docs.learnbittensor.org/resources/glossary#validator-permit)
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+## Distinction from MEV Shield
 
-The two caps therefore answer different questions on netuid 1. One sets how many participants can
-exist on the subnet at all; the other sets how many of them can act as validators within that
-population.
+MEV Shield names encrypted mempool protection that hides sensitive transaction details before
+inclusion. Sandwich attack names the ordering exploit that protection is meant to reduce
+([MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield)).
 
-## Relationship to Registration Allowed
+One is mitigation vocabulary; the other is adversarial ordering vocabulary in the same risk domain.
 
-Max allowed UIDs and
-[registration allowed](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#networkregistrationallowed)
-sit on the same registration path as ceiling and switch. Registration allowed is the Boolean that
-decides whether a subnet accepts new registrations at all, while max allowed UIDs sets how many
-slots exist when registration is permitted. A subnet can have registration open yet still be full,
-in which case entry depends on displacement rather than spare capacity
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+## Distinction from Mempool
 
-- **Registration allowed** — whether new entry is currently open.
-- **Max allowed UIDs** — how many neuron slots the subnet exposes.
+The mempool holds pending transactions before block inclusion. A sandwich attack depends on seeing
+and ordering around a pending victim trade in that queue
+([Glossary: Mempool](https://docs.learnbittensor.org/resources/glossary#mempool)).
 
-## Capacity Ceiling and Validator Cap Answer Different Questions
+Mempool vocabulary covers pending timing; sandwich vocabulary covers adversarial ordering around a
+visible pending trade.
 
-Subnet hyperparameter documentation lists `MaxAllowedUids` as the total neuron population ceiling
-and `MaxAllowedValidators` as a separate limit on how many neurons may hold validator permits
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
-[Glossary: Validator Permit](https://docs.learnbittensor.org/resources/glossary#validator-permit)).
+## Distinction from Yuma Consensus
 
-For readers, a subnet can be full of miners and non-validator neurons while still having validator
-permit slots unused, or vice versa. Max allowed UIDs bounds metagraph size; max validators bounds
-how many of those rows can submit validator weights
-([Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph),
-[Glossary: Subnet Validator](https://docs.learnbittensor.org/resources/glossary#subnet-validator)).
+Yuma Consensus allocates subnet incentives from validator weights and stake. Sandwich attacks target
+pool conversion ordering, not validator scoring inside a subnet
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
-That distinction keeps registration competition vocabulary separate from validator-authorization
-vocabulary when a subnet approaches its occupancy limit
-([Mining: Miner deregistration](https://docs.learnbittensor.org/miners#miner-deregistration)).
+Pool-ordering exploits should not be read as consensus failures on a netuid.
 
-## Full Subnets Shift Entry From Spare Capacity to Displacement
+## Distinction from Arbitrage
 
-When occupied UID count reaches the configured ceiling, documentation describes further registration
-as competing for an existing slot rather than expanding metagraph size. The incoming registrant must
-displace a low-scoring incumbent subject to immunity rules, which links max allowed UIDs vocabulary
-to pruning-score ranking rather than to a simple open-door model
-([Mining: Miner deregistration](https://docs.learnbittensor.org/miners#miner-deregistration),
-[Glossary: Deregistration](https://docs.learnbittensor.org/resources/glossary#deregistration)).
+Sandwich attacks and arbitrage both act on pool prices but differ in intent and target. A sandwich
+attack is a predatory ordering strategy that brackets a specific victim's pending trade with a
+front-run and a back-run to extract value from the price move that victim's trade causes. Arbitrage
+instead profits from genuine price differences — buying where an asset is cheaper and selling where
+it is dearer — without targeting any particular victim, and it tends to pull prices back toward
+alignment
+([Glossary: MEV](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value),
+[Understanding Subnets: Price/rate of alpha tokens](https://docs.learnbittensor.org/subnets/understanding-subnets#pricerate-of-alpha-tokens)).
 
-For readers, that is why the hyperparameter is a capacity bound and not a performance score. It sets
-how many neurons may coexist; pruning score and immunity period decide which occupant leaves when
-the bound is already met
-([Glossary: Immunity Period](https://docs.learnbittensor.org/resources/glossary#immunity-period),
-[Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)).
-
-UID trimming vocabulary names an owner operation that compacts the live set down toward a lower
-ceiling, while max allowed UIDs names the configured target that trimming enforces
-([UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming)).
-
-## Registration Allowed and Capacity Ceiling Are Separate Switches
-
-Subnet hyperparameter documentation lists `NetworkRegistrationAllowed` as the Boolean that decides
-whether a subnet accepts new registrations at all, while `MaxAllowedUids` sets how many slots exist
-when registration is open. A subnet can therefore have registration enabled yet still be full, in
-which case entry depends on displacement rather than spare capacity
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
-[Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register)).
-
-For readers, max allowed UIDs vocabulary names the population ceiling, not the on/off switch for
-entry. Registration allowed names whether new attempts are accepted; pruning score and immunity
-period decide which incumbent yields a slot when the ceiling is already met
-([Mining: Miner deregistration](https://docs.learnbittensor.org/miners#miner-deregistration),
-[Glossary: Burn Cost](https://docs.learnbittensor.org/resources/glossary#burn-cost)).
-
-That keeps capacity planning separate from registration economics. A rising burn can make each new
-identity expensive even while the subnet still has spare slots, and a full subnet can still reject
-displacement when immunity protects the lowest scorer
-([Understanding Neurons](https://docs.learnbittensor.org/learn/neurons)).
-
-## Distinction from UID Slot
-
-A UID slot is one participant position inside a subnet. Max allowed UIDs is the hyperparameter
-ceiling on how many of those slots may exist at once on the selected subnet
-([Glossary: UID Slot](https://docs.learnbittensor.org/resources/glossary#uid-slot),
-[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
-
-- **UID slot** — one occupied neuron position.
-- **Max allowed UIDs** — total slot capacity for the subnet.
-
-## Distinction from UID Trimming
-
-Max allowed UIDs names the configured population ceiling. UID trimming is the subnet-owner operation
-that removes low emitters and compresses survivors when the live set must be brought down to a lower
-target ([UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming),
-[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
-
-The hyperparameter states the desired capacity. Trimming is how the chain enforces that capacity
-when the owner lowers the ceiling.
-
-## Distinction from Pruning Score
-
-Max allowed UIDs sets how many neurons may coexist on a subnet. Pruning score ranks which incumbent
-is weakest when a full subnet must displace one participant for a new registration
-([Glossary: Pruning Score](https://docs.learnbittensor.org/resources/glossary#pruning-score),
-[Mining: Miner deregistration](https://docs.learnbittensor.org/miners#miner-deregistration)).
-
-Capacity vocabulary names the ceiling. Pruning-score vocabulary names the ranking input used once
-the ceiling is already met.
-
-## Distinction from Max Validators
-
-Max allowed UIDs bounds the total neuron population on a subnet. Max validators bounds how many of
-those neurons may hold validator permits and submit weights
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
-[Glossary: Validator Permit](https://docs.learnbittensor.org/resources/glossary#validator-permit)).
-
-A subnet can be full of miners while validator-permit slots remain unused, or approach its validator
-cap with a smaller total population.
-
-## Distinction from Registration Allowed
-
-Registration allowed is the Boolean switch that decides whether a subnet accepts new registrations.
-Max allowed UIDs sets how many slots exist when registration is open
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
-
-A subnet can have registration enabled yet still be full, in which case entry depends on
-displacement rather than spare capacity
-([Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register),
-[Mining: Miner deregistration](https://docs.learnbittensor.org/miners#miner-deregistration)).
-
-## Relationship to Mechanism Count
-
-Max allowed UIDs and mechanism count are linked by a documented capacity constraint. Mechanism count
-sets how many incentive mechanisms a subnet runs, and the implementation requires that mechanism
-count multiplied by the subnet's maximum UID count must not exceed 256. Raising mechanism count can
-therefore require first lowering max allowed UIDs, so the two values are planned together rather
-than set independently
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
-[Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets)).
-
-- **Max allowed UIDs** — the ceiling on registered UID slots in the subnet.
-- **Mechanism count** — how many incentive mechanisms run, with their product against the UID
-  ceiling capped at 256 or less.
+- **Sandwich attack** — bracketing a specific victim's trade to extract value from the move it
+  causes.
+- **Arbitrage** — profiting from existing price differences, with no specific victim, tending to
+  correct them.
 
 ## Reader Boundary
 
-This page defines the concept at a high level. It does not report the live UID ceiling on any
-particular subnet or how many slots are currently occupied. Those are on-chain state values that
-should be checked for the relevant netuid with `btcli subnet hyperparameters --netuid 1` and the
-metagraph read path for that same netuid. The documented default is 256, the type is `u16`, and the
-parameter is set by the subnet owner through a trim extrinsic
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+Sandwich attack is concept vocabulary for a transaction-ordering exploit in pool operations. It
+should not be read as a consensus failure, a validator scoring issue, or a description of normal
+slippage
+([Glossary: Sandwich attack](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value)).
 
-That reading keeps max allowed UIDs separate from registration cost and reward mechanics. It bounds
-how many neurons a subnet can hold; it does not predict who will hold those slots or what they will
-earn.
+The term describes adversarial behavior that exploits pool price sensitivity. Normal slippage from
+pool size differences is a separate concept without the adversarial ordering component.
 
 ## Further Reading
 
-- [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
-- [Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)
-- [UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming)
-- [Glossary: UID Slot](https://docs.learnbittensor.org/resources/glossary#uid-slot)
-- [Glossary: Neuron](https://docs.learnbittensor.org/resources/glossary#neuron)
-- [Mining: Miner registration](https://docs.learnbittensor.org/miners#miner-registration)
-- [Mining: Miner deregistration](https://docs.learnbittensor.org/miners#miner-deregistration)
+- [Glossary: MEV](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value)
+- [Understanding Slippage](https://docs.learnbittensor.org/learn/slippage)
+- [Managing Your Stakes](https://docs.learnbittensor.org/staking-and-delegation/managing-stake-sdk)
+- [MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield/)
+- [Price Protection](https://docs.learnbittensor.org/learn/price-protection)
+- [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)
