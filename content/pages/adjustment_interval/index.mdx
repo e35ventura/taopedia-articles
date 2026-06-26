@@ -1,0 +1,127 @@
+---
+title: "Adjustment Interval"
+summary:
+  "How the adjustment interval subnet hyperparameter sets the block window used to recalibrate the
+  dynamic registration burn cost against the subnet's target registration rate."
+category: "Subnets"
+tags: ["Subnets", "Registration"]
+infoboxTitle: Adjustment Interval
+infoboxCaption: Block window for registration cost recalibration.
+infoboxRows:
+  - label: Parameter
+    value: AdjustmentInterval
+  - label: Context
+    value: Registration burn
+  - label: Measured in
+    value: Blocks
+  - label: Example
+    value: netuid 1
+  - label: Set by
+    value: Subnet owner
+---
+
+# Adjustment Interval
+
+Adjustment interval is a per-subnet hyperparameter, listed as `AdjustmentInterval` in Bittensor
+documentation, that sets the number of blocks between automatic recalibrations of the dynamic
+registration burn cost. The
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters) reference
+lists `AdjustmentInterval` alongside the burn band parameters that define the floor and ceiling of
+the registration cost being adjusted
+([Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register)).
+
+The term names the recalibration cadence. It does not set the burn cost itself; it sets the block
+window over which actual registrations are compared to the target registration rate to decide
+whether the cost moves up, down, or holds.
+
+## What It Controls
+
+The hyperparameter determines how frequently the subnet's registration burn is recalibrated against
+the target registration rate. Each adjustment interval, the network compares how many registrations
+occurred during the window to the target rate set by the subnet owner. If actual registrations
+exceeded the target, the burn cost rises; if they fell short, the burn cost eases toward the floor
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Glossary: Burn Cost](https://docs.learnbittensor.org/resources/glossary#burn-cost)).
+
+A shorter adjustment interval means the burn cost responds to registration demand more frequently on
+netuid 1 and other active subnets, so spikes in registration activity are reflected in cost sooner.
+A longer interval smooths the recalibration over more blocks, making the burn cost less reactive to
+short-term fluctuations.
+
+The interval therefore shapes the responsiveness of the registration cost mechanism without setting
+the cost band itself. The burn floor and ceiling are separate parameters that define the range
+inside which each adjustment operates.
+
+## Relation to Target Registrations Per Interval
+
+Adjustment interval works alongside the target-registrations-per-interval hyperparameter, which sets
+how many registrations the mechanism is aiming for during each adjustment window. Together, the two
+parameters define the demand-comparison logic: adjustment interval sets the window length in blocks,
+and the target sets the reference count for that window
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+The actual registration count during the interval is compared against the target when the interval
+ends. That comparison drives the cost adjustment direction for the next interval on the same subnet.
+Neither parameter directly names a burn amount; both shape the mechanism that produces the next burn
+cost value.
+
+## Documented Type and Setter
+
+The [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+reference lists `AdjustmentInterval` among the registration-related hyperparameters that subnet
+owners can set. Each subnet carries its own hyperparameter state, so the adjustment interval for
+netuid 1 can differ from the interval configured on another subnet.
+
+The active value is the per-subnet chain state for that subnet. A reading from one subnet should not
+be treated as evidence for the adjustment behavior on any other subnet. Subnet-specific examples
+should identify the subnet and its current hyperparameter values.
+
+## Distinction from Burn Half Life
+
+Burn half life and adjustment interval both affect how the registration burn cost changes over time,
+but they control different parts of the mechanism
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)). Burn
+half life sets the decay horizon over which the elevated burn cost eases back toward the floor
+between registration events; adjustment interval sets the block window between demand-comparison
+recalibrations.
+
+The two parameters complement each other. Adjustment interval governs when the mechanism
+recalibrates the burn cost against demand. Burn half life governs how quickly an elevated burn
+decays between registration events inside that cycle. A subnet owner can tune both independently to
+shape registration cost behavior on netuid 1 or any other subnet.
+
+## Network and Environment Scope
+
+The
+[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
+describes subnet development as moving from localnet to testnet and then mainnet. Adjustment
+interval applies across that lifecycle: subnet owners can configure the recalibration cadence in
+isolated localnet environments, shared testnet deployments, and live mainnet subnets.
+
+The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
+separates mainnet, testnet, and localnet. A recalibration example from one environment should not be
+read as representative of production registration cost behavior on another network.
+
+On mainnet, adjustment interval is the live per-subnet chain parameter that governs production
+registration burn recalibration for the selected netuid.
+
+## Evidence Boundary
+
+Adjustment interval is a recalibration cadence hyperparameter. It does not name a burn cost value, a
+registration count, or a miner's registration status. Those are outcomes and events inside the
+registration path; adjustment interval is an input parameter that shapes when the cost mechanism
+recalibrates
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Mining: Miner registration](https://docs.learnbittensor.org/miners#miner-registration)).
+
+A claim about adjustment interval should name the relevant subnet. The interval in force for netuid
+1 is that subnet's own chain state setting and cannot be assumed to apply to other subnets.
+
+## Further Reading
+
+- [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+- [Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register)
+- [Glossary: Burn Cost](https://docs.learnbittensor.org/resources/glossary#burn-cost)
+- [Mining: Miner registration](https://docs.learnbittensor.org/miners#miner-registration)
+- [Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)
+- [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)
