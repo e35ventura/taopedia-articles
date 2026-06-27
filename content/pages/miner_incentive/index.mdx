@@ -27,82 +27,6 @@ is the miner-facing side of subnet emission distribution
 The term is reward vocabulary. Mining is the process of performing subnet tasks; miner incentive is
 the emission-side term for what miners receive when validators evaluate their work positively.
 
-## Emission Context
-
-Miner incentives are part of subnet emission distribution. Emission covers the full
-creation-and-allocation process, while miner incentive names the specific role-facing share that
-miners receive through that process ([Emission](https://docs.learnbittensor.org/learn/emissions),
-[Glossary: Incentives](https://docs.learnbittensor.org/resources/glossary#incentives)).
-
-The incentive is distinct from validator dividends. Validators receive dividends based on their
-consensus role and staked support position; miners receive incentives based on the quality of their
-work as evaluated by validators.
-
-## Subnet Context
-
-Miner incentives are subnet-specific. Each subnet defines the task miners perform, and validators in
-that subnet evaluate whether the work meets the subnet's quality standard
-([Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)).
-
-This keeps miner incentive from being a generic mining reward. The term is tied to a specific
-subnet's evaluation context and its portion of the emission distribution process.
-
-## Miner Rewards, Emission Distribution, and Yuma Scoring Pipeline
-
-Miner incentives connect to the
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) process. Validators submit
-weights that assess miner performance, and consensus aggregates those evaluations into incentive
-outcomes for miners. An incentive follows from positive validator evaluation through consensus; it
-does not replace the validator weight, miner rank, or trust vocabulary used inside the consensus
-process.
-
-[Yuma Consensus: Miner emissions](https://docs.learnbittensor.org/learn/yuma-consensus#miner-emissions)
-documentation derives each miner's incentive share from an aggregate rank built inside the subnet.
-That rank is the stake-weighted sum of consensus-clipped validator weights aimed at the miner, not
-one validator's raw score copied forward unchanged. The
-[Glossary: Rank](https://docs.learnbittensor.org/resources/glossary#rank) states that ranks are
-calculated from consensus-clipped weights and directly determine emissions to miners.
-
-Miner-side allocation is a proportional split. Each miner's incentive portion equals that miner's
-share of the total aggregate rank across miners in the subnet. Stronger relative rank therefore
-means a larger slice of the miner-side emission pool for that epoch, while weak or filtered support
-yields a smaller slice.
-[Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)
-documentation adds that final normalized ranks become the miner-side incentive shares before
-emission amounts are applied across the subnet's miners.
-
-[Emission: Distribution](https://docs.learnbittensor.org/learn/emissions#distribution) documentation
-describes tempo-end distribution inside each subnet, where alpha accumulated during the tempo is
-allocated to subnet participants after Yuma Consensus runs. Miner incentive belongs to that
-subnet-side payout path rather than to a standalone TAO transfer label.
-[Emission](https://docs.learnbittensor.org/learn/emissions) documentation places subnet rewards
-inside Bittensor's two-level emission model: network-level TAO flow supports reserve injection,
-while subnets emit
-[Glossary: Alpha Tokens](https://docs.learnbittensor.org/resources/glossary#protocol-alpha) for
-role-facing rewards to miners, validators, and stakers. Miner incentive names the miner-facing slice
-of that subnet alpha flow. Alpha distribution and TAO reserve injection are related parts of the
-broader emissions process, but miner incentive language stays with the subnet alpha share assigned
-to miners after Yuma Consensus determines miner-side outcomes.
-
-[Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)
-documentation states that Yuma Consensus calculates emissions within each incentive mechanism and
-that those results are finalized and credited to participants' hotkeys at the end of each
-[Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo). The glossary defines
-tempo as the subnet-specific interval over which Yuma Consensus calculates emissions from the latest
-available ranking weight matrix. Miner incentive therefore arrives on that boundary schedule rather
-than on a separate reward clock outside subnet epoch timing.
-[Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase)
-documentation describes coinbase as the per-block process that advances emission processing and
-triggers epoch-boundary activity. Validators may submit weights throughout the tempo, but the
-miner-facing share that incentive vocabulary names is credited when epoch processing completes, not
-at every intermediate submission.
-
-For readers on a subnet such as netuid 1, the pipeline order is: validator weight submission and
-consensus clipping, aggregate rank calculation, proportional miner-side share within the subnet
-alpha pool, tempo-bound distribution after Yuma Consensus, and alpha credited to miner hotkeys.
-Miner incentive vocabulary names the miner-facing outcome; Yuma vocabulary names the consensus
-aggregation that produces it.
-
 ## Development Stage Context
 
 The
@@ -125,24 +49,6 @@ Observed amounts depend on the selected subnet's consensus and emission context
 The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
 separates mainnet, testnet, and localnet. A miner-incentive example from one environment should not
 be read as representing production reward shares in another environment.
-
-## Incentive Rewards Relative Standing, Not Raw Output
-
-A miner producing more work does not automatically earn more incentive. Documentation ties the
-miner-facing share to consensus standing after validators' weights are aggregated, so incentive
-reflects how a miner's evaluated work compares with peers rather than its absolute output
-([Yuma Consensus: Miner emissions](https://docs.learnbittensor.org/learn/yuma-consensus#miner-emissions),
-[Glossary: Incentives](https://docs.learnbittensor.org/resources/glossary#incentives)).
-
-For readers, this is why incentive is best read as a relative position. If every miner improves
-equally, the standings can stay similar even though more work was done, because the same emission is
-divided according to comparative evaluation
-([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
-
-That framing also explains why incentive can shift without a miner changing anything. Documentation
-describes the share as resolved against the rest of the subnet, so peers improving or declining
-moves a miner's incentive even when its own work is steady
-([Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)).
 
 ## Distinction from Incentives
 
@@ -213,105 +119,69 @@ flow ([Emission](https://docs.learnbittensor.org/learn/emissions),
 
 ## Distinction from Weight Setting
 
-Miner incentive and weight setting name different positions in the same consensus-to-emission flow.
-Miner incentive is the per-miner emission share that the subnet distributes after Yuma Consensus
-reads validator-recorded weights to produce miner rewards, while weight setting is the on-chain
-`set_weights` action a validator submits to record validator-to-miner scores for the epoch. Weight
-setting records scores; miner incentive is the miner-side emission outcome those scores produce
-after consensus runs.
-
-The two operate at different stages of the same epoch cycle. A validator's weight-setting submission
-feeds the weight matrix that the subnet's epoch reads, and Yuma Consensus then clips and aggregates
-those weights to determine each miner's relative standing. The miner incentive that results is the
-per-miner emission share paid for that relative standing. Weight setting is the per-validator
-action; miner incentive is the per-miner outcome that action eventually produces
+Miner incentive is the per-miner emission share after consensus; weight setting is the validator
+`set_weights` action that records scores for the epoch
 ([Glossary: Incentives](https://docs.learnbittensor.org/resources/glossary#incentives),
 [Glossary: Weight Setting](https://docs.learnbittensor.org/resources/glossary#weight-setting),
-[Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#validator-weights),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
-[Emission](https://docs.learnbittensor.org/learn/emissions)).
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+- **Miner incentive** — miner-side emission share after consensus.
+- **Weight setting** — validator action recording miner scores.
+
+Action vocabulary records scores; incentive vocabulary names the miner-side outcome
+([Emission](https://docs.learnbittensor.org/learn/emissions)).
 
 ## Distinction from Stake Weight
 
-Miner incentive and stake weight name different positions in a subnet's reward flow. Miner incentive
-is the per-miner emission share that the subnet distributes after Yuma Consensus reads
-validator-recorded weights to produce miner rewards, while stake weight is the computed total stake
-value that determines a validator's consensus power and emissions in a subnet. Miner incentive is
-the miner-side emission outcome; stake weight is the validator-side influence measure that helps
-determine how that emission is distributed.
-
-The two operate on different sides of the same subnet stake arithmetic. Stake weight shapes which
-validators carry more influence when Yuma Consensus aggregates the recorded weights and how those
-emissions are split between validators and miners, while miner incentive is the miner-side emission
-share that the subnet pays to each miner according to that aggregated relative standing. Miner
-incentive is the per-miner outcome; stake weight is the validator-side standing in the consensus
-arithmetic that helps determine the size of that outcome
+Miner incentive is the miner-side emission outcome; stake weight is the validator-side influence
+measure in subnet consensus arithmetic
 ([Glossary: Incentives](https://docs.learnbittensor.org/resources/glossary#incentives),
-[Glossary: Stake Weight](https://docs.learnbittensor.org/resources/glossary#stake-weight),
-[Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#validator-weights),
-[Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+[Glossary: Stake Weight](https://docs.learnbittensor.org/resources/glossary#stake-weight)).
+
+- **Miner incentive** — per-miner emission share after aggregation.
+- **Stake weight** — validator consensus influence from staked support.
+
+Outcome vocabulary and influence vocabulary answer different sides of the same flow
+([Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)).
 
 ## Distinction from Yuma Consensus
 
-Miner incentive and Yuma Consensus name different positions in the same consensus-to-emission flow.
-Miner incentive is the per-miner emission share that the subnet distributes after the consensus
-algorithm runs, while Yuma Consensus is the per-subnet algorithm that aggregates validator-recorded
-weights, applies consensus clipping, and produces the miner incentives and validator dividends.
-Miner incentive is the miner-side emission outcome; Yuma Consensus is the subnet-level aggregation
-process that produces that outcome.
-
-The two operate at different stages of the same consensus flow. A validator's recorded weights feed
-the weight matrix that Yuma Consensus reads, and the per-miner emission share that results is the
-miner incentive the subnet pays for that relative standing. Miner incentive is the per-miner
-outcome; Yuma Consensus is the per-subnet process that consumes validator-recorded weights and
-produces that outcome
+Miner incentive is the per-miner emission outcome; Yuma Consensus is the aggregation process that
+produces it from recorded validator weights
 ([Glossary: Incentives](https://docs.learnbittensor.org/resources/glossary#incentives),
-[Glossary: Yuma Consensus](https://docs.learnbittensor.org/resources/glossary#yuma-consensus),
-[Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#validator-weights),
-[Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score),
 [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+- **Miner incentive** — miner-side emission share after the pass.
+- **Yuma Consensus** — mechanism aggregating weights into shares.
+
+Outcome vocabulary names the result; Yuma vocabulary names the aggregation process
+([Emission](https://docs.learnbittensor.org/learn/emissions)).
 
 ## Distinction from Validator Trust
 
-Miner incentive and validator trust name different positions in the same consensus-to-emission flow.
-Miner incentive is the per-miner emission share that the subnet distributes after the recorded
-weights are read and consensus clipping is applied, while validator trust is the validator-side
-influence metric that measures how much of a validator's weight-setting contribution survived
-consensus clipping. Miner incentive is the miner-side emission outcome; validator trust is the
-validator-side standing that influences the size of that outcome.
+Miner incentive is the miner-side emission outcome; validator trust measures how much of a
+validator's weight contribution survived consensus clipping
+([Glossary: Validator Trust](https://docs.learnbittensor.org/resources/glossary#validator-trust),
+[Glossary: Incentives](https://docs.learnbittensor.org/resources/glossary#incentives)).
 
-The two operate at different stages of the same subnet emission distribution. A validator's
-weight-setting submission feeds the weight matrix that consensus reads, and validator trust is the
-sum of all clipped weights that the validator successfully contributed to consensus. Miner incentive
-is the per-miner emission share paid for the relative standing that consensus reads from the matrix;
-validator trust is the validator-side measure of how much of that validator's contribution survived
-consensus clipping
-([Glossary: Incentives](https://docs.learnbittensor.org/resources/glossary#incentives),
-[Glossary: Validator Trust](https://docs.learnbittensor.org/resources/glossary#validator-trust),
-[Glossary: Trust](https://docs.learnbittensor.org/resources/glossary#trust),
-[Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#validator-weights),
-[Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score)).
+- **Miner incentive** — miner-side emission share after consensus.
+- **Validator trust** — validator-side clipped-weight alignment measure.
+
+Miner outcome vocabulary and validator standing vocabulary answer different consensus steps
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
 ## Distinction from Weight Vector
 
-Miner incentive and weight vector name different positions in the same validator-to-emission flow.
-Miner incentive is the per-miner emission share that the subnet distributes after the recorded
-weights are read and consensus clipping is applied, while weight vector is the per-validator scored
-targets the validator submits through the `set_weights` extrinsic. Miner incentive is the miner-side
-emission outcome; weight vector is the validator-side scored payload that consensus reads to produce
-that outcome.
+Miner incentive is the miner-side emission outcome; a weight vector is the scored payload a
+validator submits through `set_weights`
+([Glossary: Weight Vector](https://docs.learnbittensor.org/resources/glossary#weight-vector),
+[Glossary: Incentives](https://docs.learnbittensor.org/resources/glossary#incentives)).
 
-The two operate at different stages of the same emission flow. A validator's weight vector
-submission is the raw scored payload that consensus reads after the version key passes it; the miner
-incentive that results is the per-miner emission share paid for the relative standing that consensus
-reads from the recorded weights. Miner incentive is the per-miner outcome; weight vector is the
-validator-side payload that consensus reads
-([Glossary: Incentives](https://docs.learnbittensor.org/resources/glossary#incentives),
-[Glossary: Weight Vector](https://docs.learnbittensor.org/resources/glossary#weight-vector),
-[Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#validator-weights),
-[Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+- **Miner incentive** — miner-side emission share after consensus.
+- **Weight vector** — validator-submitted scored targets for the epoch.
+
+Outcome vocabulary and submission vocabulary answer different stages of the same flow
+([Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)).
 
 ## Reader Boundary
 
