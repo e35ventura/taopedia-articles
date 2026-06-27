@@ -50,41 +50,6 @@ documentation marks kappa as a root-level parameter, so it is governed at that l
 by ordinary participants
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
-## Subnet Hyperparameters, Consensus Clipping, and Yuma Weight Pipeline
-
-Yuma Consensus aggregates validator weights into a stake-weighted result, and kappa is the majority
-ratio that aggregation relies on to separate the broad stake-weighted agreement from lower-stake
-input. This makes kappa a parameter behind the consensus threshold rather than a value assigned to
-any single validator or miner
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) documentation describes
-consensus clipping as trimming validator weights that depart from the stake-weighted agreement
-point. Kappa names which stake-weighted validator input counts toward that agreement, while clipping
-names how far individual weight values can depart before they stop being rewarded.
-
-Those are sequential defenses inside the same epoch. Kappa filters which validator rows participate
-in the majority calculation on a subnet such as netuid 1, and clipping then punishes inflated
-ratings that still outlie the resulting agreement
-([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
-
-Official documentation puts the mechanism in concrete terms: if the less generous half of
-validators, measured by stake rather than by validator count, set a given miner's weight to no more
-than some value, the more generous half's weights for that same miner are clipped down to that value
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-Kappa's stake-ranking scale, not a raw neuron count, is what decides which validator rows clear that
-threshold. A validator below the majority ratio stops contributing weight rows to the consensus
-calculation even if it still holds a
-[validator permit](https://docs.learnbittensor.org/resources/glossary#validator-permit) on the
-subnet ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
-
-After kappa filters validator input and clipping trims outlying weights, Yuma Consensus continues
-through bonding and emission calculation to produce miner incentives and validator dividends
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)). Kappa sits at the front of
-that weight pipeline; it does not name the bond or dividend outcomes that follow.
-
 ## Development Stage Context
 
 The
@@ -109,66 +74,43 @@ The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-netw
 separates mainnet, testnet, and localnet. A kappa value observed in one environment should not be
 read as the parameter in force on another.
 
-## Kappa Filters by Stake, Not by Validator Headcount
+## Distinction from Clipping
 
-A point that is easy to misread is that kappa is a stake-weighted threshold, not a count of
-validators. Documentation describes it as the consensus majority ratio measured against normalized
-stake, so a small number of high-stake validators can clear it while many low-stake validators do
-not ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+Kappa is the stake fraction that sets which validator weights count toward the consensus majority.
+Clipping is the Yuma step that trims individual weights above the stake-weighted agreement benchmark
+([Subnet Hyperparameters: Kappa](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#kappa),
 [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
-For readers, this is why kappa is described in terms of "the less generous half by stake" rather
-than by number. The majority that forms consensus is weighed by how much stake stands behind each
-validator's weights, which is different from a one-vote-per-validator tally
-([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
+Kappa filters which validator rows participate in the majority calculation. Clipping then punishes
+inflated ratings that still outlie the resulting agreement.
 
-That stake-based framing also clarifies why holding a permit is not enough to count. A validator can
-hold a permit yet still fall below the stake-weighted majority point, in which case its weights do
-not enter the consensus calculation for that epoch
-([Glossary: Validator Permit](https://docs.learnbittensor.org/resources/glossary#validator-permit)).
+- **Kappa** — stake fraction that sets which validator weights count toward consensus.
+- **Clipping** — trimming weights that exceed the stake-weighted agreement benchmark.
 
 ## Distinction from Consensus Score
 
-Kappa and consensus score sit at different steps in Yuma clipping on a subnet such as netuid 1.
-Kappa is the subnet hyperparameter stake fraction used to derive the consensus clipping ceiling from
-active stake and validator weights, while consensus score is the stake-weighted median benchmark
-that clipping compares individual weight values against once that ceiling is computed
+Kappa is the subnet hyperparameter that sets the consensus majority ratio. Consensus score is the
+stake-weighted median benchmark that clipping compares individual weight values against
 ([Subnet Hyperparameters: Kappa](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#kappa),
 [Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score),
 [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
-For readers, kappa names the configured quantile input to the weighted-median step, and consensus
-score names the resulting agreement benchmark rather than the hyperparameter itself
-([Yuma Consensus: Clipping excess weights](https://docs.learnbittensor.org/learn/yuma-consensus#clipping-excess-weights)).
-
-Documentation therefore treats kappa as the stake fraction that sets how aggressively outlier
-weights are trimmed relative to stake-backed agreement, while consensus score names the median level
-that results from that setup on netuid 1
-([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
-
-Kappa vocabulary belongs when the article covers the configured stake fraction for the clipping
-ceiling. Consensus-score vocabulary belongs when it covers the median benchmark clipping compares
-submitted weights against once that ceiling is derived
-([Yuma Consensus: Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping)).
+Kappa names the configured stake fraction. Consensus score names the agreement benchmark that
+results from that setup.
 
 - **Kappa** — stake fraction that sets the consensus clipping ceiling input.
 - **Consensus score** — stake-weighted median benchmark clipping compares weights against.
 
 ## Distinction from Bonds Penalty
 
-Kappa and bonds penalty are distinct Yuma Consensus hyperparameters on a subnet such as netuid 1.
-Kappa sets the stake fraction used to derive the consensus clipping ceiling, while bonds penalty
-sets the magnitude of the penalty applied when validator weights exceed that benchmark during
-bonding
+Kappa sets the stake fraction used to derive the consensus clipping ceiling. Bonds penalty sets how
+costly it is to post weights above that benchmark during bonding
 ([Subnet Hyperparameters: Kappa](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#kappa),
 [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
 [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
-For readers, kappa configures where the clipping ceiling sits in stake-weighted space, and bonds
-penalty configures how costly it is to post weights above the consensus level once clipping engages.
-Raising kappa alters the quantile used for the weighted median; raising bonds penalty alters the
-bonding penalty applied to outliers
-([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
+Raising kappa changes the quantile used for the weighted median. Raising bonds penalty changes the
+penalty applied to outliers once clipping engages.
 
 - **Kappa** — stake fraction for the consensus clipping ceiling.
 - **Bonds penalty** — penalty magnitude on weights above that benchmark.
