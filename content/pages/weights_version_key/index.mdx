@@ -31,55 +31,22 @@ carries a version key, and that key must be at least the subnet's weights versio
 transaction to succeed. It does not change the weights a validator chooses; it only decides whether
 a submission is accepted based on the version it declares.
 
-## Why Subnets Use It
-
-Because a submission with a too-low version key fails, raising this setting effectively requires
-validators to move to a matching version before their weights are accepted again. That gives a
-subnet a way to roll forward expectations for validators in step, since stale submissions are
-rejected rather than silently accepted.
+Raising the setting requires validators to move to a matching version before their weights are
+accepted again, so stale submissions are rejected rather than silently accepted
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
 ## Default and Setting
 
 The documentation lists a default of 0 and marks the parameter as owner-settable, so a subnet owner
-can raise it for their subnet. A default of 0 means no minimum is enforced. The value in force is
-per-subnet chain state and can differ from the default.
-
-## Subnet Context
-
-Weights version key is one of the subnet hyperparameters, the on-chain state variables that
-configure a single subnet, for example netuid 1. Because each subnet carries its own
-hyperparameters, the required version is defined per subnet and applies only to weight submissions
-on that subnet.
-
-## Development Stage Context
-
-The
-[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from localnet to testnet and then mainnet. For the weights
-version key, that sequence changes which subnet hyperparameter state a reader should assume when
-judging whether a `set_weights` submission meets the minimum version.
-
-In localnet, version-key checks can be tested through isolated subnet configuration. Localnet
-hyperparameter values do not represent production weight-submission rules on live subnets.
-
-On testnet, the weights version key can be exercised on a shared non-production network. Testnet
-hyperparameter state is separate from mainnet subnet data
+can raise it for their subnet. A default of 0 means no minimum is enforced. The value in force on
+netuid 1 can differ from the documented default and from another subnet's required version
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
-
-On mainnet, the weights version key concerns live per-subnet settings on the selected
-[netuid](https://docs.learnbittensor.org/resources/glossary#netuid) that gate accepted weight
-submissions.
-
-The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
-separates mainnet, testnet, and localnet. A weights-version example from one environment should not
-be read as describing production hyperparameter state on another network.
 
 ## Distinction from Validator Permit
 
-The weights version key and a validator permit can both block a weights update at submission time,
-but for different reasons. The version key check rejects a `set_weights` call whose declared version
-is below the subnet's required minimum, while the validator permit authorizes a neuron to set
-validator-style weights on other neurons at all
+The version key check rejects a `set_weights` call whose declared version is below the subnet's
+required minimum, while the validator permit authorizes a neuron to set validator-style weights on
+other neurons at all
 ([Glossary: Validator Permit](https://docs.learnbittensor.org/resources/glossary#validator-permit),
 [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
 [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
@@ -89,9 +56,9 @@ validator-style weights on other neurons at all
 
 ## Distinction from Weight Setting
 
-The weights version key is the per-subnet hyperparameter that sets the minimum version a
-`set_weights` call must carry to be accepted. Weight setting is the action that submits that vector,
-so a call carrying a version below the key is rejected before weights are recorded
+The weights version key sets the minimum version a `set_weights` call must carry to be accepted.
+Weight setting is the action that submits that vector, so a call carrying a version below the key is
+rejected before weights are recorded
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
 [Glossary: Weight Vector](https://docs.learnbittensor.org/resources/glossary#weight-vector),
 [Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)).
@@ -101,9 +68,8 @@ so a call carrying a version below the key is rejected before weights are record
 
 ## Distinction from Weights Rate Limit
 
-The weights version key and weights rate limit are different weight-commit hyperparameters. The
-weights version key sets the minimum version a `set_weights` call must carry to be accepted, while
-weights rate limit sets how many blocks a validator must wait between weight commits
+The weights version key sets the minimum version a `set_weights` call must carry to be accepted,
+while weights rate limit sets how many blocks a validator must wait between weight commits
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
 - **Weights version key** — the minimum version a weight submission must carry.
@@ -111,9 +77,9 @@ weights rate limit sets how many blocks a validator must wait between weight com
 
 ## Distinction from Min Allowed Weights
 
-The weights version key and min allowed weights are different weight-submission hyperparameters. The
-weights version key sets the minimum version a `set_weights` call must carry to be accepted, while
-min allowed weights sets the minimum number of weights a validator must include in that submission
+The weights version key sets the minimum version a `set_weights` call must carry to be accepted,
+while min allowed weights sets the minimum number of weights a validator must include in that
+submission
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
 - **Weights version key** — the minimum version a submission must carry.
@@ -121,11 +87,9 @@ min allowed weights sets the minimum number of weights a validator must include 
 
 ## Distinction from Commit Reveal Period
 
-The weights version key and commit reveal period both touch weight submissions but solve different
-problems. The version key rejects submissions carrying an outdated weights version, gating
-compatibility, while commit reveal period sets how many tempos pass before a committed weight set is
-revealed under commit-reveal. One screens which submissions are accepted; the other delays when
-accepted weights become visible
+The version key rejects submissions carrying an outdated weights version, while commit reveal period
+sets how many tempos pass before a committed weight set is revealed under commit-reveal. One screens
+which submissions are accepted; the other delays when accepted weights become visible
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
 [Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)).
 
@@ -142,22 +106,12 @@ matrix is the accumulated validator weight state Yuma Consensus reads each epoch
 - **Weights version key** — compatibility gate on declared submission version.
 - **Weight matrix** — accumulated validator weights read by consensus.
 
-Gate vocabulary screens submissions; matrix vocabulary names the resulting weight state
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
 ## Distinction from Weight Vector
 
-The weights version key and weight vector submission act on the same extrinsic as gate and payload.
-The weights version key is the per-subnet hyperparameter that sets the minimum version a
-`set_weights` call must carry, while the weight vector is the scored targets the validator submits;
-a call carrying a version below the key is rejected before those weights are recorded
+The weights version key sets the minimum version a `set_weights` call must carry, while the weight
+vector is the scored targets the validator submits
 ([Glossary: Weight Vector](https://docs.learnbittensor.org/resources/glossary#weight-vector),
-[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
-[Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)).
-
-Gate vocabulary and payload vocabulary answer different questions on the same submission path. The
-version key screens client compatibility; the weight vector carries the miner scores that pass that
-gate.
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
 - **Weights version key** — the minimum version a weight submission must carry to be accepted.
 - **Weight vector** — the submitted scores the version key must accompany.
@@ -172,9 +126,6 @@ EMA-smooth validator investment in miners during consensus aggregation
 - **Weights version key** — compatibility gate before weights are recorded.
 - **Validator-miner bonds** — smoothed validator-miner investment during aggregation.
 
-Submission gate vocabulary and bond-smoothing vocabulary answer different consensus stages
-([Anatomy of Incentive Mechanism](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
-
 ## Distinction from Subnet Task
 
 The weights version key gates submission compatibility. Subnet task defines the work miners perform
@@ -184,9 +135,6 @@ that validators score when submitting weights
 
 - **Weights version key** — minimum version a weight submission must carry.
 - **Subnet task** — defined work miners perform inside the subnet.
-
-Compatibility gate vocabulary and work-definition vocabulary answer different evaluation questions
-([Miners](https://docs.learnbittensor.org/miners)).
 
 ## Chain Reads for netuid 1
 
@@ -203,12 +151,13 @@ filters validator weight submissions on that subnet, but the live key can differ
 defaults and from the key on another netuid
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
-This article's infobox uses netuid 1 as an example label when reading weight-submission rules on one
-subnet. That example helps readers verify one table; it is not proof of identical version gates
-everywhere ([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+This article's infobox uses netuid 1 as an example label when reading one subnet's hyperparameter
+table on Finney mainnet. That example helps readers verify one row; it is not proof of identical
+version gates everywhere
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
 
 Weights version key filters submissions; Yuma Consensus still aggregates eligible weights into
-emission shares at epoch boundaries
+emission shares at epoch boundaries on the active subnet
 ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
 - **Weights version key** — minimum accepted version for weight submissions on a subnet.
@@ -225,6 +174,13 @@ weight submissions into emission shares
 
 - **Weights version key** — minimum accepted version for weight submissions.
 - **Yuma Consensus** — mechanism that turns validator weights into emission shares.
+
+- **Gate vs settlement** — weights version key screens submission compatibility; Yuma aggregates
+  accepted weights into emission shares at epoch boundaries
+  ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+  [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+- **Stale rejection** — raising the key requires validators to match before weights are recorded
+  ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
 ## Reader Boundary
 
