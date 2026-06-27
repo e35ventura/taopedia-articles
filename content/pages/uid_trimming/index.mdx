@@ -78,81 +78,6 @@ The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-netw
 separates mainnet, testnet, and localnet. A trimming example from one environment should not be read
 as representing production UID layout or trim eligibility on another network.
 
-## Trimming Stops at the Owner's Target Count
-
-The owner chooses a maximum UID count, and trimming removes the lowest emitters until the subnet
-reaches that ceiling or runs out of eligible removals. The operation is a bulk resize rather than a
-single-slot replacement, which is why it can remove many low performers in one owner action instead
-of waiting for registrations one at a time
-([UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming),
-[Glossary: Emission](https://docs.learnbittensor.org/resources/glossary#emission)).
-
-Emission ranking decides who goes first, but the owner sets how small the active participant set
-should become once trimming finishes.
-
-## Too Many Immune UIDs Can Block Trimming
-
-Temporarily immune registrations and owner-owned UIDs are protected from trimming. The trimming docs
-also cap immune UIDs at 80% of the subnet's maximum UID count. When too many slots are protected,
-the owner cannot remove enough participants to reach the chosen target in that pass.
-
-The cap keeps bulk trimming from colliding with the grace period for newcomers. Immunity gives
-recent registrations time to earn before they can be selected, while the 80% limit prevents that
-protection from filling so much of the subnet that trimming cannot proceed.
-
-## Trimmed Slots Lose Their On-Chain Neuron Data
-
-When a UID is trimmed, its neuron record is permanently deleted from chain state rather than left as
-an empty index. That deletion is stronger than ordinary deregistration language suggests on its own:
-the trimmed participant does not simply yield a slot while leaving historical data in place.
-
-Compression then renumbers the survivors into consecutive indices. Trimming therefore both removes
-low emitters and clears their on-chain records before the remaining UIDs are packed into a
-contiguous set ([UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming),
-[Glossary: Deregistration](https://docs.learnbittensor.org/resources/glossary#deregistration)).
-
-## Emission Ranking Connects Trimming to Yuma Outcomes
-
-Trimming selects UIDs by emission scores, which reflect how Yuma Consensus and subnet emission
-processing distribute rewards among participants after validator weights are aggregated
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
-[Glossary: Emission](https://docs.learnbittensor.org/resources/glossary#emission)).
-
-UID trimming names the owner resize operation; Yuma Consensus names how validator evaluations become
-the emission outcomes that trimming uses as its ranking input.
-
-## Trimmed Participants Must Re-Register
-
-If a UID was trimmed, the participant must
-[register](https://docs.learnbittensor.org/resources/glossary#register) again to participate and
-receives a new UID number. The trimmed neuron starts fresh with default scores rather than keeping
-the old slot ([UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming)).
-
-That recovery path differs from compression for survivors. Remaining UIDs are renumbered into
-consecutive indices on a subnet such as netuid 1, while a trimmed participant leaves the subnet
-snapshot until a new registration succeeds.
-
-## Trimming Deletes Listed On-Chain Neuron Data
-
-When a UID is trimmed, the trimming guide lists deleted material including UID-to-hotkey mapping,
-[weights](https://docs.learnbittensor.org/resources/glossary#weight-vector) set to other neurons,
-[bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds) from validators,
-[axon](https://docs.learnbittensor.org/resources/glossary#axon) information, neuron certificates,
-and [last update](https://docs.learnbittensor.org/subnets/metagraph) timestamps. The deletion is
-permanent rather than leaving an empty index.
-
-Survivors keep associated state that the trim operation migrates during compression. Trimmed slots
-therefore remove both the UID and the historical neuron record tied to it.
-
-## Trim Operations Incur Transaction Fees
-
-Trim operations incur [transaction fees](https://docs.learnbittensor.org/learn/fees) for the
-underlying blockchain transactions they trigger. The owner-initiated resize therefore carries a
-documented chain cost separate from registration burn economics.
-
-Fee vocabulary stays separate from emission ranking. Trimming selects low emitters first, but
-executing the owner sudo action still pays the fees the chain charges for the extrinsic.
-
 ## Distinction from Deregistration
 
 UID trimming and deregistration are both ways a neuron can leave a subnet, but they answer different
@@ -190,39 +115,29 @@ consecutive indices in one pass ([Mining in Bittensor](https://docs.learnbittens
 
 ## Distinction from Immunity Period
 
-Immunity period protects a newly registered UID from being displaced for a documented grace window.
-UID trimming also skips immune UIDs, but trimming is the owner resize operation itself rather than
-the protection rule
+Immunity period protects a newly registered UID from displacement for a grace window. UID trimming
+skips immune UIDs but names the owner resize operation, not the protection rule
 ([Glossary: Immunity Period](https://docs.learnbittensor.org/resources/glossary#immunity-period),
 [UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming)).
 
-Trimming documentation caps protected UIDs at 80% of the subnet maximum. When too many slots are
-immune, an owner may not be able to reach the chosen target in that trim pass on the selected subnet
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+- **UID trimming** — owner-initiated bulk reduction to a target count.
+- **Immunity period** — newcomer protection window before displacement.
 
-Immunity vocabulary names newcomer protection. Trimming vocabulary names how an owner shrinks the
-active participant set on netuid 1 once eligible UIDs are ranked by emission.
+Protection vocabulary names grace; trimming vocabulary names the owner shrink action
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
 ## Distinction from Max Allowed UIDs
 
-Max allowed UIDs is the subnet capacity ceiling for registered neurons. UID trimming lowers the live
-participant count toward a smaller owner-chosen maximum and renumbers survivors into contiguous
-indices
+Max allowed UIDs is the subnet capacity ceiling. UID trimming lowers the live count toward a smaller
+owner-chosen maximum and compresses survivors into contiguous indices
 ([Glossary: Max Allowed UIDs](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#maxalloweduids),
 [UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming)).
 
-Capacity settings describe how large the subnet may grow. Trimming describes an owner action that
-actively removes low emitters until the subnet fits the new target on netuid 1
+- **Max allowed UIDs** — configured capacity ceiling for registrations.
+- **UID trimming** — owner action removing low emitters to a target count.
+
+Ceiling vocabulary and resize vocabulary answer different capacity questions
 ([Glossary: Emission](https://docs.learnbittensor.org/resources/glossary#emission)).
-
-Trimming documentation also states a documented minimum target count and a rate limit between owner
-trims. Those protocol limits are separate from the capacity ceiling named by max allowed UIDs on
-netuid 1 ([UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming)).
-
-A trim can delete on-chain neuron data for removed UIDs, then compress the survivors. Max-allowed
-vocabulary alone does not describe that deletion-and-compression workflow
-([Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register),
-[UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming)).
 
 ## Distinction from Register
 
