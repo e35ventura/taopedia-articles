@@ -26,81 +26,6 @@ An axon is the server-side endpoint in Bittensor subnet communication
 The term belongs to the axon-dendrite communication path. It names the receiving endpoint, while
 miner, validator, synapse, and subnet protocol language describe neighboring parts of the exchange.
 
-## Endpoint Role
-
-The glossary places axons on the receiving side of incoming synapse objects and describes them as an
-entry point commonly exposed by subnet miners
-([Glossary: Axon](https://docs.learnbittensor.org/resources/glossary#axon)).
-
-That makes axon an endpoint term. It names where subnet request traffic is received, not the whole
-subnet task or the full work-production role.
-
-## Synapse Objects at the Endpoint
-
-Axons receive synapse objects. The synapse reference places Synapse on the structured message object
-used in Bittensor communication, while the axon reference places Axon on the server-side interface
-that services incoming requests
-([Synapse reference](https://docs.learnbittensor.org/python-api/html/autoapi/bittensor/core/synapse/),
-[Glossary: Synapse](https://docs.learnbittensor.org/resources/glossary#synapse),
-[Axon reference](https://docs.learnbittensor.org/python-api/html/autoapi/bittensor/core/axon/)).
-
-The distinction is useful: axon names the receiving endpoint, and synapse names the structured
-message object exchanged through that endpoint.
-
-Neuron-communication guidance treats synapse objects as the main vehicle for information exchange
-between subnet validators and miners
-([Understanding Neurons](https://docs.learnbittensor.org/learn/neurons#neuron-to-neuron-communication)).
-The subnet protocol says what fields a given exchange includes; synapse naming identifies the shared
-object that carries those fields to the axon endpoint.
-
-## Miner and Validator Roles
-
-Axon language often appears near subnet miners because miners commonly expose the endpoint that
-validators contact. The miner role and validator role are still separate role concepts
-([Glossary: Subnet Miner](https://docs.learnbittensor.org/resources/glossary#subnet-miner),
-[Glossary: Subnet Validator](https://docs.learnbittensor.org/resources/glossary#subnet-validator)).
-
-An axon can be part of miner-side communication, but axon does not by itself define miner work,
-validator scoring, or the subnet's incentive rule.
-
-That role split matters because the same subnet exchange can involve several labels at once. The
-miner may expose the axon, the validator may initiate contact through a dendrite, and the subnet
-mechanism still defines how the returned work is evaluated.
-
-## Subnet Protocol Context
-
-Different subnets can define different tasks and evaluation standards. Bittensor documentation
-connects subnet tasks to the work miners perform, and incentive-mechanism documentation explains
-that validators evaluate miner work inside subnet-specific mechanisms
-([Glossary: Subnet Task](https://docs.learnbittensor.org/resources/glossary#subnet-task),
-[Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
-
-Axon is the communication endpoint in that setting. The subnet protocol explains what the endpoint
-is expected to handle and how a response is interpreted.
-
-## Development Stage Context
-
-Bittensor documentation separates local development, testchain, and mainchain contexts, and also
-separates mainnet, testnet, and localnet network contexts
-([Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development),
-[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
-
-An axon example belongs to the environment where it was observed. Localnet examples can exercise
-endpoint wiring in isolation; testnet examples add shared non-production conditions; mainnet axon
-reachability concerns production subnet communication on the active network.
-
-## Miners Advertise Axons for Incoming Synapse Requests
-
-[Subnet miners](https://docs.learnbittensor.org/resources/glossary#subnet-miner) deploy
-[Axon](https://docs.learnbittensor.org/resources/glossary#axon) servers to receive incoming work,
-while [subnet validators](https://docs.learnbittensor.org/resources/glossary#subnet-validator) use
-[Dendrite](https://docs.learnbittensor.org/resources/glossary#dendrite) clients to transmit requests
-to miner endpoints
-([Understanding Neurons](https://docs.learnbittensor.org/learn/neurons#neuron-to-neuron-communication)).
-
-That layout gives protocol language a concrete direction: validators initiate through dendrite-side
-clients, miners answer through axon-side servers.
-
 ## Distinction from Dendrite
 
 Axon and dendrite describe opposite sides of the same communication path. Dendrite names the client
@@ -123,6 +48,9 @@ serving endpoint that receives incoming synapse objects
 [Glossary: Axon](https://docs.learnbittensor.org/resources/glossary#axon)).
 
 Message-object vocabulary and endpoint vocabulary answer different questions on the same exchange.
+
+- **Synapse** — structured message object passed through axon and dendrite calls.
+- **Axon** — server-side endpoint that receives incoming synapse objects.
 
 ## Distinction from Neuron
 
@@ -174,6 +102,25 @@ Readers can verify miner axon IP, port, and hotkey fields for the documented exa
 Those metagraph fields show the endpoint validators query; they do not report validator scoring
 outcomes.
 
+## Per-Subnet Live Value Boundary
+
+Axon is per-subnet chain state at the miner endpoint level. The IP, port, and hotkey fields
+advertised for miners on netuid 1 reflect that subnet's live metagraph, but endpoint reachability
+can differ from reference examples and from axon fields on another netuid
+([Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)).
+
+This article uses netuid 1 when illustrating metagraph endpoint reads on Finney mainnet. That
+example helps readers verify one subnet's miner endpoints; it is not proof that every subnet exposes
+identical axon fields
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+Axon governs off-chain request handling; Yuma Consensus still converts validator weights into
+emission shares after evaluation completes
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+- **Axon** — miner-side endpoint that receives validator synapse requests.
+- **Per-subnet boundary** — live endpoint fields are chain state on one netuid.
+
 ## Distinction from Yuma Consensus
 
 An axon is where a miner listens for validator requests off chain. Yuma Consensus is the on-chain
@@ -185,17 +132,9 @@ completes ([Glossary: Axon](https://docs.learnbittensor.org/resources/glossary#a
 - **Axon** — miner-side endpoint that receives validator queries.
 - **Yuma Consensus** — on-chain weight aggregation that settles emissions.
 
-Readers should keep server-endpoint vocabulary separate from settlement vocabulary. An axon names
-the listener endpoint that receives dendrite queries; Yuma names how validator weight submissions
-are aggregated into emission shares each tempo
-([Axon](https://docs.learnbittensor.org/resources/glossary#axon),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-Axon endpoints move subnet work across the network. Yuma is the on-chain settlement step that
-converts validator evaluations into miner and validator dividends
-([Emission](https://docs.learnbittensor.org/learn/emissions)).
-
-- **Synapse** — message object passed through axon and dendrite calls.
+- **Miner exposure** — miners commonly deploy axon servers for incoming dendrite requests.
+- **Request direction** — dendrite initiates; axon receives synapse objects.
+- **Off-chain exchange** — axon endpoints move subnet work; Yuma settles emissions on chain.
 
 ## Reader Boundary
 
