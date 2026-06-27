@@ -51,8 +51,9 @@ the `sudo_set_serving_rate_limit` extrinsic, exposed in tooling as
 it as subnet owner
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
-Because each subnet carries its own hyperparameters, the pacing rule is defined per subnet and
-applies only within that subnet's miner-serving path.
+Because each subnet carries its own hyperparameters, the pacing rule on netuid 1 can differ from
+another subnet's serving cadence
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
 ## Distinction from Weights Rate Limit
 
@@ -69,33 +70,19 @@ miner endpoint registration
 ## Distinction from Tempo
 
 Both serving rate limit and [tempo](https://docs.learnbittensor.org/resources/glossary#tempo) are
-counted in blocks, which makes them easy to confuse, but they govern different things. Tempo is the
-length of a subnet's consensus cycle — the cadence at which Yuma Consensus processes validator
-weights — while serving rate limit only paces how often a miner may refresh its serving metadata
+counted in blocks, but they govern different things. Tempo is the length of a subnet's consensus
+cycle, while serving rate limit only paces how often a miner may refresh its serving metadata
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
 [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
 - **Serving rate limit** — the minimum block gap between a miner's endpoint updates.
 - **Tempo** — the block length of the subnet's consensus cycle.
 
-## BTCLI Reads the Live Value
-
-Any user can read subnet hyperparameters for a selected netuid with
-`btcli subnet hyperparameters --netuid 1`. The command output includes the live `ServingRateLimit`
-value for that subnet at query time
-([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
-
-Live values are network- and subnet-specific and can differ from the documented default, so a pacing
-claim should be checked against the hyperparameter table for the relevant netuid and network rather
-than assumed from the reference default alone.
-
 ## Distinction from Activity Cutoff
 
-Serving rate limit and activity cutoff are both counted in blocks but govern different actors.
 Serving rate limit paces how often a miner may update its axon and prometheus serving metadata,
 while activity cutoff is the block window early in an epoch within which a validator must submit
-weights to count in the current Yuma Consensus pass. One paces a miner's endpoint updates; the other
-times a validator's weight submission
+weights to count in the current Yuma Consensus pass
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
 [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
@@ -104,10 +91,9 @@ times a validator's weight submission
 
 ## Distinction from Immunity Period
 
-Serving rate limit and immunity period are different block-based timers. Serving rate limit paces
-how often a miner may refresh its serving metadata, while immunity period is the window after
-registration during which a newly registered neuron is shielded from deregistration. One limits how
-frequently an endpoint record may change; the other protects a new entrant's slot for a time
+Serving rate limit paces how often a miner may refresh its serving metadata, while immunity period
+is the window after registration during which a newly registered neuron is shielded from
+deregistration
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
 [Glossary: Immunity Period](https://docs.learnbittensor.org/resources/glossary#immunity-period)).
 
@@ -125,6 +111,14 @@ whether the miner runs a reachable axon server
 - **Axon** — the miner communication endpoint validators query.
 - **Serving rate limit** — how often serving metadata may be rewritten on chain.
 
+## Chain Reads for netuid 1
+
+Readers can verify live hyperparameter values for the documented example netuid with
+`btcli subnet hyperparameters --netuid 1 --network finney`
+([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
+
+That read path keeps live hyperparameter claims tied to a parseable netuid.
+
 ## Per-Subnet Live Value Boundary
 
 Serving rate limit is per-subnet chain state. The block gap between miner axon and prometheus
@@ -134,49 +128,35 @@ reference default of fifty blocks
 [Glossary: Axon](https://docs.learnbittensor.org/resources/glossary#axon)).
 
 This article's infobox uses netuid 1 as an example label when reading one subnet's hyperparameter
-table on Finney mainnet. That example anchors discussion; it does not imply every subnet shares the
-same live pacing value
+table on Finney mainnet. That example helps readers verify one row; it is not proof that every
+subnet exposes the same live pacing value
 ([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
 
-Readers should keep endpoint-update pacing separate from validator weight settlement. Serving rate
-limit schedules miner serving-metadata writes; Yuma Consensus aggregates validator weights into
-emission shares on its own tempo cadence
+Serving rate limit schedules miner serving-metadata writes; Yuma Consensus still aggregates
+validator weights into emission shares each epoch on the active subnet
 ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
 - **Serving rate limit** — block gap between miner endpoint metadata updates on a subnet.
-- **Per-subnet boundary** — live pacing is chain state on one netuid, not a universal constant.
+- **Per-subnet boundary** — live pacing is chain state on one netuid.
 
 ## Distinction from Yuma Consensus
 
 Serving rate limit is a per-subnet hyperparameter that paces how often miners can register or update
-axon and prometheus endpoint information. That setting controls endpoint-cadence on one netuid
-rather than validator scoring rules
+axon and prometheus endpoint information. Yuma Consensus is the separate tempo process that converts
+validator weight submissions into emission shares each epoch
 ([Glossary: Serving Rate Limit](https://docs.learnbittensor.org/resources/glossary#serving-rate-limit),
-[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
-
-Yuma Consensus is the on-chain step that runs each tempo on a subnet. It turns submitted validator
-weights into miner incentives and validator dividends
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
 [Emission](https://docs.learnbittensor.org/learn/emissions)).
 
-Endpoint pacing is about how often miners may refresh axon and prometheus metadata. Yuma is about
-how validator weights are turned into rewards after miners and validators are evaluated on a
-selected netuid.
-
-The serving rate limit names a subnet hyperparameter measured in blocks between updates. Yuma names
-the reward settlement step that follows validator evaluation, not miner discoverability pacing
-([Glossary: Axon](https://docs.learnbittensor.org/resources/glossary#axon)).
-
-A tighter serving rate limit may slow endpoint refreshes, but that pacing choice does not replace
-validator weight submissions or the consensus pass that credits emissions
-([Yuma Consensus: Validator emissions](https://docs.learnbittensor.org/learn/yuma-consensus#validator-emissions)).
-
-Readers should not read endpoint-cadence limits as proof of subnet performance or validator weight
-quality. Those belong to subnet evaluation and Yuma outcomes rather than to serving metadata pacing
-alone.
-
 - **Serving rate limit** — pacing for miner endpoint registration updates.
-- **Yuma Consensus** — turn validator weights into emission shares.
+- **Yuma Consensus** — mechanism that turns validator weights into emission shares.
+
+- **Endpoint vs settlement** — serving rate limit paces miner metadata writes; Yuma settles
+  validator weights into emission shares
+  ([Yuma Consensus: Validator emissions](https://docs.learnbittensor.org/learn/yuma-consensus#validator-emissions)).
+- **Not reachability** — a tighter serving rate limit does not prove axon reachability or weight
+  quality ([Glossary: Axon](https://docs.learnbittensor.org/resources/glossary#axon)).
 
 ## Reader Boundary
 
