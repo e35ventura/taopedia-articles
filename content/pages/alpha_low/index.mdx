@@ -55,17 +55,8 @@ alpha low is one of the two bound values that feature uses. The feature decides 
 varies; alpha low decides how low it may go
 ([Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)).
 
-## Why a Lower Bound Exists
-
-Bounding the smoothing factor keeps liquid alpha from pushing bond adaptation to an extreme. Alpha
-low guarantees the factor cannot fall below a chosen floor, which limits how heavily the system can
-lean on prior bonds for validators at that end of the alignment range
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-For readers, alpha low is meaningful only as part of the liquid alpha range and applies when liquid
-alpha is enabled for a subnet; its live value is per-subnet chain state and should be read for the
-subnet in question
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+- **Liquid alpha** — feature that varies bond smoothing by consensus alignment.
+- **Alpha low** — lower bound that caps how low the smoothing factor may go.
 
 ## Distinction from Alpha Sigmoid Steepness
 
@@ -107,68 +98,52 @@ path ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hy
 - **Alpha low** — the lower bound of the bond-smoothing coefficient.
 - **Bonds penalty** — the penalty magnitude for out-of-consensus weights.
 
-## netuid 1 as a Reference Subnet
+## Chain Reads for netuid 1
 
-Hyperparameter examples in this article use netuid 1 as a documented Finney mainnet subnet because
-that netuid appears repeatedly in official liquid-alpha and bond-smoothing prose
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+Readers can verify live hyperparameter values for the documented example netuid with
+`btcli subnet hyperparameters --netuid 1 --network finney`
+([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
 
-Alpha low is per-subnet chain state. The bond-smoothing floor configured on netuid 1 constrains how
-aggressively liquid alpha can move the bond EMA coefficient inside that subnet's Yuma Consensus
-path, but the live floor can differ from reference defaults and from alpha low on another netuid
-([Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)).
+That read path keeps live hyperparameter claims tied to a parseable netuid.
 
-Readers should treat netuid 1 as an illustrative subnet label, not as proof that every subnet shares
-the same bond-smoothing bounds. Alpha low names a configuration limit inside consensus bonding; the
-example netuid only anchors where that limit is read in official documentation
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+## Per-Subnet Live Value Boundary
 
-- **Alpha low** — lower bond-smoothing bound used in liquid-alpha configuration on a subnet.
-- **netuid 1** — documented example subnet used for Finney mainnet hyperparameter illustrations.
-
-## Live Values on One Subnet
-
-Alpha low is stored separately for each subnet. The lower bond-smoothing bound configured on one
-netuid applies only inside that subnet's liquid-alpha path and can differ from reference defaults
+Alpha low is per-subnet chain state. The lower bond-smoothing bound configured on one netuid applies
+only inside that subnet's liquid-alpha path, but the live floor can differ from reference defaults
 and from alpha low on another netuid
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
 [Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)).
 
-Readers should not confuse this hyperparameter with subnet alpha token price or supply. Alpha low
-sets the floor of the bond EMA coefficient range when liquid alpha is enabled, not the market price
-of alpha on that subnet ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
-[Glossary: Liquid Alpha](https://docs.learnbittensor.org/resources/glossary#liquid-alpha)).
+This article's infobox uses netuid 1 as an example label when reading alpha curve settings on one
+subnet. That example helps readers verify one table; it is not proof that every subnet exposes the
+same live floor ([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
 
-When reading examples on Finney mainnet, treat each netuid's hyperparameter row as local chain
-state. A floor shown for one subnet does not automatically apply to another
-([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+Alpha low governs bond-smoothing bounds when liquid alpha is enabled; Yuma Consensus still settles
+validator weights into emission shares each epoch
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
-Alpha low works with alpha high and alpha sigmoid steepness as bond-path controls. Together they
-shape smoothing inside Yuma Consensus without replacing the broader weight-to-emission settlement
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+- **Alpha low** — lower bound for liquid-alpha bond smoothing on a subnet.
+- **Per-subnet boundary** — live value is chain state on one netuid.
 
 ## Distinction from Yuma Consensus
 
 Alpha low is a per-subnet hyperparameter that sets the lower bound used in liquid-alpha bond
-smoothing inside Yuma Consensus. It names a bond-smoothing floor on a selected netuid, not the
-broader tempo process that maps validator weights into miner and validator emission shares
+smoothing inside Yuma Consensus. Yuma Consensus is the separate mechanism that applies bonding,
+clipping, and dividend logic when settling miner and validator shares each epoch
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
-[Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)).
-
-Yuma Consensus is the separate on-chain mechanism that reads eligible validator weights, applies
-consensus clipping and bonding, and allocates emission shares each tempo. Alpha low limits how far
-liquid alpha can reduce the bond EMA coefficient when consensus alignment is weak; Yuma still runs
-the full settlement path on the resulting bond state
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
+[Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
 [Emission](https://docs.learnbittensor.org/learn/emissions)).
-
-Readers should not confuse alpha low with subnet alpha token price or alpha halving milestones.
-Alpha low is a bond-smoothing hyperparameter inside Yuma's bonding path, while alpha halving and
-tokenomics events change emission inputs at a different layer.
 
 - **Alpha low** — lower bound for liquid-alpha bond smoothing.
 - **Yuma Consensus** — mechanism that turns validator weights into emission shares.
 - **Liquid alpha** — consensus-aligned adjustment of bond EMA coefficients.
+
+- **Lower floor** — limits how slowly bonds may adapt at the weak-alignment end of the range
+  ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+- **Not alpha price** — alpha low configures bond-smoothing bounds, not subnet alpha token price or
+  supply
+  ([Glossary: Liquid Alpha](https://docs.learnbittensor.org/resources/glossary#liquid-alpha)).
 
 ## Reader Boundary
 
