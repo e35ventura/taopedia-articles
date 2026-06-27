@@ -57,8 +57,8 @@ is the per-subnet switch that determines whether that action is permitted at all
 ([Glossary: Coldkey](https://docs.learnbittensor.org/resources/glossary#coldkey),
 [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
-Transferring stake is the operation; toggle transfer is the subnet permission that allows or blocks
-it.
+- **Transferring stake** — the operation of moving a staked position between coldkeys.
+- **Toggle transfer** — the subnet permission that allows or blocks that operation.
 
 ## Distinction from Moving Stake
 
@@ -67,28 +67,8 @@ toggle transfer specifically governs coldkey-to-coldkey transfer permission on a
 is about who may hold the stake, not which hotkey or subnet it backs
 ([Glossary: Stake](https://docs.learnbittensor.org/resources/glossary#stake)).
 
-Moving stake relocates delegation targets; toggle transfer governs coldkey-to-coldkey transfer
-permission.
-
-## Chain Reads for netuid 1
-
-Readers can verify live hyperparameter values for the documented example netuid with
-`btcli subnet hyperparameters --netuid 1 --network finney`
-([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
-
-That read path keeps live hyperparameter claims tied to a parseable netuid.
-
-## Why a Transfer Switch Exists
-
-A per-subnet transfer switch lets a subnet owner decide whether staked positions on their subnet can
-change coldkey ownership. Leaving it at the default keeps transfer open, while disabling it
-restricts how staked alpha can change hands within that subnet
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
-
-For readers, toggle transfer is a permission boundary rather than an economic rate. It answers
-whether a coldkey-to-coldkey transfer is allowed on the subnet, not what such a transfer would cost
-or how it would affect emissions
-([Glossary: Stake](https://docs.learnbittensor.org/resources/glossary#stake)).
+- **Moving stake** — relocating delegation between hotkeys or subnets.
+- **Toggle transfer** — coldkey-to-coldkey transfer permission on one subnet.
 
 ## Distinction from Coldkey Swap
 
@@ -100,7 +80,8 @@ staked position may change coldkey on a subnet; the other migrates an entire col
 ([Coldkey Swap](https://docs.learnbittensor.org/keys/coldkey-swap),
 [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
-One gates a single staked position on a subnet; the other migrates an entire coldkey identity.
+- **Toggle transfer** — permission for coldkey-to-coldkey stake transfer on one subnet.
+- **Coldkey swap** — identity migration for an entire coldkey.
 
 ## Distinction from Coldkey
 
@@ -109,49 +90,55 @@ The coldkey is the custody key that holds that position
 ([Glossary: Coldkey](https://docs.learnbittensor.org/resources/glossary#coldkey),
 [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
-## Live Values on One Subnet
+- **Toggle transfer** — permission switch for coldkey-to-coldkey stake transfer.
+- **Coldkey** — custody key that holds the staked position.
 
-Toggle transfer is stored separately for each subnet. On one netuid it allows or blocks moving a
-staked position from one coldkey to another on that subnet only, and the live permission can differ
-from the documented default and from the setting on another netuid
+## Chain Reads for netuid 1
+
+Readers can verify live hyperparameter values for the documented example netuid with
+`btcli subnet hyperparameters --netuid 1 --network finney`
+([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
+
+That read path keeps live hyperparameter claims tied to a parseable netuid.
+
+## Per-Subnet Live Value Boundary
+
+Toggle transfer is per-subnet chain state. On one netuid it allows or blocks moving a staked
+position from one coldkey to another on that subnet only, but the live permission can differ from
+the documented default and from the setting on another netuid
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
 [Glossary: Stake](https://docs.learnbittensor.org/resources/glossary#stake)).
 
-When the switch is off on a subnet, coldkey-to-coldkey transfer of staked alpha is closed there even
-if transfer remains open elsewhere. When it is on, holders may move staked positions between
-coldkeys within that subnet's permission model
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
-
-Readers should treat each netuid's value as local chain state. The example netuid 1 label in this
-article's infobox marks one subnet for discussion; it is not a network-wide rule
+This article's infobox uses netuid 1 as an example label when reading one subnet's hyperparameter
+row on Finney mainnet. That example helps readers verify one table; it is not proof that every
+subnet exposes the same live permission
 ([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
 
-Toggle transfer governs custody permission for staked alpha. It does not replace transferring stake,
-which names the operation the switch may permit, or Yuma Consensus, which settles validator weights
-into emission shares ([Glossary: Stake](https://docs.learnbittensor.org/resources/glossary#stake)).
+Toggle transfer governs custody permission for staked alpha; Yuma Consensus still converts validator
+weights into emission shares after evaluation completes
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+- **Toggle transfer** — permission switch for coldkey-to-coldkey stake transfer on a subnet.
+- **Per-subnet boundary** — live value is chain state on one netuid.
 
 ## Distinction from Yuma Consensus
 
 Toggle transfer is a per-subnet hyperparameter that allows or blocks coldkey-to-coldkey transfer of
-staked alpha on that subnet. It governs stake custody permission, not the on-chain step that turns
-validator weight submissions into emission shares
+staked alpha on that subnet. Yuma Consensus is the separate on-chain process that converts submitted
+validator weights into emission shares after evaluation completes
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
-[Glossary: Stake](https://docs.learnbittensor.org/resources/glossary#stake)).
-
-Yuma Consensus is the on-chain process that converts submitted validator weights into emission
-shares after evaluation completes. It settles scoring outcomes on a subnet; it does not by itself
-open or close coldkey-to-coldkey transfer paths
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
+[Glossary: Stake](https://docs.learnbittensor.org/resources/glossary#stake),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
 [Emission](https://docs.learnbittensor.org/learn/emissions)).
-
-Readers should keep transfer permission separate from the settlement step. Toggle transfer answers
-whether staked alpha may move between coldkeys on a subnet; Yuma Consensus answers how validator
-weights become emission shares in that subnet
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
 - **Toggle transfer** — permission switch for coldkey-to-coldkey stake transfer.
 - **Yuma Consensus** — on-chain weight aggregation that settles emissions.
+
+- **Permission boundary** — answers whether transfer is allowed, not transfer cost or emission
+  effects ([Glossary: Stake](https://docs.learnbittensor.org/resources/glossary#stake)).
+- **Subnet owner control** — the switch lets a subnet owner open or close coldkey-to-coldkey
+  transfer on that subnet
+  ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
 ## Reader Boundary
 
