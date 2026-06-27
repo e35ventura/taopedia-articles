@@ -172,11 +172,33 @@ until a later round to reduce that copying window
 
 ## Distinction from Yuma Consensus
 
-Drand time-lock encryption and Yuma Consensus act at different stages. Time-lock encryption controls
-when committed weights become readable, while Yuma Consensus aggregates the revealed weights into
-miner incentives and validator dividends after the concealment interval ends
+Drand time-lock encryption controls when committed validator weights become readable. Validators can
+submit concealed weight data on chain, but that ciphertext stays locked until the target Drand round
+arrives
 ([Glossary: Drand/time-lock encryption](https://docs.learnbittensor.org/resources/glossary#drandtime-lock-encryption),
+[Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)).
+
+Yuma Consensus is the separate tempo step that aggregates revealed validator weight signals into
+subnet incentive outcomes. It runs after readable weights are available, not during the concealment
+interval ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
+[Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)).
+
+During concealment, committed weights do not enter Yuma aggregation. After reveal, the same weights
+become ordinary validator signals for the next consensus pass on the selected netuid
+([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
+[Glossary: Weight Vector](https://docs.learnbittensor.org/resources/glossary#weight-vector)).
+
+The weight-copying problem explains why that delay matters. Time-lock encryption narrows the window
+where freshly committed weights can be reused by observers, while Yuma still depends on revealed
+evaluations when crediting miners and validators
+([The Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor),
 [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+Drand rounds come from an independent beacon network, so reveal timing is not controlled by the
+chain or a single validator. That external timing layer protects visibility; Yuma still names reward
+settlement once weights are open for consensus use
+([Glossary: Drand/time-lock encryption](https://docs.learnbittensor.org/resources/glossary#drandtime-lock-encryption),
+[Introduction to Bittensor: Subnet development](https://docs.learnbittensor.org/learn/introduction#subnet-development)).
 
 - **Drand time-lock encryption** — controls when committed weights can be read.
 - **Yuma Consensus** — aggregates the revealed weights into emissions.
