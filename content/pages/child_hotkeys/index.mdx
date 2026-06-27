@@ -25,82 +25,6 @@ behalf in a selected subnet. The documentation calls the originating delegate ho
 hotkey, and describes child hotkeys as keys the parent re-delegates a portion of its stake to so
 they can validate in its place.
 
-## Parent and Child
-
-The parent hotkey is an existing delegate that already holds stake. A child hotkey is a different
-key that the parent points a share of that stake toward. The documentation explains that the child
-then validates on behalf of the parent, so the parent key does not have to sign every validation
-operation itself. This is a delegation relationship between two keys rather than a transfer of
-ownership of the underlying stake.
-
-## Subnet Context
-
-Child hotkeys are configured for a specific subnet, identified by netuid; for example, a validator
-can assign children for netuid 1 and a different set for another netuid. The documentation states
-that a parent may have at most five child hotkeys on a given netuid, and that the same parent can
-hold a separate set of children on a different netuid. The configuration is therefore independent
-per subnet.
-
-## Child Take
-
-Child take is the share of rewards a child hotkey keeps for validating on the parent's behalf. The
-documentation describes it as subnet-specific, ranging from 0 (0%) to 0.18 (18%), with a default of
-0, and paid from the dividends the parent's stake would otherwise receive on that subnet. A child
-hotkey can also hold a separate delegate take, so the child take rate and the delegate take rate are
-described as independent settings.
-
-## Why Validators Use Them
-
-The documented rationale is key security. Validating through children lets the parent delegate
-hotkey stay in a secure location while each child signs operations for its assigned subnet,
-optionally on a different machine. The documentation notes that if an attacker steals a child
-hotkey, only the subnets where that child is used are exposed, rather than the full parent key,
-which limits the impact of a compromised validation key.
-
-## Parent Delegate Keeps the Stake
-
-The [Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys) documentation
-describes a parent delegate hotkey that already holds stake and assigns a childkey proportion for a
-specified `netuid`. The parent remains the delegated stake holder; the child configuration applies
-the proportion for that subnet only.
-
-Readers should attach both the parent hotkey and the `netuid` to a child-hotkey claim. The same
-parent can use a different child set on another subnet without mixing the two configurations.
-
-## Parent Authorization Boundary
-
-A child hotkey signs validation work because the parent delegate hotkey authorized it for a subnet.
-That authorization does not make the child the owner of the parent's stake or the general manager of
-the parent's wallet. The child-hotkey documentation keeps the relationship scoped to validating on
-the parent's behalf inside the selected `netuid`.
-
-For readers, child-hotkey authority should therefore be read as delegated operational signing, not
-as custody transfer. The parent-child relationship explains who may validate for a subnet; it does
-not replace the wallet authority model for balances, stake ownership, or coldkey control.
-
-## Child Take From Parent Dividends
-
-Child take is the percentage of the parent's dividends that a child hotkey keeps for validating on
-the parent's behalf. The same documentation gives a subnet-specific range from 0 to 0.18, with a
-default of 0, and states that the child receives that percentage of the parent's dividends on the
-selected subnet.
-
-That wording keeps child take inside dividend-sharing vocabulary for one `netuid`. It is separate
-from delegate take settings that apply more broadly to validator-delegator emission sharing.
-
-## Separate Child Hotkeys per Subnet
-
-Validators can run separate child hotkeys per subnet so the parent delegate hotkey does not need to
-be used everywhere. The documentation gives the security reason plainly: if one child key is
-compromised, only the subnets where that child is configured are exposed rather than every subnet
-the parent uses.
-
-That makes child hotkeys a per-subnet operational choice. The parent delegate keeps stake; each
-child hotkey can sign validation work for the subnets where the parent authorized it.
-
-The five-child limit and 18% take ceiling remain protocol limits from the documentation rather than
-live values reported by this concept article.
-
 ## Distinction from Multiple Incentive Mechanisms
 
 Child hotkeys name delegated validation keys a parent hotkey authorizes inside specific subnets,
@@ -163,63 +87,6 @@ For readers, this keeps child hotkey examples from sounding stronger than their 
 supports. Local, testchain, and mainchain contexts can all describe parent-child validation
 delegation, but they do not carry the same interpretive weight.
 
-## Relationship Scope
-
-Child hotkeys should be read as a key-relationship concept, not as a general staking or delegation
-recommendation. Wallet and key documentation separates key custody from staking relationships, so
-claims about child hotkeys should preserve whether the source is discussing account structure or
-delegated stake behavior
-([Bittensor Wallets](https://docs.learnbittensor.org/getting-started/wallets),
-[Staking and delegation overview](https://docs.learnbittensor.org/staking-and-delegation/delegation)).
-
-That distinction helps readers avoid treating every hotkey relationship as evidence about validator
-selection, emissions, or reward outcomes.
-
-## Five-Child Limit Applies Per netuid
-
-[Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys) documentation states that
-a parent may have at most five child hotkeys on a given netuid, while the same parent can hold a
-different child set on another netuid. The limit is therefore subnet-local rather than a single
-global count across every subnet the parent uses.
-
-Readers should name the netuid when citing the five-child rule. A parent at the limit on netuid 1
-does not by itself describe child configuration on another subnet.
-
-## Child Keys Can Operate From Separate Hosts
-
-The child-hotkeys documentation describes validators using children so the parent delegate hotkey
-can stay in a secure location while each child signs operations for its assigned subnet, optionally
-on a different machine. Child hotkey vocabulary therefore includes an operational deployment choice,
-not only a reward-sharing setting.
-
-That security rationale keeps child exposure subnet-scoped. A compromised child key affects only the
-subnets where that child is configured, as described in the child-hotkeys reference.
-
-## Changing Children Is Rate-Limited
-
-Setting or revoking children is not something a parent delegate can do at will, block by block.
-Official documentation describes a rate limit that permits this action roughly once every 150
-blocks, about 30 minutes, and a separate limit allowing a given child hotkey's take rate to be
-adjusted only once every 30 days
-([Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys),
-[Chain Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
-
-Those two limits answer different questions. The 150-block limit paces how often the child set
-itself can change, while the 30-day limit paces how often any one child's take percentage can be
-adjusted once it is already assigned.
-
-## A Parent Needs a Minimum Stake to Set Children
-
-Setting child hotkeys also requires the parent to clear a minimum total stake. Documentation states
-the requirement as 1,000 TAO worth of alpha on mainnet and 100 TAO worth of alpha on testnet,
-measured by summing the parent's alpha stake across every subnet it holds, not only the subnet where
-children are being set ([Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys)).
-
-That network-wide measurement means a parent's eligibility to set children does not depend only on
-its position in one subnet. A parent with modest stake on the target subnet but larger alpha
-holdings elsewhere can still clear the threshold once all of its subnet positions are counted
-together.
-
 ## Distinction from Validator Take
 
 A child hotkey is the key a parent delegate authorizes to validate on its behalf using re-delegated
@@ -261,34 +128,6 @@ child hotkey must already be registered on the netuid where it validates
 Entry vocabulary names how a hotkey obtains a slot; child-hotkey vocabulary names how a registered
 parent routes stake and signing authority to another registered key on that subnet.
 
-## Child Hotkeys Route a Parent's Stake Proportion
-
-[Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys) documentation describes a
-parent delegate hotkey that already holds stake and assigns a childkey proportion for a specified
-subnet. The parent remains the delegated stake holder; the child configuration applies a routed
-share of that stake so the child can validate on the parent's behalf inside that subnet only
-([Staking and delegation overview](https://docs.learnbittensor.org/staking-and-delegation/delegation)).
-
-That routing is subnet-local rather than a transfer of ownership. The same parent can authorize a
-different child set on another subnet, and each child proportion applies only where the parent
-configured it ([Glossary: Netuid](https://docs.learnbittensor.org/resources/glossary#netuid)).
-
-For readers, child hotkey vocabulary therefore includes stake routing as well as signing authority.
-The child validates using re-delegated stake from the parent position, while dividends and child
-take still flow through the parent-stake relationship described in child-hotkey documentation
-([Glossary: Dividends](https://docs.learnbittensor.org/resources/glossary#emission)).
-
-Child take is the percentage of the parent's dividends the child keeps for that routed validation
-work. It is paid from dividends the parent's stake would otherwise receive on the selected subnet
-and is separate from delegate take settings that apply more broadly to validator-delegator sharing
-([Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys),
-[Glossary: Validator Take %](https://docs.learnbittensor.org/resources/glossary#validator-take-)).
-
-The parent-child link is operational delegation, not custody transfer. A compromised child key
-exposes only the subnets where that child is configured, which is why validators use children to
-keep the parent delegate hotkey in a more secure location while routing stake-backed validation per
-subnet ([Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys)).
-
 ## Distinction from Hotkey
 
 For netuid 1 examples, a child hotkey and a hotkey answer different signing questions in validator
@@ -309,36 +148,29 @@ both the parent hotkey and the subnet market involved
 
 ## Distinction from Netuid
 
-Child hotkeys and netuid answer different scoping questions. Netuid names which subnet market the
-configuration applies to, while child hotkey names the authorized validation key the parent assigns
-inside that market ([Glossary: Netuid](https://docs.learnbittensor.org/resources/glossary#netuid),
-[Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys)).
+Child hotkeys are delegated operational keys under a parent hotkey. A netuid is the numeric subnet
+selector used in chain state and tooling
+([Glossary: Child Hotkeys](https://docs.learnbittensor.org/resources/glossary#child-hotkeys),
+[Glossary: Netuid](https://docs.learnbittensor.org/resources/glossary#netuid)).
 
-Documentation limits parents to five child hotkeys per netuid and allows a different child set on
-another netuid. A child-hotkey statement therefore needs the netuid attached before readers compare
-limits, take settings, or routed stake shares across subnets
-([Chain Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+- **Child hotkeys** — delegated operational keys under a parent.
+- **Netuid** — numeric identifier selecting a subnet.
 
-Netuid vocabulary sets the subnet boundary. Child-hotkey vocabulary names the operational key
-working inside that boundary for a parent delegate on netuid 1
-([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+Key-delegation vocabulary and subnet-selector vocabulary answer different scope questions
+([Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)).
 
 ## Distinction from Chain Rate Limits
 
-Child hotkeys and chain rate limits govern different parts of the same configuration workflow on
-netuid 1. Child hotkeys name the authorized keys and routed stake shares a parent delegate assigns,
-while chain rate limits pace how often those assignments or take percentages can change on chain
-([Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys),
-[Chain Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+Child hotkeys are delegated keys authorized by a parent hotkey. Chain rate limits throttle how often
+certain extrinsics may be submitted
+([Glossary: Child Hotkeys](https://docs.learnbittensor.org/resources/glossary#child-hotkeys),
+[Glossary: Chain Rate Limits](https://docs.learnbittensor.org/resources/glossary#chain-rate-limits)).
 
-The child-hotkeys documentation pairs a five-child limit per netuid with separate pacing rules for
-changing the child set and for adjusting an individual child's take percentage. Rate-limit
-vocabulary therefore belongs to update timing, not to whether a child key exists at all
-([Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys)).
+- **Child hotkeys** — delegated operational keys under a parent.
+- **Chain rate limits** — submission-frequency limits on extrinsics.
 
-Readers comparing operational freedom should keep the key-routing concept separate from the cooldown
-windows that govern when routing or take settings may be edited again on the selected subnet
-([Glossary: Validator Take %](https://docs.learnbittensor.org/resources/glossary#validator-take-)).
+Delegation vocabulary and throttle vocabulary answer different authorization questions
+([Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics)).
 
 ## Distinction from Subnet Owner Take
 
