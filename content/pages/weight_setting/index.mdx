@@ -26,40 +26,6 @@ the subnet task ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-con
 Weight setting is process vocabulary for the evaluation side of subnet consensus. It does not name
 the emission outcome or the miner incentive that follows from consensus.
 
-## Role in Yuma Consensus
-
-Weight setting feeds into Yuma Consensus, which aggregates validator evaluations into miner
-incentives and validator dividends. Validators set weights; Yuma Consensus processes those weights
-into consensus scores and emission shares
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
-[Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score)).
-
-This keeps weight setting separate from the consensus calculation itself. Weight setting is the
-input side; Yuma Consensus is the aggregation and output side.
-
-## Eligibility Rules Trim Which Submissions Count
-
-Not every weight a validator sets ends up counted. Epoch documentation lists pre-consensus filtering
-steps that remove certain submitted weights before stake-weighted aggregation begins
-([Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)).
-
-Self-assigned weights are removed so validators cannot vote for themselves, with an exception for
-the subnet creator when that role exists on the subnet. Weights tied to a neuron before that
-neuron's latest [registration](https://docs.learnbittensor.org/resources/glossary#register) are also
-dropped, and only rows from validators holding a
-[validator permit](https://docs.learnbittensor.org/resources/glossary#validator-permit) influence
-consensus. Weight setting therefore names the act of submitting, not a guarantee that every
-submission reaches the consensus calculation.
-
-## Subnet Context
-
-Weight setting is subnet-specific. Each subnet defines what miners produce, and validators in that
-subnet evaluate the output by setting weights
-([Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)).
-
-This keeps weight setting tied to the subnet's evaluation context. It is not a network-wide scoring
-mechanism or a ranking system independent of a particular subnet's task definition.
-
 ## Development Stage Context
 
 The
@@ -82,93 +48,6 @@ The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-netw
 separates mainnet, testnet, and localnet. A weight-setting example from one environment should not
 be read as representing production consensus behavior in another environment.
 
-## Each Setting Produces a Weight Vector
-
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) documentation describes each
-subnet validator as periodically submitting a vector of weights that ranks the miners that validator
-has evaluated. Weight setting is the validator-side action that turns observed miner work into that
-per-validator score set.
-
-The [Glossary: Weight Vector](https://docs.learnbittensor.org/resources/glossary#weight-vector)
-names one validator's structured miner scores. Those individual vectors are combined into the
-subnet-level
-[Glossary: Weight Matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix), which
-Yuma Consensus reads as its ranking input. Weight setting therefore describes building one
-validator's row in that wider matrix, not the subnet-wide result after aggregation
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
-[Glossary: Weight Matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix)).
-
-[Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)
-documentation adds that validators compute weight vectors from miner performance and transmit them
-to the chain. The chain waits for the latest ranking signals from the subnet's validators before
-assembling the matrix for consensus. One validator's setting step supplies evaluation material; the
-full matrix appears only after those submissions are gathered across the subnet.
-
-## Stake Weight Scales How Much a Setting Counts
-
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) documentation explains that
-the algorithm combines validator submissions using stake-weighted aggregation rather than treating
-every setting as one equal vote. When consensus compares weights for a miner, validator stake helps
-determine how much each submitted score influences the merged result.
-
-[Understanding Subnets: Validator stake weight](https://docs.learnbittensor.org/subnets/understanding-subnets#validator-stake-weight)
-documentation describes validator stake weight as the influence measure used during consensus. The
-[Glossary: Stake Weight](https://docs.learnbittensor.org/resources/glossary#stake-weight) defines
-stake weight as the amount of stake backing a neuron, which affects how strongly that neuron's
-validator weights count when those scores are merged with others in the same subnet.
-
-That split keeps evaluation and influence separate in weight-setting vocabulary. Validator weights
-express what a validator scored about miner work; stake weight expresses how strongly that
-validator's setting counts inside the aggregation step that follows submission
-([Understanding Subnets: Validator stake weight](https://docs.learnbittensor.org/subnets/understanding-subnets#validator-stake-weight),
-[Glossary: Stake Weight](https://docs.learnbittensor.org/resources/glossary#stake-weight)).
-
-## Weight Setting Follows the Tempo Cycle
-
-[Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)
-documentation places weight setting inside a recurring evaluation rhythm rather than a one-off
-snapshot. Validators compute weight vectors from miner performance and transmit them as part of the
-subnet's ongoing incentive process.
-
-The [Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo) defines tempo as the
-subnet-specific interval over which Yuma Consensus calculates emissions from the latest available
-ranking weight matrix.
-[Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)
-documentation states that validator weights are submitted during the preceding tempo, while emission
-results from the consensus pass are finalized at the end of each tempo period.
-
-Weight setting therefore belongs to a periodic submission window inside subnet timing. Validators
-may update scores across the tempo, but the miner-facing and validator-facing outcomes tied to those
-settings are credited when epoch processing completes at the tempo boundary rather than at every
-intermediate submission moment
-([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism),
-[Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo)).
-
-## Validator Weights, Weight Matrix, and Yuma Consensus Input
-
-Weight setting is the validator-side process that produces validator weights. Each submission
-becomes one validator's
-[weight vector](https://docs.learnbittensor.org/resources/glossary#weight-vector), and the chain
-assembles those vectors into the subnet-level
-[weight matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix) that
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) reads as ranking input
-([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
-
-The Subnet Metagraph documentation lists a Weights field defined as the weight matrix formed from
-validator weight vectors and used as input for Yuma Consensus, matching the assembled-matrix step
-this section describes ([Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)).
-
-The useful pipeline order is therefore miner evaluation, weight setting, vector submission, matrix
-assembly, and Yuma Consensus filtering and aggregation. Weight setting names the evaluation step;
-validator weights name the submitted scores; the weight matrix names the assembled input set; Yuma
-Consensus names the process that turns that matrix into miner incentives and validator dividends.
-
-A weight-setting schedule or tempo window does not by itself report every validator weight value
-stored for consensus processing, because the matrix names the gathered input rather than the
-submission process alone
-([Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
 ## Distinction from Weights Version Key
 
 The weights version key is the per-subnet hyperparameter that sets the minimum version a
@@ -178,8 +57,8 @@ so a call carrying a version below the key is rejected before weights are record
 [Glossary: Weight Vector](https://docs.learnbittensor.org/resources/glossary#weight-vector),
 [Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)).
 
-Weights-version-key vocabulary belongs to the submission version gate. Weight-setting vocabulary
-belongs to the scoring action that must satisfy that gate.
+The version key gates whether a submission is accepted; weight setting is the scoring action that
+must satisfy that gate.
 
 ## Distinction from Validator-Miner Bonds
 
@@ -190,8 +69,8 @@ submission updates the bonds that shape later emission outcomes
 [Glossary: Weight Vector](https://docs.learnbittensor.org/resources/glossary#weight-vector),
 [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
-Weight-setting vocabulary names the recurring submission act. Validator-miner-bonds vocabulary names
-the smoothed state that carries those inputs into Yuma Consensus reward calculations.
+Weight setting is the recurring submission act; validator-miner bonds are the smoothed state those
+submissions build over time.
 
 ## Distinction from Subjective Evaluation
 
@@ -204,8 +83,8 @@ resolves the subjectivity
 [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
 [Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)).
 
-Weight-setting vocabulary names the per-validator submission act. Subjective-evaluation vocabulary
-names the absence of a single answer key that makes consensus over those submissions necessary.
+Weight setting is each validator's submission act; subjective evaluation is the reason consensus
+over those submissions is needed.
 
 ## Distinction from Subnet Task
 
@@ -215,9 +94,8 @@ validator process of assigning scores to that work before consensus runs
 [Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism),
 [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
-Subnet-task vocabulary belongs to the work target miners return. Weight-setting vocabulary belongs
-to the validator scoring step applied to that output
-([Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets),
+Subnet task names the work miners return; weight setting names the validator scoring step applied to
+that output ([Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets),
 [Glossary: Subnet Validator](https://docs.learnbittensor.org/resources/glossary#subnet-validator)).
 
 ## Distinction from Subnet Scoring Model
@@ -228,8 +106,7 @@ Weight setting names the on-chain `set_weights` action that submits the scores t
 [Glossary: Weight Setting](https://docs.learnbittensor.org/resources/glossary#weight-setting),
 [Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
 
-Scoring-model vocabulary names the evaluation rule; weight-setting vocabulary names the submission
-that records those evaluation results on-chain.
+Subnet scoring model names the evaluation rule; weight setting records those results on-chain.
 
 ## Distinction from Subnet Protocol
 
@@ -240,26 +117,8 @@ after that returned work is judged
 [Glossary: Weight Setting](https://docs.learnbittensor.org/resources/glossary#weight-setting),
 [Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
 
-Protocol vocabulary describes how interaction is organized; weight-setting vocabulary describes
-recording evaluation results on-chain after that interaction.
-
-## Setting Weights Is Not the Same as Them Counting
-
-A validator can complete a `set_weights` submission and still have it contribute nothing to
-consensus. Weight setting is only the act of submitting; whether those weights count depends on
-separate gates such as holding a validator permit, meeting the minimum-weight count, and arriving
-within the activity-cutoff window of the epoch
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-For readers, this separates the action from its effect. A submitted weight vector is an input
-attempt, not a guaranteed consensus contribution, because eligibility and timing rules decide which
-submissions enter aggregation
-([Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)).
-
-That gap is also why timing matters as much as content. Even a well-formed submission is ignored for
-the current epoch if it misses the cutoff, so weight setting has to happen both correctly and early
-enough to be aggregated.
+Subnet protocol describes how validators and miners interact; weight setting records evaluation
+results after that interaction.
 
 ## Distinction from Weight Vector
 
@@ -268,8 +127,8 @@ payload that one submission records on the selected subnet
 ([Glossary: Weight Vector](https://docs.learnbittensor.org/resources/glossary#weight-vector),
 [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
-Weight-setting vocabulary names the submission act. Weight-vector vocabulary names the miner
-evaluation content inside that act.
+- **Weight setting** — validator submission act.
+- **Weight vector** — structured miner scores inside that act.
 
 ## Distinction from Weight Matrix
 
@@ -278,8 +137,8 @@ assembled collection of those rows before Yuma Consensus processes them on the s
 ([Glossary: Weight Matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix),
 [Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)).
 
-Weight-setting vocabulary belongs to per-validator submission. Weight-matrix vocabulary belongs to
-the grouped consensus input built from many submissions.
+- **Weight setting** — per-validator submission act.
+- **Weight matrix** — grouped consensus input built from many submissions.
 
 ## Distinction from Activity Cutoff
 
@@ -288,8 +147,8 @@ Weight setting names the validator scoring action whose timing must satisfy that
 ([Subnet Hyperparameters: Activity Cutoff](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutoff),
 [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
-Activity-cutoff vocabulary belongs to eligibility timing. Weight-setting vocabulary belongs to the
-evaluation submission itself.
+- **Activity cutoff** — eligibility timing window.
+- **Weight setting** — evaluation submission that must meet that window.
 
 ## Distinction from Validator Permit
 
@@ -298,8 +157,8 @@ subnet. Weight setting names the scoring action a permitted validator performs
 ([Glossary: Validator Permit](https://docs.learnbittensor.org/resources/glossary#validator-permit),
 [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
-Permit vocabulary belongs to submission authorization. Weight-setting vocabulary belongs to the
-evaluation act after authorization context is satisfied.
+- **Validator permit** — authorization to submit weights that can count.
+- **Weight setting** — evaluation act a permitted validator performs.
 
 ## Distinction from Commit Reveal
 
@@ -308,8 +167,8 @@ validator evaluation act whether or not that subnet uses commit-reveal timing
 ([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
 [Glossary: Weight Vector](https://docs.learnbittensor.org/resources/glossary#weight-vector)).
 
-Commit-reveal vocabulary belongs to submission visibility timing. Weight-setting vocabulary belongs
-to the scoring action that produces a weight vector.
+- **Commit reveal** — staged visibility for weight submissions.
+- **Weight setting** — scoring action that produces a weight vector.
 
 ## Distinction from Min Allowed Weights
 
