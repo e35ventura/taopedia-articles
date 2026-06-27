@@ -35,14 +35,8 @@ validator should score miners; it only sets how few weights a valid submission m
 The documentation lists min allowed weights as a `u16` value with a default of 1, and marks it as
 owner-settable, so a subnet owner can raise it for their subnet. A value above one means a single
 weight submission must cover more than one target. The value in force is per-subnet chain state and
-can differ from the default.
-
-## Subnet Context
-
-Min allowed weights is one of the subnet hyperparameters, the on-chain state variables that
-configure a single subnet, for example netuid 1. Because each subnet sets its own hyperparameters,
-the minimum can differ from one subnet to another, and it applies to weight submissions on that
-subnet.
+can differ from the default, so the minimum configured on netuid 1 can differ from another subnet's
+floor ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
 ## Why It Matters
 
@@ -50,27 +44,6 @@ The minimum interacts with how validator weights feed Yuma Consensus. Weights ar
 inputs that get aggregated into a consensus result, and a higher minimum requires each validator's
 submission to spread across more targets rather than concentrate on a single one. The hyperparameter
 constrains the form of valid weight input without dictating the scores themselves.
-
-## Development Stage Context
-
-The
-[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from localnet to testnet and then mainnet. For min allowed
-weights, that sequence changes how readers should interpret validator weight-spread examples.
-
-In localnet, min-allowed-weights hyperparameters can be tested in an isolated environment. Localnet
-weight submissions do not represent production consensus inputs.
-
-On testnet, validator weight rules can be exercised in a shared non-production network. Testnet
-minimums are separate from mainnet subnet state.
-
-On mainnet, min allowed weights is a live per-subnet hyperparameter on production subnets. Observed
-minimums depend on the selected subnet's on-chain hyperparameter state
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
-
-The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
-separates mainnet, testnet, and localnet. A min-allowed-weights example from one environment should
-not be read as representing production weight rules in another environment.
 
 ## The Weight Vector Lists Targets and Scores
 
@@ -130,10 +103,6 @@ shapes what a valid submission must contain
 [Glossary: Weight Vector](https://docs.learnbittensor.org/resources/glossary#weight-vector),
 [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
-Hyperparameter vocabulary and submission-action vocabulary answer different questions. Min allowed
-weights sets how many targets a valid vector must name; weight setting is the act that submits the
-vector those rules constrain.
-
 - **Min allowed weights** — the fewest weights a submission must include.
 - **Weight setting** — the action that submits the vector the minimum constrains.
 
@@ -144,10 +113,6 @@ allowed weights sets the minimum number of weights a validator must include when
 while the weights version key sets the minimum version a `set_weights` call must carry to be
 accepted ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
-Count-floor vocabulary and version-floor vocabulary constrain different parts of the same
-submission. Min allowed weights sets how many targets must appear; the weights version key sets the
-minimum version header the call must carry.
-
 - **Min allowed weights** — the fewest weights a submission must include.
 - **Weights version key** — the minimum version a submission must carry.
 
@@ -157,10 +122,6 @@ Min allowed weights and weights rate limit are different weight-submission hyper
 allowed weights sets the minimum number of weights a validator must include in a submission, while
 weights rate limit sets how many blocks a validator must wait between weight commits
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
-
-Count-floor vocabulary and timing vocabulary govern different submission rules. Min allowed weights
-sets how many targets a vector must include; weights rate limit sets how soon another commit may
-follow.
 
 - **Min allowed weights** — the fewest weights a submission must include.
 - **Weights rate limit** — the blocks a validator must wait before the next commit.
@@ -173,10 +134,35 @@ consensus, while min allowed weights sets how many targets a submission must inc
 ([Glossary: Validator Permit](https://docs.learnbittensor.org/resources/glossary#validator-permit),
 [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
-Participation-right vocabulary and count-floor vocabulary gate different parts of the same
-submission. The permit decides whether a validator's weights may count at all; min allowed weights
-decides whether a given submission is structurally valid once that right exists
+- **Validator permit** — whether a validator's weights may count in consensus.
+- **Min allowed weights** — how many targets a valid submission must include.
+
+## Chain Reads for netuid 1
+
+Readers can verify live hyperparameter values for the documented example netuid with
+`btcli subnet hyperparameters --netuid 1 --network finney`
+([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
+
+That read path keeps live hyperparameter claims tied to a parseable netuid.
+
+## Per-Subnet Live Value Boundary
+
+Min allowed weights is per-subnet chain state. The count floor configured on one netuid governs how
+many targets a validator's submission must include on that subnet, but the live minimum can differ
+from reference defaults and from the floor on another netuid
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+This article's infobox uses netuid 1 as an example label when reading one subnet's hyperparameter
+table on Finney mainnet. That example helps readers verify one row; it is not proof that every
+subnet exposes the same live minimum
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+Min allowed weights governs weight-submission breadth; Yuma Consensus still converts validator
+weights into emission shares each epoch on the active subnet
 ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+- **Min allowed weights** — count floor for valid weight submissions on a subnet.
+- **Per-subnet boundary** — live value is chain state on one netuid.
 
 ## Distinction from Yuma Consensus
 
@@ -188,17 +174,14 @@ weights into emission shares
 [Emission](https://docs.learnbittensor.org/learn/emissions)).
 
 - **Min allowed weights** — floor on how many weights a validator must submit.
-- **Yuma Consensus** — mechanism that turns validator weights into emission shares. Readers should
-  keep submission-floor vocabulary separate from settlement vocabulary. Min allowed weights sets how
-  many miner scores a validator must submit; Yuma aggregates accepted submissions into emission
-  shares at epoch boundaries
-  ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+- **Yuma Consensus** — mechanism that turns validator weights into emission shares.
+
+- **Form vs settlement** — min allowed weights sets submission breadth; Yuma aggregates eligible
+  vectors ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
   [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-The floor governs input completeness. Yuma applies clipping and bonding to eligible weight vectors
-([Emission](https://docs.learnbittensor.org/learn/emissions)).
-
-- **Weight setting** — validator extrinsic that records miner scores.
+- **Clipping follows** — meeting the count minimum does not prevent score clipping when values
+  outlie consensus
+  ([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
 
 ## Reader Boundary
 
