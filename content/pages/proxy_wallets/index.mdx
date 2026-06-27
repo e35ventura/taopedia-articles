@@ -70,47 +70,42 @@ selection limits blast radius if a proxy key is compromised. No single layer cov
 itself ([Proxies overview](https://docs.learnbittensor.org/keys/proxies),
 [Coldkey and hotkey workstation security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security)).
 
-## Proxy type scopes
+## Scoped Delegation
 
 The [Proxies overview](https://docs.learnbittensor.org/keys/proxies) groups proxy permissions into
-scoped categories rather than granting blanket control of the safe wallet. `Any` proxies can perform
-any call the safe wallet could make, while narrower types such as `NonTransfer`, `Staking`, and
-`Governance` limit which extrinsics the proxy may submit. Choosing the narrowest type that still
-covers the intended workflow reduces blast radius if a proxy key is misused or compromised.
+scoped categories rather than granting blanket control of the safe wallet. A broad proxy can mirror
+most safe-wallet authority, while narrower staking-only or governance-only permissions limit what
+the proxy may do on behalf of the protected account. Choosing the narrowest scope that still covers
+the intended task reduces blast radius if a proxy key is misused or compromised.
 
-The same overview notes that some proxy types support optional delay and announcement behavior. When
-enabled, a proxy can signal an upcoming action before it executes, giving the safe wallet holder a
-window to reject the pending call. That pattern is useful for high-value accounts where operational
-convenience must not remove human review entirely.
-
-## Staking Documentation Recommends Proxies for Mainnet Use
-
-Proxy usage for staking is not presented as one option among equally weighted alternatives. Official
-staking documentation describes proxy-based staking as the recommended approach for mainnet
-activity, in contrast to signing staking actions directly from a wallet's coldkey
-([Managing Your Stakes](https://docs.learnbittensor.org/staking-and-delegation/managing-stake-sdk)).
-
-That guidance follows the same custody reasoning already established for proxy wallets generally: a
-proxy can be scoped to staking-only permissions and, where supported, carry a delay, so a
-compromised proxy session exposes less than a compromised coldkey session would on production value.
-
-## Delay Protection Requires Active Monitoring, Not Automatic Notice
-
-A delayed proxy does not submit and immediately execute a call. It first announces the call, waits
-out the configured delay, and only then executes the announced action
+Some proxy types also support optional delay and announcement behavior, which can give the safe
+wallet holder time to reject a pending action before it executes
 ([Proxies overview](https://docs.learnbittensor.org/keys/proxies)).
 
-That delay does not notify the safe wallet holder automatically. The
-[Working with Proxies](https://docs.learnbittensor.org/keys/proxies/working-with-proxies) guide
-states the delay protects the holder only if they are watching: if a proxy key is compromised, an
-attacker can announce a call and wait out the delay without interference from anyone who is not
-actively checking for pending announcements.
+## Proxies and Staking Context
 
-That makes monitoring frequency part of the security model, not an optional habit. The same guide
-recommends checking for pending announcements on a schedule shorter than the configured delay, and
-revoking any proxy relationship that is not being actively watched, since a dormant delayed proxy is
-little safer than one with no delay at all
-([Working with Proxies](https://docs.learnbittensor.org/keys/proxies/working-with-proxies)).
+Proxy wallets appear prominently in Bittensor staking security prose because repeated staking
+actions are a common reason a coldkey must sign online. The proxy pattern lets a separate account
+perform staking-related actions under a narrow permission scope while the coldkey remains in a
+higher-security environment ([Proxies overview](https://docs.learnbittensor.org/keys/proxies),
+[Staking and delegation overview](https://docs.learnbittensor.org/staking-and-delegation/delegation)).
+
+For readers, the point is custody separation rather than a specific tool workflow. A staking-scoped
+proxy still requires careful key handling and active oversight, but it limits how much coldkey
+authority is exposed when staking activity is frequent
+([Coldkey and hotkey workstation security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security)).
+
+## Announcement and Delay
+
+Some proxy configurations announce an upcoming action before executing it after a configured delay
+([Proxies overview](https://docs.learnbittensor.org/keys/proxies)). That pattern can give the safe
+wallet holder review time, but the delay only helps when someone is actively watching for pending
+announcements.
+
+For readers, announcement and delay are part of the proxy security model rather than automatic
+protection. They reduce surprise execution; they do not replace narrow scoping, proxy key hygiene,
+or the safe wallet's ability to revoke delegated authority
+([Working with proxies](https://docs.learnbittensor.org/keys/proxies/working-with-proxies)).
 
 ## Development Stage Context
 
@@ -209,6 +204,27 @@ A coldkey is the ownership key that controls funds, stake, and paired hotkeys. A
 a separate account scoped authority to submit specific calls without changing which coldkey owns the
 wallet ([Glossary: Coldkey](https://docs.learnbittensor.org/resources/glossary#coldkey),
 [Proxies overview](https://docs.learnbittensor.org/keys/proxies)).
+
+## Distinction from Yuma Consensus
+
+Proxy wallets let one Bittensor account perform scoped actions on behalf of a protected account.
+They name delegated signing vocabulary, not subnet settlement after validator evaluation
+([Proxies overview](https://docs.learnbittensor.org/keys/proxies),
+[Working with proxies](https://docs.learnbittensor.org/keys/proxies/working-with-proxies)).
+
+Yuma Consensus is the on-chain process that converts submitted validator weights into emission
+shares after evaluation completes. A proxy may submit allowed calls for a safe wallet; Yuma
+Consensus names how weights become emission shares on a subnet
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
+[Emission](https://docs.learnbittensor.org/learn/emissions)).
+
+Readers should keep proxy delegation vocabulary separate from settlement vocabulary. Proxy wallets
+answer who may act for a protected account; Yuma Consensus answers how validator weights become
+emission shares in a subnet ([Proxies overview](https://docs.learnbittensor.org/keys/proxies),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+- **Proxy wallets** — scoped accounts that act for a protected wallet.
+- **Yuma Consensus** — on-chain weight aggregation that settles emissions.
 
 ## Reader Boundary
 
