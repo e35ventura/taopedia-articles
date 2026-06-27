@@ -122,7 +122,7 @@ function hasFencedCodeBlock(content) {
 }
 
 function hasSourceLink(content) {
-  for (const match of content.matchAll(markdownHttpLinkPattern)) {
+  for (const match of stripMarkdownCode(content).matchAll(markdownHttpLinkPattern)) {
     if (!match[0].startsWith("!")) return true;
   }
   return false;
@@ -224,7 +224,8 @@ async function validateArticle(slug, articleDir, knownTargets) {
     );
   }
   validateTags(data, articlePath);
-  for (const target of [...extractWikiLinks(content), ...extractWikiLinksFromValue(data)]) {
+  const proseContent = stripMarkdownCode(content);
+  for (const target of [...extractWikiLinks(proseContent), ...extractWikiLinksFromValue(data)]) {
     const normalizedTarget = slugifyWikiLink(target);
     if (!knownTargets.has(normalizedTarget)) {
       throw new Error(

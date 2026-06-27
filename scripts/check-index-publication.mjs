@@ -7,6 +7,20 @@ const root = process.cwd();
 const pagesDir = path.join(root, "content/pages");
 const indexPath = path.join(root, "content/index/articles.jsonl");
 
+async function* walk(dir) {
+  for (const entry of await fs.readdir(dir, { withFileTypes: true })) {
+    const fp = path.join(dir, entry.name);
+    if (entry.isDirectory()) yield* walk(fp);
+    else if (entry.isFile() && entry.name === "index.mdx") yield fp;
+  }
+}
+
+function slugFromPath(fp) {
+  const parts = fp.split(path.sep);
+  const idx = parts.indexOf("pages");
+  return idx >= 0 ? parts[idx + 1] : null;
+}
+
 function isPublishedArticle(slug, data) {
   if (data?.draft === true) return false;
   if (slug === "taopedia") return false;
@@ -14,13 +28,13 @@ function isPublishedArticle(slug, data) {
 }
 
 const expectedSlugs = [];
-for (const entry of await fs.readdir(pagesDir, { withFileTypes: true })) {
-  if (!entry.isDirectory()) continue;
-  const articlePath = path.join(pagesDir, entry.name, "index.mdx");
+for await (const articlePath of walk(pagesDir)) {
+  const slug = slugFromPath(articlePath);
+  if (!slug) continue;
   try {
     const raw = await fs.readFile(articlePath, "utf8");
     const { data } = matter(raw);
-    if (isPublishedArticle(entry.name, data)) expectedSlugs.push(entry.name);
+    if (isPublishedArticle(slug, data)) expectedSlugs.push(slug);
   } catch {
     // Skip folders without article content.
   }
