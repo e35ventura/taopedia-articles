@@ -43,45 +43,6 @@ validator weight submissions enter the current Yuma Consensus pass
 ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
 [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
-## Activity Cutoff Applies Inside Each Epoch
-
-Subnet [hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters) measure
-activity cutoff in blocks within each
-[epoch](https://docs.learnbittensor.org/resources/glossary#epoch). Because an epoch spans the block
-count set by the subnet's [tempo](https://docs.learnbittensor.org/resources/glossary#tempo)
-hyperparameter, the cutoff is an early-window rule inside one tempo-sized consensus period rather
-than a separate schedule.
-
-Documentation states that a
-[validator](https://docs.learnbittensor.org/resources/glossary#subnet-validator) must submit
-validator weights within the first activity-cutoff blocks of the epoch to participate in the current
-pass ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
-[Glossary: Epoch](https://docs.learnbittensor.org/resources/glossary#epoch)).
-
-## Missed Submission Waits for the Next Epoch
-
-When a validator does not submit weights inside the activity-cutoff window, documentation treats
-that validator as inactive for the current epoch and requires waiting until the next epoch begins
-before participating again. The rule is about timely weight submission, not about removing stake
-from the validator
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
-
-That waiting period keeps one epoch's Yuma Consensus pass based on validators who submitted inside
-the documented window on the selected subnet.
-
-## Tempo Sets the Epoch Length the Cutoff Sits Within
-
-The [Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo) defines tempo as the
-subnet-specific block interval over which Yuma Consensus calculates
-[emissions](https://docs.learnbittensor.org/resources/glossary#emission) from the latest ranking
-weight matrix. Activity cutoff therefore applies during the opening block window of each epoch
-inside that tempo cadence.
-
-Readers comparing the two hyperparameters should keep units straight. Tempo names how many blocks
-group an epoch; activity cutoff names how many blocks at the start of that epoch allow timely weight
-submission
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
-
 ## Development Stage Context
 
 The
@@ -106,45 +67,6 @@ hyperparameter state
 An activity-cutoff example from one environment should not be read as representing production
 participation rules in another environment.
 
-## Three Submission Gates Sit on the Same Weight Path
-
-Official epoch documentation describes validator influence as passing through separate checks before
-weights affect Yuma Consensus. Validator permit vocabulary decides whether a neuron may submit
-non-self weights at all. Activity cutoff vocabulary decides whether that submission arrived inside
-the opening block window of the current epoch. Version-key hyperparameters can reject submissions
-whose declared client version is below the subnet floor
-([Glossary: Validator Permit](https://docs.learnbittensor.org/resources/glossary#validator-permit),
-[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
-[Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)).
-
-For readers, those gates answer different failure modes on the same extrinsic boundary. Missing the
-permit is an authorization failure. Missing the activity window is a timing failure inside the
-tempo-sized epoch. Carrying a stale version is a compatibility failure. A validator can satisfy one
-gate while failing another on the same round
-([Glossary: Weight Vector](https://docs.learnbittensor.org/resources/glossary#weight-vector),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-That ordering keeps role vocabulary, hyperparameter timing, and client-version rollout as separate
-ideas rather than one blended active-validator label
-([Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)).
-
-## Activity Cutoff Is Measured in Blocks, Not Wall-Clock Time
-
-Subnet hyperparameter documentation describes activity cutoff as a block count inside each epoch.
-Because epoch length is set by tempo on the same subnet, the wall-clock duration of the submission
-window changes with network block production rather than with a fixed minute timer
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
-[Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo)).
-
-For readers, activity cutoff vocabulary always pairs with block height and metagraph last-update
-fields. Comparing schedules across subnets requires reading each subnet's tempo and cutoff together
-instead of assuming identical real-time windows
-([Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph),
-[Glossary: Epoch](https://docs.learnbittensor.org/resources/glossary#epoch)).
-
-Missed submissions wait for the next epoch rather than retroactively joining the current pass
-([Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)).
-
 ## Distinction from Last Update
 
 Activity cutoff and last update are read as a pair on metagraph rows. Activity cutoff is the
@@ -163,21 +85,18 @@ inactive only when the gap since its last update exceeds the cutoff
 
 ## Distinction from Tempo and Epoch
 
-These timing labels answer different reader questions on the same subnet pass:
+Activity cutoff is the early-epoch block window in which validators must submit weights. Tempo
+counts blocks between emission steps; epoch names the wider consensus window grouping those blocks
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo),
+[Glossary: Epoch](https://docs.learnbittensor.org/resources/glossary#epoch)).
 
-| Term            | What it names              | Why readers check it                                     |
-| --------------- | -------------------------- | -------------------------------------------------------- |
-| Tempo           | Block count for one epoch  | Sets how long each epoch lasts on the subnet             |
-| Epoch           | Consensus period           | Bounds the pass where Yuma participation is evaluated    |
-| Activity cutoff | Block-count hyperparameter | Documented stake-inactivity rule for epoch participation |
+- **Activity cutoff** — early-epoch block window for counting weight submissions.
+- **Tempo and epoch** — subnet timing cadence and wider consensus window.
 
-([Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo),
-[Glossary: Epoch](https://docs.learnbittensor.org/resources/glossary#epoch),
-[Subnet Hyperparameters: ActivityCutoff](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutoff)).
-
-When a validator misses the cutoff window, the failure is about stake inactivity for that epoch
-cycle—not about how many blocks define the epoch itself
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+Cutoff vocabulary gates timely submission; tempo and epoch vocabulary name the surrounding timing
+frame
+([Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)).
 
 ## Distinction from Weights Rate Limit
 
@@ -225,15 +144,16 @@ inside the counting window.
 
 ## Distinction from Pruning Score
 
-Pruning score and activity cutoff are different subnet signals. Pruning score reflects emission
-standing used when a full subnet must displace one participant to admit a new registration, while
-activity cutoff is the early-epoch block window within which a validator must submit weights to
-count in the current Yuma Consensus pass
-([Mining: Miner deregistration](https://docs.learnbittensor.org/miners#miner-deregistration),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+Activity cutoff bounds when validator weights must arrive to count in the current epoch. Pruning
+score ranks miners when a full subnet must displace one incumbent slot
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Glossary: Pruning Score](https://docs.learnbittensor.org/resources/glossary#pruning-score)).
 
-Pruning score ranks who stays when space is needed; activity cutoff times whether a validator's
-weights count this epoch.
+- **Activity cutoff** — validator submission timing gate inside an epoch.
+- **Pruning score** — miner ranking input when one slot must open.
+
+Validator-timing vocabulary and displacement-ranking vocabulary answer different subnet questions
+([Mining: Miner deregistration](https://docs.learnbittensor.org/miners#miner-deregistration)).
 
 ## Distinction from Serving Rate Limit
 
@@ -280,21 +200,6 @@ consensus math or emission mapping.
 - **Activity cutoff** — freshness window for weights to count in an epoch.
 - **Yuma Consensus** — mechanism that turns validator weights into emission shares.
 - **Weight setting** — how validators submit the scores activity cutoff filters.
-
-## How Activity Cutoff Filters Epoch Inputs
-
-Epoch documentation describes pre-consensus checks that run before Yuma aggregates validator weights
-into consensus scores and emission shares
-([Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)).
-
-Activity cutoff is one of those freshness filters on a netuid. Validators who set weights outside
-the configured window are treated as inactive for that epoch's inclusion set, which changes which
-rows Yuma can read even though the consensus math itself is unchanged
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-Readers comparing subnets should cite both the activity-cutoff hyperparameter and epoch length
-(tempo) because both bound when submitted weights become eligible inputs to Yuma settlement.
 
 ## Distinction from Subnet
 
