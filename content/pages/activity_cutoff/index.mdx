@@ -90,49 +90,6 @@ group an epoch; activity cutoff names how many blocks at the start of that epoch
 submission
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
-## Relationship to Validator Permit
-
-Activity cutoff and the validator permit are two different gates on whether a validator's weights
-count in a consensus pass. Activity cutoff is the early-epoch block window that sets when weights
-must arrive to be included, while the validator permit is the permission flag that records whether a
-UID may submit validator weights at all
-([Subnet Hyperparameters: ActivityCutoff](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutoff),
-[Glossary: Validator Permit](https://docs.learnbittensor.org/resources/glossary#validator-permit)).
-
-The two gates are checked separately. A permitted validator still has to submit inside the window,
-so weights from a validator that holds the permit but arrives after the activity-cutoff window can
-miss the current consensus pass
-([Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)).
-
-## Relationship to Last Update
-
-Activity cutoff and last update are read as a pair. Activity cutoff sets how many blocks a neuron
-may go without updating, while last update is the block timestamp from which that window is measured
-([Subnet Hyperparameters: ActivityCutoff](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutoff),
-[Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)).
-
-On its own neither value decides activity. Activity cutoff supplies the "how long" and last update
-supplies the "when," so a neuron counts as inactive only when the gap since its last update exceeds
-the cutoff
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
-
-## Relationship to Weight Setting
-
-Activity cutoff is the early-epoch block window in which a validator must submit weights to
-participate in the current consensus pass. Weight setting is the validator action of assigning
-scores to miners in those submissions
-([Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)).
-
-Readers comparing participation timing to evaluation action need both terms. Activity cutoff names
-when weights must arrive to count in the epoch, while weight setting names the scoring step that
-produces those weights
-([Glossary: Subnet Validator](https://docs.learnbittensor.org/resources/glossary#subnet-validator),
-[Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
-
-Use activity cutoff when covering the submission window inside an epoch; use weight setting when
-covering how validators score miners rather than the timing gate itself
-([Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score)).
-
 ## Development Stage Context
 
 The
@@ -198,14 +155,19 @@ Missed submissions wait for the next epoch rather than retroactively joining the
 
 ## Distinction from Last Update
 
-On metagraph rows, activity cutoff is the owner-settable block-count hyperparameter and last update
-is the block field readers compare against it
+Activity cutoff and last update are read as a pair on metagraph rows. Activity cutoff is the
+owner-settable block-count hyperparameter, while last update is the per-neuron block field readers
+compare against it
 ([Subnet Hyperparameters: ActivityCutoff](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutoff),
 [Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)).
 
-Official hyperparameter documentation describes activity cutoff as the number of blocks for stake to
-become inactive for the purpose of epoch in Yuma Consensus
+On its own neither value decides activity. Activity cutoff supplies the allowed inactivity span and
+last update supplies the block timestamp from which that span is measured, so a neuron counts as
+inactive only when the gap since its last update exceeds the cutoff
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+- **Activity cutoff** — the hyperparameter span defining allowed inactivity for epoch purposes.
+- **Last update** — the per-neuron block timestamp measured against that span.
 
 ## Distinction from Tempo and Epoch
 
@@ -291,6 +253,18 @@ weights to count in the current Yuma Consensus pass
 [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
 One paces a miner's endpoint updates; the other times a validator's weight submission.
+
+## Distinction from Weight Setting
+
+Activity cutoff is the early-epoch block window in which a validator must submit weights to
+participate in the current Yuma Consensus pass. Weight setting is the validator action of assigning
+scores to miners in those submissions
+([Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch),
+[Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+- **Activity cutoff** — when weights must arrive to count in the epoch.
+- **Weight setting** — how validators score miners in those submissions.
 
 ## Reader Boundary
 
