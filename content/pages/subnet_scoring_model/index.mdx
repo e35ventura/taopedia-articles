@@ -28,98 +28,6 @@ Bittensor subnet
 The term belongs to incentive-mechanism vocabulary. It names how responses become evaluation scores,
 so validators can turn returned work into signals used later in the incentive process.
 
-## Evaluation Method
-
-The scoring model explains how returned work is judged. The subnet task describes what miners are
-asked to produce, while the scoring model describes how validators evaluate the responses they
-receive
-([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism),
-[Glossary: Subnet Task](https://docs.learnbittensor.org/resources/glossary#subnet-task),
-[Glossary: Subnet Scoring Model](https://docs.learnbittensor.org/resources/glossary#subnet-scoring-model)).
-
-Task vocabulary and scoring vocabulary stay separate. The task asks for work; the scoring model
-evaluates returned work.
-
-The scoring model is therefore the evaluation method, not the whole incentive mechanism. It turns
-responses into scores, while other parts of the system handle interaction, aggregation, emissions,
-and role-specific outcomes.
-
-## Task and Exchange Pattern
-
-Subnet task, validator-miner exchange rules, and subnet scoring model describe adjacent pieces of
-the same flow. The task names the work target, the exchange pattern describes how validators request
-and receive responses, and the scoring model describes how returned responses are judged
-([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism),
-[Glossary: Subnet Task](https://docs.learnbittensor.org/resources/glossary#subnet-task),
-[Glossary: Subnet Scoring Model](https://docs.learnbittensor.org/resources/glossary#subnet-scoring-model)).
-
-That distinction keeps work design, interaction rules, and evaluation criteria from collapsing into
-one phrase. A subnet can change how work is requested or represented without making every exchange
-detail part of the scoring model.
-
-The exchange pattern creates the interaction surface. The scoring model explains the evaluation
-method applied to that surface.
-
-## Validator Weights, Incentive Evaluation, and Yuma Scoring Pipeline
-
-A scoring model sits earlier in the evaluation path than final weight signals. Validators apply the
-method to returned work, then submit structured
-[weight vectors](https://docs.learnbittensor.org/resources/glossary#weight-vector) that carry those
-evaluations into consensus processing
-([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism),
-[Glossary: Subnet Scoring Model](https://docs.learnbittensor.org/resources/glossary#subnet-scoring-model)).
-
-The chain assembles those vectors into the subnet-level
-[weight matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix) that
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) reads as ranking input.
-[Validator weights](https://docs.learnbittensor.org/resources/glossary#weight-vector) name the
-submitted scores; the weight matrix names the gathered input set; Yuma Consensus applies clipping,
-bonding, and emission calculation to turn that matrix into miner
-[incentives](https://docs.learnbittensor.org/resources/glossary#incentives) and validator
-[dividends](https://docs.learnbittensor.org/resources/glossary#emission).
-
-The useful pipeline order on a subnet such as netuid 1 is therefore miner response, scoring-model
-evaluation, weight vector submission, matrix assembly, Yuma clipping and aggregation, and
-tempo-bound reward outcomes. A scoring model shapes validator judgments upstream; clipping compares
-submitted weights against a stake-weighted benchmark and trims values above that level before final
-[rank](https://docs.learnbittensor.org/resources/glossary#rank) is resolved
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-A high local score from a scoring model does not by itself guarantee unchanged influence after
-consensus processing. Scoring names the evaluation rule; weight vocabulary names the submitted
-consensus input built from that evaluation.
-
-## Miner and Validator Roles
-
-Miners produce responses for the subnet, and validators evaluate those responses under subnet
-standards. Miners and validators are separate subnet roles
-([Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets),
-[Glossary: Subnet Miner](https://docs.learnbittensor.org/resources/glossary#subnet-miner),
-[Glossary: Subnet Validator](https://docs.learnbittensor.org/resources/glossary#subnet-validator),
-[Glossary: Subnet Scoring Model](https://docs.learnbittensor.org/resources/glossary#subnet-scoring-model)).
-
-The scoring model is the method validators apply to that work. It links miner responses to validator
-evaluation without replacing either role.
-
-Role language stays clearest when those parts remain distinct. Miner describes the party producing
-work, validator describes the party evaluating work, and subnet scoring model describes the method
-used to judge returned work.
-
-## Mechanism Scope
-
-When a subnet uses multiple incentive mechanisms, each mechanism can have its own scoring method.
-The multiple-mechanism documentation describes separate mechanisms inside one subnet
-([Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets),
-[Glossary: Subnet Scoring Model](https://docs.learnbittensor.org/resources/glossary#subnet-scoring-model)).
-
-A scoring standard for one mechanism belongs to that mechanism. It does not automatically describe
-every task, evaluation path, or incentive pathway inside the subnet.
-
-Mechanism labels therefore matter when comparing scoring examples.
-
-This matters because the same subnet can contain more than one pathway for work and evaluation.
-Concrete scoring examples belong with the subnet, mechanism, network, and source that produced them.
-
 ## Development Stage Context
 
 The
@@ -145,45 +53,6 @@ The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-netw
 separates mainnet, testnet, and localnet. A scoring model example from one environment should not be
 read as representing production subnet performance in another environment.
 
-## Mechanisms Require Task, Exchange, and Scoring Together
-
-[Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)
-documentation states that each mechanism must supply a validator-miner exchange pattern, a task
-definition, and a scoring method validators can apply to returned work. The scoring model is
-therefore one required design piece rather than an optional add-on to task or exchange vocabulary.
-
-Subnet creators define all three before evaluation can produce meaningful validator signals for a
-subnet market.
-
-## Scoring Precedes Weight Vector Submission
-
-The [Glossary: Weight Vector](https://docs.learnbittensor.org/resources/glossary#weight-vector)
-names the structured miner scores a validator submits after evaluation. A subnet scoring model
-explains how returned work becomes those scores; the weight vector carries the scores into the
-subnet-level [weight matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix) that
-Yuma Consensus reads ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-That ordering keeps method and signal separate. Scoring names the evaluation rule; weight vocabulary
-names the submitted consensus input built from that evaluation.
-
-## A Scoring Model Is Subnet-Specific, Not Universal
-
-A scoring model is defined by the subnet that uses it, so there is no single network-wide rule for
-turning miner output into scores. Each subnet picks an evaluation approach that fits the work it
-asks for, which is why a model that suits one subnet's task may be meaningless for another's
-([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism),
-[Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)).
-
-For readers, this is why scores are only comparable inside the same subnet. A high score on one
-subnet does not translate to another, because the two models can measure entirely different
-qualities of work
-([Glossary: Subnet Task](https://docs.learnbittensor.org/resources/glossary#subnet-task)).
-
-That subnet-specific scope is also why the scoring model sits before, not inside, Yuma Consensus.
-Consensus aggregates whatever weight signals arrive the same way for every subnet, while the scoring
-model is the subnet-defined step that produced those signals
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
 ## Distinction from Subnet Protocol
 
 Subnet scoring model names how validators judge returned miner work. Subnet protocol names the
@@ -192,8 +61,11 @@ exchange rules for how that work is requested and returned
 [Glossary: Subnet Protocol](https://docs.learnbittensor.org/resources/glossary#subnet-protocol),
 [Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
 
-Exchange vocabulary creates the evaluation surface; scoring vocabulary explains the method applied
-to returned work.
+The protocol creates the evaluation surface. The scoring model explains the method applied to
+returned work.
+
+- **Subnet scoring model** — how validators judge returned miner work.
+- **Subnet protocol** — exchange rules for how that work is requested and returned.
 
 ## Distinction from Subnet Task
 
@@ -203,7 +75,10 @@ validators evaluate responses against that work target
 [Glossary: Subnet Scoring Model](https://docs.learnbittensor.org/resources/glossary#subnet-scoring-model),
 [Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
 
-Task vocabulary describes what work means; scoring vocabulary describes how returned work is judged.
+The task asks for work. The scoring model judges the responses miners return.
+
+- **Subnet scoring model** — how returned work is judged.
+- **Subnet task** — the work miners are asked to produce.
 
 ## Distinction from Subnet Miner
 
@@ -213,7 +88,10 @@ validators apply to miner responses
 [Glossary: Subnet Scoring Model](https://docs.learnbittensor.org/resources/glossary#subnet-scoring-model),
 [Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)).
 
-Production vocabulary and evaluation-method vocabulary answer different questions in the same flow.
+The miner produces responses. The scoring model is the method validators use to judge them.
+
+- **Subnet scoring model** — evaluation method applied to miner responses.
+- **Subnet miner** — the work-producing role.
 
 ## Distinction from Subnet Validator
 
@@ -223,8 +101,10 @@ turn returned work into scores before weight submission
 [Glossary: Subnet Scoring Model](https://docs.learnbittensor.org/resources/glossary#subnet-scoring-model),
 [Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
 
-Role vocabulary describes who evaluates; scoring vocabulary describes how that evaluation is
-defined.
+The validator evaluates work. The scoring model defines how that evaluation is done.
+
+- **Subnet scoring model** — the method for turning returned work into scores.
+- **Subnet validator** — the evaluating role that applies that method.
 
 ## Distinction from Weight Vector
 
@@ -235,8 +115,10 @@ submission
 [Glossary: Weight Vector](https://docs.learnbittensor.org/resources/glossary#weight-vector),
 [Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
 
-Scoring-model vocabulary names the evaluation rule; weight-vector vocabulary names the per-validator
-signal that rule becomes before consensus aggregation.
+Scoring turns returned work into scores. The weight vector carries those scores into consensus.
+
+- **Subnet scoring model** — the evaluation rule applied to returned work.
+- **Weight vector** — the structured miner scores a validator submits after evaluation.
 
 ## Distinction from Subjective Evaluation
 
@@ -247,25 +129,21 @@ correct answer, so validators may score the same submission differently
 ([Glossary: Subnet Scoring Model](https://docs.learnbittensor.org/resources/glossary#subnet-scoring-model),
 [Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
 
-Evaluation-method vocabulary and no-answer-key vocabulary answer different questions on the same
-judgment path. A scoring model can be defined even when the underlying judgment stays subjective and
-consensus resolves the differences
+A scoring model can be defined even when the underlying judgment stays subjective and consensus
+resolves the differences
 ([Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)).
+
+- **Subnet scoring model** — the subnet-defined method for turning work into scores.
+- **Subjective evaluation** — the challenge that subnet work often has no single correct answer.
 
 ## Distinction from Consensus Score
 
-A subnet scoring model and a consensus score are both score vocabulary, but they sit on opposite
-sides of weight submission. A subnet scoring model is the subnet-specific method a validator uses to
-turn returned miner work into scores before submitting weights, while a consensus score is the
-stake-weighted agreement benchmark Yuma Consensus computes from the submitted weights to decide
-clipping
+A subnet scoring model is the subnet-specific method a validator uses to turn returned miner work
+into scores before submitting weights. A consensus score is the stake-weighted agreement benchmark
+Yuma Consensus computes from the submitted weights to decide clipping
 ([Glossary: Subnet Scoring Model](https://docs.learnbittensor.org/resources/glossary#subnet-scoring-model),
-[Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score)).
-
-Upstream and downstream score vocabulary answer different questions. A scoring model names how one
-validator judges work before submission; a consensus score names the network-level benchmark those
-submitted weights are compared against when Yuma Consensus performs clipping
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+[Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
 - **Subnet scoring model** — the subnet-specific method a validator uses to score miner work.
 - **Consensus score** — the stake-weighted benchmark Yuma uses to clip submitted weights.
