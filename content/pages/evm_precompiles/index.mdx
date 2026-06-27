@@ -1,0 +1,110 @@
+---
+title: "EVM Precompiles"
+summary:
+  "Fixed-address built-in contracts that let Bittensor EVM smart contracts call native Subtensor
+  functions such as balance transfers, staking, and metagraph reads."
+category: "Core Concepts"
+tags: ["Subtensor", "Smart Contracts"]
+infoboxTitle: EVM Precompiles
+infoboxCaption: Built-in contracts bridging Bittensor EVM to native Subtensor functions.
+infoboxRows:
+  - label: Runtime
+    value: Bittensor EVM
+  - label: Address range
+    value: 0x800 and above
+  - label: Registered addresses
+    value: "27"
+  - label: Subtensor-specific
+    value: "14"
+  - label: Source of truth
+    value: Subtensor precompiles crate
+---
+
+# EVM Precompiles
+
+EVM precompiles are built-in contracts that live at fixed addresses in
+[[Bittensor EVM Smart Contracts]] and expose native [[Subtensor]] functions to Solidity code. They
+let an Ethereum-style contract call chain operations, such as transferring TAO or reading the
+metagraph, that ordinary EVM bytecode cannot perform on its own. The
+[Subtensor precompile set](https://github.com/opentensor/subtensor/blob/main/precompiles/src/lib.rs)
+registers each one and routes a call to it by the contract's address.
+
+The practical point is that a precompile is part of the chain runtime, not a contract a user
+deploys. It is always present at a known address and behaves the same for every caller.
+
+## Fixed Addresses
+
+Each precompile sits at a reserved address derived from a numeric index written in the low bytes of
+an [[H160 Address]]. Index `2048` therefore resolves to
+`0x0000000000000000000000000000000000000800`, index `2049` to the next address, and so on. The
+[precompile set](https://github.com/opentensor/subtensor/blob/main/precompiles/src/lib.rs) lists
+exactly 27 registered addresses: the standard Ethereum and Frontier precompiles at low indices, two
+signature-verification precompiles, and fourteen Subtensor-specific ones beginning at `0x800`.
+
+Because the addresses are reserved by the runtime, a contract reaches a precompile simply by calling
+its address. There is no deployment step and no deployer to trust.
+
+## Subtensor-Specific Precompiles
+
+The Subtensor-specific precompiles expose native pallet functionality to EVM callers. Each is
+defined in its own source file in the
+[precompiles crate](https://github.com/opentensor/subtensor/tree/main/precompiles/src):
+
+| Precompile       | Address                                      | Exposes                                                                                                                                                   |
+| ---------------- | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Balance Transfer | `0x0000000000000000000000000000000000000800` | Transfer TAO from an EVM account to a Subtensor account ([source](https://github.com/opentensor/subtensor/blob/main/precompiles/src/balance_transfer.rs)) |
+| Staking          | `0x0000000000000000000000000000000000000801` | Add and remove [[Staking]] ([source](https://github.com/opentensor/subtensor/blob/main/precompiles/src/staking.rs))                                       |
+| Metagraph        | `0x0000000000000000000000000000000000000802` | Read [[Metagraph]] fields ([source](https://github.com/opentensor/subtensor/blob/main/precompiles/src/metagraph.rs))                                      |
+| Subnet           | `0x0000000000000000000000000000000000000803` | [[Subnet]] registration and configuration ([source](https://github.com/opentensor/subtensor/blob/main/precompiles/src/subnet.rs))                         |
+| Neuron           | `0x0000000000000000000000000000000000000804` | [[Neuron]] operations ([source](https://github.com/opentensor/subtensor/blob/main/precompiles/src/neuron.rs))                                             |
+| Staking V2       | `0x0000000000000000000000000000000000000805` | Alpha-denominated staking ([source](https://github.com/opentensor/subtensor/blob/main/precompiles/src/staking.rs))                                        |
+| UID Lookup       | `0x0000000000000000000000000000000000000806` | Resolve a hotkey to its UID ([source](https://github.com/opentensor/subtensor/blob/main/precompiles/src/uid_lookup.rs))                                   |
+| Storage Query    | `0x0000000000000000000000000000000000000807` | Read raw chain storage ([source](https://github.com/opentensor/subtensor/blob/main/precompiles/src/storage_query.rs))                                     |
+| Alpha            | `0x0000000000000000000000000000000000000808` | Query alpha token values ([source](https://github.com/opentensor/subtensor/blob/main/precompiles/src/alpha.rs))                                           |
+| Crowdloan        | `0x0000000000000000000000000000000000000809` | Crowdloan operations ([source](https://github.com/opentensor/subtensor/blob/main/precompiles/src/crowdloan.rs))                                           |
+| Leasing          | `0x000000000000000000000000000000000000080a` | Subnet leasing operations ([source](https://github.com/opentensor/subtensor/blob/main/precompiles/src/leasing.rs))                                        |
+| Proxy            | `0x000000000000000000000000000000000000080b` | Proxy account operations ([source](https://github.com/opentensor/subtensor/blob/main/precompiles/src/proxy.rs))                                           |
+| Address Mapping  | `0x000000000000000000000000000000000000080c` | Map between EVM and Subtensor accounts ([source](https://github.com/opentensor/subtensor/blob/main/precompiles/src/address_mapping.rs))                   |
+| Voting Power     | `0x000000000000000000000000000000000000080d` | Query voting power ([source](https://github.com/opentensor/subtensor/blob/main/precompiles/src/voting_power.rs))                                          |
+
+A Staking V2 precompile exists alongside the original Staking precompile because the two take stake
+amounts in different units. The original works in TAO, while Staking V2 works in alpha-denominated
+amounts, so a caller picks the address that matches the unit it holds
+([precompile set](https://github.com/opentensor/subtensor/blob/main/precompiles/src/lib.rs)).
+
+## Signature and Standard Precompiles
+
+Below the Subtensor range, the runtime also registers the standard Ethereum precompiles and two
+native signature-verification precompiles. The
+[Ed25519 verify](https://github.com/opentensor/subtensor/blob/main/precompiles/src/ed25519.rs) and
+[Sr25519 verify](https://github.com/opentensor/subtensor/blob/main/precompiles/src/sr25519.rs)
+precompiles let EVM contracts check signatures produced by native Bittensor keys, which use those
+schemes rather than the ECDSA scheme Ethereum assumes.
+
+This is the reader distinction: the signature precompiles verify Bittensor-native signatures inside
+the EVM, while the Subtensor precompiles above perform chain actions and reads.
+
+## Why They Exist
+
+EVM bytecode cannot, by itself, move TAO held by a native account, change stake, or read protocol
+state. Precompiles close that gap by giving Solidity a callable interface to the same pallet
+operations the [Subtensor](https://docs.learnbittensor.org/resources/glossary#subtensor) runtime
+exposes to substrate extrinsics. The
+[Bittensor EVM tutorials](https://docs.learnbittensor.org/evm-tutorials) cover using these
+interfaces from contract code.
+
+The Address Mapping precompile is what makes this usable across the two account systems: an EVM
+caller has an [[H160 Address]], while stake and balances are keyed to Subtensor accounts, so a
+contract needs the mapping to act on the right native account
+([source](https://github.com/opentensor/subtensor/blob/main/precompiles/src/address_mapping.rs)).
+
+## Precompiles Are Not Smart Contracts
+
+A precompile is not a deployed [[Bittensor EVM Smart Contracts]] program. It is compiled into the
+chain runtime, lives at a reserved address, and changes only when the runtime itself is upgraded,
+whereas a smart contract is deployed by a user and lives at a generated address
+([precompile set](https://github.com/opentensor/subtensor/blob/main/precompiles/src/lib.rs)).
+
+Readers should therefore treat precompiles as a stable extension of the chain's own capabilities,
+not as application code. Contracts call them to reach native functions; they are not something a
+contributor deploys or replaces.
