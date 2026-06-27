@@ -36,36 +36,13 @@ which specific neurons validate; it only sets the ceiling on how many can
 
 The documentation lists a default of 64 and marks the parameter as set at the root level rather than
 by the subnet owner. The value actually in force is per-subnet chain state and can differ from the
-documented default, so a subnet's real cap should be read for that subnet
+documented default, so the validator cap on netuid 1 can differ from another subnet's ceiling
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
-
-## Validator Permit Context
 
 Validator status on a subnet is granted through validator permits awarded to higher-stake neurons.
 The max-validators cap bounds how many permits can exist at once
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
 [Validator Permit](https://docs.learnbittensor.org/resources/glossary#validator-permit)).
-
-## Development Stage Context
-
-The
-[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from localnet to testnet and then mainnet. For max
-validators, that sequence changes how readers should interpret validator-cap and permit examples.
-
-In localnet, max-validators hyperparameters can be tested in an isolated environment. Localnet
-validator caps do not represent production subnet limits.
-
-On testnet, validator permit rules can be exercised in a shared non-production network. Testnet
-validator caps are separate from mainnet subnet state.
-
-On mainnet, max validators is a live per-subnet hyperparameter on production subnets. Observed
-validator caps depend on the selected subnet's on-chain hyperparameter state
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
-
-The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
-separates mainnet, testnet, and localnet. A max-validators example from one environment should not
-be read as representing production validator limits in another environment.
 
 ## Permits Go to Top Stake-Weight Neurons Up to K
 
@@ -106,7 +83,8 @@ on-chain flag that records whether a UID may submit non-self weights that count 
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
 [Glossary: Validator Permit](https://docs.learnbittensor.org/resources/glossary#validator-permit)).
 
-The hyperparameter sets the ceiling; stake-weight ranking fills permit slots up to that maximum.
+- **Max validators** — configured ceiling on validator permits for a subnet.
+- **Validator permit** — on-chain flag recording whether a UID may submit consensus weights.
 
 ## Distinction from Max Allowed UIDs
 
@@ -115,8 +93,8 @@ total neuron population a subnet exposes
 ([Subnet Hyperparameters: MaxAllowedValidators](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#maxallowedvalidators),
 [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
-Max allowed UIDs answers how many participants can exist on the subnet; max validators answers how
-many of those neurons can act as validators within that population.
+- **Max allowed UIDs** — ceiling on how many neurons the subnet can hold.
+- **Max validators** — ceiling on how many of those neurons may act as validators.
 
 ## Distinction from Stake Weight
 
@@ -128,8 +106,32 @@ weight is the computed influence measure used to rank validators for those permi
 - **Max validators** — configured cap on validator permits.
 - **Stake weight** — computed influence that ranks who receives permits.
 
-The hyperparameter sets the ceiling; stake-weight ranking fills permit slots up to that maximum
-([Glossary: Validator Permit](https://docs.learnbittensor.org/resources/glossary#validator-permit)).
+## Chain Reads for netuid 1
+
+Readers can verify live hyperparameter values for the documented example netuid with
+`btcli subnet hyperparameters --netuid 1 --network finney`
+([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
+
+That read path keeps live hyperparameter claims tied to a parseable netuid.
+
+## Per-Subnet Live Value Boundary
+
+Max validators is per-subnet chain state. The validator cap configured on one netuid bounds how many
+permit flags can be true on that subnet, but the live ceiling can differ from reference defaults and
+from the cap on another netuid
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+This article's infobox uses netuid 1 as an example label when reading one subnet's hyperparameter
+table on Finney mainnet. That example helps readers verify one row; it is not proof that every
+subnet exposes the same live validator cap
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+Max validators governs validator-permit ceiling; Yuma Consensus still converts permitted validator
+weights into emission shares each epoch on the active subnet
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+- **Max validators** — validator-permit ceiling on a subnet.
+- **Per-subnet boundary** — live value is chain state on one netuid.
 
 ## Distinction from Yuma Consensus
 
@@ -143,12 +145,12 @@ aggregates those permitted validator weight submissions into emission shares eac
 - **Max validators** — configured ceiling on validator permits for a subnet.
 - **Yuma Consensus** — mechanism that turns validator weights into emission shares.
 
-## Distinction from Subnet
-
-Max validators is one of the subnet hyperparameters, the on-chain state variables that configure a
-single subnet, for example netuid 1. Because each subnet carries its own hyperparameters, the
-validator cap is defined per subnet and applies only within that subnet
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+- **Cap vs settlement** — max validators bounds how many neurons may hold permits; Yuma aggregates
+  permitted weight submissions into emission shares
+  ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+  [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+- **Permit ranking** — stake weight fills permit slots up to the configured maximum
+  ([Glossary: Validator Permit](https://docs.learnbittensor.org/resources/glossary#validator-permit)).
 
 ## Reader Boundary
 
