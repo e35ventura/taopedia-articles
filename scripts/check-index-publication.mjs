@@ -2,25 +2,18 @@ import assert from "node:assert";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import matter from "gray-matter";
+import { collectArticlePaths, isPublishedArticle } from "./lib/article-discovery.mjs";
 
 const root = process.cwd();
 const pagesDir = path.join(root, "content/pages");
 const indexPath = path.join(root, "content/index/articles.jsonl");
 
-function isPublishedArticle(slug, data) {
-  if (data?.draft === true) return false;
-  if (slug === "taopedia") return false;
-  return true;
-}
-
 const expectedSlugs = [];
-for (const entry of await fs.readdir(pagesDir, { withFileTypes: true })) {
-  if (!entry.isDirectory()) continue;
-  const articlePath = path.join(pagesDir, entry.name, "index.mdx");
+for (const { articlePath, slug } of await collectArticlePaths(pagesDir)) {
   try {
     const raw = await fs.readFile(articlePath, "utf8");
     const { data } = matter(raw);
-    if (isPublishedArticle(entry.name, data)) expectedSlugs.push(entry.name);
+    if (isPublishedArticle(slug, data)) expectedSlugs.push(slug);
   } catch {
     // Skip folders without article content.
   }

@@ -59,5 +59,31 @@ assert.throws(
   "validator must reject published articles without source links"
 );
 
+await fs.rm(path.join(pagesDir, "unsourced_article"), { recursive: true, force: true });
+await writeArticle(
+  "fenced_source_example",
+  '["Testing"]',
+  "Examples can cite URLs inside code fences.\n\n```md\n[docs](https://example.com/not-a-source)\n```\n"
+);
+
+assert.throws(
+  () => execFileSync(process.execPath, [scriptPath], { cwd: fixtureRoot, stdio: "pipe" }),
+  /published articles must include at least one source link/,
+  "validator must not count source links that appear only inside fenced code"
+);
+
+await fs.rm(path.join(pagesDir, "fenced_source_example"), { recursive: true, force: true });
+await writeArticle(
+  "inline_source_example",
+  '["Testing"]',
+  "Inline `[docs](https://example.com/not-a-source)` mentions are not citations.\n"
+);
+
+assert.throws(
+  () => execFileSync(process.execPath, [scriptPath], { cwd: fixtureRoot, stdio: "pipe" }),
+  /published articles must include at least one source link/,
+  "validator must not count source links that appear only inside inline code"
+);
+
 await fs.rm(fixtureRoot, { recursive: true, force: true });
 console.log("Published source validation check passed");

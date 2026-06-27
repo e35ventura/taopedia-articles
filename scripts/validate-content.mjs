@@ -1,25 +1,19 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import matter from "gray-matter";
+import {
+  isPublishedArticle,
+  walkArticleFiles,
+  slugFromArticlePath,
+} from "./lib/article-discovery.mjs";
+import {
+  extractProseWikiLinks,
+  hasProseSourceLink,
+  stripMarkdownCode,
+} from "./lib/markdown-prose.mjs";
 
 const root = process.cwd();
 const pagesDir = path.join(root, "content/pages");
-
-// Mirror build-index.mjs discovery: every index.mdx the indexer can reach must
-// be validated, including ones nested below the top-level article directory.
-async function* walk(dir) {
-  for (const entry of await fs.readdir(dir, { withFileTypes: true })) {
-    const fp = path.join(dir, entry.name);
-    if (entry.isDirectory()) yield* walk(fp);
-    else if (entry.isFile() && entry.name === "index.mdx") yield fp;
-  }
-}
-
-function slugFromPath(fp) {
-  const parts = fp.split(path.sep);
-  const idx = parts.indexOf("pages");
-  return idx >= 0 ? parts[idx + 1] : null;
-}
 const allowedAssetExtensions = new Set([
   ".avif",
   ".gif",
@@ -45,8 +39,6 @@ const unsafeContentPatterns = [
   { pattern: /\bset:html\b/i, reason: "raw HTML injection directives are not allowed" },
   { pattern: /\bclient:[a-z-]+\b/i, reason: "client directives are not allowed" },
 ];
-const wikiLinkPattern = /\[\[([^\]|]+)(?:\|[^\]]+)?\]\]/g;
-const markdownHttpLinkPattern = /!?\[[^\]]+\]\(https?:\/\/[^)]+\)/gi;
 const fencedCodeBlockPattern = /^[ \t]*(```|~~~)/m;
 const markdownImagePattern = /!\[[^\]]*\]\(([^)]+)\)/g;
 
@@ -99,33 +91,8 @@ function slugifyWikiLink(value) {
     .replace(/[^\w-]/g, "");
 }
 
-function extractWikiLinks(content) {
-  return [...content.matchAll(wikiLinkPattern)].map((match) => match[1].trim());
-}
-
-function extractWikiLinksFromValue(value) {
-  if (typeof value === "string") return extractWikiLinks(value);
-  if (Array.isArray(value)) return value.flatMap((item) => extractWikiLinksFromValue(item));
-  if (value && typeof value === "object") {
-    return Object.values(value).flatMap((item) => extractWikiLinksFromValue(item));
-  }
-  return [];
-}
-
-function isPublishedArticle(slug, data) {
-  if (data?.draft === true) return false;
-  return slug !== "taopedia";
-}
-
 function hasFencedCodeBlock(content) {
   return fencedCodeBlockPattern.test(content);
-}
-
-function hasSourceLink(content) {
-  for (const match of content.matchAll(markdownHttpLinkPattern)) {
-    if (!match[0].startsWith("!")) return true;
-  }
-  return false;
 }
 
 // Resolve the local file path of a Markdown image target, or null when the
@@ -148,15 +115,6 @@ function localImageTarget(rawTarget) {
   } catch {
     return pathPart;
   }
-}
-
-// Markdown image syntax shown inside code (e.g. a tutorial example) is not a real
-// asset reference, so ignore fenced code blocks and inline code spans before scanning.
-function stripMarkdownCode(content) {
-  return content
-    .replace(/```[\s\S]*?```/g, "")
-    .replace(/~~~[\s\S]*?~~~/g, "")
-    .replace(/`[^`\n]*`/g, "");
 }
 
 // Resolve a local asset target relative to the article directory and require it
@@ -224,7 +182,7 @@ async function validateArticle(slug, articleDir, knownTargets) {
     );
   }
   validateTags(data, articlePath);
-  for (const target of [...extractWikiLinks(content), ...extractWikiLinksFromValue(data)]) {
+  for (const target of extractProseWikiLinks(content, data)) {
     const normalizedTarget = slugifyWikiLink(target);
     if (!knownTargets.has(normalizedTarget)) {
       throw new Error(
@@ -234,7 +192,7 @@ async function validateArticle(slug, articleDir, knownTargets) {
   }
   await validateImageReferences(articlePath, articleDir, content);
   await validateInfoboxImage(articlePath, articleDir, data);
-  if (isPublishedArticle(slug, data) && !hasSourceLink(content)) {
+  if (isPublishedArticle(slug, data) && !hasProseSourceLink(content)) {
     throw new Error(`${articlePath}: published articles must include at least one source link`);
   }
   if (isPublishedArticle(slug, data) && hasFencedCodeBlock(content)) {
@@ -280,8 +238,8 @@ async function main() {
   const articles = [];
   const knownTargets = new Set();
 
-  for await (const articlePath of walk(pagesDir)) {
-    const slug = slugFromPath(articlePath);
+  for await (const articlePath of walkArticleFiles(pagesDir)) {
+    const slug = slugFromArticlePath(articlePath);
     if (!slug) continue;
     const articleDir = path.dirname(articlePath);
 

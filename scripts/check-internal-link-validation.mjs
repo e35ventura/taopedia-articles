@@ -10,12 +10,13 @@ const scriptPath = path.join(path.dirname(__filename), "validate-content.mjs");
 const fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "taopedia-link-validation-"));
 const pagesDir = path.join(fixtureRoot, "content", "pages");
 
-async function writeArticle(slug, body, frontMatter = "") {
+async function writeArticle(slug, body, frontMatter = "", draft = false) {
   const articleDir = path.join(pagesDir, slug);
   await fs.mkdir(articleDir, { recursive: true });
+  const draftField = draft ? "draft: true\n" : "";
   await fs.writeFile(
     path.join(articleDir, "index.mdx"),
-    `---\ntitle: ${slug}\nsummary: Test article.\ncategory: Testing\ntags: []\n${frontMatter}---\n\n${body}\n`
+    `---\n${draftField}title: ${slug}\nsummary: Test article.\ncategory: Testing\ntags: []\n${frontMatter}---\n\n${body}\n`
   );
 }
 
@@ -58,6 +59,24 @@ assert.throws(
   /does not resolve to an article/,
   "validator must reject unresolved front matter wiki links"
 );
+
+await fs.rm(path.join(pagesDir, "broken_frontmatter_link"), { recursive: true, force: true });
+await writeArticle(
+  "fenced_wiki_example",
+  "Draft tutorials can show wiki syntax inside fenced examples.\n\n```md\nSee [[missing target]] for details.\n```\n",
+  "",
+  true
+);
+
+execFileSync(process.execPath, [scriptPath], { cwd: fixtureRoot, stdio: "inherit" });
+
+await fs.rm(path.join(pagesDir, "fenced_wiki_example"), { recursive: true, force: true });
+await writeArticle(
+  "inline_wiki_example",
+  "Inline `[[missing target]]` mentions are not wiki links.\n\nSource: [docs](https://docs.bittensor.com/).\n"
+);
+
+execFileSync(process.execPath, [scriptPath], { cwd: fixtureRoot, stdio: "inherit" });
 
 await fs.rm(fixtureRoot, { recursive: true, force: true });
 console.log("Internal link validation check passed");

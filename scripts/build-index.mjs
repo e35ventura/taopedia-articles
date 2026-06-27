@@ -1,42 +1,27 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import matter from "gray-matter";
+import {
+  isPublishedArticle,
+  slugFromArticlePath,
+  walkArticleFiles,
+} from "./lib/article-discovery.mjs";
 
 const ROOT = process.cwd();
 const PAGES_DIR = path.join(ROOT, "content/pages");
 const OUT_DIR = path.join(ROOT, "content/index");
 const OUT_JSONL = path.join(OUT_DIR, "articles.jsonl");
 
-async function* walk(dir) {
-  for (const entry of await fs.readdir(dir, { withFileTypes: true })) {
-    const fp = path.join(dir, entry.name);
-    if (entry.isDirectory()) yield* walk(fp);
-    else if (entry.isFile() && entry.name === "index.mdx") yield fp;
-  }
-}
-
-function slugFromPath(fp) {
-  const parts = fp.split(path.sep);
-  const idx = parts.indexOf("pages");
-  return idx >= 0 ? parts[idx + 1] : null;
-}
-
 function normalizeString(s) {
   return typeof s === "string" ? s.trim() : "";
-}
-
-function isPublishedArticle(slug, data) {
-  if (data?.draft === true) return false;
-  if (slug === "taopedia") return false;
-  return true;
 }
 
 async function main() {
   await fs.mkdir(OUT_DIR, { recursive: true });
 
   const entries = [];
-  for await (const fp of walk(PAGES_DIR)) {
-    const slug = slugFromPath(fp);
+  for await (const fp of walkArticleFiles(PAGES_DIR)) {
+    const slug = slugFromArticlePath(fp);
     if (!slug) continue;
 
     const raw = await fs.readFile(fp, "utf8");
@@ -51,7 +36,7 @@ async function main() {
     entries.push({ fp, record: { slug, title, summary, category, tags } });
   }
 
-  // walk() yields files in fs.readdir order, which Node does not guarantee to be
+  // walkArticleFiles() yields files in fs.readdir order, which Node does not guarantee to be
   // stable across machines or filesystems. Because CI regenerates and commits this
   // index on every push (.github/workflows/build-index.yml), an unordered index can
   // reorder spuriously between runs and produce noisy "chore(index): update index"
