@@ -9,15 +9,11 @@ tags: ["Security"]
 
 Proxy wallets are a Bittensor security pattern where one account is allowed to act on behalf of
 another account. The [Proxies overview](https://docs.learnbittensor.org/keys/proxies) describes the
-protected account as the safe wallet or real account, and the acting account as the proxy wallet.
+protected account as the safe wallet and the acting account as the proxy wallet.
 
 The goal is controlled delegation. A user can keep the more sensitive wallet in a higher-security
-environment while allowing a separate proxy account to perform selected operations.
-
-For readers, proxy wallets answer the question of how to delegate authority without exposing the
-protected account. The delegation is scoped and revocable, which keeps the security benefit separate
-from full key transfer or key sharing
-([Proxies overview](https://docs.learnbittensor.org/keys/proxies),
+environment while allowing a separate proxy account to perform selected operations under a narrow
+permission scope ([Proxies overview](https://docs.learnbittensor.org/keys/proxies),
 [Wallets, Coldkeys and Hotkeys](https://docs.learnbittensor.org/keys/wallets)).
 
 ## Why Proxies Matter
@@ -32,11 +28,9 @@ The security value comes from limits. The
 which categories of calls a proxy can make. It also describes optional delay and announcement
 behavior, which can give the safe wallet holder time to reject a pending proxy action.
 
-For readers, proxy wallets reduce key exposure rather than eliminate all risk. The security gain
-depends on how narrowly the proxy's authority is scoped and whether the safe wallet holder monitors
-proxy actions. A broad proxy type can still introduce risk if the proxy key is misused, so the proxy
-type selection and key handling practices for the proxy account both contribute to the overall
-security model ([Proxies overview](https://docs.learnbittensor.org/keys/proxies),
+Proxy wallets reduce key exposure rather than eliminate all risk. The security gain depends on how
+narrowly the proxy's authority is scoped and whether the safe wallet holder monitors proxy actions
+([Proxies overview](https://docs.learnbittensor.org/keys/proxies),
 [Coldkey and hotkey workstation security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security)).
 
 ## Safe Wallet and Proxy Wallet
@@ -47,168 +41,84 @@ emphasizes that the safe wallet and proxy wallet are separate accounts and that 
 key handling.
 
 The proxy wallet is the account granted delegated authority. A proxy relationship is most useful
-when its scope matches the intended operational task. A broad proxy can still create risk, so the
-docs recommend using the narrowest proxy type that fits.
-
-For readers, the safe wallet and proxy wallet are not interchangeable. The safe wallet remains the
-ownership anchor — it controls assets and can revoke proxy authority. The proxy wallet holds
-delegated operating access that is constrained by the proxy type and can be removed by the safe
-wallet at any time
+when its scope matches the intended operational task. The safe wallet remains the ownership anchor
+that controls assets and can revoke proxy authority, while the proxy wallet holds delegated
+operating access constrained by the proxy type
 ([Working with proxies](https://docs.learnbittensor.org/keys/proxies/working-with-proxies),
 [Proxies overview](https://docs.learnbittensor.org/keys/proxies)).
 
-## Security Boundaries
-
-Proxy wallets do not replace normal key security. The
-[coldkey and hotkey workstation security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security)
-guide treats coldkey material as highly sensitive, and the proxy documentation warns that proxy
-benefits depend on using constraints correctly.
-
-For readers, security boundaries should be read as complementary layers. Proxy wallets reduce direct
-coldkey exposure; coldkey and hotkey security practices protect the underlying keys; and proxy type
-selection limits blast radius if a proxy key is compromised. No single layer covers all risk by
-itself ([Proxies overview](https://docs.learnbittensor.org/keys/proxies),
-[Coldkey and hotkey workstation security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security)).
-
-## Proxy type scopes
+## Scoped Permissions
 
 The [Proxies overview](https://docs.learnbittensor.org/keys/proxies) groups proxy permissions into
-scoped categories rather than granting blanket control of the safe wallet. `Any` proxies can perform
-any call the safe wallet could make, while narrower types such as `NonTransfer`, `Staking`, and
-`Governance` limit which extrinsics the proxy may submit. Choosing the narrowest type that still
-covers the intended workflow reduces blast radius if a proxy key is misused or compromised.
+narrow categories rather than granting blanket control of the safe wallet. A broad proxy can mirror
+most safe-wallet authority, while narrower staking-only or governance-only permissions limit what
+the acting account may do on behalf of the protected wallet.
 
-The same overview notes that some proxy types support optional delay and announcement behavior. When
-enabled, a proxy can signal an upcoming action before it executes, giving the safe wallet holder a
-window to reject the pending call. That pattern is useful for high-value accounts where operational
-convenience must not remove human review entirely.
-
-## Staking Documentation Recommends Proxies for Mainnet Use
-
-Proxy usage for staking is not presented as one option among equally weighted alternatives. Official
-staking documentation describes proxy-based staking as the recommended approach for mainnet
-activity, in contrast to signing staking actions directly from a wallet's coldkey
-([Managing Your Stakes](https://docs.learnbittensor.org/staking-and-delegation/managing-stake-sdk)).
-
-That guidance follows the same custody reasoning already established for proxy wallets generally: a
-proxy can be scoped to staking-only permissions and, where supported, carry a delay, so a
-compromised proxy session exposes less than a compromised coldkey session would on production value.
-
-## Delay Protection Requires Active Monitoring, Not Automatic Notice
-
-A delayed proxy does not submit and immediately execute a call. It first announces the call, waits
-out the configured delay, and only then executes the announced action
+Choosing the narrowest permission that still covers the intended task reduces blast radius if a
+proxy key is misused. Some proxy types also support optional delay and announcement behavior, which
+can give the safe wallet holder time to reject a pending action before it executes
 ([Proxies overview](https://docs.learnbittensor.org/keys/proxies)).
 
-That delay does not notify the safe wallet holder automatically. The
-[Working with Proxies](https://docs.learnbittensor.org/keys/proxies/working-with-proxies) guide
-states the delay protects the holder only if they are watching: if a proxy key is compromised, an
-attacker can announce a call and wait out the delay without interference from anyone who is not
-actively checking for pending announcements.
+## Proxies and Staking
 
-That makes monitoring frequency part of the security model, not an optional habit. The same guide
-recommends checking for pending announcements on a schedule shorter than the configured delay, and
-revoking any proxy relationship that is not being actively watched, since a dormant delayed proxy is
-little safer than one with no delay at all
-([Working with Proxies](https://docs.learnbittensor.org/keys/proxies/working-with-proxies)).
+Staking activity is a common reason a coldkey must sign online. The proxy pattern lets a separate
+account perform staking-related actions under a narrow permission scope while the coldkey remains in
+a higher-security environment ([Proxies overview](https://docs.learnbittensor.org/keys/proxies),
+[Staking and delegation overview](https://docs.learnbittensor.org/staking-and-delegation/delegation)).
 
-## Development Stage Context
+Official wallet-security prose treats scoped proxies as a way to limit coldkey exposure during
+repeated staking actions. A staking-scoped proxy still requires careful key handling, but it reduces
+how much custody authority is exposed when staking activity is frequent
+([Coldkey and hotkey workstation security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security)).
 
-The
-[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from localnet to testnet and then mainnet. Proxy-wallet
-examples should be read against that network boundary rather than as proof of live mainnet behavior.
+## Announcement and Delay
 
-The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
-separates mainnet, testnet, and localnet. Delegation vocabulary is the same across environments, but
-authority state differs by network.
+Some proxy configurations announce an upcoming action before executing it after a configured delay
+([Proxies overview](https://docs.learnbittensor.org/keys/proxies)). That pattern can give the safe
+wallet holder review time, but the delay only helps when someone is actively watching for pending
+announcements
+([Working with proxies](https://docs.learnbittensor.org/keys/proxies/working-with-proxies)).
 
-## Distinction from Coldkey
+Announcement and delay are part of the proxy security model rather than automatic protection. They
+reduce surprise execution; they do not replace narrow scoping, proxy key hygiene, or the safe
+wallet's ability to revoke delegated authority.
 
-A coldkey is the security-sensitive key that controls TAO balances and owns hotkeys, while a proxy
-wallet is the delegated-authority pattern that allows a separate account to perform limited
-operations on behalf of a protected coldkey without exposing the coldkey itself to
-internet-connected environments
+## Related Wallet Concepts
+
+Proxy wallets should be read beside nearby custody vocabulary rather than as a stand-alone
+permission to ignore other wallet design choices. A coldkey remains the custody anchor that controls
+balances and owns hotkeys, while a proxy wallet names scoped delegation that reduces how often that
+coldkey must sign directly
 ([Wallets, Coldkeys and Hotkeys](https://docs.learnbittensor.org/keys/wallets),
-[Proxies overview](https://docs.learnbittensor.org/keys/proxies),
 [Glossary: Coldkey](https://docs.learnbittensor.org/resources/glossary#coldkey)).
 
-Custody-key vocabulary and delegation-mechanism vocabulary answer different questions. The coldkey
-names the high-security key being protected; proxy wallets name scoped delegation that reduces how
-often that coldkey must sign directly.
+Coldkey swap is a different idea: it permanently migrates controlling coldkey identity rather than
+granting temporary scoped permission
+([Coldkey Swap](https://docs.learnbittensor.org/keys/coldkey-swap)). Multisig wallets require shared
+approval from multiple signers rather than one scoped acting account
+([Secure your Coldkey with a Multisig Wallet](https://docs.learnbittensor.org/keys/multisig)). Pure
+proxies are keyless stand-ins used mainly for multisig continuity when membership rotates
+([Understanding Pure Proxies](https://docs.learnbittensor.org/keys/proxies/pure-proxies)). Staking
+proxy attacks name misuse risk when a staking-scoped proxy is compromised
+([Avoid Staking Proxy Attacks](https://docs.learnbittensor.org/learn/avoid-staking-proxy-attacks)).
 
-- **Coldkey** — the custody anchor that controls balances and owns hotkeys.
-- **Proxy wallet** — scoped delegation that limits how often the coldkey must sign directly.
+## Distinction from Yuma Consensus
 
-## Distinction from Coldkey Swap
-
-A proxy wallet grants a separate account limited, scoped authority to act on behalf of a protected
-safe wallet without changing which coldkey controls it, while coldkey swap is the on-chain identity
-migration that replaces a coldkey's controlling address and moves all associated hotkeys and their
-registrations to a new coldkey without resetting them
+Proxy wallets let one Bittensor account perform scoped actions on behalf of a protected account.
+They name delegated signing vocabulary, not subnet settlement after validator evaluation
 ([Proxies overview](https://docs.learnbittensor.org/keys/proxies),
-[Coldkey Swap](https://docs.learnbittensor.org/keys/coldkey-swap)).
+[Working with proxies](https://docs.learnbittensor.org/keys/proxies/working-with-proxies)).
 
-Delegated-permission vocabulary and identity-migration vocabulary answer different questions. Proxy
-wallets grant temporary scoped permission; coldkey swap permanently replaces the controlling coldkey
-address.
+Yuma Consensus is the on-chain process that converts submitted validator weights into emission
+shares after evaluation completes. A proxy may submit allowed calls for a safe wallet; Yuma
+Consensus names how weights become emission shares on a subnet
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
+[Emission](https://docs.learnbittensor.org/learn/emissions)).
 
-- **Proxy wallet** — delegated permission without changing coldkey ownership.
-- **Coldkey swap** — permanent migration of the controlling coldkey and its hotkey state.
-
-## Distinction from Staking Proxy Attacks
-
-Staking proxy attacks name the risk when delegated staking authority is misused. Proxy wallet names
-the normal scoped-delegation pattern itself
-([Avoid Staking Proxy Attacks](https://docs.learnbittensor.org/learn/avoid-staking-proxy-attacks),
-[Proxies overview](https://docs.learnbittensor.org/keys/proxies)).
-
-Risk vocabulary and mechanism vocabulary answer different wallet-security questions. Staking proxy
-attacks describe what can go wrong when a staking-scoped proxy is abused; proxy wallets describe the
-delegation tool that can be configured to reduce coldkey exposure when used with narrow scopes and
-active monitoring.
-
-- **Staking proxy attacks** — misuse of delegated staking authority on a compromised proxy key.
-- **Proxy wallet** — scoped delegation that can limit how often the coldkey signs staking actions.
-
-## Distinction from Pure Proxies
-
-Proxy wallets are the delegation pattern where one account acts for another with limited
-permissions, while pure proxies are keyless stand-in accounts used mainly in multisig structures to
-keep an address stable when membership changes
-([Proxies overview](https://docs.learnbittensor.org/keys/proxies),
-[Understanding Pure Proxies](https://docs.learnbittensor.org/keys/proxies/pure-proxies)).
-
-Delegation vocabulary and continuity vocabulary answer different wallet-design questions. Proxy
-wallets delegate limited authority for day-to-day operations; pure proxies keep multisig member
-slots stable when signers rotate
-([Understanding Pure Proxies](https://docs.learnbittensor.org/keys/proxies/pure-proxies)).
-
-- **Proxy wallets** — delegated authority from a protected account to a less sensitive one.
-- **Pure proxies** — keyless stand-ins that preserve multisig address stability.
-
-## Distinction from Multisig
-
-Proxy wallets and multisig wallets both reduce direct coldkey exposure, but they do it through
-different control models. The proxy documentation describes a separate proxy account acting for a
-safe wallet under a scoped proxy type, while the multisig guide describes a wallet whose actions
-require approvals from multiple signers
-([Proxies overview](https://docs.learnbittensor.org/keys/proxies),
-[Secure your Coldkey with a Multisig Wallet](https://docs.learnbittensor.org/keys/multisig)).
-
-Delegated-operation vocabulary and shared-approval vocabulary answer different custody questions. A
-proxy can make selected calls for a protected account under a scoped type; a multisig setup changes
-how the protected account's authority is approved before action.
-
-- **Proxy wallet** — scoped delegation where one account acts for another under a proxy type.
-- **Multisig** — shared-approval custody where multiple signers must approve before action.
-
-## Distinction from Coldkeys
-
-A coldkey is the ownership key that controls funds, stake, and paired hotkeys. A proxy wallet grants
-a separate account scoped authority to submit specific calls without changing which coldkey owns the
-wallet ([Glossary: Coldkey](https://docs.learnbittensor.org/resources/glossary#coldkey),
-[Proxies overview](https://docs.learnbittensor.org/keys/proxies)).
+Readers should keep proxy delegation vocabulary separate from settlement vocabulary. Proxy wallets
+answer who may act for a protected account; Yuma Consensus answers how validator weights become
+emission shares in a subnet ([Proxies overview](https://docs.learnbittensor.org/keys/proxies),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
 ## Reader Boundary
 
@@ -225,6 +135,4 @@ on behalf of a protected coldkey ([Proxies overview](https://docs.learnbittensor
 - [Avoid Staking Proxy Attacks](https://docs.learnbittensor.org/learn/avoid-staking-proxy-attacks)
 - [Coldkey Swap](https://docs.learnbittensor.org/keys/coldkey-swap)
 - [Secure your Coldkey with a Multisig Wallet](https://docs.learnbittensor.org/keys/multisig)
-- [Introduction to Bittensor: Subnet development](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-- [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)
 - [Pure proxies](https://docs.learnbittensor.org/keys/proxies/pure-proxies)
