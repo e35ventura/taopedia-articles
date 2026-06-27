@@ -61,51 +61,6 @@ single subnet metagraph and VPermit summarizes where those subnet permits apply 
 A VPermit list does not replace per-subnet validator permit reading. Each subnet still requires its
 own permit flag check when the article focuses on weight submission rights inside one netuid.
 
-## Top Stake Neurons Earn the Permit
-
-The
-[Glossary: Validator Permit](https://docs.learnbittensor.org/resources/glossary#validator-permit)
-describes the flag as awarded to the top neurons by
-[stake weight](https://docs.learnbittensor.org/resources/glossary#stake-weight) on the subnet. It is
-a rights marker tied to stake position, not a separate performance score.
-
-Stake weight is the computed stake value used for validator consensus power and emissions inside a
-subnet. That keeps permit reading separate from rank or emission outcomes. Stake weight explains
-influence; the permit records whether weight submission rights exist for the subnet being discussed.
-
-## Registration Does Not Grant the Permit
-
-Registration and validator permit are separate subnet states. Registration places a participant on a
-subnet UID slot through a registered hotkey, while validator permit describes whether validation
-rights exist for that subnet
-([Validating: Validator registration](https://docs.learnbittensor.org/validators#validator-registration),
-[Glossary: Validator Permit](https://docs.learnbittensor.org/resources/glossary#validator-permit)).
-
-For readers, registration should not be read as automatic permission to validate. The permit term
-answers the narrower rights question after the subnet context is known.
-
-## Setting Weights Requires the Permit Flag
-
-The same glossary entry states that a validator permit is required for setting weights and
-participating in consensus. Registration places a participant on a subnet; the permit answers
-whether that participant may submit
-[validator weights](https://docs.learnbittensor.org/resources/glossary#weight-vector) that count in
-the aggregation step
-([Validating: Validator registration](https://docs.learnbittensor.org/validators#validator-registration)).
-
-Readers should not treat registration as automatic validation rights. The permit is the binary flag
-that gates weight submission inside the subnet context.
-
-## Consensus Ignores Weights Without a Permit
-
-Epoch documentation lists pre-consensus filtering steps that decide which submitted weights can
-enter [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus). Only rows from
-validators holding a validator permit influence the consensus pass
-([Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)).
-
-A neuron can hold a UID slot and still sit outside consensus if it lacks the permit flag. Permit
-vocabulary therefore marks eligibility for weight influence, not merely subnet registration.
-
 ## Development Stage Context
 
 The
@@ -128,25 +83,6 @@ in production subnet consensus on the connected Bittensor network
 The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
 separates mainnet, testnet, and localnet. A validator-permit observation from one environment should
 not be read as representing production permit assignments on another network.
-
-## The Permit Is Earned by Standing, Not Requested
-
-A point worth making explicit is that a validator does not apply for a permit. Documentation
-describes it as a flag granted to the top stake-weighted neurons on a subnet, so it is conferred by
-relative standing rather than by a separate request or approval step
-([Glossary: Stake Weight](https://docs.learnbittensor.org/resources/glossary#stake-weight),
-[Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)).
-
-For readers, this is why registration alone is not enough. Registering places a neuron on the
-subnet, but the permit depends on where its stake weight ranks against everyone else competing for
-the limited validator slots
-([Glossary: Subnet Validator](https://docs.learnbittensor.org/resources/glossary#subnet-validator)).
-
-That standing-based grant also explains why the permit can be lost without any action by the holder.
-Because it tracks relative stake weight, others gaining standing can displace a permit holder even
-if its own stake is unchanged, which is what links the permit to ongoing competition rather than a
-one-time grant
-([Glossary: Validator Permit](https://docs.learnbittensor.org/resources/glossary#validator-permit)).
 
 ## Distinction from Max Validators
 
@@ -207,12 +143,16 @@ Authorization precedes payout splitting on the validator dividend path.
 
 ## Distinction from VPermit
 
-VPermit names broader validator authorization context across subnets. The validator permit is the
-subnet-scoped rights flag for counting weight submission on one netuid
-([Glossary: VPermit](https://docs.learnbittensor.org/resources/glossary#vpermit),
-[Glossary: Validator Permit](https://docs.learnbittensor.org/resources/glossary#validator-permit)).
+Validator permit is the per-subnet boolean flag on a neuron row. VPermit aggregates permit status
+across subnets for a hotkey in wallet-facing views
+([Glossary: Validator Permit](https://docs.learnbittensor.org/resources/glossary#validator-permit),
+[Glossary: VPermit](https://docs.learnbittensor.org/resources/glossary#vpermit)).
 
-Scope vocabulary matters when readers compare one subnet's permit to wider authorization labels.
+- **Validator permit** — per-subnet permission to set weights on one netuid.
+- **VPermit** — aggregated permit view across subnets for one hotkey.
+
+Subnet-local flag vocabulary and cross-subnet summary vocabulary answer different scope questions
+([The Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)).
 
 ## Distinction from Min Allowed Weights
 
@@ -249,26 +189,16 @@ validator's weights count this epoch.
 
 ## Distinction from Yuma Consensus
 
-Validator permit names whether a hotkey is allowed to validate on a subnet under current
-hyperparameter rules. Yuma Consensus is the separate mechanism that converts permitted validators'
-weight submissions into emission shares each tempo
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
-[Emission](https://docs.learnbittensor.org/learn/emissions)).
+Validator permit names whether a neuron may set weights and participate in consensus on a subnet.
+Yuma Consensus aggregates eligible validator weights into emission shares each tempo
+([Glossary: Validator Permit](https://docs.learnbittensor.org/resources/glossary#validator-permit),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
-- **Validator permit** — whether a hotkey may validate on a subnet.
-- **Yuma Consensus** — mechanism that turns validator weights into emission shares. Readers should
-  keep permission vocabulary separate from settlement vocabulary. A validator permit indicates
-  whether a neuron may validate on a subnet; Yuma names how permitted validators' weight submissions
-  are aggregated into emission shares each tempo
-  ([Glossary: Validator Permit](https://docs.learnbittensor.org/resources/glossary#validator-permit),
-  [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+- **Validator permit** — permission flag for weight setting and consensus participation.
+- **Yuma Consensus** — mechanism that turns validator weights into emission shares.
 
-Permit rules gate who may submit weights. Yuma processes eligible submissions through clipping,
-bonding, and dividend logic before allocating emissions
-([Emission](https://docs.learnbittensor.org/learn/emissions)).
-
-- **Subnet hyperparameters** — on-chain settings including permit and tempo rules.
+Permission vocabulary gates who may submit; Yuma vocabulary names settlement from eligible weights
+([Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)).
 
 ## Reader Boundary
 
