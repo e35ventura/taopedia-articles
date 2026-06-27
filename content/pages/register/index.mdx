@@ -35,61 +35,6 @@ reading, register is the step that connects a participant to that subnet positio
 registration as a concrete example: a miner must register with a subnet to receive a UID on that
 subnet. This article keeps the concept at that level rather than expanding into operational steps.
 
-## The Registration Burn Is Not Recoverable
-
-Registering is not a refundable deposit. Official mining documentation states that once a UID slot
-is secured on the main chain, the burned TAO is sunk cost and cannot be recovered
-([Mining: Miner registration](https://docs.learnbittensor.org/miners#miner-registration)).
-
-That makes the registration burn different from holding-based TAO requirements that remain a
-participant's own balance. Register names a one-way spend that purchases the UID slot; the TAO does
-not return even if the participant later deregisters or stops participating.
-
-## Burn Price Bounds and Decay
-
-The [Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register) describes the
-neuron registration burn as dynamic with explicit parameter bounds. The burn price is bounded by
-`MinBurn` and `MaxBurn`, decays over time according to `BurnHalfLife`, and increases on each
-successful registration through `BurnIncreaseMult`.
-
-That parameter set explains why registration cost is neither fixed nor arbitrary. The price falls
-when registrations are quiet and rises when slots fill, while the bounds keep the burn inside subnet
-hyperparameter limits. Static articles should describe that adjustment behavior rather than quoting
-a live registration amount
-([Mining: Miner registration](https://docs.learnbittensor.org/miners#miner-registration)).
-
-## Alpha Pool Recycling From Registration Fees
-
-Neuron registration fees are paid in TAO, but the fee also interacts with subnet pool accounting.
-Glossary wording states that alpha tokens worth the current swap value of the registration fee are
-taken from the subnet's alpha liquidity pool and recycled when a hotkey registers on a subnet.
-
-For readers, register therefore connects subnet entry to Dynamic TAO pool mechanics, not only to a
-UID assignment. The burn is a TAO payment, while the recycling step moves equivalent alpha value out
-of the subnet pool context described in subnet liquidity documentation
-([Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)).
-
-## Register and Burned_Register Extrinsics
-
-The glossary notes that the `register` and `burned_register` extrinsics share the same non-root burn
-path for subnet entry. Both routes purchase a UID slot through the dynamic registration burn rather
-than describing separate admission economics for ordinary subnets.
-
-Root registration is treated separately in documentation. When reading register at Taopedia level,
-the shared non-root burn path keeps miner and validator registration examples aligned on the same
-subnet-entry cost model unless the article explicitly discusses Subnet Zero
-([Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics)).
-
-The two non-root extrinsics also differ in how they handle a moving burn price. Neuron documentation
-describes `register` as the recommended path because it wraps `register_limit` with an automatic
-price-tolerance guard, while `burned_register` is the direct version that skips that guard
-([Understanding Neurons](https://docs.learnbittensor.org/learn/neurons)).
-
-That guard exists because the registration burn can keep rising between when a submission is built
-and when it lands on chain. Register's built-in tolerance check protects a submitter from paying
-more than expected if the price moves before the call executes; burned_register accepts whatever
-price is current at execution instead.
-
 ## Development Stage Context
 
 The
@@ -111,119 +56,6 @@ burn on the production network
 The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
 separates mainnet, testnet, and localnet. A registration example from one environment should not be
 read as representing UID state or burn costs in another.
-
-## Deregistration Opposes Registration When Subnets Are Full
-
-Registration adds a participant to a UID slot, while
-[deregistration](https://docs.learnbittensor.org/resources/glossary#deregistration) removes an
-eligible low-performing participant from a slot when subnet capacity and replacement rules require
-it ([Mining: Miner deregistration](https://docs.learnbittensor.org/miners#miner-deregistration)).
-
-This relationship does not mean every registration removes another participant. It means register
-should be read in the context of finite subnet UID slots and the subnet's participation rules.
-
-## Miner Registration Is the Miner-Specific Entry Case
-
-The [Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register) describes
-subnet entry as purchasing a UID slot through a dynamic registration burn in TAO.
-[Mining: Miner registration](https://docs.learnbittensor.org/miners#miner-registration) describes
-that entry process applied to a subnet miner who will take part in mining work and evaluation.
-
-Register is the general subnet-entry term; miner registration names the miner-specific case of that
-process.
-
-## Validator Registration Is the Validator-Specific Entry Case
-
-The [Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register) describes
-subnet entry as purchasing a UID slot through a dynamic registration burn in TAO.
-[Validating: Validator registration](https://docs.learnbittensor.org/validators#validator-registration)
-describes that entry process applied to a subnet validator who will take part in evaluation and
-validation work.
-
-Register is the general subnet-entry term; validator registration names the validator-specific case
-of that process.
-
-## Multiple Mechanisms Require Separate Evaluation After Entry
-
-Register gives a participant a UID slot inside a subnet. The
-[Glossary: Multiple Incentive Mechanisms](https://docs.learnbittensor.org/resources/glossary#multiple-incentive-mechanisms)
-notes that validators must evaluate miners separately for each mechanism.
-
-Registration still names subnet entry into a UID slot. When that subnet runs more than one incentive
-mechanism, evaluation after registration happens under separate mechanism contexts
-([Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets)).
-
-## UID Slot Is the Position Entry Grants
-
-The [Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register) describes the
-subnet-entry process that grants a participant a UID slot, while the
-[Glossary: UID Slot](https://docs.learnbittensor.org/resources/glossary#uid-slot) describes the
-participant position inside a subnet that entry provides.
-
-Register names the entry process; a UID slot names the position a miner or validator occupies after
-that entry succeeds.
-
-## Netuid Selects the Destination Subnet
-
-Register describes the subnet-entry process that grants a UID slot, while a
-[netuid](https://docs.learnbittensor.org/resources/glossary#netuid) selects which subnet that entry
-targets.
-
-Register names how a participant enters a subnet; netuid names which subnet market that entry
-applies to. Registration language is incomplete without the netuid that selects the destination
-subnet context.
-
-## Immunity Period Follows Successful Entry
-
-The [Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register) describes the
-subnet-entry process, while the
-[Glossary: Immunity Period](https://docs.learnbittensor.org/resources/glossary#immunity-period)
-describes a temporary protection window that begins after a participant registers into a subnet.
-
-Register names the entry event; immunity period names the grace window that can follow that entry
-before ordinary low-performance removal rules apply.
-
-## Active UID Tracks Status After Entry
-
-Register describes the subnet-entry process that grants a UID slot, while an
-[active UID](https://docs.learnbittensor.org/resources/glossary#active-uid) describes ongoing
-activity status after a participant already holds a slot.
-
-Register names how a participant enters a subnet; active UID names whether that slot currently meets
-the activity conditions tracked on the metagraph after entry.
-
-## Child Hotkeys Require Their Own Registration
-
-Register is the subnet-entry process that gives a hotkey a UID slot by paying a dynamic registration
-burn in TAO. [Child hotkey](https://docs.learnbittensor.org/validators/child-hotkeys) configuration
-lets a registered parent hotkey allocate a portion of its stake weight to one or more child hotkeys
-for validation, where those child hotkeys must already be registered on the netuid on which they
-validate.
-
-Register answers how a hotkey obtains a UID slot in a subnet; child-hotkey configuration answers how
-a registered parent assigns stake weight to other registered hotkeys to validate on its behalf.
-
-## Coinbase Processes Emissions After Entry
-
-Register grants a UID slot, while
-[coinbase](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase) is the per-block
-emission operation that accumulates pending emissions and triggers Yuma Consensus rounds at epoch
-boundaries.
-
-Registration places a participant into the UID slot set that later epoch processing can consider. It
-does not by itself guarantee emissions; rewards still depend on activity, validator evaluations,
-stake, and runtime logic.
-
-## Subnet Entry Boundary
-
-Register should be read as subnet entry, not as a general account creation event. The glossary
-defines registration around purchasing a UID slot with a dynamic registration burn, and mining
-documentation uses miner registration as a concrete subnet-entry example
-([Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register),
-[Mining: Miner registration](https://docs.learnbittensor.org/miners#miner-registration)).
-
-Registering for one subnet grants a UID slot in that subnet context; it does not imply the same role
-or slot across every subnet.
 
 ## Distinction from Registration Allowed
 
@@ -319,35 +151,29 @@ vocabulary names whether that slot may submit counting weights on the selected s
 
 ## Distinction from Sybil Attack
 
-Register is the subnet-entry process that assigns a UID slot after a participant pays the
-registration burn. Rising burn prices limit mass identity creation through cost rather than free
-slot multiplication
-([Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register),
-[Glossary: Burn Cost](https://docs.learnbittensor.org/resources/glossary#burn-cost),
-[Mining: Miner registration](https://docs.learnbittensor.org/miners#miner-registration)).
+Register is the subnet-entry process that assigns a UID slot after paying the registration burn.
+Sybil attack vocabulary names mass fake-identity creation; rising burn prices limit slot flooding
+through cost ([Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register),
+[Glossary: Sybil Attack](https://docs.learnbittensor.org/resources/glossary#sybil-attack)).
+
+- **Register** — legitimate subnet-entry process purchasing a UID slot.
+- **Sybil attack** — mass creation of fake participant identities.
+
+Entry vocabulary names normal slot purchase; sybil vocabulary names identity-flooding abuse
+([Mining: Miner registration](https://docs.learnbittensor.org/miners#miner-registration)).
 
 ## Distinction from Yuma Consensus
 
-Register names the subnet-entry process that grants a miner or validator a UID slot on a selected
-netuid. Yuma Consensus runs at tempo boundaries after participants are active in the subnet,
-aggregating submitted weights and allocating miner incentives and validator dividends
-([Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
-[Emission](https://docs.learnbittensor.org/learn/emissions)).
+Register names the subnet-entry process that grants a UID slot on a selected netuid. Yuma Consensus
+runs at tempo boundaries after participants are active, aggregating weights and allocating emission
+shares ([Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
 - **Register** — subnet-entry process that grants a UID slot.
-- **Yuma Consensus** — subnet consensus pass at tempo boundaries. Readers should keep entry
-  vocabulary separate from reward settlement. Register places a participant in subnet state; Yuma
-  later aggregates submitted weights, applies clipping and bonding, and allocates miner incentives
-  and validator dividends once that participant is active
-  ([Yuma Consensus: Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping),
-  [Glossary: UID Slot](https://docs.learnbittensor.org/resources/glossary#uid-slot)).
+- **Yuma Consensus** — subnet consensus pass at tempo boundaries.
 
-A newly registered UID does not by itself determine emission outcomes until validator weights and
-consensus processing run in later epochs
-([Understanding Neurons](https://docs.learnbittensor.org/learn/neurons)).
-
-- **UID slot** — indexed position registration grants on the selected netuid.
+Entry vocabulary places a participant in subnet state; Yuma vocabulary names later settlement
+([Glossary: UID Slot](https://docs.learnbittensor.org/resources/glossary#uid-slot)).
 
 ## Distinction from Adjustment Interval
 
