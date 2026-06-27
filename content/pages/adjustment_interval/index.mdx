@@ -52,15 +52,6 @@ The interval therefore shapes the responsiveness of the registration cost mechan
 the cost band itself. The burn floor and ceiling are separate parameters that define the range
 inside which each adjustment operates.
 
-## Distinction from Target Registrations Per Interval
-
-Adjustment interval sets the block window between burn recalibrations. Target registrations per
-interval sets how many registrations the mechanism aims for during that window
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
-
-- **Adjustment interval** — blocks between demand-comparison recalibrations.
-- **Target registrations per interval** — reference registration count for each window.
-
 ## Documented Type and Setter
 
 The [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
@@ -71,6 +62,15 @@ netuid 1 can differ from the interval configured on another subnet.
 The active value is the per-subnet chain state for that subnet. A reading from one subnet should not
 be treated as evidence for the adjustment behavior on any other subnet. Subnet-specific examples
 should identify the subnet and its current hyperparameter values.
+
+## Distinction from Target Registrations Per Interval
+
+Adjustment interval sets the block window between burn recalibrations. Target registrations per
+interval sets how many registrations the mechanism aims for during that window
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+- **Adjustment interval** — blocks between demand-comparison recalibrations.
+- **Target registrations per interval** — reference registration count for each window.
 
 ## Distinction from Burn Half Life
 
@@ -96,8 +96,6 @@ sets the block window between demand-comparison recalibrations inside that band
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
 [Glossary: Burn Cost](https://docs.learnbittensor.org/resources/glossary#burn-cost)).
 
-The band parameters name cost limits; adjustment interval names recalibration cadence.
-
 - **Min burn / max burn** — floor and ceiling of the registration burn band.
 - **Adjustment interval** — block window between recalibrations inside that band.
 
@@ -108,53 +106,36 @@ interval names how often the dynamic registration burn is recalibrated against d
 ([Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register),
 [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
-Registration events occur inside the mechanism; adjustment interval names the hyperparameter that
-sets the comparison window between recalibrations.
-
 - **Register** — the subnet entry action claiming a UID slot.
 - **Adjustment interval** — how often the dynamic burn is recalibrated against demand.
 
-## netuid 1 as a Reference Subnet
+## Chain Reads for netuid 1
 
-Hyperparameter examples in this article use netuid 1 as a documented Finney mainnet subnet because
-that netuid appears repeatedly in official subnet hyperparameter prose
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+Readers can verify live hyperparameter values for the documented example netuid with
+`btcli subnet hyperparameters --netuid 1 --network finney`
+([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
 
-Adjustment interval is per-subnet chain state. The block window configured on netuid 1 governs how
-often that subnet recalibrates registration burn against its target registration rate, but the live
-value can differ from reference defaults and from the interval set on another netuid
-([Glossary: Burn Cost](https://docs.learnbittensor.org/resources/glossary#burn-cost)).
+That read path keeps live hyperparameter claims tied to a parseable netuid.
 
-Readers comparing registration-cost responsiveness across subnets should treat netuid 1 as an
-illustrative subnet label rather than proof that every subnet shares the same adjustment cadence.
-Each netuid carries its own hyperparameter table, and adjustment interval names only the
-recalibration window inside that table
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+## Per-Subnet Live Value Boundary
 
-- **Adjustment interval** — block window between registration burn recalibrations on a subnet.
-- **netuid 1** — documented example subnet used for Finney mainnet hyperparameter illustrations.
-
-## Live Values on One Subnet
-
-Adjustment interval is stored separately for each subnet. The block window configured on one netuid
-governs how often that subnet recalibrates dynamic registration burn against its target rate, and
-the live interval can differ from reference defaults and from the window on another netuid
+Adjustment interval is per-subnet chain state. The block window configured on one netuid governs how
+often that subnet recalibrates dynamic registration burn against its target rate, but the live
+interval can differ from reference defaults and from the window on another netuid
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
 [Glossary: Burn Cost](https://docs.learnbittensor.org/resources/glossary#burn-cost)).
 
-Readers should not treat a documented default interval as proof of live chain state everywhere. A
-subnet owner may set a shorter or longer recalibration cadence on one netuid while another subnet
-keeps a different adjustment window under its own hyperparameter row
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
-
-Adjustment interval names registration-burn recalibration cadence. Yuma Consensus still describes
-how validator weights are settled into emission shares on the active subnet each tempo
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
 This article's infobox uses netuid 1 as an example when discussing one subnet at a time on Finney
-mainnet. That label helps readers anchor examples; it does not mean every subnet shares the same
+mainnet. That label helps readers anchor examples; it is not proof that every subnet shares the same
 live adjustment interval
 ([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+Adjustment interval governs registration-burn recalibration cadence; Yuma Consensus still converts
+validator weights into emission shares each tempo on the active subnet
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+- **Adjustment interval** — block window between registration burn recalibrations on a subnet.
+- **Per-subnet boundary** — live value is chain state on one netuid.
 
 ## Distinction from Yuma Consensus
 
@@ -166,17 +147,14 @@ validator weight submissions into emission shares each epoch
 [Emission](https://docs.learnbittensor.org/learn/emissions)).
 
 - **Adjustment interval** — block window between burn recalibrations.
-- **Yuma Consensus** — mechanism that turns validator weights into emission shares. Readers should
-  keep retarget-cadence vocabulary separate from settlement vocabulary. Adjustment interval names
-  how often certain hyperparameters may change; Yuma converts validator weight submissions into
-  emission shares at epoch boundaries on the active subnet
+- **Yuma Consensus** — mechanism that turns validator weights into emission shares.
+
+- **Cadence vs settlement** — adjustment interval names recalibration timing; Yuma settles emissions
+  from validator weights
   ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
   [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-Hyperparameter cadence governs rule updates. Yuma governs reward settlement from validator weights
-([Emission](https://docs.learnbittensor.org/learn/emissions)).
-
-- **Tempo** — blocks per epoch on the same subnet.
+- **Responsiveness** — shorter intervals react faster to registration demand spikes
+  ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
 ## Reader Boundary
 
