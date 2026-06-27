@@ -24,64 +24,6 @@ subnet level, and Bittensor documentation uses netuid values when describing sub
 including [metagraph](https://docs.learnbittensor.org/resources/glossary#metagraph) data for a
 selected subnet ([The Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)).
 
-## Subnet Context
-
-The useful meaning of a netuid is contextual: it tells readers which subnet is being discussed. A
-metagraph, validator weights, miner registrations, and many subnet-level values are interpreted
-inside that selected subnet context rather than across the whole Bittensor network at once.
-
-Netuids help separate subnet-specific state. A reader may see the same kind of value, such as a UID
-slot or a validator weight, but its meaning depends on the subnet selected by the netuid. This keeps
-subnet discussions precise and avoids mixing state from different subnet markets or mechanisms.
-
-## Netuid and UID
-
-Netuid and UID are distinct identifiers. A netuid identifies a subnet, while a UID identifies a
-participant position within that subnet. The
-[Glossary: UID Slot](https://docs.learnbittensor.org/resources/glossary#uid-slot) describes a UID
-slot as a position within a subnet occupied by a miner or validator and identified by a unique UID.
-
-Keeping the two separate matters because a participant's UID is scoped to a specific subnet: the
-same UID number can appear in multiple subnets and may refer to entirely different participants in
-each.
-
-## Metagraph Queries Use Netuid
-
-Subnet metagraph data is always read for a selected netuid. The
-[Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph) documentation describes the
-metagraph as a snapshot of subnet state, and Bittensor tooling selects which subnet market that
-snapshot represents through the netuid value passed to the query.
-
-For readers, a metagraph row without an attached netuid is incomplete. The same field name can
-appear in more than one subnet, but its meaning belongs to the subnet identified by the netuid used
-in the query.
-
-## Subnet Hyperparameters Belong to a Netuid
-
-Each subnet's hyperparameter set is scoped to its netuid. The
-[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters) reference
-describes configurable subnet settings such as
-[tempo](https://docs.learnbittensor.org/resources/glossary#tempo), registration burn bounds, and
-weights rate limits as properties of one subnet market rather than as global constants for the whole
-network.
-
-When readers encounter a hyperparameter name in subnet prose, they should ask which netuid's subnet
-configuration is being discussed. Values such as `max_allowed_uids` or `activity_cutoff` belong to
-one netuid's subnet context rather than to the whole Bittensor network at once. Tempo names the
-block-based cadence that governs epoch transitions inside that selected subnet.
-
-## Subnet Zero as a Netuid
-
-Subnet Zero is itself a netuid with special rules. The
-[Glossary: Root Subnet/Subnet Zero](https://docs.learnbittensor.org/resources/glossary#root-subnetsubnet-zero)
-describes Root as a special subnet where miners cannot register and no validation work is performed,
-while validators can register and TAO holders can stake in a subnet-agnostic way
-([Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)).
-
-That makes netuid selection especially important at zero. Root shares the netuid identifier pattern
-with other subnets, but its participant rules and staking role differ from an ordinary mining subnet
-market.
-
 ## Development Stage Context
 
 The
@@ -110,88 +52,6 @@ identical evidence about a subnet with the same identifier in another environmen
 A netuid is a selector, not the whole subnet description. It tells readers which subnet context is
 in scope, while the network environment tells them what kind of evidence that selection represents.
 
-## Register Targets a Selected netuid
-
-[Register](https://docs.learnbittensor.org/resources/glossary#register) describes the subnet-entry
-process that grants a UID slot. A netuid selects which subnet that entry targets. Registration
-language is incomplete without the netuid that selects the destination subnet context.
-
-An [active UID](https://docs.learnbittensor.org/resources/glossary#active-uid) identifies an active
-participant slot within the selected subnet. Active status should always be read together with the
-netuid that selects the subnet context.
-
-## Multiple Mechanisms Stay netuid-Scoped
-
-Each subnet has one or more
-[incentive mechanisms](https://docs.learnbittensor.org/resources/glossary#incentive-mechanism)
-([Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets)).
-A netuid still identifies which subnet market is being discussed. Subnet-specific values such as
-weights or incentives should be read with that netuid in mind, including when the subnet runs more
-than one incentive mechanism.
-
-## Yuma Consensus Runs Inside the Selected netuid
-
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) aggregates validator weight
-signals inside a subnet into miner incentives and validator dividends, applying within-subnet
-clipping, bonding, and emission calculation. A netuid selects the subnet context where that process
-runs; it does not perform consensus itself.
-
-For readers, netuid answers which subnet market is in scope, while Yuma Consensus names the
-consensus process that turns validator weights into incentives and dividends inside that scope.
-
-## Emission and Flow-Based Allocation
-
-[Emission](https://docs.learnbittensor.org/resources/glossary#emission) names the full generation
-and allocation process that distributes currency to participants inside and across subnets. A netuid
-identifies one subnet market within that broader picture.
-
-[Flow-based emissions](https://docs.learnbittensor.org/learn/emissions#distribution-across-subnets)
-describe how subnets are compared for TAO injection share from net TAO flow across the network. A
-netuid names one subnet being discussed; flow-based emissions name the cross-subnet comparison model
-used when deciding injection share among identified subnets.
-
-## Crowdloans Fund a Specific netuid
-
-[Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans) enable community-level
-participation in subnet funding, with contributor shares recorded on chain and subnet alpha
-emissions distributed pro-rata to contributors. Subnet crowdloans for registration or leasing are
-scoped to one specific subnet identified by its netuid. The crowdloans documentation notes that the
-subnet's alpha emissions are swapped to TAO before distribution, so contributors receive TAO rather
-than alpha tokens.
-
-## Coinbase Scopes Emission Operations per netuid
-
-[Coinbase](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase) is the per-block
-protocol mechanism that drives TAO emission, injects TAO into emitting subnets' pool reserves,
-accumulates pending emissions, and checks epoch boundaries to trigger Yuma Consensus rounds.
-
-A netuid is the selector coinbase uses to keep each subnet's emission accounting separate. When
-coinbase runs, it accumulates pending emissions and applies epoch logic per subnet, and the netuid
-is what distinguishes one subnet's reserves, pending emissions, and epoch boundary from another's.
-The netuid performs no emission itself; it scopes which subnet a given coinbase operation acts on.
-
-## Staking and Pool State Are netuid-Local
-
-The
-[Staking and delegation overview](https://docs.learnbittensor.org/staking-and-delegation/delegation)
-describes staking as local to a subnet. A netuid therefore selects which subnet market holds
-delegated stake, alpha-denominated positions, and pool reserves rather than naming a global balance
-label detached from subnet context
-([Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)).
-
-Readers comparing stake on netuid 1 with stake on another subnet should keep the netuid attached.
-Subnet-local vocabulary applies to delegation, slippage, and alpha price reading on the selected
-subnet.
-
-## Metagraph Snapshots Read One netuid at a Time
-
-[Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph) documentation describes the
-metagraph as a subnet snapshot keyed by netuid. Netuid vocabulary therefore marks which participant
-set, hyperparameter context, and subnet fields are in scope for a given read.
-
-That scoping keeps metagraph evidence subnet-specific. A UID or validator field observed under one
-netuid does not by itself describe participant state on another subnet.
-
 ## Distinction from UID
 
 A netuid identifies a subnet market. A UID identifies a participant position inside the subnet
@@ -199,7 +59,8 @@ selected by that netuid
 ([Glossary: Netuid](https://docs.learnbittensor.org/resources/glossary#netuid),
 [Glossary: UID Slot](https://docs.learnbittensor.org/resources/glossary#uid-slot)).
 
-Subnet-selector vocabulary and in-subnet position vocabulary must stay paired in precise claims.
+- **Netuid** — identifies the subnet market.
+- **UID** — identifies a participant position inside that subnet.
 
 ## Distinction from Metagraph
 
@@ -207,8 +68,8 @@ A netuid selects which subnet snapshot is in scope. A metagraph is the subnet st
 for that selected netuid ([The Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph),
 [Glossary: Metagraph](https://docs.learnbittensor.org/resources/glossary#metagraph)).
 
-Selector vocabulary names which market is being discussed; metagraph vocabulary names the
-participant and hyperparameter fields observed there.
+- **Netuid** — selects which subnet snapshot is in scope.
+- **Metagraph** — subnet state snapshot read for that netuid.
 
 ## Distinction from Register
 
@@ -217,8 +78,8 @@ which subnet that entry targets
 ([Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register),
 [Glossary: Netuid](https://docs.learnbittensor.org/resources/glossary#netuid)).
 
-Destination-subnet vocabulary is incomplete without the admission process that actually occupies a
-slot.
+- **Netuid** — selects which subnet entry targets.
+- **Register** — subnet entry that grants a UID slot on that netuid.
 
 ## Distinction from Root Subnet
 
@@ -227,7 +88,8 @@ general subnet identifier pattern shared by root and ordinary mining subnets
 ([Glossary: Root Subnet/Subnet Zero](https://docs.learnbittensor.org/resources/glossary#root-subnetsubnet-zero),
 [Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)).
 
-Identifier vocabulary is shared; participant-role rules differ by which netuid is selected.
+- **Netuid** — general subnet identifier pattern.
+- **Root subnet** — netuid zero with special participant rules.
 
 ## Distinction from Emission
 
@@ -236,8 +98,8 @@ market within that broader allocation picture
 ([Glossary: Emission](https://docs.learnbittensor.org/resources/glossary#emission),
 [Glossary: Netuid](https://docs.learnbittensor.org/resources/glossary#netuid)).
 
-Cross-network allocation vocabulary and single-subnet selector vocabulary answer different scope
-questions.
+- **Netuid** — selects one subnet market.
+- **Emission** — currency generation and allocation across the network.
 
 ## Distinction from Subnet Hyperparameters
 
@@ -246,8 +108,8 @@ bounds. Netuid selects which subnet's hyperparameter set is being discussed
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
 [Glossary: Netuid](https://docs.learnbittensor.org/resources/glossary#netuid)).
 
-Selector vocabulary names the subnet context; hyperparameter vocabulary names tunable values inside
-that context.
+- **Netuid** — selects which subnet's settings are in scope.
+- **Subnet hyperparameters** — configurable per-netuid values such as tempo and burn bounds.
 
 ## Distinction from Yuma Consensus
 
