@@ -218,13 +218,37 @@ label—not the whole emission model.
 
 ## Distinction from Yuma Consensus
 
-Yuma Consensus turns submitted weights into miner incentives and validator dividends at tempo
-boundaries. Tempo only names the block cadence between those runs
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
+Tempo names the per-subnet hyperparameter that sets how many blocks compose one consensus epoch. It
+defines epoch length in block units, not the consensus algorithm that converts validator weights
+into emission shares at the end of that epoch
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
 [Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo)).
 
-Timing and aggregation are separate questions. Tempo answers when the boundary arrives; Yuma answers
-what happens to weights there.
+Yuma Consensus is the separate mechanism that runs when an epoch boundary is reached, aggregating
+eligible validator weights, applying clipping and bonding, and allocating miner and validator
+emission shares ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
+[Emission](https://docs.learnbittensor.org/learn/emissions)).
+
+Readers should keep timing vocabulary separate from mechanism vocabulary. Tempo sets how long an
+epoch lasts; Yuma performs settlement at the epoch boundary using weights recorded inside that
+window.
+
+- **Tempo** — block count per consensus epoch on a subnet.
+- **Yuma Consensus** — mechanism that turns validator weights into emission shares.
+- **Epoch** — consensus period tempo defines.
+
+## Tempo Bounds the Window Yuma Settles
+
+Epoch documentation ties tempo to the block span over which validator weight submissions are
+evaluated before settlement
+([Glossary: Epoch](https://docs.learnbittensor.org/resources/glossary#epoch),
+[Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)).
+
+Activity cutoff and other hyperparameters further shape which submissions count inside that span,
+but tempo itself only sets the epoch length.
+
+When the epoch ends, Yuma Consensus reads the eligible matrix and produces emission shares for that
+round.
 
 ## Distinction from Weights Rate Limit and Activity Cutoff
 
