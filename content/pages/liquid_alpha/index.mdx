@@ -86,41 +86,6 @@ scoring context, while liquid alpha still names the bounded EMA response applied
 bonds inside that mechanism context
 ([Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets)).
 
-## The Feature Exists to Better Correlate Dividends With Miner Performance
-
-Consensus-based weights documentation states the purpose directly: with liquid alpha, a validator's
-dividends are better correlated to the performance of the miner the validator is setting weights on
-([Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)).
-
-That framing keeps the bond-smoothing mechanics tied to a concrete goal. Liquid alpha is not
-smoothing for its own sake; the bounded, pair-specific response exists so that a validator's
-eventual dividend more closely tracks how well its bonded miner actually performed.
-
-## Alpha Tokens and Liquid Alpha Use Different Alpha Meanings
-
-Liquid alpha language fits when the focus is variable EMA smoothing for validator-miner bonds. Alpha
-tokens name subnet-specific assets, while liquid alpha uses alpha as a smoothing parameter inside
-Yuma Consensus
-([Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)).
-
-When a sentence pairs EMA with alpha, the useful question is whether the topic is smoothing behavior
-or subnet tokenomics.
-
-## Weights, Liquid Alpha, and Dividends on netuid 1
-
-On a subnet such as netuid 1, validators submit
-[validator weights](https://docs.learnbittensor.org/resources/glossary#weight-vector) after
-evaluating miner work, and [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
-compares those signals with subnet consensus
-([Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)).
-
-Liquid alpha then adjusts pair-specific bond smoothing inside the configured low-and-high alpha
-bounds from
-[subnet hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters), and
-resulting validator [dividends](https://docs.learnbittensor.org/resources/glossary#emission) sit
-downstream of that bond path rather than inside the smoothing parameter itself
-([Emission](https://docs.learnbittensor.org/learn/emissions)).
-
 ## Development Stage Context
 
 The
@@ -140,55 +105,6 @@ On mainnet, liquid alpha on netuid 1 concerns production consensus history on th
 The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
 separates mainnet, testnet, and localnet. An observed liquid-alpha example from one environment
 should not be read as representing production consensus behavior in another environment.
-
-## Liquid Alpha Tunes Responsiveness, Not the Reward Itself
-
-A useful way to read liquid alpha is that it changes how quickly bonds react, not how large a reward
-is. Documentation frames it as a refinement to the bond-smoothing factor, so it governs the speed at
-which a validator-miner bond moves toward or away from consensus rather than setting any payout
-([Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights),
-[Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema)).
-
-For readers, this distinguishes liquid alpha from the dividends that follow it. The smoothing factor
-shapes the bond path, and dividends sit downstream of that path, so liquid alpha influences timing
-and stability rather than directly adding to a validator's emission
-([Emission](https://docs.learnbittensor.org/learn/emissions)).
-
-That framing also explains why it is described as pair-specific within bounds. Because the
-responsiveness can differ per validator-miner pair inside the configured low and high limits, the
-same feature can make some bonds adapt faster than others without changing the reward mechanism
-itself ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
-
-## Liquid Alpha Smooths Bonds While Clipping Caps Weights
-
-Liquid alpha and consensus clipping address different stages of the same evaluation path.
-[Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping) compares validator weights
-against a stake-weighted benchmark and trims excess so neither miner nor validator receives
-emissions on the clipped portion, while liquid alpha varies the bond-smoothing factor by
-validator-miner pair after weights enter the consensus-based bond path
-([Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-For readers, clipping is an emission cap on outlier weight. Liquid alpha is a responsiveness control
-on how quickly
-[validator-miner bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds)
-move once consensus alignment is known. One limits payout on excess evaluation; the other adjusts
-bond history inside configured low-and-high alpha bounds
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
-
-Consensus-based weights documentation states the liquid-alpha purpose directly: pair-specific
-smoothing helps correlate a validator's dividends with the performance of the miner the validator is
-weighting. Clipping still removes reward on weight above consensus before that bond response applies
-([Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)).
-
-The two mechanisms therefore complement rather than duplicate one another. Clipping protects
-emission allocation from excessive over-rating, while liquid alpha refines how bond movement
-responds when alignment is strong or weak
-([Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema)).
-
-Liquid alpha also stays distinct from subnet alpha-token vocabulary. Here alpha names an EMA
-smoothing parameter inside Yuma Consensus, not a subnet asset or pool reserve label
-([Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)).
 
 ## Distinction from Validator-Miner Bonds
 
@@ -223,20 +139,16 @@ responds once consensus compares those scores on the validator-miner path.
 
 ## Distinction from Clipping
 
-Clipping trims excess weight above a stake-weighted benchmark so emissions are not paid on the
-clipped portion. Liquid alpha varies bond responsiveness after weights enter the bond path
+Clipping trims excess weight above a stake-weighted consensus benchmark. Liquid alpha varies bond
+responsiveness after weights enter the bond path
 ([Yuma Consensus: Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping),
 [Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)).
 
-Clipping caps payout on outlier evaluation. Liquid alpha adjusts how quickly bonds move when
-alignment is strong or weak.
+- **Clipping** — payout cap on outlier validator weights.
+- **Liquid alpha** — variable bond-smoothing by consensus alignment.
 
-Liquid alpha does not replace clipping. Clipping limits emissions on excess weight; liquid alpha
-refines bond movement on the surviving evaluation path
+Payout-cap vocabulary and bond-speed vocabulary answer different Yuma controls
 ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-Readers should treat clipping as a payout cap and liquid alpha as a bond-speed control inside
-consensus.
 
 ## Distinction from Bonds Penalty
 
@@ -309,41 +221,29 @@ converting validator weight submissions into emission shares
 
 ## Distinction from Bond-Smoothing
 
-Validator-miner bonds use exponential moving average smoothing. Alpha is the smoothing factor in
-that moving average, so it controls how quickly a bond responds to new information
-([Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds),
+Liquid alpha varies the bond-smoothing factor by validator-miner consensus alignment. Bond-smoothing
+is the general EMA accumulation of validator investment in miners
+([Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights),
 [Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema)).
 
-Liquid alpha changes how that smoothing factor is selected. The value can vary for each
-validator-miner pair, which makes the bond response pair-specific instead of subnet-wide only.
+- **Liquid alpha** — consensus-aligned modifier of bond smoothing speed.
+- **Bond-smoothing** — EMA accumulation of validator-miner bonds.
 
-Here, alpha means the EMA smoothing factor. It is not the same thing as a subnet alpha token, alpha
-reserve, or liquid stake asset. The term belongs to bond smoothing, not token ownership.
-
-The object being smoothed also stays specific. Liquid alpha acts on validator-miner bond history,
-not on the raw task score, the submitted weight itself, or the subnet's alpha-token supply
-([Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)).
+Feature vocabulary names alignment-responsive tuning; smoothing vocabulary names the bond path
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
 ## Distinction from Consensus
 
-Liquid alpha depends on the relationship between validator weights and consensus. Validator weights
-are the evaluation signals that validators submit, while Yuma Consensus aggregates those signals
-into subnet outcomes
-([Glossary: Weight Vector](https://docs.learnbittensor.org/resources/glossary#weight-vector),
+Liquid alpha is a bond-path control inside Yuma Consensus. Consensus here names the stake-weighted
+agreement benchmark validators are compared against
+([Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights),
 [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
-The mechanism therefore sits after evaluation in the bond response path. It adapts bond smoothing
-around consensus alignment; it does not define the task being evaluated.
+- **Liquid alpha** — variable bond smoothing by pair alignment.
+- **Consensus** — stake-weighted agreement benchmark for clipping and bonds.
 
-Liquid alpha is often discussed near weight-copying defenses because copied or stale weights can
-relate poorly to consensus alignment. Commit Reveal and weight-copying context belong to submitted
-weights and visibility, while liquid alpha belongs to the bond-smoothing response after weights
-enter the consensus path
-([The Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor),
-[Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)).
-
-This keeps the nearby concepts separate. Weight copying concerns copied or stale validator weights;
-liquid alpha describes how a validator-miner bond can respond once consensus alignment is available.
+Control vocabulary and benchmark vocabulary answer different Yuma questions
+([Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score)).
 
 ## Reader Boundary
 
