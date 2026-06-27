@@ -136,90 +136,6 @@ subnet-facing work under an unchanged coldkey owner. Choosing the wrong recovery
 leave a compromised coldkey in control or trigger unnecessary identity migration when only the
 operational key needed rotation.
 
-## Relationship to Proxy Wallets
-
-Coldkey swap and proxy wallets are related but different parts of Bittensor wallet security
-vocabulary. Coldkey swap is the on-chain identity migration that replaces a coldkey's controlling
-address, moving all associated hotkeys and their registrations to a new coldkey, while a proxy
-wallet grants a separate account limited, scoped authority to act on behalf of a protected wallet
-without changing which coldkey controls it
-([Proxies overview](https://docs.learnbittensor.org/keys/proxies),
-[Coldkey Swap](https://docs.learnbittensor.org/keys/coldkey-swap)).
-
-The two differ in what they change. A coldkey swap permanently changes the controlling coldkey,
-replacing the original SS58 address with a new one that inherits the same hotkeys, while a proxy
-wallet leaves ownership in place and only grants another account revocable, scoped permission to
-submit specific categories of calls
-([Proxies overview](https://docs.learnbittensor.org/keys/proxies)).
-
-## Relationship to Hotkey-Coldkey Pair
-
-Coldkey swap and the hotkey-coldkey pair address related parts of Bittensor key vocabulary. The
-hotkey-coldkey pair is the ownership relationship between an operational hotkey and the coldkey that
-controls it, while coldkey swap is the operation that moves that ownership to a new coldkey,
-including all associated hotkeys and their subnet registrations
-([Glossary: Hotkey-Coldkey Pair](https://docs.learnbittensor.org/resources/glossary#hotkey-coldkey-pair),
-[Coldkey Swap](https://docs.learnbittensor.org/keys/coldkey-swap)).
-
-A coldkey swap changes only which coldkey owns the pair. Before the swap the pair is the original
-coldkey with its hotkey; after it the same hotkey keeps its registrations and on-chain positions
-while the owning coldkey is the new one
-([Coldkey Swap](https://docs.learnbittensor.org/keys/coldkey-swap)).
-
-## Relationship to Coinbase
-
-Coldkey swap and coinbase address related but different parts of Bittensor wallet identity and
-emission vocabulary. A coldkey swap migrates a wallet's full on-chain identity — including TAO
-balances, subnet ownerships, and all associated hotkeys — to a new coldkey, as described by the
-[Rotate or Swap your Coldkey](https://docs.learnbittensor.org/keys/coldkey-swap) documentation.
-Coinbase is the per-block Subtensor mechanism that accumulates pending emissions and triggers the
-Yuma Consensus epoch round at each subnet's epoch boundary, distributing miner incentives and
-validator dividends, as described by the
-[Coinbase Implementation](https://docs.learnbittensor.org/subtensor-api/extrinsics#coinbase).
-
-Coldkey swap does not pause, reset, or interrupt coinbase. Coinbase fires every block regardless of
-whether a wallet identity migration is in progress. What the swap transfers is control over the
-hotkey-identified positions that coinbase credits: once a coldkey swap finalizes, the new coldkey
-owns those hotkeys and therefore governs all the emission outcomes that coinbase has distributed or
-will distribute to them. The swap operates at the identity-ownership layer; coinbase continues
-accumulating and distributing emissions to the same hotkey-identified participant positions
-throughout.
-
-## Relationship to Hotkey Swap
-
-Coldkey swap and hotkey swap address different security concerns and operate at different layers of
-the Bittensor wallet model. A coldkey swap migrates the wallet's full on-chain identity — including
-TAO balances, subnet ownerships, and registrations — to a new coldkey pair, as described in the
-[Rotate or Swap your Coldkey](https://docs.learnbittensor.org/keys/coldkey-swap) documentation. A
-hotkey swap moves subnet participation from an old hotkey to a new hotkey owned by the same coldkey,
-as described in the
-[Coldkey and Hotkey Workstation Security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security)
-documentation.
-
-For readers, coldkey swap changes the controlling identity of the wallet — the security-critical key
-that owns TAO balances and subnet ownership — while hotkey swap changes the operational key under
-the unchanged controlling identity. The two are not interchangeable: a coldkey swap addresses a
-compromised controlling key, while a hotkey swap addresses a compromised operational key. A reader
-who understands coldkey swap can use hotkey swap to recognize the lighter-weight operational-key
-recovery path that leaves the coldkey and its on-chain identity intact.
-
-## Relationship to Transferring Stake
-
-Coldkey swap and transferring stake are related but distinct parts of Bittensor stake-management
-vocabulary. A coldkey swap migrates the wallet's full on-chain identity — including TAO balances,
-subnet ownerships, and registrations — to a new coldkey pair. Transferring stake is the operation
-that changes which coldkey owns a particular staked position while keeping that stake on the same
-validator and subnet, as described in the
-[Staking and delegation overview: Transferring stake](https://docs.learnbittensor.org/staking-and-delegation/delegation#transferring-stake).
-
-For readers, a coldkey swap migrates the entire wallet's on-chain identity in one staged operation,
-while transferring stake moves a single staked position to a different owning coldkey without
-changing the validator. The two are not interchangeable: a coldkey swap touches balances, subnet
-ownerships, and registrations together, while transferring stake is a targeted stake-side ownership
-reassignment. A reader who understands coldkey swap can use transferring stake to recognize the
-narrower operation that reassigns ownership of one staked position without invoking a full identity
-migration.
-
 ## Development Stage Context
 
 The
@@ -327,24 +243,37 @@ fills the owning role without changing the structure itself.
 
 ## Distinction from Hotkey Swap
 
-Coldkey swap migrates the full on-chain identity to a new coldkey pair. Hotkey swap rotates subnet
-participation from one operational hotkey to another while the same coldkey remains in control
+Coldkey swap and hotkey swap address different security concerns and operate at different layers of
+the Bittensor wallet model. A coldkey swap migrates the wallet's full on-chain identity — including
+TAO balances, subnet ownerships, and registrations — to a new coldkey pair. A hotkey swap moves
+subnet participation from an old hotkey to a new hotkey owned by the same coldkey
 ([Rotate or Swap your Coldkey](https://docs.learnbittensor.org/keys/coldkey-swap),
-[Glossary: Hotkey](https://docs.learnbittensor.org/resources/glossary#hotkey)).
+[Coldkey and Hotkey Workstation Security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security)).
 
-Security documentation treats hotkey swap as the lighter path when only the operational key may have
-leaked. Coldkey swap is the heavier recovery path when the security-critical coldkey itself may be
-compromised.
+Coldkey swap changes the controlling identity of the wallet — the security-critical key that owns
+TAO balances and subnet ownership — while hotkey swap changes the operational key under the
+unchanged controlling identity. Security documentation treats hotkey swap as the lighter path when
+only the operational key may have leaked; coldkey swap is the heavier recovery path when the
+security-critical coldkey itself may be compromised.
+
+- **Coldkey swap** — full on-chain identity migration to a new coldkey pair.
+- **Hotkey swap** — operational-key rotation under an unchanged coldkey owner.
 
 ## Distinction from Proxy Wallets
 
-Coldkey swap permanently changes which coldkey owns a wallet identity. A proxy wallet grants another
-account limited, scoped authority without changing the controlling coldkey
+Coldkey swap and proxy wallets are related but different parts of Bittensor wallet security
+vocabulary. Coldkey swap is the on-chain identity migration that replaces a coldkey's controlling
+address, moving all associated hotkeys and their registrations to a new coldkey, while a proxy
+wallet grants a separate account limited, scoped authority to act on behalf of a protected wallet
+without changing which coldkey controls it
 ([Proxies overview](https://docs.learnbittensor.org/keys/proxies),
 [Coldkey Swap](https://docs.learnbittensor.org/keys/coldkey-swap)).
 
 Identity migration and delegated permission answer different security questions. Swap vocabulary
 re-homes ownership; proxy vocabulary adds revocable scoped action under unchanged ownership.
+
+- **Coldkey swap** — permanent change of the controlling coldkey identity.
+- **Proxy wallet** — revocable, scoped permission without changing ownership.
 
 ## Distinction from Transfer
 
@@ -367,14 +296,52 @@ owner while preserving associated operational keys.
 
 ## Distinction from Hotkey-Coldkey Pair
 
-The hotkey-coldkey pair is the ownership relationship between an operational hotkey and the coldkey
-that controls it. Coldkey swap moves that ownership to a new coldkey while associated hotkeys keep
-their registrations
+Coldkey swap and the hotkey-coldkey pair address related parts of Bittensor key vocabulary. The
+hotkey-coldkey pair is the ownership relationship between an operational hotkey and the coldkey that
+controls it, while coldkey swap is the operation that moves that ownership to a new coldkey,
+including all associated hotkeys and their subnet registrations
 ([Glossary: Hotkey-Coldkey Pair](https://docs.learnbittensor.org/resources/glossary#hotkey-coldkey-pair),
 [Coldkey Swap](https://docs.learnbittensor.org/keys/coldkey-swap)).
 
-Swap vocabulary names the migration event; pair vocabulary names the standing ownership structure
-before and after that migration completes.
+A coldkey swap changes only which coldkey owns the pair. Before the swap the pair is the original
+coldkey with its hotkey; after it the same hotkey keeps its registrations and on-chain positions
+while the owning coldkey is the new one.
+
+- **Hotkey-coldkey pair** — the standing ownership structure between operational and custody keys.
+- **Coldkey swap** — the migration event that re-homes that ownership to a new coldkey.
+
+## Distinction from Coinbase
+
+Coldkey swap and coinbase address related but different parts of Bittensor wallet identity and
+emission vocabulary. A coldkey swap migrates a wallet's full on-chain identity — including TAO
+balances, subnet ownerships, and all associated hotkeys — to a new coldkey
+([Rotate or Swap your Coldkey](https://docs.learnbittensor.org/keys/coldkey-swap)). Coinbase is the
+per-block Subtensor mechanism that accumulates pending emissions and triggers the Yuma Consensus
+epoch round at each subnet's epoch boundary, distributing miner incentives and validator dividends
+([Coinbase Implementation](https://docs.learnbittensor.org/subtensor-api/extrinsics#coinbase)).
+
+Coldkey swap does not pause, reset, or interrupt coinbase. What the swap transfers is control over
+the hotkey-identified positions that coinbase credits: once a coldkey swap finalizes, the new
+coldkey owns those hotkeys and therefore governs the emission outcomes coinbase distributes to them.
+
+- **Coldkey swap** — identity-ownership migration at the wallet layer.
+- **Coinbase** — per-block emission accumulation and epoch distribution mechanism.
+
+## Distinction from Transferring Stake
+
+Coldkey swap and transferring stake are related but distinct parts of Bittensor stake-management
+vocabulary. A coldkey swap migrates the wallet's full on-chain identity — including TAO balances,
+subnet ownerships, and registrations — to a new coldkey pair. Transferring stake is the operation
+that changes which coldkey owns a particular staked position while keeping that stake on the same
+validator and subnet
+([Staking and delegation overview: Transferring stake](https://docs.learnbittensor.org/staking-and-delegation/delegation#transferring-stake)).
+
+A coldkey swap migrates the entire wallet's on-chain identity in one staged operation, while
+transferring stake moves a single staked position to a different owning coldkey without changing the
+validator.
+
+- **Coldkey swap** — full wallet identity migration across balances, ownerships, and registrations.
+- **Transferring stake** — targeted reassignment of one staked position's owning coldkey.
 
 ## Distinction from Seed Phrase
 
