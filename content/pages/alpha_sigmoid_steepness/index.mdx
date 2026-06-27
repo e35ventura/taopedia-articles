@@ -73,16 +73,16 @@ bonds moving average sets the moving-average behavior applied to validator-miner
 - **Alpha sigmoid steepness** — the sharpness of the alpha-assignment curve.
 - **Bonds moving average** — the smoothing applied to bonds across epochs.
 
-## BTCLI Reads the Live Value
+## Per-Subnet Hyperparameter State
 
-Any user can read subnet hyperparameters for a selected netuid with
-`btcli subnet hyperparameters --netuid 1`. The output includes the live `AlphaSigmoidSteepness`
-value for that subnet at query time
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+The [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+reference stores alpha sigmoid steepness separately for each netuid. The steepness in force on one
+subnet can differ from the documented default and from the value configured on another subnet
+([Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)).
 
-Live values are network- and subnet-specific and can differ from the documented default, so a
-steepness claim should be checked against the hyperparameter table for the relevant netuid rather
-than assumed from the reference default alone.
+Readers comparing bond-path behavior should read the hyperparameter row for the netuid they mean
+rather than inferring steepness from reference defaults alone
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
 
 ## Why Steepness Belongs to the Bond Path
 
@@ -152,20 +152,35 @@ converts validator weights into emission shares
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
 [Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)).
 
-Yuma Consensus is the separate tempo process that aggregates eligible validator weights, applies
-clipping and bonding—including liquid-alpha adjustments bounded by alpha high and alpha low—and maps
-the result into miner and validator dividends. Alpha sigmoid steepness tunes one bonding input; Yuma
-Consensus performs the complete weight-to-reward settlement
+Yuma Consensus is the tempo process that aggregates eligible validator weights, applies clipping,
+updates validator-miner bonds—including liquid-alpha adjustments bounded by alpha high and alpha
+low—and maps the result into miner incentives and validator dividends
 ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
 [Emission](https://docs.learnbittensor.org/learn/emissions)).
+
+Steepness therefore names a bonding-input control, not an emission outcome. Rank, dividends, and
+miner incentives describe settlement results after Yuma processes clipped weights and updated bonds;
+alpha sigmoid steepness configures how alignment is translated into the coefficient that feeds those
+bond updates when liquid alpha is enabled
+([Glossary: Rank](https://docs.learnbittensor.org/resources/glossary#rank),
+[Glossary: Dividends](https://docs.learnbittensor.org/resources/glossary#emission)).
+
+Liquid alpha must be enabled for steepness to matter on a subnet. When it is off, the hyperparameter
+does not change how bonds smooth even though Yuma still runs its full weight-to-emission settlement
+path ([Glossary: Liquid Alpha](https://docs.learnbittensor.org/resources/glossary#liquid-alpha)).
+
+When liquid alpha is active, steepness works together with alpha low and alpha high inside the same
+bond path. Those bounds set the coefficient range; steepness sets how sharply the mapping moves
+across that range before Yuma converts the resulting bond state into emission shares each tempo
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
 Readers should keep this hyperparameter separate from alpha-token supply language. Alpha sigmoid
 steepness configures how quickly bond smoothing reacts to consensus alignment; it does not set
 emission rates or replace Yuma's consensus math.
 
-- **Alpha sigmoid steepness** — sharpness of the liquid-alpha response curve.
-- **Yuma Consensus** — mechanism that turns validator weights into emission shares.
-- **Bonds moving average** — separate hyperparameter for bond smoothing behavior.
+- **Alpha sigmoid steepness** — sharpness of the liquid-alpha response curve inside bonding.
+- **Yuma Consensus** — aggregation that turns filtered weights and bond state into emission shares.
+- **Liquid alpha** — feature that varies the bond-smoothing coefficient by consensus alignment.
 
 ## Reader Boundary
 
