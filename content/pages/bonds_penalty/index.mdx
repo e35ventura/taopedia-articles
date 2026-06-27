@@ -106,16 +106,17 @@ while liquid alpha varies the bond-smoothing factor by consensus alignment
 - **Bonds penalty** — the penalty magnitude applied to out-of-consensus weights.
 - **Liquid alpha** — varies how quickly validator-miner bonds smooth, by consensus alignment.
 
-## BTCLI Reads the Live Value
+## Per-Subnet Hyperparameter State
 
-Any user can read subnet hyperparameters for a selected netuid with
-`btcli subnet hyperparameters --netuid 1`. The command output includes the live `BondsPenalty` value
-for that subnet at query time
-([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
+The [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+reference documents bonds penalty as a per-subnet setting recorded on chain. The penalty magnitude
+in force on one netuid can differ from the documented default and from the value configured on
+another netuid
+([Yuma Consensus: Penalizing out-of-consensus bonds](https://docs.learnbittensor.org/learn/yuma-consensus#penalizing-out-of-consensus-bonds)).
 
-Live values are network- and subnet-specific and can differ from the documented default, so a
-penalty claim should be checked against the hyperparameter table for the relevant netuid and network
-rather than assumed from the reference default alone.
+Readers comparing bond-path behavior should read the on-chain hyperparameter row for the netuid they
+mean rather than inferring penalty magnitude from reference defaults alone
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
 
 ## Why the Default Leaves Bonds Unpenalized
 
@@ -167,14 +168,37 @@ is discussed in official examples without implying every subnet shares the same 
 
 ## Distinction from Yuma Consensus
 
-Bonds penalty names the reduction applied to validator-miner bonds when submitted weights disagree
-with consensus. Yuma Consensus is the broader mechanism that computes consensus scores, applies
-bonding, and converts validator weights into emission shares each tempo
+Bonds penalty names the hyperparameter magnitude that pulls validator-miner bond-weight toward the
+consensus benchmark when a submitted weight exceeds consensus on a subnet. It configures one bonding
+input inside Yuma Consensus, not the full tempo settlement that converts filtered weights into miner
+incentives and validator dividends
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Yuma Consensus: Penalizing out-of-consensus bonds](https://docs.learnbittensor.org/learn/yuma-consensus#penalizing-out-of-consensus-bonds)).
+
+Yuma Consensus is the tempo process that reads eligible validator weights, applies clipping, updates
+bonds—including out-of-consensus penalty blending when the magnitude is non-zero—and credits
+emission shares at the epoch boundary
 ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
 [Emission](https://docs.learnbittensor.org/learn/emissions)).
 
-- **Bonds penalty** — bond reduction when weights disagree with consensus.
-- **Yuma Consensus** — mechanism that turns validator weights into emission shares.
+Bonds penalty therefore names bond-path vocabulary, not emission-outcome vocabulary. Rank,
+dividends, and miner incentives describe settlement results after Yuma processes clipped weights and
+updated bonds; bonds penalty sets how strongly outlier weights are pulled toward consensus before
+those bond updates ([Glossary: Rank](https://docs.learnbittensor.org/resources/glossary#rank),
+[Glossary: Dividends](https://docs.learnbittensor.org/resources/glossary#dividends)).
+
+Clipping and bonds penalty both respond to out-of-consensus weights but at different layers.
+Clipping caps emissions on excess weight; bonds penalty shapes bond-weight blending when a subnet
+chooses a non-zero magnitude
+([Yuma Consensus: Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping)).
+
+With the documented default of zero, the penalty is effectively disabled on the bond path even
+though Yuma still runs its full settlement pass
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+- **Bonds penalty** — out-of-consensus bond penalty magnitude inside bonding.
+- **Yuma Consensus** — aggregation that turns filtered weights and bond state into emission shares.
+- **Clipping** — caps emissions on weight above the stake-backed consensus benchmark.
 
 ## Distinction from Yuma Consensus 3
 
