@@ -31,48 +31,26 @@ The hyperparameter acts as a switch over registration for a subnet. It does not 
 registration works or what it costs; it only sets whether registration is currently open. With the
 switch off, attempts to register on that subnet are not accepted until it is turned back on.
 
-## Default and Setting
+## Documented Type, Default, and Setter
 
-The documentation lists a default of enabled and marks the parameter as set at the root level rather
-than by the subnet owner. Whether registration is open on a given subnet is per-subnet chain state
-and can differ from the default, so the live setting should be read for that subnet.
-
-## Subnet Context
-
-Registration allowed is one of the subnet hyperparameters, the on-chain state variables that
-configure a single subnet, for example netuid 1. Because each subnet carries its own
-hyperparameters, the registration switch is defined per subnet and applies only within that subnet.
-
-## Development Stage Context
-
-The
-[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from localnet to testnet and then mainnet. For registration
-allowed, that sequence changes how readers should interpret subnet entry-switch examples.
-
-In localnet, registration switches can be tested in an isolated environment. Localnet registration
-availability does not represent production subnet entry policy.
-
-On testnet, registration gating can be exercised in a shared non-production network. Testnet switch
-states are separate from mainnet subnet state.
-
-On mainnet, registration allowed is a live per-subnet hyperparameter on production subnets. Whether
-new registration is open depends on the selected subnet's on-chain hyperparameter state
+The [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+reference lists `NetworkRegistrationAllowed` as a Boolean with a default of `True` and describes it
+as determining whether neuron registration is enabled on the subnet; if disabled, the subnet will
+not receive new neurons. It is set through the `sudo_set_network_registration_allowed` extrinsic and
+requires root permissions, which is why this page treats the switch as root-governed rather than
+freely owner-tuned
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
-The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
-separates mainnet, testnet, and localnet. A registration-allowed example from one environment should
-not be read as representing production entry policy in another environment.
+Whether registration is open on netuid 1 can differ from another subnet's toggle. The live setting
+is per-subnet chain state and should be read for that subnet rather than assumed from the documented
+default ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
 ## Open Registration Still Requires a Registration Burn
 
 When registration is allowed on a subnet such as netuid 1, the
 [Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register) still describes
 subnet entry as purchasing a UID slot through a dynamic registration burn in TAO. The switch opens
-or closes registration; it does not remove the burn cost when entry is permitted.
-
-Static articles should therefore describe registration as a gated action with a dynamic TAO price,
-not as a free slot assignment
+or closes registration; it does not remove the burn cost when entry is permitted
 ([Mining: Miner registration](https://docs.learnbittensor.org/miners#miner-registration)).
 
 ## A Full Subnet Still Uses Displacement Rules
@@ -88,30 +66,6 @@ whether new entry is open; capacity and displacement rules name what happens whe
 still receives a registration attempt
 ([Glossary: UID Slot](https://docs.learnbittensor.org/resources/glossary#uid-slot)).
 
-## The Switch Does Not Change Subnet Hyperparameters
-
-Registration allowed is one root-level hyperparameter among many subnet settings. Turning it off
-stops new registrations on that subnet, but it does not by itself change other values such as tempo,
-activity cutoff, or maximum UID count.
-
-Readers should treat the switch as a gate on the registration action rather than as a general subnet
-pause control. Live hyperparameter values for a subnet belong in current chain state and official
-subnet hyperparameter references
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
-
-## Documented Type, Default, and Setter
-
-The [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
-reference lists `NetworkRegistrationAllowed` as a Boolean with a default of `True` and describes it
-as determining whether neuron registration is enabled on the subnet; if disabled, the subnet will
-not receive new neurons. The same reference shows it is set through the
-`sudo_set_network_registration_allowed` extrinsic and requires root permissions, which is why this
-page treats the switch as root-governed rather than freely owner-tuned.
-
-That specification keeps the switch separate from registration cost. The Boolean only decides
-whether entry is open, while the dynamic TAO burn governs what an admitted registrant pays
-([Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register)).
-
 ## PoW Registration Is Not the Burn Switch
 
 The hyperparameters reference also lists `NetworkPowRegistrationAllowed`, defaulting to `False`, and
@@ -120,15 +74,11 @@ always open in that sense. Readers should not confuse the proof-of-work toggle w
 `NetworkRegistrationAllowed`, which is the switch that actually gates burn-based neuron entry on a
 subnet ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
-That distinction matters when reading older registration material. The live entry control for a
-subnet is the burn-based `NetworkRegistrationAllowed` Boolean, not the unused proof-of-work flag
-([Mining: Miner registration](https://docs.learnbittensor.org/miners#miner-registration)).
-
 ## Distinction from Min Burn
 
-Registration allowed and min burn are different registration hyperparameters. Registration allowed
-is the Boolean that decides whether a subnet accepts new registrations at all, while min burn sets
-the lower bound on the dynamic TAO burn required to register a neuron when registration is open
+Registration allowed is the Boolean that decides whether a subnet accepts new registrations at all,
+while min burn sets the lower bound on the dynamic TAO burn required to register a neuron when
+registration is open
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
 - **Registration allowed** — whether new registration is currently open.
@@ -137,9 +87,7 @@ the lower bound on the dynamic TAO burn required to register a neuron when regis
 ## Distinction from Subnet Is Active
 
 Registration allowed governs whether new neurons may join a subnet, while subnet is active reports
-whether the subnet's emissions have started. They describe different milestones: a subnet can permit
-or block registration independently of whether its emission path has begun, so one is an entry
-permission and the other is an emission-status flag
+whether the subnet's emissions have started
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
 [Emission](https://docs.learnbittensor.org/learn/emissions)).
 
@@ -148,25 +96,20 @@ permission and the other is an emission-status flag
 
 ## Distinction from Register
 
-Registration allowed and register sit on the same subnet-entry path as switch and action.
-Registration is how a neuron claims a place on a subnet through the dynamic burn-priced UID
-assignment process, while registration allowed is the hyperparameter Boolean that decides whether
-that entry path is open on the subnet right now
+Registration allowed is the hyperparameter Boolean that decides whether the entry path is open on a
+subnet right now, while register is the action that claims a place through the dynamic burn-priced
+UID assignment process
 ([Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register),
 [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
-
-The switch gates the action; the registration process and its burn cost describe how entry runs when
-the switch permits it.
 
 - **Register** — the entry action and burn-priced UID assignment.
 - **Registration allowed** — whether the subnet currently accepts new registrations.
 
 ## Distinction from Recycling
 
-Registration allowed and recycling sit on the same registration path as switch and mechanism.
-Registration allowed is the per-subnet hyperparameter that controls whether new neurons may register
-at all, while recycling is the mechanism by which a registering neuron's TAO is burned to claim a
-UID; when the toggle is off, no recycling-based registration can occur on that subnet
+Registration allowed controls whether new neurons may register at all, while recycling is the
+mechanism by which a registering neuron's TAO is burned to claim a UID; when the toggle is off, no
+recycling-based registration can occur on that subnet
 ([Glossary: Recycling](https://docs.learnbittensor.org/resources/glossary#recycling),
 [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
 [Recycling and Burning](https://docs.learnbittensor.org/learn/emissions)).
@@ -189,12 +132,14 @@ new neurons may register on that subnet, but the live setting can differ from re
 from the toggle on another netuid
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
-This article's infobox uses netuid 1 as an example label when discussing admission on Finney
-mainnet. That example anchors discussion; it does not prove identical admission rules everywhere
+This article's infobox uses netuid 1 as an example label when reading one subnet's hyperparameter
+table on Finney mainnet. That example helps readers verify one row; it is not proof that every
+subnet exposes the same live admission toggle
 ([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
 
 Registration allowed gates roster growth; Yuma Consensus still aggregates validator weights from the
-active roster each epoch ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+active roster each epoch on the active subnet
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
 - **Registration allowed** — toggle for accepting new subnet registrations.
 - **Per-subnet boundary** — live value is chain state on one netuid.
@@ -209,17 +154,14 @@ weight submissions into emission shares each epoch
 [Emission](https://docs.learnbittensor.org/learn/emissions)).
 
 - **Registration allowed** — toggle for accepting new subnet registrations.
-- **Yuma Consensus** — mechanism that turns validator weights into emission shares. Readers should
-  keep admission-toggle vocabulary separate from settlement vocabulary. Registration allowed
-  controls whether new neurons may join a subnet; Yuma settles validator weights from the active
-  roster each epoch
+- **Yuma Consensus** — mechanism that turns validator weights into emission shares.
+
+- **Admission vs settlement** — registration allowed controls whether new neurons may join; Yuma
+  settles validator weights from the active roster each epoch
   ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
   [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-The toggle affects roster growth. Yuma runs at tempo boundaries on whichever neurons are registered
-([Emission](https://docs.learnbittensor.org/learn/emissions)).
-
-- **Burn cost** — TAO cost when registration competes for UID slots.
+- **Roster growth** — the toggle affects who may enter; Yuma runs at tempo boundaries on registered
+  neurons ([Emission](https://docs.learnbittensor.org/learn/emissions)).
 
 ## Reader Boundary
 
@@ -233,6 +175,4 @@ netuid. The documented default is enabled, and the parameter is governed at the 
 - [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
 - [Register](https://docs.learnbittensor.org/resources/glossary#register)
 - [Glossary: Recycling](https://docs.learnbittensor.org/resources/glossary#recycling)
-- [Glossary: UID Slot](https://docs.learnbittensor.org/resources/glossary#uid-slot)
 - [Mining: Miner registration](https://docs.learnbittensor.org/miners#miner-registration)
-- [Recycling and Burning](https://docs.learnbittensor.org/learn/emissions)
