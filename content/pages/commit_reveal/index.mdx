@@ -224,14 +224,37 @@ Problem vocabulary names the exploit; commit-reveal vocabulary names the timing 
 
 ## Distinction from Yuma Consensus
 
-Yuma Consensus aggregates revealed validator signals into subnet incentive outcomes. Commit reveal
-only controls when committed weights become visible before that aggregation step
+Commit reveal delays when validator weight signals become visible to observers. Validators still
+submit weights, but the chain conceals those signals until the configured reveal window opens
+([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
+[Glossary: Commit Reveal](https://docs.learnbittensor.org/resources/glossary#commit-reveal)).
+
+Yuma Consensus is the later step that aggregates revealed validator signals into subnet incentive
+outcomes at tempo boundaries. It concerns reward settlement once readable weights are present, not
+the concealment schedule that precedes them
 ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
 [Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)).
 
-During concealment, committed weights stay outside the Yuma calculation window. After reveal, the
-same weights enter consensus as ordinary validator signals. Commit reveal therefore protects
-disclosure timing; Yuma names the later aggregation step.
+During the concealment interval, committed weights stay encrypted and are not yet part of the open
+consensus calculation. After reveal, the same weights become ordinary validator signals for the next
+Yuma pass on the selected netuid
+([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+The weight-copying problem shows why that timing gap matters. Commit reveal makes recently produced
+weights harder to reuse before disclosure, while Yuma still depends on revealed validator signals
+when crediting subnet outcomes
+([Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor),
+[Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#weight-vector)).
+
+Subnet hyperparameters configure whether commit reveal is active and how long the reveal interval
+lasts on a netuid. Those settings change visibility timing; they do not replace Yuma settlement
+inside the same weight path
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)).
+
+- **Commit reveal** — delayed visibility for validator weight signals.
+- **Yuma Consensus** — aggregation that turns revealed weights into emission shares.
 
 ## Distinction from Weight Setting
 
