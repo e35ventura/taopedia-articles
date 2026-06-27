@@ -268,15 +268,41 @@ scores to miners in those submissions
 
 ## Distinction from Yuma Consensus
 
-Activity cutoff is a per-subnet hyperparameter that defines the block window in which a validator
-must submit weights to participate in an epoch. Yuma Consensus is the separate tempo process that
-aggregates those submitted validator weights into emission shares
+Activity cutoff is a per-subnet hyperparameter that defines how recently a validator must have set
+weights for those weights to count in the upcoming Yuma Consensus epoch. It names an eligibility
+window on submitted weights, not the consensus algorithm itself
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
+[Glossary: Activity Cutoff](https://docs.learnbittensor.org/resources/glossary#activity-cutoff)).
+
+Yuma Consensus is the separate tempo process that reads the eligible weight matrix after such
+filters, applies stake weighting, clipping, bonding, and dividend logic, and converts the result
+into emission shares. Activity cutoff shapes which submissions may enter that process; Yuma
+Consensus performs the settlement once eligible weights are known
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
 [Emission](https://docs.learnbittensor.org/learn/emissions)).
 
-- **Activity cutoff** — early-epoch block window for timely weight submission.
+Readers should keep hyperparameter vocabulary separate from mechanism vocabulary. Changing activity
+cutoff on a netuid alters freshness requirements for weight inclusion; it does not replace Yuma's
+consensus math or emission mapping.
+
+- **Activity cutoff** — freshness window for weights to count in an epoch.
 - **Yuma Consensus** — mechanism that turns validator weights into emission shares.
+- **Weight setting** — how validators submit the scores activity cutoff filters.
+
+## How Activity Cutoff Filters Epoch Inputs
+
+Epoch documentation describes pre-consensus checks that run before Yuma aggregates validator weights
+into consensus scores and emission shares
+([Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)).
+
+Activity cutoff is one of those freshness filters on a netuid. Validators who set weights outside
+the configured window are treated as inactive for that epoch's inclusion set, which changes which
+rows Yuma can read even though the consensus math itself is unchanged
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+Readers comparing subnets should cite both the activity-cutoff hyperparameter and epoch length
+(tempo) because both bound when submitted weights become eligible inputs to Yuma settlement.
 
 ## Reader Boundary
 
