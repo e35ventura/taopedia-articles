@@ -26,69 +26,6 @@ state where unconfirmed transactions wait before they become part of a block
 The useful distinction is pending versus included. A mempool entry is not yet final chain history; a
 block is the unit that records included transactions.
 
-## Pending Transaction Context
-
-Mempool vocabulary belongs to the interval after a transaction enters the pending area and before
-block inclusion. During that interval, the transaction is waiting to be processed into chain history
-([Glossary: Mempool](https://docs.learnbittensor.org/resources/glossary#mempool),
-[Glossary: Block](https://docs.learnbittensor.org/resources/glossary#block)).
-
-This makes the mempool a timing and state concept rather than a reward mechanism. It explains where
-pending transactions sit, not whether an action will ultimately succeed.
-
-## Submission Versus Inclusion
-
-Submitting an extrinsic and seeing final chain history are separate moments. The Subtensor
-extrinsics reference describes extrinsics as calls submitted to the chain, while the glossary
-defines the mempool as the waiting area for transactions before block inclusion
-([Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics),
-[Glossary: Mempool](https://docs.learnbittensor.org/resources/glossary#mempool)).
-
-For readers, that means a submitted action should not be treated as recorded just because it has
-entered the pending stage. The stronger claim starts after inclusion in a block, when the
-transaction belongs to chain history rather than the mempool.
-
-## Block Boundary
-
-Blocks are the chain units that contain transactions. The mempool is the waiting area before that
-inclusion happens ([Glossary: Block](https://docs.learnbittensor.org/resources/glossary#block),
-[Glossary: Mempool](https://docs.learnbittensor.org/resources/glossary#mempool)).
-
-Once a transaction is included in a block, it should be treated as block history rather than a
-merely pending mempool entry.
-
-## Extrinsic Boundary
-
-Extrinsics are runtime actions. In Bittensor context, an accepted extrinsic can pass through the
-pending-transaction stage before block inclusion
-([Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics),
-[Glossary: Mempool](https://docs.learnbittensor.org/resources/glossary#mempool)).
-
-This keeps the concepts separate. Extrinsic names the action surface; mempool names the pending
-state before inclusion.
-
-## Fee Boundary
-
-Some state-changing actions carry transaction fees. The fee model belongs to the action being
-processed, while the mempool names the pending area where unconfirmed transactions wait
-([Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees),
-[Glossary: Mempool](https://docs.learnbittensor.org/resources/glossary#mempool)).
-
-The mempool does not set fee rules. It sits before the block-processing stage where the chain
-evaluates the action. A fee reference should therefore describe the transaction being processed, not
-treat mempool presence as final fee settlement
-([Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees)).
-
-## Visibility Context
-
-Pending transactions can create an information-exposure window before block inclusion. MEV Shield
-documentation treats sensitive pending details as something that can be protected before processing
-([MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield/),
-[Glossary: Mempool](https://docs.learnbittensor.org/resources/glossary#mempool)).
-
-That makes mempool vocabulary important to safety articles, but the mempool itself is not the same
-thing as MEV Shield or any other protection mechanism.
-
 ## Pending, Included, and Observed States
 
 Mempool language is useful because it separates several nearby transaction states. The glossary
@@ -137,27 +74,6 @@ evidence, while mempool still names the earlier pending stage before the chain r
 ([Subtensor Error Codes](https://docs.learnbittensor.org/errors),
 [Glossary: Mempool](https://docs.learnbittensor.org/resources/glossary#mempool)).
 
-## Pending Extrinsics, Included Weights, and Yuma on netuid 1
-
-A weight commit or stake move on a subnet such as netuid 1 can sit in the
-[mempool](https://docs.learnbittensor.org/resources/glossary#mempool) before it becomes included
-Subtensor history. During that pending interval, the action is not yet the recorded validator
-[weights](https://docs.learnbittensor.org/resources/glossary#weight-vector) or stake state that
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) later uses to settle miner
-[incentives](https://docs.learnbittensor.org/resources/glossary#incentives) and validator
-[dividends](https://docs.learnbittensor.org/resources/glossary#emission)
-([Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics)).
-
-Once the extrinsic is included in a
-[block](https://docs.learnbittensor.org/resources/glossary#block), events and storage can expose the
-post-inclusion record, and Yuma operates on that included state rather than on mempool waiting time
-([Subtensor Events](https://docs.learnbittensor.org/subtensor-api/events),
-[Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage)).
-
-Mempool therefore names the pre-inclusion stage for netuid 1 actions; Yuma names the subnet
-incentive settlement that follows only after Subtensor has recorded the included outcome
-([Emission](https://docs.learnbittensor.org/learn/emissions)).
-
 ## Development Stage Context
 
 The
@@ -200,31 +116,29 @@ Extrinsic names the action type; mempool names the pre-inclusion waiting state f
 
 ## Distinction from Fees
 
-Fees concern the cost of getting a transaction processed. The mempool concerns whether a submitted
-action is still pending before inclusion
-([Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees),
-[Glossary: Mempool](https://docs.learnbittensor.org/resources/glossary#mempool)).
+The mempool holds pending transactions awaiting inclusion. Transaction fees are the cost attached to
+submitted extrinsics
+([Glossary: Mempool](https://docs.learnbittensor.org/resources/glossary#mempool),
+[Glossary: Transaction Fees](https://docs.learnbittensor.org/resources/glossary#transaction-fees)).
 
-A fee can be paid while an action is still waiting. Inclusion in a block is the stronger claim that
-the action became chain history.
+- **Mempool** — pending transaction queue before inclusion.
+- **Transaction fees** — cost attached to submitted extrinsics.
 
-Fee vocabulary answers what the sender pays; mempool vocabulary answers whether the action is still
-waiting to be included.
+Queue vocabulary and fee vocabulary answer different transaction questions
+([Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics)).
 
 ## Distinction from Yuma Consensus
 
-Yuma Consensus settles subnet incentives from included validator weights and stake context. The
-mempool only holds pre-inclusion extrinsics such as weight commits before they become the chain
-state Yuma later uses ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
-[Glossary: Mempool](https://docs.learnbittensor.org/resources/glossary#mempool)).
+The mempool is a pending-transaction layer before block inclusion. Yuma Consensus is the subnet
+mechanism aggregating validator weights into emission shares
+([Glossary: Mempool](https://docs.learnbittensor.org/resources/glossary#mempool),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
-Pending mempool state is not subnet settlement. Yuma operates on included records after block
-inclusion.
+- **Mempool** — pre-inclusion pending transaction layer.
+- **Yuma Consensus** — validator-weight aggregation for emissions.
 
-On netuid 1 examples, a weight commit can sit pending in the mempool before it becomes the included
-validator weights that Yuma later uses at the tempo boundary
-([Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics),
-[Emission](https://docs.learnbittensor.org/learn/emissions)).
+Transaction-layer vocabulary and consensus vocabulary belong to different protocol surfaces
+([Emission](https://docs.learnbittensor.org/learn/emissions)).
 
 ## Distinction from Mempool Visibility
 
