@@ -22,175 +22,48 @@ infoboxRows:
 
 Min burn is a per-subnet hyperparameter that sets the lower bound on the dynamic TAO burn required
 to register a neuron on a subnet. Official documentation describes it as the lower bound for that
-registration burn, gives a default of 0.0005 TAO, and marks it owner-settable.
+registration burn, gives a default of 0.0005 TAO, and marks it owner-settable
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
-References: [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
-
-## How the Floor Works
+## What It Controls
 
 Registering a neuron burns TAO, and that cost is dynamic: it rises as registrations occur and eases
 back during quieter periods, moving between a lower and an upper bound. Min burn fixes the bottom of
-that range, so the registration cost can settle toward it but not below it, keeping a baseline cost
-even when demand is low. Read together with max burn, it defines the floor side of the documented
-registration-burn band rather than a fixed registration price
+that range, so the registration cost can settle toward it but not below it. It does not set the
+current cost or decide who registers; it only limits how low the burn can fall
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
-Reference: [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
-
-## Per-Subnet Setting
-
-Min burn is one of the subnet hyperparameters that configure a single subnet, for example netuid 1,
-and a subnet owner can adjust it. The value in force is per-subnet chain state and can differ from
-the documented default, so the real floor should be read for the subnet in question.
-
-References:
-[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
-[Register](https://docs.learnbittensor.org/resources/glossary#register)
-
-## Development Stage Context
-
-The
-[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from localnet to testnet and then mainnet. For min burn, that
-sequence changes how readers should interpret registration-cost floor examples.
-
-In localnet, min-burn hyperparameters can be tested in an isolated environment. Localnet burn floors
-do not represent production registration costs.
-
-On testnet, registration burn rules can be exercised in a shared non-production network. Testnet min
-burn values are separate from mainnet subnet state.
-
-On mainnet, min burn is a live per-subnet hyperparameter on production subnets. Observed floors
-depend on the selected subnet's on-chain hyperparameter state
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
-
-The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
-separates mainnet, testnet, and localnet. A min-burn example from one environment should not be read
-as representing production registration costs in another environment.
-
-## Registration Fees Recycle Alpha From the Subnet Pool
-
-Official register documentation states that alpha tokens worth the current swap value of the
-registration fee are taken from the subnet's alpha liquidity pool and recycled when a hotkey
-registers. The TAO burn is the fee a registrant pays; the recycling step moves equivalent alpha
-value out of the subnet pool context described in subnet liquidity documentation
-([Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register),
-[Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)).
-
-That keeps economic bounds separate from pool accounting. Min burn limits how low the TAO fee can
-fall; the recycling rule explains what happens to subnet alpha when a registration succeeds at any
-price inside the band.
-
-## Registration Allowed Can Close Entry Separately
-
-The registration allowed hyperparameter controls whether new neurons can register on a subnet at
-all. When it is off, the subnet does not accept new registrations even if the dynamic burn sits near
-min burn ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
-
-Min burn therefore answers how low registration cost can fall, not whether registration is open.
-Readers should keep the burn floor separate from the root-level switch that gates subnet entry
-([Register](https://docs.learnbittensor.org/resources/glossary#register)).
-
-## BurnHalfLife Pulls the Live Burn Back Toward the Floor
-
-The [Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register) describes the
-dynamic registration burn as decaying over time according to `BurnHalfLife` while staying inside the
-documented `MinBurn` and `MaxBurn` band. When registration demand quiets, that decay drifts the live
-burn downward, and min burn is the value it settles toward but cannot fall below
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
-
-That keeps min burn distinct from the decay mechanism. Half-life names how quickly the live burn
-eases during slow periods; min burn names the floor that decay approaches rather than passes.
-
-References: [Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register),
-[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
-
-## BurnIncreaseMult Steps the Burn Up From the Floor
-
-Official registration vocabulary also states that each successful registration can raise the dynamic
-burn through `BurnIncreaseMult`. That multiplier responds to demand inside the same min/max band:
-more registrations push the live burn upward from the floor, while half-life decay pulls it back
-down toward min burn when activity slows
+The actual cost a registrant pays at any block depends on recent registration activity and on how
+`BurnHalfLife`, `BurnIncreaseMult`, and the burn bounds interact for that subnet
 ([Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register)).
 
-Min burn therefore sets where that upward stepping begins, not how far it can climb. A subnet owner
-can adjust the floor for their subnet, for example netuid 1, but the multiplier still operates only
-inside the documented hyperparameter bounds for that subnet
+## Default and Setting
+
+The documentation lists a default of 0.0005 TAO and marks the parameter as owner-settable, so a
+subnet owner can adjust the floor for their subnet. The value in force on netuid 1 can differ from
+the documented default and from another subnet's floor
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
-References: [Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register),
-[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+## Distinction from BurnHalfLife
 
-## Decay and Increase Multipliers Move Cost Inside the Band
-
-Subnet hyperparameter documentation describes registration burn as moving between min and max bounds
-using documented decay when registrations are quiet and increase multipliers when demand spikes
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+`BurnHalfLife` names how quickly the live registration burn decays toward the subnet floor when
+demand quiets down. Min burn names the floor that decay approaches but cannot pass
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#burnhalflife),
 [Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register)).
 
-For readers, min burn and max burn name the static floor and ceiling, while decay and increase
-behavior names how the live burn cost travels inside that band over time
-([Mining: Miner registration](https://docs.learnbittensor.org/miners#miner-registration),
-[Recycling and Burning](https://docs.learnbittensor.org/learn/emissions)).
+- **Min burn** — floor the registration burn cannot fall below.
+- **BurnHalfLife** — decay rate pulling the live burn down during quiet periods.
 
-That keeps hyperparameter vocabulary separate from the instantaneous registration price observed at
-one block height
-([Glossary: Burn Cost](https://docs.learnbittensor.org/resources/glossary#burn-cost),
-[Glossary: UID Slot](https://docs.learnbittensor.org/resources/glossary#uid-slot)).
+## Distinction from BurnIncreaseMult
 
-## Sybil Resistance Uses the Same Dynamic Band
-
-Rapid successive registrations drive the live burn upward inside the documented band, which is one
-economic defense against identity flooding alongside stake-weighted influence after entry
-([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism),
-[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
-
-For readers, min burn therefore sets where that upward stepping begins, not the only barrier to mass
-registration. Slot ceilings and pruning rules remain separate limits once identities exist on the
-metagraph
-([Mining: Miner deregistration](https://docs.learnbittensor.org/miners#miner-deregistration)).
-
-## Owner-Settable Floor Applies Per Subnet
-
-Subnet hyperparameter documentation marks min burn as owner-settable alongside max burn and the
-dynamic increase and decay behavior inside that band. Each subnet therefore carries its own
-registration-burn floor rather than sharing one network-wide constant
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
-[Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)).
-
-For readers, min burn vocabulary is always read with the relevant subnet's hyperparameter table. A
-floor that looks low on one subnet does not describe registration cost on another, and the live burn
-cost still moves inside the documented band as registrations arrive
-([Glossary: Burn Cost](https://docs.learnbittensor.org/resources/glossary#burn-cost),
-[Mining: Miner registration](https://docs.learnbittensor.org/miners#miner-registration)).
-
-That locality also separates hyperparameter floors from recycling vocabulary. Registration burns
-recycle TAO according to emission documentation, while min burn names only the lower bound on how
-low the dynamic charge can fall before demand rises again
-([Recycling and Burning](https://docs.learnbittensor.org/learn/emissions)).
-
-## Distinction from Subnet-Creation Burn Cost
-
-Min burn bounds the dynamic neuron registration burn on an existing subnet. Subnet-creation burn
-cost is the separate recycled TAO amount required to open a new subnet market
-([Subnet Hyperparameters: MinBurn](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#minburn),
-[Create a Subnet: Burn cost](https://docs.learnbittensor.org/subnets/create-a-subnet#burn-cost)).
-
-Existing-subnet registration vocabulary and subnet-creation vocabulary answer different burn
-questions.
-
-## Distinction from Existential Deposit
-
-Existential deposit is the minimum TAO balance required to keep a Bittensor account represented on
-chain. Min burn is a subnet hyperparameter floor on the registration burn paid to obtain a UID slot
-([Glossary: Existential Deposit](https://docs.learnbittensor.org/resources/glossary#existential-deposit),
+`BurnIncreaseMult` steps the live registration burn upward after each successful registration inside
+the documented min/max band. Min burn sets where that upward stepping begins, not how far it can
+climb
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#burnincreasemult),
 [Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register)).
 
-Account-balance vocabulary and registration-burn floor vocabulary sit on different layers.
-
-An account must meet existential deposit before it can fund registration costs, but min burn names
-the subnet hyperparameter floor on the registration burn itself rather than the wallet balance
-threshold ([Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)).
+- **Min burn** — floor the registration burn cannot fall below.
+- **BurnIncreaseMult** — per-registration multiplier that climbs toward max burn.
 
 ## Distinction from Max Burn
 
@@ -202,6 +75,16 @@ subnet. Registration cost moves between those limits as demand changes
 - **Min burn** — floor the registration burn cannot fall below.
 - **Max burn** — ceiling the registration burn cannot exceed.
 
+## Distinction from Registration Allowed
+
+Registration allowed controls whether new neurons can register on a subnet at all. Min burn answers
+how low registration cost can fall when entry is open, not whether registration is currently
+permitted ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Register](https://docs.learnbittensor.org/resources/glossary#register)).
+
+- **Registration allowed** — whether new entry is currently open.
+- **Min burn** — floor on dynamic registration burn when entry is open.
+
 ## Distinction from Burn Cost
 
 Burn cost names the live registration charge at a moment in time. Min burn names the configured
@@ -211,6 +94,26 @@ floor that charge cannot fall below
 
 - **Burn cost** — observed registration charge at a point in time.
 - **Min burn** — configured floor that charge cannot fall below.
+
+## Distinction from Subnet-Creation Burn Cost
+
+Min burn bounds the dynamic neuron registration burn on an existing subnet. Subnet-creation burn
+cost is the separate recycled TAO amount required to open a new subnet market
+([Subnet Hyperparameters: MinBurn](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#minburn),
+[Create a Subnet: Burn cost](https://docs.learnbittensor.org/subnets/create-a-subnet#burn-cost)).
+
+- **Min burn** — floor on dynamic neuron registration burn on an existing subnet.
+- **Subnet-creation burn cost** — recycled TAO required to create a new subnet market.
+
+## Distinction from Existential Deposit
+
+Existential deposit is the minimum TAO balance required to keep a Bittensor account represented on
+chain. Min burn is a subnet hyperparameter floor on the registration burn paid to obtain a UID slot
+([Glossary: Existential Deposit](https://docs.learnbittensor.org/resources/glossary#existential-deposit),
+[Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register)).
+
+- **Existential deposit** — minimum wallet balance to keep an account on chain.
+- **Min burn** — subnet hyperparameter floor on the registration burn itself.
 
 ## Chain Reads for netuid 1
 
@@ -227,13 +130,13 @@ low the dynamic charge can fall on that subnet, but the live floor can differ fr
 defaults and from the floor on another netuid
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
-This article's infobox uses netuid 1 as an example label when discussing registration cost on Finney
-mainnet. That example helps readers read one subnet's table; it is not proof that every subnet
-exposes the same live floor
+This article's infobox uses netuid 1 as an example label when reading one subnet's hyperparameter
+table on Finney mainnet. That example helps readers verify one row; it is not proof that every
+subnet exposes the same live floor
 ([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
 
-Min burn governs registration pricing floors; Yuma Consensus still aggregates validator weights into
-emission shares at epoch boundaries
+Min burn governs registration pricing floors; Yuma Consensus still settles validator weights into
+emission shares each epoch on the active subnet
 ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
 - **Min burn** — floor the dynamic registration burn cannot fall below on a subnet.
@@ -251,6 +154,13 @@ emission shares each epoch
 - **Min burn** — floor the registration burn cannot fall below.
 - **Yuma Consensus** — mechanism that turns validator weights into emission shares.
 
+- **Registration vs settlement** — min burn caps registration economics; Yuma aggregates validator
+  weights into emission shares at epoch boundaries
+  ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+  [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+- **Floor not price** — min burn bounds the band; live burn still moves inside min/max limits
+  ([Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register)).
+
 ## Reader Boundary
 
 This page defines the concept. It does not report the min burn value or the current registration
@@ -261,3 +171,5 @@ cost on any particular subnet; those are live chain state to check for the relev
 
 - [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
 - [Register](https://docs.learnbittensor.org/resources/glossary#register)
+- [Glossary: Burn Cost](https://docs.learnbittensor.org/resources/glossary#burn-cost)
+- [Miner registration](https://docs.learnbittensor.org/miners#miner-registration)
