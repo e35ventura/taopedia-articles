@@ -165,25 +165,28 @@ emission shares at epoch boundaries on the active subnet
 
 ## Distinction from Yuma Consensus
 
-Weights version key is a per-subnet hyperparameter that sets the minimum version a validator's
-`set_weights` call must carry. Yuma Consensus is the separate tempo process that aggregates accepted
-weight submissions into emission shares
+Weights version key is the per-subnet hyperparameter that sets the minimum version a validator's
+`set_weights` call must declare. It names a compatibility gate on the submission path, not the
+settlement step that converts aggregated weights into emission shares
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
+[Glossary: Weight Setting](https://docs.learnbittensor.org/resources/glossary#weight-setting)).
+
+Yuma Consensus is the on-chain mechanism that runs at the epoch boundary on the selected netuid. It
+reads the weight matrix from eligible validators whose submissions pass version and structural
+checks, applies clipping and bonding, and converts the result into miner incentives and validator
+dividend shares ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
 [Emission](https://docs.learnbittensor.org/learn/emissions)).
 
-- **Weights version key** — minimum accepted version for weight submissions.
-- **Yuma Consensus** — on-chain process that turns validator weights into emission shares. Weights
-  version key sets the minimum version a weight submission must use; Yuma Consensus processes
-  accepted validator weights into rewards
-  ([Yuma Consensus: Validator emissions](https://docs.learnbittensor.org/learn/yuma-consensus#validator-emissions)).
+When subnet owners raise the version key, stale calls are rejected before weights enter the matrix.
+That gate screens compatibility; Yuma still settles only the accepted submissions that survive
+clipping and bonding—not the version number by itself
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
-- **Gate vs settlement** — weights version key screens submission compatibility; Yuma aggregates
-  accepted weights into emission shares at epoch boundaries
-  ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
-  [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-- **Stale rejection** — raising the key requires validators to match before weights are recorded
-  ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+Readers should treat weights version key as a per-netuid compatibility floor, and Yuma as the
+mechanism that allocates rewards from accepted weight vectors at the epoch boundary.
+
+- **Weights version key** — minimum declared version required for a valid weight submission.
+- **Yuma Consensus** — epoch-boundary settlement from accepted validator weights to emission shares.
 
 ## Reader Boundary
 
