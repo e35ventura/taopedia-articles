@@ -68,29 +68,6 @@ That Finney identity reports the subnet name as Hone, and the GitHub repository 
 [manifold-inc/hone](https://github.com/manifold-inc/hone), which documents the ARC-AGI-2 evaluation
 behavior described above.
 
-## Development Stage Context
-
-The
-[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from localnet to testnet and then mainnet. For Subnet 5 Hone
-on netuid 5, that sequence changes how readers should interpret ARC-AGI-2 sandbox scores, validator
-weights, and emission outcomes.
-
-In localnet, Hone examples can help explain sandbox evaluation in an isolated environment. Localnet
-solver scores do not represent production subnet performance on live networks.
-
-On testnet, Subnet 5 activity can be observed in a shared, non-production network. Testnet validator
-assessments and miner scores on netuid 5 are separate from mainnet subnet state
-([Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)).
-
-On mainnet, Subnet 5 Hone is a live Bittensor subnet whose validator weights and Yuma Consensus
-emissions apply on the production network
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
-separates mainnet, testnet, and localnet. A netuid 5 example from one environment should not be read
-as representing production Hone performance or emissions in another environment.
-
 ## Concept Boundaries
 
 Subnet 5 should be read as a Hone overview, not as miner onboarding material, a validator operations
@@ -107,19 +84,40 @@ performance, not generic compute availability.
 
 Subnet 5 operates under the standard Bittensor two-role structure. Miners supply the subnet's
 capability and validators evaluate those contributions and set weights. Reward distribution follows
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus), which converts those weights
-into per-tempo [emissions](https://docs.learnbittensor.org/learn/emissions).
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus).
 
 ## Distinction from Yuma Consensus
 
 Hone on netuid 5 runs an ARC-AGI-2 reasoning subnet that evaluates solver repositories in a secure
-GPU sandbox. That subnet scoring produces the validator weights Yuma Consensus later aggregates into
-emission shares each tempo; it does not replace Yuma's role in turning submitted weights into miner
-and validator emissions
-([Hone README](https://raw.githubusercontent.com/manifold-inc/hone/main/README.md),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
-[emissions](https://docs.learnbittensor.org/learn/emissions),
+GPU sandbox. That sandbox-scoring vocabulary names how Hone measures held-out reasoning performance
+on netuid 5, not the on-chain step that turns validator weight submissions into emission shares each
+tempo ([Hone README](https://raw.githubusercontent.com/manifold-inc/hone/main/README.md),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+Yuma Consensus is the on-chain mechanism that runs at the epoch boundary on the selected netuid. It
+reads the weight matrix from eligible validators, applies clipping and bonding, and converts the
+result into miner incentives and validator dividend shares
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
+[Emission](https://docs.learnbittensor.org/learn/emissions)).
+
+Earlier sections describe ARC-AGI-2 solver evaluation, sandbox execution, and exact-match scoring.
+Those inputs shape the validator weights; they do not settle emissions themselves. Yuma aggregates
+the weight signals that flow from that sandbox-scoring path rather than running ARC-AGI-2 benchmarks
+itself ([Hone README](https://raw.githubusercontent.com/manifold-inc/hone/main/README.md),
 [Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)).
+
+Sandbox scoring therefore sits upstream of settlement. Yuma still credits emissions from included
+validator weights on netuid 5 once the tempo closes
+([manifold-inc/hone](https://github.com/manifold-inc/hone),
+[Emission](https://docs.learnbittensor.org/learn/emissions)).
+
+Readers should treat Hone as the ARC-AGI-2 reasoning evaluation subnet on netuid 5, and Yuma
+Consensus as the recurring mechanism that allocates rewards from validator weights each tempo.
+
+- **Subnet 5 (Hone)** — ARC-AGI-2 sandbox reasoning evaluation subnet.
+- **Yuma Consensus** — epoch-boundary settlement from validator weights to emission shares on a task
+  subnet
+  ([Yuma Consensus: Validator emissions](https://docs.learnbittensor.org/learn/yuma-consensus#validator-emissions)).
 
 ## Reader Boundary
 
