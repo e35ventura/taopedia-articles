@@ -24,273 +24,95 @@ MEV Shield is Bittensor's encrypted mempool-protection feature for sensitive tra
 before block inclusion ([MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield),
 [MEV](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value)).
 
-The term belongs to pre-inclusion transaction protection. It should be read separately from final
-block history, runtime validity, and every later outcome of a submitted action.
+## What It Represents
 
-## Encryption Boundary
-
-MEV Shield documentation describes sensitive transaction contents as encrypted while pending and
-revealed when the chain can process them
-([MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield)).
-
-That boundary is important. Shielding changes the information available during the pending window;
-runtime rules still determine whether a submitted action is accepted.
-
-## Block Inclusion Boundary
-
-A block is the chain data unit that contains transactions and has a block hash
-([Glossary: Block](https://docs.learnbittensor.org/resources/glossary#block)).
-
-MEV Shield operates before that final block evidence exists. Block evidence can later show inclusion
-and ordering, while MEV Shield explains protection for sensitive details during the waiting period.
-
-## Pending Privacy Boundary
-
-MEV Shield protects sensitive pending transaction details before block inclusion; it should not be
-read as a universal transaction guarantee. The MEV Shield source describes pending-transaction
-protection, while price protection documentation covers adverse price movement during
-staking-related activity ([MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield),
-[Price Protection](https://docs.learnbittensor.org/learn/price-protection)).
-
-That boundary keeps two protections distinct. MEV Shield is about pending visibility, while price
-protection is about response to movement during staking or unstaking
-([MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield)).
-
-## Development Stage Context
-
-The
-[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from localnet to testnet and then mainnet. For MEV Shield,
-this sequence gives readers a boundary for interpreting transaction-protection examples and
-network-routing assumptions.
-
-Localnet examples are isolated and reflect local chain state, so they are useful for controlled
-experiments rather than evidence of live Bittensor behavior. Testnet examples add shared
-non-production conditions, which can reveal integration behavior without touching mainnet state.
-
-On mainnet, MEV Shield examples should be read as live production transaction protection on the
-production Bittensor network.
-
-The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
-separates mainnet, testnet, and localnet, so outcomes from one environment should not be treated as
-proof of behavior in another.
-
-## Coldkey-Signed Actions Fit MEV Shield
-
-[MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield) guidance limits the feature to
-transactions signed by a [coldkey](https://docs.learnbittensor.org/resources/glossary#coldkey).
-Attempts to route [hotkey](https://docs.learnbittensor.org/resources/glossary#hotkey)-signed
-submissions through MEV Shield are expected to fail rather than silently protect pending details.
-
-That signing boundary follows how Bittensor separates account roles. A coldkey controls ownership
-and high-value actions, while a hotkey is meant for subnet participation rather than holding
-[TAO](https://docs.learnbittensor.org/resources/glossary#tao-tau). Documentation therefore treats
-hotkey-side MEV Shield use as unsupported even when a hotkey wallet temporarily holds funds.
-
-The same source notes that funding a hotkey to work around the rule enters untested behavior with
-possible asset-loss consequences. MEV Shield reading should stay on coldkey-signed submissions where
-encryption and pending privacy are designed to apply
-([Using MEV Shield with the Bittensor SDK](https://docs.learnbittensor.org/sdk/mev-protection)).
-
-## Validators Hold the Pending Decryption Key
-
-The [MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield) concept page describes a
-validator-supplied public key as the encryption anchor while a transaction waits in the
-[mempool](https://docs.learnbittensor.org/resources/glossary#mempool). Sensitive contents stay
-unreadable to other network participants during that pending window because only the producing
-[validator](https://docs.learnbittensor.org/resources/glossary#subnet-validator) can decrypt them
-immediately before the transaction is finalized.
-
-That timing separates privacy from acceptance. Encryption hides what is being attempted before
-[block](https://docs.learnbittensor.org/resources/glossary#block) inclusion, but runtime rules still
-decide whether the revealed action succeeds once the chain processes it. MEV Shield therefore
-changes who can observe pending intent, not which outcomes the network must allow.
-
-Staking guidance adds that block producers also cannot read or front-run a shielded transaction
-while it remains pending, because decryption and execution follow inclusion rather than mempool
-broadcast
-([Managing Your Stakes](https://docs.learnbittensor.org/staking-and-delegation/managing-stake-sdk)).
-
-## Distinction from MEV
-
-MEV names value that can be extracted by observing or controlling transaction ordering before block
-inclusion. MEV Shield names encrypted mempool protection for sensitive pending transaction contents
-([MEV](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value),
-[MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield)).
-
-MEV vocabulary describes the risk category; MEV Shield describes one pending-privacy response
-applied while eligible coldkey-signed transactions wait for inclusion.
-
-The MEV glossary entry connects maximal extractable value to transaction ordering and information
-available before inclusion
-([MEV](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value)).
-
-This makes MEV Shield a response to information-exposure risk. The feature is about reducing
-visibility of sensitive pending details, not about promising a particular transaction result.
-
-## Distinction from Sandwich Attack
-
-A sandwich attack brackets a victim's pending trade with transactions before and after it to profit
-from the price move that trade causes
-([Glossary: MEV](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value)).
-
-MEV Shield reduces the pending visibility those attacks depend on by encrypting sensitive contents
-until block inclusion ([MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield),
-[Managing Your Stakes](https://docs.learnbittensor.org/staking-and-delegation/managing-stake-sdk)).
-
-Sandwich attack names the ordering exploit; MEV Shield names pending encryption for eligible
-submissions.
-
-[MEV](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value) attacks on
-Bittensor often begin with visible pending
-[staking](https://docs.learnbittensor.org/resources/glossary#staking) activity. Bittensor staking
-guidance explains that an observer who sees a stake before it lands can front-run by buying subnet
-alpha first and pushing the price up, or run a sandwich attack by buying before the victim trade and
-selling after it. Both are forms of
-[maximal extractable value](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value)
-that depend on reading pending intent.
-
-Those patterns depend on predictable pending details rather than on a failed final settlement. MEV
-Shield addresses that observation window by encrypting the signed submission so its contents stay
-hidden until inclusion, which removes the foreknowledge those attacks require
-([Managing Your Stakes](https://docs.learnbittensor.org/staking-and-delegation/managing-stake-sdk),
-[MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield)).
-
-The attack vocabulary therefore names concrete mempool-risk shapes that stake and unstake readers
-may encounter, while MEV Shield names the pending-privacy response applied before those trades
-become public chain history.
-
-## Distinction from Commit Reveal
-
-Commit Reveal conceals validator weight submissions until a later reveal so recently produced
-weights are harder to copy ([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
-[Glossary: Commit Reveal](https://docs.learnbittensor.org/resources/glossary#commit-reveal)).
-
-MEV Shield encrypts sensitive pending transaction contents, such as staking and unstaking, until
-block inclusion ([MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield)).
-
-Weight-disclosure timing and transaction pending privacy are separate pre-inclusion protections.
-
-## Distinction from Price Protection
-
-Price protection lets callers set bounds on acceptable execution rates during pool-moving actions
-([Price Protection](https://docs.learnbittensor.org/learn/price-protection)).
-
-MEV Shield hides sensitive pending transaction contents before inclusion
-([MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield)).
-
-Price protection limits how far execution may move; MEV Shield limits what observers can read while
-the transaction is still pending.
-
-## SDK Usage Stays on Coldkey-Signed Submissions
-
-The [Using MEV Shield with the Bittensor SDK](https://docs.learnbittensor.org/sdk/mev-protection)
-guide describes enabling shielded submission through the SDK for coldkey-signed transactions. It
-warns that routing hotkey-signed submissions through MEV Shield is unsupported and that funding a
-hotkey to bypass the rule enters untested behavior with possible asset-loss consequences.
-
-For readers, that keeps the SDK reading aligned with the coldkey signing boundary already described
-above. MEV Shield is meant for coldkey-signed actions where pending encryption is designed to apply,
-rather than for hotkey-side submissions
-([MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield)).
-
-## Distinction from MEV (Maximal Extractable Value)
-
-MEV and MEV Shield answer different questions about pending transactions. MEV names the value that
-can be extracted when transaction ordering or pending contents can be observed or influenced before
-block inclusion, while MEV Shield names encrypted mempool protection that hides sensitive pending
-transaction contents until inclusion
-([Glossary: MEV](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value),
-[MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield)).
-
-- **MEV** — the risk category tied to ordering and pending visibility.
-- **MEV Shield** — pending encryption for eligible coldkey-signed submissions.
-
-MEV vocabulary describes why ordering-sensitive exposure matters in pool and mempool context. MEV
-Shield vocabulary describes one pre-inclusion defense that reduces what observers can read while a
-transaction waits; it does not remove every execution or slippage concern after reveal
-([Understanding Slippage](https://docs.learnbittensor.org/learn/slippage),
-[Glossary: Mempool](https://docs.learnbittensor.org/resources/glossary#mempool)).
-
-## Distinction from Transfer
-
-A transfer moves TAO from one wallet address to another, naming a kind of transaction by what it
-does once executed, whereas MEV Shield names a pending-privacy step applied to eligible transaction
-contents before block inclusion
-([Glossary: Transfer](https://docs.learnbittensor.org/resources/glossary#transfer)).
-
-- **MEV shield** — encrypts sensitive pending contents so observers cannot read intent before
-  inclusion.
-- **Transfer** — describes the token-movement action itself, independent of whether its pending
-  details were shielded.
-
-## Distinction from Validator Permit
-
-A validator permit is a flag indicating whether a neuron holds validation rights within a subnet, an
-eligibility status, while MEV Shield is a protection applied to sensitive pending transaction
-contents before inclusion rather than a role grant
-([Glossary: Validator Permit](https://docs.learnbittensor.org/resources/glossary#validator-permit)).
-
-- **MEV shield** — hides what a pending transaction is attempting until the chain can process it.
-- **Validator permit** — records who is allowed to validate, not what any pending transaction
-  reveals.
-
-## Distinction from Yuma Consensus
-
-MEV Shield is the transaction-privacy layer that hides sensitive extrinsic details before block
-inclusion on Subtensor. It names what observers can see in the mempool window, not the recurring
-settlement step that converts validator weight submissions into emission shares
+Documentation describes sensitive transaction contents as encrypted while pending and revealed when
+the chain can process them. A validator-supplied public key anchors encryption in the mempool; only
+the producing validator decrypts immediately before finalization
 ([MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield),
 [Glossary: Mempool](https://docs.learnbittensor.org/resources/glossary#mempool)).
 
-Yuma Consensus is the on-chain mechanism that runs at the epoch boundary on each subnet. It reads
-the weight matrix from eligible validators, applies clipping and bonding, and converts the result
-into miner incentives and validator dividend shares
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
-[Emission](https://docs.learnbittensor.org/learn/emissions)).
+MEV Shield applies to coldkey-signed transactions. Hotkey-signed submissions through MEV Shield are
+unsupported ([MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield),
+[Using MEV Shield with the Bittensor SDK](https://docs.learnbittensor.org/sdk/mev-protection)).
 
-Earlier sections separate MEV Shield from validator permit rules and from mempool visibility.
-Encrypted payloads can protect staking moves before inclusion; Yuma settles evaluation signals from
-eligible validators after weights are recorded on chain—not the pre-inclusion ciphertext itself
-([Glossary: Validator Permit](https://docs.learnbittensor.org/resources/glossary#validator-permit)).
-
-Readers should treat MEV Shield as pre-inclusion privacy for sensitive extrinsics, and Yuma as the
-epoch-boundary mechanism that allocates subnet rewards from consensus while validators remain
-active.
-
-- **MEV Shield** — encrypted mempool protection before block inclusion.
-- **Yuma Consensus** — epoch-boundary settlement from eligible validator weights to emission shares.
-
-## Distinction from Mempool Visibility
-
-The mempool glossary entry places pending and unconfirmed transactions before block inclusion
-([Glossary: Mempool](https://docs.learnbittensor.org/resources/glossary#mempool)).
-
-MEV Shield belongs to that pending window. It addresses what can be seen before the chain records
-the transaction in a block, not what the later block record contains after inclusion.
-
-## Distinction from Network
-
-Bittensor documentation separates mainnet, testnet, and localnet contexts
+MEV Shield examples from one network environment should not be read as representing production
+pending-privacy behavior on another
 ([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
 
-An MEV Shield example should therefore keep the selected environment attached. A protection example
-from one environment is not evidence about pending visibility in another environment.
+## Distinction from MEV
+
+MEV names value extractable by observing or controlling transaction ordering before block inclusion.
+MEV Shield names encrypted mempool protection for sensitive pending contents
+([MEV](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value)).
+
+- **MEV** — risk category tied to ordering and pending visibility.
+- **MEV Shield** — pending encryption for eligible coldkey-signed submissions.
+
+## Distinction from Sandwich Attack
+
+A sandwich attack brackets a victim's pending trade to profit from the price move it causes. MEV
+Shield reduces the pending visibility those attacks depend on
+([Glossary: MEV](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value),
+[Managing Your Stakes](https://docs.learnbittensor.org/staking-and-delegation/managing-stake-sdk)).
+
+- **Sandwich attack** — adversarial before-and-after ordering around a visible pending trade.
+- **MEV Shield** — pending encryption that hides sensitive contents until inclusion.
+
+## Distinction from Front-Running
+
+Front-running submits a similar transaction ahead of a visible pending trade. MEV Shield limits what
+observers can read while the transaction waits in the mempool
+([MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield)).
+
+- **Front-running** — higher-priority transaction submitted ahead of the target.
+- **MEV Shield** — encrypted pending contents before block inclusion.
+
+## Distinction from Commit Reveal
+
+Commit Reveal conceals validator weight submissions until a later reveal. MEV Shield encrypts
+sensitive pending transaction contents such as staking and unstaking until block inclusion
+([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)).
+
+- **Commit Reveal** — delayed disclosure for validator weight submissions.
+- **MEV Shield** — pending encryption for eligible transaction contents.
+
+## Distinction from Price Protection
+
+Price protection caps acceptable execution movement during pool-moving actions. MEV Shield hides
+sensitive pending contents before inclusion
+([Price Protection](https://docs.learnbittensor.org/learn/price-protection)).
+
+- **Price protection** — tolerance on execution outcomes for the caller's own order.
+- **MEV Shield** — limits what observers can read while a transaction is pending.
+
+## Distinction from Transfer
+
+A transfer names a token-movement action once executed. MEV Shield names a pending-privacy step
+applied before block inclusion
+([Glossary: Transfer](https://docs.learnbittensor.org/resources/glossary#transfer)).
+
+- **MEV Shield** — encrypts sensitive pending contents before inclusion.
+- **Transfer** — token-movement action independent of pending shielding.
+
+## Distinction from Yuma Consensus
+
+MEV Shield names pre-inclusion privacy for sensitive extrinsics. Yuma Consensus converts submitted
+validator weights into emission shares after evaluation completes
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+- **MEV Shield** — encrypted mempool protection before block inclusion.
+- **Yuma Consensus** — on-chain settlement from validator weights to emission shares.
 
 ## Reader Boundary
 
-The MEV Shield source supports claims about encrypted mempool protection for sensitive transaction
-contents ([MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield)).
-
-It does not make every transaction risk disappear, prove final inclusion, or replace the relevant
-runtime and block evidence. The article-level point is the protection of sensitive pending details
-before block inclusion.
+MEV Shield supports claims about encrypted mempool protection for sensitive transaction contents. It
+does not make every transaction risk disappear, prove final inclusion, or replace runtime and block
+evidence ([MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield)).
 
 ## Further Reading
 
-- [Introduction to Bittensor: Subnet development](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-- [MEV Shield: Encrypted Mempool Protection](https://docs.learnbittensor.org/concepts/mev-shield)
-- [MEV](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value)
-- [Glossary: Mempool](https://docs.learnbittensor.org/resources/glossary#mempool)
-- [Glossary: Block](https://docs.learnbittensor.org/resources/glossary#block)
-- [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)
+- [MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield)
+- [Glossary: MEV](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value)
+- [Managing Your Stakes](https://docs.learnbittensor.org/staking-and-delegation/managing-stake-sdk)
+- [Using MEV Shield with the Bittensor SDK](https://docs.learnbittensor.org/sdk/mev-protection)
