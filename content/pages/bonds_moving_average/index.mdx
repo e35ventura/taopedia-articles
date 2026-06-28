@@ -147,22 +147,28 @@ Consensus still settles validator weights into emission shares each epoch on the
 
 ## Distinction from Yuma Consensus
 
-Bonds moving average is a per-subnet hyperparameter that configures smoothing applied to
-validator-miner bonds. Yuma Consensus runs at tempo boundaries on the selected netuid, using those
-bonds when aggregating submitted weights and allocating miner incentives and validator dividends
+Bonds moving average is a per-subnet hyperparameter that configures how quickly validator-miner
+bonds smooth across epochs. It names one bond-path smoothing coefficient on the hyperparameter
+table, not the full settlement step that allocates emissions
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
+[Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds)).
+
+Yuma Consensus is the on-chain mechanism that runs at the epoch boundary on the selected netuid. It
+reads the weight matrix, applies clipping and bonding (using smoothed bonds as state input), and
+converts the filtered result into miner incentives and validator dividends
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
 [Emission](https://docs.learnbittensor.org/learn/emissions)).
 
-- **Bonds moving average** — bond-smoothing hyperparameter in Yuma Consensus.
-- **Yuma Consensus** — subnet consensus pass at tempo boundaries.
+A higher smoothing coefficient changes how bond state evolves between epochs; it does not replace
+clipping, bonds penalty, or dividend allocation inside Yuma. Hyperparameter tuning and settlement
+are separate layers on the same consensus path
+([Yuma Consensus: Validator emissions](https://docs.learnbittensor.org/learn/yuma-consensus#validator-emissions)).
 
-- **Smoothing vs settlement** — bonds moving average sets how quickly validator-miner bonds update;
-  Yuma aggregates submitted weights and allocates dividends at epoch boundaries
-  ([Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds),
-  [Yuma Consensus: Validator emissions](https://docs.learnbittensor.org/learn/yuma-consensus#validator-emissions)).
-- **Dividend path** — higher bonds yield higher validator dividends once Yuma credits outcomes
-  ([Glossary: Dividends](https://docs.learnbittensor.org/resources/glossary#dividends)).
+Readers should treat bonds moving average as bond-path configuration on one netuid, and Yuma as the
+mechanism that settles submitted weights into payouts.
+
+- **Bonds moving average** — hyperparameter controlling validator-miner bond smoothing.
+- **Yuma Consensus** — epoch-boundary settlement from filtered weights to emission shares.
 
 ## Reader Boundary
 
