@@ -25,75 +25,26 @@ subnet down to a chosen maximum and compacts the remaining UIDs into consecutive
 [UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming) guide presents it as a way for
 a subnet owner to manage the active participant base while keeping clean, sequential UID numbering.
 
-## How Trimming Selects UIDs
+## What It Represents
 
-Trimming removes the weakest participants first. The process starts from the lowest emitters and
-works upward, ranking UIDs by emission scores and removing low performers until the remaining count
-is at or below the chosen maximum. It is driven by emission rather than by a separate pruning score
-([UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming)).
+UID trimming removes the lowest emitters first until the live count reaches an owner-chosen maximum,
+then compresses survivors into consecutive indices. Immune UIDs and owner-owned UIDs are protected;
+trimming is a manual sudo action with documented rate limits and minimum target counts
+([UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming),
+[Glossary: Sudo](https://docs.learnbittensor.org/resources/glossary#sudo)).
 
-## Compression of Remaining UIDs
-
-After the low performers are removed, the survivors are compressed to the left so their indices stay
-consecutive. If UIDs 5, 7, and 9 survive, they become 0, 1, and 2. This keeps the subnet's UID
-numbering contiguous rather than leaving gaps where trimmed slots used to be
-([UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming)).
-
-## Protected UIDs
-
-Not every UID can be trimmed. Temporally immune UIDs, those still within the
-[immunity period](https://docs.learnbittensor.org/resources/glossary#immunity-period) after a recent
-registration, and owner-owned UIDs are protected from trimming. The number of immune UIDs must not
-exceed 80% of the maximum UID count
-([UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming)).
-
-## Owner Control and Limits
-
-Trimming is a [sudo](https://docs.learnbittensor.org/resources/glossary#sudo) operation that only
-the subnet owner, the wallet that created the subnet, can perform; it is triggered manually rather
-than automatically. The guide lists a rate limit of 216,000 blocks, about 30 days, between trims,
-and states that the minimum count an owner can trim a subnet down to is currently 64. These are
-documented protocol limits, and the values in force should be read for the subnet in question.
-
-## Development Stage Context
-
-The
-[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from localnet to testnet and then mainnet. For UID trimming
-on a subnet such as netuid 1, that sequence changes how readers should interpret owner trim
-examples, immune-UID limits, and compression outcomes.
-
-In localnet, UID trimming can be tested in an isolated environment. Local trim results reflect local
-chain configuration and locally configured UID limits rather than production subnet participant
-state.
-
-On testnet, trimming behavior can be observed in a shared, non-production network. Testnet trim
-outcomes and immune-UID counts are separate from mainnet subnet metagraph state
-([UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming)).
-
-On mainnet, UID trimming is a live owner sudo action on the production Bittensor network that can
-remove low emitters and compress surviving UIDs into consecutive indices.
-
-The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
-separates mainnet, testnet, and localnet. A trimming example from one environment should not be read
-as representing production UID layout or trim eligibility on another network.
+Examples tied to netuid 1 illustrate one subnet's owner trim path. They should not be read as
+representing production UID layout or trim eligibility on another network
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
 
 ## Distinction from Deregistration
 
-UID trimming and deregistration are both ways a neuron can leave a subnet, but they answer different
-operational questions. Deregistration recycles one incumbent slot when a full subnet admits a new
-registration, while UID trimming is a subnet-owner sudo action that lowers the live UID count toward
-a chosen maximum and removes many low emitters in one pass
+Deregistration recycles one incumbent slot when a full subnet admits a new registration. UID
+trimming is a subnet-owner sudo action that removes many low emitters in one pass and compresses
+survivors into consecutive indices
 ([UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming),
 [Glossary: Deregistration](https://docs.learnbittensor.org/resources/glossary#deregistration),
 [Mining: Miner deregistration](https://docs.learnbittensor.org/miners#miner-deregistration)).
-
-For readers on a subnet such as netuid 1, deregistration is competition-driven displacement tied to
-registration events, while trimming is a bulk resize that compresses survivors into consecutive
-indices. Trimming also deletes listed on-chain neuron data — weights, bonds, axon information, and
-last-update records — rather than freeing a single slot for one incoming registrant
-([The Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph),
-[UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming)).
 
 - **UID trimming** — owner-initiated bulk reduction to a target count with survivor compression.
 - **Deregistration** — one incumbent removed when a full subnet accepts a new registration.
@@ -103,12 +54,7 @@ last-update records — rather than freeing a single slot for one incoming regis
 Pruning score ranks miners when a full subnet receives a new registration and one slot must open.
 UID trimming is a subnet-owner bulk resize that removes many low emitters down to a chosen maximum
 ([UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming),
-[Glossary: Pruning Score](https://docs.learnbittensor.org/resources/glossary#pruning-score),
-[Glossary: Deregistration](https://docs.learnbittensor.org/resources/glossary#deregistration)).
-
-For netuid 1 readers, pruning score belongs to automatic slot replacement at registration time.
-Trimming belongs to an owner sudo action that can remove multiple UIDs and compress survivors into
-consecutive indices in one pass ([Mining in Bittensor](https://docs.learnbittensor.org/miners)).
+[Glossary: Pruning Score](https://docs.learnbittensor.org/resources/glossary#pruning-score)).
 
 - **Pruning score** — ranking input when one slot opens for a new registrant.
 - **UID trimming** — owner-initiated bulk reduction to a target count.
@@ -123,9 +69,6 @@ skips immune UIDs but names the owner resize operation, not the protection rule
 - **UID trimming** — owner-initiated bulk reduction to a target count.
 - **Immunity period** — newcomer protection window before displacement.
 
-Protection vocabulary names grace; trimming vocabulary names the owner shrink action
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
-
 ## Distinction from Max Allowed UIDs
 
 Max allowed UIDs is the subnet capacity ceiling. UID trimming lowers the live count toward a smaller
@@ -136,42 +79,22 @@ owner-chosen maximum and compresses survivors into contiguous indices
 - **Max allowed UIDs** — configured capacity ceiling for registrations.
 - **UID trimming** — owner action removing low emitters to a target count.
 
-Ceiling vocabulary and resize vocabulary answer different capacity questions
-([Glossary: Emission](https://docs.learnbittensor.org/resources/glossary#emission)).
-
 ## Distinction from Register
 
-UID trimming and register sit on opposite sides of the same participant lifecycle. Register is the
-subnet-entry path that assigns a UID after a participant pays the registration burn, while trimming
-removes low emitters and forces trimmed participants to enter again through that same path if they
-want to return ([Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register),
-[UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming),
-[Mining: Miner registration](https://docs.learnbittensor.org/miners#miner-registration)).
-
-For readers, a trimmed UID does not keep its old slot or historical scores. Documentation states
-that the participant must register again, receives a new UID number, and starts with default scores
-after compression renumbers the survivors. Register therefore names re-entry after trimming, not the
-owner resize action itself
-([Glossary: Burn Cost](https://docs.learnbittensor.org/resources/glossary#burn-cost),
-[Glossary: Emission](https://docs.learnbittensor.org/resources/glossary#emission)).
+Register is the subnet-entry path that assigns a UID after paying the registration burn. Trimming
+removes low emitters; trimmed participants must register again if they want to return
+([Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register),
+[UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming)).
 
 - **UID trimming** — owner-initiated removal and compression of low emitters.
 - **Register** — subnet entry that assigns a UID, including re-entry after a trim.
 
 ## Distinction from Sudo
 
-UID trimming and sudo name different layers of owner authority. Sudo is the privileged control mode
-that lets the subnet owner perform owner-only chain actions, while UID trimming is one specific sudo
-operation that resizes the participant set down to a chosen maximum
+Sudo is the privileged control mode that lets the subnet owner perform owner-only chain actions. UID
+trimming is one specific sudo operation that resizes the participant set
 ([Glossary: Sudo](https://docs.learnbittensor.org/resources/glossary#sudo),
 [UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming)).
-
-For readers, not every sudo action is a trim. Trimming is documented as a manual owner resize with
-its own emission ranking rules, immune-UID protections, minimum target count, and rate limit between
-passes. Sudo vocabulary names who may act; trimming vocabulary names this particular capacity
-reduction on netuid 1
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
-[Glossary: Immunity Period](https://docs.learnbittensor.org/resources/glossary#immunity-period)).
 
 - **UID trimming** — the owner sudo action that removes low emitters and compresses survivors.
 - **Sudo** — the privileged owner control mode that authorizes trimming and other owner-only
@@ -179,51 +102,30 @@ reduction on netuid 1
 
 ## Distinction from Mechanism Count
 
-Mechanism count and UID trimming both touch subnet capacity, but they name different operations.
-Mechanism count is the hyperparameter that sets how many incentive mechanisms run, while UID
-trimming is the owner action that removes excess UIDs when live registration exceeds the configured
-ceiling ([UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming),
+Mechanism count sets how many incentive mechanisms run on a subnet. UID trimming removes excess UIDs
+when live registration exceeds the configured ceiling
+([UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming),
 [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
-
-For readers, trimming reduces an oversized UID set to fit max allowed UIDs. Mechanism count changes
-can require that ceiling to move first because the product of mechanism count and max allowed UIDs
-must not exceed 256. Trimming addresses live over-capacity; mechanism count addresses how many
-evaluation paths share whatever capacity remains
-([Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets)).
 
 - **Mechanism count** — the configured number of incentive mechanisms on a subnet.
 - **UID trimming** — the action that brings live UID count back under the configured ceiling.
 
 ## Distinction from Yuma Consensus
 
-UID trimming names the process of reducing active participant slots when subnet hyperparameters
-lower the allowed UID count. That capacity-management lifecycle is separate from the tempo mechanism
-that converts validator weight submissions into emission shares
-([UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming),
-[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
-
-Trimming can remove slots when limits fall, often using pruning score and immunity-period rules.
-Yuma still aggregates submitted weights and credits outcomes for participants who remain on the
-netuid at settlement time ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
+UID trimming reduces active participant slots through an owner sudo action. Yuma Consensus converts
+validator weight submissions into emission shares each tempo for participants who remain on the
+netuid ([UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
 [Emission](https://docs.learnbittensor.org/learn/emissions)).
 
-Sudo operations can invoke trimming on a subnet. Consensus settlement is a recurring tempo pass, not
-the administrative action that reduces slot capacity
-([Glossary: Sudo](https://docs.learnbittensor.org/resources/glossary#sudo)).
-
-Readers should not treat a trim event as an emission calculation. Credited incentives still follow
-the documented weight-aggregation path after included weights are recorded
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-- **UID trimming** — reducing active slots when UID limits fall.
+- **UID trimming** — reducing active slots through owner-initiated resize.
 - **Yuma Consensus** — mechanism that turns validator weights into emission shares.
 
 ## Reader Boundary
 
 This page defines the concept at a high level. It does not report which UIDs exist on any particular
 subnet, which would be trimmed, or whether an owner has trimmed recently. Those are live chain state
-and should be checked for the relevant netuid at the time of observation. The numbers here, such as
-the 64 minimum and the roughly 30-day rate limit, are documented protocol values
+and should be checked for the relevant netuid at the time of observation
 ([UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming)).
 
 ## Further Reading
@@ -231,3 +133,4 @@ the 64 minimum and the roughly 30-day rate limit, are documented protocol values
 - [UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming)
 - [Glossary: Immunity Period](https://docs.learnbittensor.org/resources/glossary#immunity-period)
 - [Glossary: Deregistration](https://docs.learnbittensor.org/resources/glossary#deregistration)
+- [Glossary: Pruning Score](https://docs.learnbittensor.org/resources/glossary#pruning-score)
