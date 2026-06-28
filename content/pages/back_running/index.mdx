@@ -22,195 +22,100 @@ infoboxRows:
 
 Back-running is observing a pending transaction and submitting your own transaction so that it
 executes immediately after it, to profit from the state change the first transaction causes. In
-Bittensor it appears around a subnet's automated market maker pool: a swap that is waiting to
-execute is visible before it lands, and another trader can line up a swap to run right behind it and
-capture the price move the pending swap leaves in the pool
+Bittensor it appears around subnet pool conversions visible in the mempool before block inclusion
 ([MEV](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value),
-[Mempool](https://docs.learnbittensor.org/resources/glossary#mempool)).
+[Glossary: Mempool](https://docs.learnbittensor.org/resources/glossary#mempool)).
 
-## Why It Is Possible
+## What It Represents
 
-A transaction does not execute the instant it is submitted. It first sits in the mempool, the
-temporary holding area where pending and unconfirmed transactions wait before being included in a
-block, and there its contents can be observed. Because a subnet prices alpha through a pool whose
-price moves with every swap, a large pending swap signals that the pool is about to be pushed away
-from its prior price, and the moment after it lands is when that dislocation is largest. A
-back-runner races to be the next transaction so it can act on that fresh price before anyone else
-([Mempool](https://docs.learnbittensor.org/resources/glossary#mempool),
+A pending stake, unstake, or swap in the mempool can signal an upcoming pool price move. A
+back-runner submits a trade to execute immediately after the target and act on the dislocation the
+target just caused ([Understanding Slippage](https://docs.learnbittensor.org/learn/slippage),
 [Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)).
 
-## How It Differs From Front-Running
-
-Front-running and back-running both depend on seeing a pending swap, but they sit on opposite sides
-of it. Front-running orders ahead of the target to profit from the move it is about to cause;
-back-running orders behind the target to profit from the move it has just caused. Front-running
-worsens the price the target receives, while back-running acts only on the state the target already
-left behind
-([MEV](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value),
-[Mempool](https://docs.learnbittensor.org/resources/glossary#mempool)).
-
-## The Sandwich Connection
-
-The sandwich attack places transactions before and after a target to profit from the price movement
-it causes, wrapping the victim's trade between the attacker's two trades. Back-running is the back
-half of that pattern: the closing trade that sells into, or buys back from, the price the victim's
-order moved. On its own, a back-run is often plain arbitrage that pushes a dislocated pool back
-toward a fair price; combined with a front-run, it becomes the exploitative half of a sandwich
-([MEV](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value),
-[Slippage](https://docs.learnbittensor.org/learn/slippage)).
-
-## What Defends Against It
-
-The same two mechanisms that blunt front-running also limit the harmful form of back-running. Price
-protection lets a trader set a tolerance on the price they will accept, so a swap that would execute
-worse than that limit fails or only partially fills rather than completing at a manipulated price,
-which caps how much a surrounding pair of trades can extract. The MEV shield attacks the information
-itself: transaction data is encrypted with a public key from the blockchain validator and decrypted
-only just before the transaction is finalized, so a pending swap's details stay hidden until it is
-already on-chain and there is little for a back-runner to read and react to
+Price protection caps acceptable execution movement for the caller's own order. MEV Shield encrypts
+sensitive pending contents so observers cannot read intent before inclusion
 ([Price Protection](https://docs.learnbittensor.org/learn/price-protection),
 [MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield)).
 
-Staking guidance adds a specific reason that protection holds up: block producers themselves cannot
-read or front-run a shielded transaction while it is pending, because decryption follows inclusion
-rather than mempool broadcast. That removes the pending visibility back-running depends on for
-eligible coldkey-signed submissions, rather than changing the pool ratio after execution
-([Managing Your Stakes](https://docs.learnbittensor.org/staking-and-delegation/managing-stake-sdk)).
-
-## Staking and Unstaking Also Move Pool Reserves
-
-[Understanding Slippage](https://docs.learnbittensor.org/learn/slippage) describes staking and
-unstaking as conversions that pass through subnet pool reserves, not only standalone swaps. When
-such a conversion executes, the
-TAO-to-[alpha](https://docs.learnbittensor.org/resources/glossary#protocol-alpha) ratio in the pool
-changes the same way it does after a swap.
-
-The
-[Glossary: MEV](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value)
-defines back-running as ordering immediately after a target transaction to act on the state change
-that transaction caused. Pool-moving conversions therefore fit the same ordering vocabulary as
-swap-based examples on this page
-([Understanding Slippage](https://docs.learnbittensor.org/learn/slippage)).
-
-## Slippage Names the Gap After a Pool Move
-
-[Slippage](https://docs.learnbittensor.org/resources/glossary#slippage) is the difference between
-expected and received amounts when a trade moves through subnet pool reserves. After a large
-conversion lands, the next trader can face a different ratio than the one visible before execution.
-
-That post-move gap is the dislocation back-running vocabulary describes trading on. It does not, by
-itself, say whether the follow-up trade is harmless arbitrage or part of a sandwich
-([Understanding Slippage](https://docs.learnbittensor.org/learn/slippage),
-[MEV](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value)).
-
-## Development Stage Context
-
-The
-[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from localnet to testnet and then mainnet. For back-running
-on a subnet such as netuid 1, that sequence changes how readers should interpret mempool visibility,
-pool-price moves, and MEV shield examples.
-
-In localnet, back-running mechanics can be tested in an isolated environment. Localnet mempool and
-pool behavior do not represent production transaction ordering on netuid 1 mainnet pools.
-
-On testnet, back-running and price-protection flows can be exercised in a shared non-production
-network. Testnet pending-transaction visibility is separate from mainnet subnet state even when the
-same netuid number appears in both environments.
-
-On mainnet, back-running concerns live production subnet pools and the protections traders use on
-the public network. Observed ordering and slippage depend on live pool depth and the protections in
-force ([MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield)).
-
-The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
-separates mainnet, testnet, and localnet. A back-running example from one environment should not be
-read as representing production transaction behavior in another environment.
+Back-running examples from one network environment should not be read as representing production
+mempool behavior on another
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
 
 ## Distinction from MEV
 
-Back-running names the specific tactic of submitting a transaction so it executes immediately after
-a target to profit from the state change that target causes. MEV (maximal extractable value) names
-the broader value-extraction category built on transaction ordering and pre-block visibility
-([Glossary: Back-Running](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value),
-[Glossary: MEV](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value)).
-
-Back-running is one specific shape within MEV. MEV vocabulary groups three ordering shapes built on
-a visible pending trade — front-running, sandwich attacks, and back-running — and back-running is
-the case that submits immediately after the target
-([Glossary: Sandwich Attack](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value),
-[Glossary: Front-Running](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value)).
+MEV names the broader value-extraction category built on transaction ordering and pre-block
+visibility. Back-running is the specific tactic that submits immediately after a visible pending
+trade
+([Glossary: MEV](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value)).
 
 - **Back-running** — ordering immediately after a visible pending trade.
-- **MEV** — the broader category covering front-running, sandwich attacks, and back-running.
-
-## Distinction from Arbitrage
-
-Back-running and arbitrage answer different questions. Back-running describes transaction ordering:
-submitting a trade immediately after a specific pending swap to act on the move it just caused.
-Arbitrage describes the reason for a trade: closing a price difference between markets. A single
-back-run that corrects a pool dislocation can be both, but ordering and motive are separate ideas
-([MEV](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value),
-[Slippage](https://docs.learnbittensor.org/learn/slippage)).
-
-- **Back-running** — ordering a trade right after an observed pending swap.
-- **Arbitrage** — trading to close a price difference between markets.
+- **MEV** — broader category covering front-running, sandwich attacks, and back-running.
 
 ## Distinction from Front-Running
 
-Back-running and front-running both depend on seeing a pending swap but sit on opposite sides of it.
-Front-running orders ahead of the target to profit from the move it is about to cause, while
-back-running orders immediately after to act on the move it has just caused
-([MEV](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value),
-[Mempool](https://docs.learnbittensor.org/resources/glossary#mempool)).
+Front-running orders ahead of the target to profit from the move it is about to cause. Back-running
+orders immediately after to act on the move it just caused
+([MEV](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value)).
 
 - **Front-running** — ordering before the target swap.
 - **Back-running** — ordering immediately after the target swap.
 
 ## Distinction from Sandwich Attack
 
-Back-running and a sandwich attack are one leg and the whole pattern. A back-run is the trade placed
-right after a target, while a sandwich attack combines a front-run and a back-run around one victim
-trade; on its own a back-run is often plain arbitrage rather than the full exploit
-([MEV](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value),
-[Slippage](https://docs.learnbittensor.org/learn/slippage)).
+A sandwich attack combines a front-run and back-run around one victim trade. Back-running alone is
+often plain arbitrage on the post-move dislocation rather than the full exploit
+([Glossary: Sandwich Attack](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value)).
 
 - **Back-running** — the single trade placed after a target.
-- **Sandwich attack** — a front-run plus back-run wrapping one victim trade.
+- **Sandwich attack** — front-run plus back-run wrapping one victim trade.
+
+## Distinction from Arbitrage
+
+Arbitrage profits from genuine price differences between markets. Back-running names transaction
+ordering immediately after an observed pending swap
+([Slippage](https://docs.learnbittensor.org/learn/slippage)).
+
+- **Back-running** — ordering a trade right after an observed pending swap.
+- **Arbitrage** — trading to close a price difference between markets.
+
+## Distinction from Price Protection
+
+Price protection is the trader-set tolerance that bounds adverse execution movement. Back-running is
+the adversarial ordering tactic that exploits visible pending trades
+([Price Protection](https://docs.learnbittensor.org/learn/price-protection)).
+
+- **Back-running** — ordering immediately after a visible pending swap.
+- **Price protection** — tolerance that caps loss from adverse execution.
+
+## Distinction from MEV Shield
+
+MEV Shield encrypts pending transaction data so it stays unreadable until finalization. Back-running
+depends on reading visible pending details in the mempool
+([MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield)).
+
+- **Back-running** — ordering immediately after a visible pending swap.
+- **MEV Shield** — encryption that hides pending data before inclusion.
 
 ## Distinction from Yuma Consensus
 
-Back-running names ordering immediately after a visible pending swap in subnet pool trading. That
-transaction-ordering risk is separate from the tempo pass that converts validator weight submissions
-into emission shares
-([MEV](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value),
-[Understanding Slippage](https://docs.learnbittensor.org/learn/slippage)).
-
-Pool swaps follow market rules for price and slippage. Yuma still credits miner incentives and
-validator dividends from aggregated evaluation weights after inclusion
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
-[Emission](https://docs.learnbittensor.org/learn/emissions)).
-
-Readers should keep pool-trading ordering vocabulary and subnet-settlement vocabulary separate.
-Back-running addresses swap sequencing risk; Yuma addresses weight aggregation on the selected
-netuid ([MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield)).
+Back-running names mempool ordering risk around pool conversions. Yuma Consensus converts submitted
+validator weights into emission shares after evaluation completes
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
 - **Back-running** — trading immediately after a visible pending swap.
-- **Yuma Consensus** — on-chain mechanism that turns validator weights into emission shares.
+- **Yuma Consensus** — on-chain settlement from validator weights to emission shares.
 
 ## Reader Boundary
 
-This page defines the concept at a high level and is not trading advice or a claim that any specific
-trade was back-run. Back-running can be harmless arbitrage that improves pool pricing or the closing
-slice of an extractive sandwich, and which one applies depends on live pool depth, pending order
-flow, and the protections in force, all of which change continuously
-([MEV](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value),
-[Mempool](https://docs.learnbittensor.org/resources/glossary#mempool)).
+This page defines the concept at a high level and is not trading advice. Back-running can be
+harmless arbitrage or the closing slice of a sandwich; live pool depth and protections determine
+which applies
+([MEV](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value)).
 
 ## Further Reading
 
-- [MEV](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value)
-- [Mempool](https://docs.learnbittensor.org/resources/glossary#mempool)
-- [Slippage](https://docs.learnbittensor.org/learn/slippage)
+- [Glossary: MEV](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value)
+- [MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield/)
 - [Price Protection](https://docs.learnbittensor.org/learn/price-protection)
-- [MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield)
-- [Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)
+- [Understanding Slippage](https://docs.learnbittensor.org/learn/slippage)
