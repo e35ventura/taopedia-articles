@@ -25,157 +25,38 @@ a target transaction — one before and one after — to profit from the price m
 transaction causes
 ([Glossary: Sandwich attack](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value)).
 
-The term is a specific form of MEV (Maximal Extractable Value) in Bittensor pool operations. It is
-not a network consensus attack or a validator scoring issue.
+## What It Represents
 
-## Mechanism Overview
+An attacker observes a pending target trade that will move a pool price, submits a transaction ahead
+of the target, lets the target execute, then submits a second transaction to close the position at
+the improved rate
+([Glossary: MEV (Maximal Extractable Value)](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value)).
 
-In a sandwich attack, the attacker observes a pending target transaction that will move a pool
-price. The attacker submits a transaction ahead of the target to take a position, allows the target
-to execute and move the price, then submits a second transaction to close the position at the
-improved rate
-([Glossary: Sandwich attack](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value)).
-
-The two adversarial transactions wrap around the target — hence the sandwich framing. The attacker
-extracts the price movement that the target transaction creates in the pool.
-
-## Visible Stake Activity Can Be Sandwiched
-
-[Managing Your Stakes](https://docs.learnbittensor.org/staking-and-delegation/managing-stake-sdk)
-documentation describes a
-[Glossary: Sandwich Attack](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value)
-in which an observer buys subnet alpha before a visible victim trade and sells after it. That
-two-sided sequence extracts value from the victim's execution rather than from ordinary reserve
-movement alone.
-
-The
-[Glossary: MEV (Maximal Extractable Value)](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value)
-states that MEV attacks can affect both
-[Glossary: Staking](https://docs.learnbittensor.org/resources/glossary#staking) and
-[Glossary: Unstaking](https://docs.learnbittensor.org/resources/glossary#unstaking) operations when
-knowledge of pending transactions lets another party manipulate token prices. Sandwich vocabulary
-therefore names a documented ordering threat around stake and unstake flows, not a generic pool
-label detached from participant actions.
-
-Those operations move value through subnet pool pricing while details may still be readable in the
-[Glossary: Mempool](https://docs.learnbittensor.org/resources/glossary#mempool) waiting period.
-Sandwich attack reading stays with that visible pending stake and unstake context rather than with
-every pool conversion that simply returns a different amount than a static quote.
-
-## Price Protection Limits Losses Without Hiding Pending Trades
-
-[Managing Your Stakes](https://docs.learnbittensor.org/staking-and-delegation/managing-stake-sdk)
-documentation draws a separate line between
-[Price Protection](https://docs.learnbittensor.org/learn/price-protection) and defenses against
-sandwich attacks. Price protection caps how much adverse price movement a staking or unstaking
-action will accept, which can limit losses when execution lands at a worse rate than expected.
-
-The same guidance states that price protection does not prevent sandwich attacks entirely, while
-[MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield/) does so by encrypting sensitive
-pending transaction contents until block inclusion. A sandwich attack still depends on observing
-pending trade details before settlement; price protection reacts when movement is measured at
-execution time rather than hiding those details from observers.
-
-[Price Protection](https://docs.learnbittensor.org/learn/price-protection) documentation describes
-strict, partial, and unsafe handling when measured movement exceeds a selected tolerance. Those
-choices govern how the action proceeds after pool movement is known, not whether another party could
-see the pending trade and order around it. Sandwich attack vocabulary stays with ordering
-foreknowledge; price protection vocabulary stays with tolerated execution outcomes.
-
-## Back-Running Uses Only the After Side
-
-The
-[Glossary: MEV (Maximal Extractable Value)](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value)
-lists three common ordering attack shapes alongside sandwich attacks.
-[Glossary: Front-Running](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value)
-names observing a pending transaction and submitting a similar one with higher priority to execute
-first. Back-running names submitting immediately after a target transaction to capitalize on its
-effects.
-
-A sandwich attack requires both sides of the victim trade — entry before and exit after — to profit
-from the price movement the victim causes when the pool absorbs the larger trade. Back-running adds
-only the after side and does not wrap the target between two adversarial transactions.
-
-Front-running covers the before-only case, sandwich attack covers the before-and-after pair, and
-back-running covers the after-only shape named in the same glossary list. Keeping those labels
-separate prevents reading every post-trade ordering profit as a sandwich pattern.
-
-## Mempool Ordering, Pool Trades, and Yuma on netuid 1
-
-On a subnet such as netuid 1, a sandwich attack targets visible pending
-[staking](https://docs.learnbittensor.org/resources/glossary#staking) or
-[unstaking](https://docs.learnbittensor.org/resources/glossary#unstaking) activity that moves subnet
-pool pricing in the [mempool](https://docs.learnbittensor.org/resources/glossary#mempool)
+Documentation describes sandwich attacks around visible staking and unstaking activity that moves
+subnet pool pricing while details may still be readable in the mempool
 ([Managing Your Stakes](https://docs.learnbittensor.org/staking-and-delegation/managing-stake-sdk)).
 
-That exploit path sits on transaction ordering and pool conversion, not on
-[validator weights](https://docs.learnbittensor.org/resources/glossary#weight-vector) or
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) scoring on netuid 1
-([Emission](https://docs.learnbittensor.org/learn/emissions)).
-
-Sandwich attack vocabulary therefore names adversarial pool ordering; subnet incentive outcomes
-remain a separate reading path.
-
-## Development Stage Context
-
-The
-[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from localnet to testnet and then mainnet. For sandwich
-attacks on a subnet such as netuid 1, that sequence changes how mempool visibility and pool-ordering
-examples should be read.
-
-In localnet, sandwich mechanics on netuid 1 can be tested in isolation. Localnet pending transaction
-visibility does not represent production ordering behavior.
-
-On testnet, MEV-related flows on netuid 1 can be exercised in a shared non-production network.
-Testnet pool and mempool conditions are separate from mainnet state.
-
-On mainnet, sandwich attack concerns on netuid 1 involve live production subnet pools and the
-protections traders use on the public network
-([MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield/)).
-
-The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
-separates mainnet, testnet, and localnet. A sandwich attack example from one environment should not
-be read as representing production transaction behavior in another environment.
+Examples tied to netuid 1 illustrate one subnet's pool-ordering risk path. They should not be read
+as representing production mempool behavior on another network
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
 
 ## Distinction from MEV
 
 MEV names the broader category of value extractable through transaction ordering and inclusion. A
-sandwich attack is the specific pattern where extraction uses a before-and-after pair of
-transactions around the victim
+sandwich attack is the specific before-and-after pattern around a victim trade
 ([Glossary: MEV](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value)).
 
-Category vocabulary and strategy vocabulary answer different questions on the same ordering path.
-MEV names the general extractable value; a sandwich attack names the two-sided wrap around a visible
-pending trade.
-
-- **MEV** — the general value extractable by ordering or inserting transactions.
-- **Sandwich attack** — a specific MEV strategy that brackets a victim's swap.
+- **MEV** — general value extractable by ordering or inserting transactions.
+- **Sandwich attack** — specific MEV strategy that brackets a victim's swap.
 
 ## Distinction from Slippage
 
-Slippage is the ordinary price impact when a trade moves through pool depth. A sandwich attack adds
+Slippage is ordinary price impact when a trade moves through pool depth. A sandwich attack adds
 adversarial ordering around a victim trade so the attacker profits from that movement
-([Understanding Slippage](https://docs.learnbittensor.org/learn/slippage),
-[Glossary: MEV](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value)).
+([Understanding Slippage](https://docs.learnbittensor.org/learn/slippage)).
 
-Wide slippage alone is not proof of a sandwich; the exploit label requires the before-and-after
-ordering pattern.
-
-Documentation distinguishes a sandwich attack from ordinary slippage by the ordering pattern. An
-attacker places trades before and after a victim's swap to move the pool price against the victim,
-which requires observing the pending transaction rather than merely accepting pool depth
-([Glossary: MEV](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value),
-[Understanding Slippage](https://docs.learnbittensor.org/learn/slippage)).
-
-For readers, this is why protection targets pending visibility and tolerance. Price protection and
-MEV Shield narrow how much an attacker can move the price around a victim's trade, rather than
-eliminating all pool movement
-([Price Protection](https://docs.learnbittensor.org/learn/price-protection)).
-
-That three-trade framing also keeps sandwich vocabulary inside pool operations. It is an adversarial
-ordering exploit around swaps, not a failure of subnet consensus or validator scoring
-([MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield)).
+- **Slippage** — received-amount gap from pool depth during a conversion.
+- **Sandwich attack** — adversarial before-and-after ordering around a visible pending trade.
 
 ## Distinction from Front-Running and Back-Running
 
@@ -183,23 +64,27 @@ Front-running names a before-only ordering attack. Back-running names an after-o
 A sandwich attack wraps the victim with trades on both sides
 ([Glossary: MEV](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value)).
 
-Readers should name which ordering shape they mean before calling every MEV profit a sandwich.
+- **Front-running** — similar transaction submitted ahead of the target.
+- **Back-running** — profit taken immediately after the target trade.
+- **Sandwich attack** — front-run plus back-run around one victim trade.
 
 ## Distinction from Price Protection
 
-Price protection lets a trader set tolerance on their own staking or unstaking order. Sandwich
-attack names adversarial ordering around someone else's visible trade
+Price protection caps how much adverse price movement a staking or unstaking action will accept. It
+does not hide pending trade details from observers
 ([Price Protection](https://docs.learnbittensor.org/learn/price-protection)).
 
-Protection limits what a caller accepts; it does not rename mempool ordering risk for other parties.
+- **Price protection** — tolerance on execution outcomes for the caller's own order.
+- **Sandwich attack** — adversarial ordering around someone else's visible trade.
 
 ## Distinction from MEV Shield
 
-MEV Shield names encrypted mempool protection that hides sensitive transaction details before
-inclusion. Sandwich attack names the ordering exploit that protection is meant to reduce
+MEV Shield encrypts sensitive pending transaction contents until block inclusion. Sandwich attack
+names the ordering exploit that protection is meant to reduce
 ([MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield)).
 
-One is mitigation vocabulary; the other is adversarial ordering vocabulary in the same risk domain.
+- **MEV Shield** — encrypted mempool protection.
+- **Sandwich attack** — adversarial ordering around a visible pending trade.
 
 ## Distinction from Mempool
 
@@ -207,84 +92,26 @@ The mempool holds pending transactions before block inclusion. A sandwich attack
 and ordering around a pending victim trade in that queue
 ([Glossary: Mempool](https://docs.learnbittensor.org/resources/glossary#mempool)).
 
-Mempool vocabulary covers pending timing; sandwich vocabulary covers adversarial ordering around a
-visible pending trade.
-
-## Distinction from Yuma Consensus
-
-A sandwich attack is a predatory ordering pattern around a victim's pending pool trade—front-running
-and back-running to extract value from slippage. It names mempool and liquidity-pool exploit
-vocabulary, not the on-chain mechanism that converts validator weight submissions into emission
-shares
-([Glossary: MEV](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value),
-[Glossary: Mempool](https://docs.learnbittensor.org/resources/glossary#mempool)).
-
-Yuma Consensus is the on-chain mechanism that runs at the epoch boundary on a subnet. It reads the
-weight matrix from eligible validators, applies clipping and bonding, and converts the result into
-miner incentives and validator dividend shares from accumulated emissions
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
-[Emission](https://docs.learnbittensor.org/learn/emissions)).
-
-Earlier sections tie sandwich attacks to mempool timing and to arbitrage vocabulary. Pool conversion
-ordering and validator weight settlement operate on different layers of the subnet economy—a
-sandwich around an alpha swap does not substitute for Yuma's weight-to-payout path
-([Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)).
-
-Readers should treat sandwich attacks as a trading/MEV risk around pool transactions, and Yuma as
-the consensus settlement mechanism that allocates rewards from validator evaluations.
-
-- **Sandwich attack** — predatory pool ordering around a victim's pending trade.
-- **Yuma Consensus** — epoch-boundary settlement from validator weights to emission shares.
+- **Mempool** — pending transaction queue before inclusion.
+- **Sandwich attack** — adversarial ordering around a visible pending trade.
 
 ## Distinction from Arbitrage
 
-Sandwich attacks and arbitrage both act on pool prices but differ in intent and target. A sandwich
-attack is a predatory ordering strategy that brackets a specific victim's pending trade with a
-front-run and a back-run to extract value from the price move that victim's trade causes. Arbitrage
-instead profits from genuine price differences — buying where an asset is cheaper and selling where
-it is dearer — without targeting any particular victim, and it tends to pull prices back toward
-alignment
-([Glossary: MEV](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value),
-[Understanding Subnets: Price/rate of alpha tokens](https://docs.learnbittensor.org/subnets/understanding-subnets#pricerate-of-alpha-tokens)).
-
-- **Sandwich attack** — bracketing a specific victim's trade to extract value from the move it
-  causes.
-- **Arbitrage** — profiting from existing price differences, with no specific victim, tending to
-  correct them.
-
-## Distinction from Back-Running
-
-Back-running and a sandwich attack are one leg and the whole pattern. A back-run is the trade placed
-right after a target, while a sandwich attack combines a front-run and a back-run around one victim
-trade; on its own a back-run is often plain arbitrage rather than the full exploit
-([MEV](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value),
-[Slippage](https://docs.learnbittensor.org/learn/slippage)).
-
-- **Back-running** — the single trade placed after a target.
-- **Sandwich attack** — a front-run plus back-run wrapping one victim trade.
-
-## Distinction from MEV (Maximal Extractable Value)
-
-MEV is the umbrella term for value extracted by controlling transaction ordering and inclusion. A
-sandwich attack is one concrete way to capture it: an attacker places one transaction just before a
-victim's swap and another just after, profiting from the price move the victim's trade causes
+Arbitrage profits from genuine price differences without targeting a specific victim. A sandwich
+attack brackets one victim's pending trade to extract value from the move it causes
 ([Glossary: MEV](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value)).
 
-Category vocabulary and strategy vocabulary answer different questions on the same ordering path.
-MEV names the general extractable value; a sandwich attack names the before-and-after bracketing
-pattern around a visible pending trade.
+- **Arbitrage** — profit from existing price differences, tending to correct them.
+- **Sandwich attack** — bracketing a specific victim's trade.
 
-- **MEV** — the general value extractable by ordering or inserting transactions.
-- **Sandwich attack** — a specific MEV strategy that brackets a victim's swap.
+## Distinction from Yuma Consensus
 
-## Distinction from Pool
+A sandwich attack names mempool and pool ordering exploit vocabulary. Yuma Consensus converts
+submitted validator weights into emission shares after evaluation completes
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
-Sandwich attacks are most relevant in subnet pool operations where large transactions move alpha
-prices. The attacker profits from the pool's price sensitivity to transaction size
-([Understanding Slippage](https://docs.learnbittensor.org/learn/slippage)).
-
-This keeps the term in pool-operation vocabulary. Sandwich attack risk is specific to operations
-that interact with subnet pool pricing and require mempool visibility.
+- **Sandwich attack** — predatory pool ordering around a victim's pending trade.
+- **Yuma Consensus** — on-chain settlement from validator weights to emission shares.
 
 ## Reader Boundary
 
@@ -293,14 +120,9 @@ should not be read as a consensus failure, a validator scoring issue, or a descr
 slippage
 ([Glossary: Sandwich attack](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value)).
 
-The term describes adversarial behavior that exploits pool price sensitivity. Normal slippage from
-pool size differences is a separate concept without the adversarial ordering component.
-
 ## Further Reading
 
 - [Glossary: MEV](https://docs.learnbittensor.org/resources/glossary#mev-maximal-extractable-value)
-- [Understanding Slippage](https://docs.learnbittensor.org/learn/slippage)
-- [Managing Your Stakes](https://docs.learnbittensor.org/staking-and-delegation/managing-stake-sdk)
 - [MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield/)
 - [Price Protection](https://docs.learnbittensor.org/learn/price-protection)
-- [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)
+- [Understanding Slippage](https://docs.learnbittensor.org/learn/slippage)
