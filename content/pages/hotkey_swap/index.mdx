@@ -21,252 +21,93 @@ infoboxRows:
 # Hotkey Swap
 
 A hotkey swap is a Bittensor key-rotation operation that moves subnet participation from an old
-hotkey to a new hotkey owned by the same coldkey. The official
-[Coldkey and Hotkey Workstation Security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security)
-documentation presents it as the response when a hotkey may have leaked: rotate the operational key
-so the subnet role continues under a fresh hotkey.
+hotkey to a new hotkey owned by the same coldkey
+([Coldkey and Hotkey Workstation Security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security),
+[Glossary: Hotkey](https://docs.learnbittensor.org/resources/glossary#hotkey)).
 
-## Why It Exists
+## What It Represents
 
-Hotkeys are the online operational keys used for mining, validation, weight commits, and other
-subnet work. The same security documentation explains that a compromised hotkey does not directly
-move TAO balances the way a compromised coldkey can, but it can still damage reputation, submit bad
-validator behavior, or serve bad miner responses.
+Hotkey swap is the response when an operational hotkey may have leaked or should be retired. The
+coldkey owner creates a replacement hotkey under the same coldkey and moves subnet registration,
+including delegated stake, to that fresh key
+([Coldkey and Hotkey Workstation Security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security)).
 
-Hotkey swap exists for that security boundary. It gives the coldkey owner a way to replace the
-operational key without treating the broader wallet identity as lost.
+Subtensor supports all-subnet and per-subnet swap paths. The chosen scope determines which subnet
+roles rehome to the replacement hotkey
+([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
 
-## What Moves
-
-The security guide says the operation moves the subnet registration to a newly created hotkey owned
-by the same coldkey, including stake delegated by other users. In practical terms, the participant's
-subnet-facing role is rehomed from the old operational key to the replacement key.
-
-The Subtensor implementation supports both all-subnet and per-subnet hotkey swap paths, and its swap
-code describes associated state moving from the old hotkey to the new one. For readers, the
-important concept is continuity of the subnet role under a new hotkey, not a new coldkey owner.
-
-## Same-Coldkey Boundary
-
-A hotkey swap is not a coldkey recovery and not a transfer to an unrelated owner. The operation is
-authorized by the coldkey that owns the old hotkey, and the replacement hotkey is expected to be
-under the same coldkey. That boundary is why the security documentation frames hotkey swap as
-rotation of an operational key rather than movement of wallet custody.
-
-The distinction matters because coldkeys and hotkeys carry different authority. Coldkeys control
-balances, stake authority, and hotkey management; hotkeys carry operational authority for subnet
-activity.
-
-## Operational Boundaries
-
-Whether a hotkey swap can be submitted for a given wallet depends on balance, ownership, and
-rate-limit state at the time of the action. Those details belong to wallet and chain-state tooling.
-The concept itself names the Bittensor operation that rotates subnet participation from one
-same-coldkey hotkey to another.
-
-## Post-Leak Recovery Workflow
-
-The security documentation frames hotkey swap as the response when a hotkey may have leaked. In that
-situation, the coldkey owner creates a replacement hotkey under the same coldkey and submits the
-swap so subnet participation continues under the fresh operational key rather than the exposed one.
-
-That workflow is intentionally narrow. It addresses compromised or outdated operational keys without
-treating the coldkey as lost and without moving wallet custody to a different owner. Operators
-should still isolate the old hotkey from further use after rotation, because the swap rehomes
-on-chain participation but does not erase the fact that the previous key was exposed. The coldkey
-remains the authority that approves the replacement and pays the documented recycling fee.
-
-## All-Subnet Versus Per-Subnet Rotation Scope
-
-Subtensor supports hotkey swap paths that can apply across all subnets or target a specific subnet.
-The implementation moves associated state from the old hotkey to the new one within the chosen
-scope, which matters when a participant holds roles on more than one subnet. Choosing the wrong
-scope can leave participation on the old hotkey for subnets the operator meant to rotate.
-
-A participant rotating one compromised hotkey on a single subnet may need a per-subnet swap, while a
-broader operational refresh may use the all-subnet path described in the implementation. Readers
-should match the swap scope to the subnets they actually need to rehome, because the operation is
-not automatically limited to one network unless the chosen path says so. Wallet tooling and chain
-state determine which path is available at submission time.
-
-## Delegated Stake Continuity After Swap
-
-The security guide states that hotkey swap moves subnet registration to the replacement hotkey,
-including stake delegated by other users. That continuity matters for validators and other
-participants whose economic role is tied to a hotkey identity rather than to the coldkey name alone.
-
-Delegators who staked toward the old hotkey should read the swap as a change of operational target,
-not as an automatic unstake or transfer of coldkey authority. The coldkey owner still authorizes the
-rotation, and the documented behavior preserves delegated stake on the new hotkey within the
-same-coldkey boundary described in the security and wallet documentation. Anyone reviewing
-delegation after a swap should confirm the new hotkey identity on chain rather than assuming the old
-operational key still receives stake. That check matters most when multiple hotkeys exist under one
-coldkey.
-
-## Development Stage Context
-
-The
-[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from localnet to testnet and then mainnet. For hotkey swap,
-that sequence changes how readers should interpret evidence about the on-chain extrinsic that
-replaces a participant's operational key.
-
-In localnet, a hotkey swap can be submitted in an isolated environment. Localnet swap activity does
-not affect production network registration state.
-
-On testnet, hotkey swap behavior can be observed in a shared, non-production network. A testnet swap
-changes testnet chain state but does not affect mainnet UID registration or stake associations.
-
-On mainnet, a hotkey swap is a live Subtensor extrinsic that replaces the operational key associated
-with a coldkey and UID. The
-[Coldkey and Hotkey Workstation Security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security)
-documentation describes the operational-security context for hotkey replacement on the production
-network.
-
-The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
-separates mainnet, testnet, and localnet. A hotkey swap example from one environment should not be
-read as affecting chain state in another environment.
-
-For readers, this keeps hotkey swap examples grounded in their network context. Localnet, testnet,
-and mainnet each have separate chain states, so a swap belongs to the specific network where it was
-submitted.
-
-## Replacement Scope
-
-Hotkey swap language should identify the key being replaced without implying that every role, score,
-or subnet outcome changes for the same reason. Wallet documentation explains keys and account
-material, while subnet evaluation remains mechanism-specific
-([Bittensor Wallets](https://docs.learnbittensor.org/getting-started/wallets),
-[Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
-
-This helps readers separate key-management events from miner or validator performance claims.
+Hotkey swap examples from one network environment should not be read as representing production
+registration state on another
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
 
 ## Distinction from Hotkeys
 
 A hotkey is the operational key that holds subnet participation. Hotkey swap is the on-chain
-rotation that moves that participation to a replacement hotkey under the same coldkey
-([Glossary: Hotkey](https://docs.learnbittensor.org/resources/glossary#hotkey),
-[Coldkey and Hotkey Workstation Security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security)).
+rotation that moves that participation to a replacement hotkey
+([Glossary: Hotkey](https://docs.learnbittensor.org/resources/glossary#hotkey)).
 
-Key-role vocabulary names what signs routine subnet work; swap vocabulary names how that role is
-rehomed after compromise or rotation.
+- **Hotkey** — operational key that signs routine subnet work.
+- **Hotkey swap** — rotation that rehomes subnet participation to a new hotkey.
 
 ## Distinction from Coldkey Swap
 
 Coldkey swap migrates the full on-chain identity to a new coldkey while preserving hotkey
-registrations. Hotkey swap keeps the same coldkey and replaces only the operational hotkey that
-holds subnet participation ([Coldkey Swap](https://docs.learnbittensor.org/keys/coldkey-swap),
-[Coldkey and Hotkey Workstation Security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security)).
+registrations. Hotkey swap keeps the same coldkey and replaces only the operational hotkey
+([Coldkey Swap](https://docs.learnbittensor.org/keys/coldkey-swap)).
 
-Ownership migration vocabulary and operational-key rotation vocabulary answer different recovery
-questions.
-
-Security documentation frames hotkey swap as moving subnet registration to a newly created hotkey
-owned by the same coldkey, including delegated stake associated with that role
-([Coldkey and Hotkey Workstation Security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security)).
-
-Coldkey swap, by contrast, migrates the full on-chain identity to a different coldkey. Hotkey swap
-changes the operational signing key while coldkey ownership stays put.
+- **Hotkey swap** — operational-key rotation under the unchanged coldkey.
+- **Coldkey swap** — ownership migration to a new coldkey.
 
 ## Distinction from Coldkeys
 
-A coldkey is the custody anchor that authorizes hotkey management and controls balances. Hotkey swap
-is authorized by that coldkey but changes only which hotkey carries subnet participation
-([Glossary: Coldkey](https://docs.learnbittensor.org/resources/glossary#coldkey),
-[Wallets, Coldkeys and Hotkeys](https://docs.learnbittensor.org/keys/wallets)).
+The coldkey authorizes hotkey swap but is not replaced by it. Coldkeys control balances, stake
+authority, and hotkey management
+([Glossary: Coldkey](https://docs.learnbittensor.org/resources/glossary#coldkey)).
 
-Custody vocabulary names who owns the wallet; swap vocabulary names which operational key holds the
-subnet role.
+- **Coldkey** — custody anchor that authorizes the swap.
+- **Hotkey swap** — operation that changes which hotkey holds the subnet role.
 
 ## Distinction from Register
 
 Register is subnet entry that purchases a UID slot for a hotkey. Hotkey swap moves an existing
-registration from one same-coldkey hotkey to another without treating the participant as a new
-entrant ([Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register),
-[Coldkey and Hotkey Workstation Security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security)).
+registration without treating the participant as a new entrant
+([Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register)).
 
-Entry vocabulary names first admission; swap vocabulary names rotation of an already registered
-operational key.
+- **Register** — subnet entry that assigns a UID slot.
+- **Hotkey swap** — rotation of an already registered operational key.
 
 ## Distinction from Encrypting the Hotkey
 
 Encrypting the hotkey protects the keyfile at rest with a password. Hotkey swap replaces the
 operational key on chain when the current hotkey should no longer be used
-([Glossary: Encrypting the Hotkey](https://docs.learnbittensor.org/resources/glossary#encrypting-the-hotkey),
-[Coldkey and Hotkey Workstation Security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security)).
+([Glossary: Encrypting the Hotkey](https://docs.learnbittensor.org/resources/glossary#encrypting-the-hotkey)).
 
-At-rest file protection and on-chain key rotation are complementary security layers, not the same
-procedure.
-
-[Conviction and locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking)
-documentation states that when a hotkey is swapped, locks targeting the old hotkey transfer to the
-new hotkey without resetting conviction because both hotkeys belong to the same coldkey.
-
-Hotkey swap therefore preserves same-owner continuity for the lock context described there, separate
-from ordinary stake movement between validators.
-
-## Distinction from Subtensor
-
-Subtensor is Bittensor's layer-1 blockchain that records transactions and rankings and runs
-consensus, whereas a hotkey swap is an on-chain operation submitted to that chain to rehome subnet
-participation onto a replacement hotkey
-([Glossary: Subtensor](https://docs.learnbittensor.org/resources/glossary#subtensor)).
-
-- **Hotkey swap** — a coldkey-authorized operation that rotates an operational key.
-- **Subtensor** — the underlying chain that records and enforces that rotation alongside all other
-  network state.
+- **Encrypting the hotkey** — at-rest file protection.
+- **Hotkey swap** — on-chain rotation to a replacement hotkey.
 
 ## Distinction from Delegation
 
-Delegation is staking TAO toward a validator to add to that validator's stake, while a hotkey swap
-rotates the operational key under the same coldkey rather than initiating any new staking
+Delegation stakes TAO toward a validator hotkey. Hotkey swap rotates the operational key that may
+receive that delegated stake
 ([Glossary: Delegation](https://docs.learnbittensor.org/resources/glossary#delegation)).
 
-- **Hotkey swap** — a coldkey-authorized rotation of the operational key, not a new staking action.
-- **Delegation** — a staker's separate choice to direct TAO toward a validator in the first place.
+- **Hotkey swap** — coldkey-authorized rotation of the operational key.
+- **Delegation** — staker support attached to a validator hotkey.
 
-## Distinction from Locked-Stake
+## Distinction from Rate Limits
 
-Locked stake and conviction can also refer to hotkeys. The official
-[Conviction and locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking)
-documentation states that when a hotkey is swapped, locks targeting the old hotkey are transferred
-to the new hotkey, and conviction is not reset because both hotkeys are owned by the same coldkey.
+Hotkey swaps are subject to transaction rate limits and a per-subnet swap interval documented in
+rate limit guidance, plus a recycling fee
+([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
 
-This keeps hotkey swap separate from ordinary stake movement. The operation changes the operational
-hotkey target while preserving same-owner continuity for the lock context described in the staking
-documentation.
-
-## Distinction from Rate-Limit
-
-Rate-limit documentation describes hotkey swaps as subject to both the general transaction rate
-limit and a per-subnet hotkey-swap interval. It lists a one-block general limit and a per-subnet
-interval of 36,000 blocks, described there as roughly five days. The security guide also states that
-hotkey rotation incurs a 1 TAO recycling fee.
-
-For readers, the useful point is that
-[hotkey swap](https://docs.learnbittensor.org/keys/coldkey-hotkey-security) is intentionally
-rate-limited and paid. It should be read as a deliberate recovery or rotation action, not as a
-routine repeated update.
+- **Hotkey swap** — deliberate recovery or rotation action.
+- **Rate limits** — documented limits on how often swaps can be submitted.
 
 ## Distinction from Yuma Consensus
 
-A hotkey swap moves subnet participation from an old hotkey to a new hotkey owned by the same
-coldkey. It names operational key rotation vocabulary, not the on-chain step that turns validator
-weight submissions into emission shares
-([Coldkey and Hotkey Workstation Security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security),
-[Glossary: Hotkey](https://docs.learnbittensor.org/resources/glossary#hotkey)).
-
-Yuma Consensus is the on-chain process that converts submitted validator weights into emission
-shares after evaluation completes. Hotkey swap replaces the operational signing key; Yuma Consensus
-aggregates submitted weights into emission shares at epoch boundaries
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
-[Emission](https://docs.learnbittensor.org/learn/emissions)).
-
-Readers should keep hotkey rotation vocabulary separate from the settlement step. Hotkey swap
-answers how subnet participation moves to a fresh hotkey; Yuma Consensus answers how validator
-weights become emission shares in a subnet
-([Coldkey and Hotkey Workstation Security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+Hotkey swap replaces the operational signing key. Yuma Consensus converts submitted validator
+weights into emission shares after evaluation completes
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
 - **Hotkey swap** — rotation of subnet participation to a new hotkey under the same coldkey.
 - **Yuma Consensus** — on-chain weight aggregation that settles emissions.
@@ -280,13 +121,6 @@ performance history. It names operational hotkey rotation under the same coldkey
 ## Further Reading
 
 - [Coldkey and Hotkey Workstation Security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security)
-- [Glossary: Coldkey](https://docs.learnbittensor.org/resources/glossary#coldkey)
-- [Glossary: Hotkey](https://docs.learnbittensor.org/resources/glossary#hotkey)
-- [Glossary: Coldkey-hotkey pair](https://docs.learnbittensor.org/resources/glossary#coldkey-hotkey-pair)
-- [Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)
-- [Conviction and locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking)
-- [Wallets, Coldkeys and Hotkeys in Bittensor](https://docs.learnbittensor.org/keys/wallets)
 - [Coldkey Swap](https://docs.learnbittensor.org/keys/coldkey-swap)
-- [Subtensor hotkey swap implementation](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs)
-- [Introduction to Bittensor: Subnet development](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-- [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)
+- [Glossary: Hotkey](https://docs.learnbittensor.org/resources/glossary#hotkey)
+- [Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)
