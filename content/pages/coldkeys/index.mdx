@@ -26,263 +26,126 @@ infoboxRows:
 A coldkey is the long-term, security-sensitive key in Bittensor. It controls TAO and stake and is
 used to sign financial operations
 ([Coldkey](https://docs.learnbittensor.org/resources/glossary#coldkey),
-[Wallets, Coldkeys and Hotkeys](https://docs.learnbittensor.org/keys/wallets),
-[Working with Keys](https://docs.learnbittensor.org/keys/working-with-keys)).
+[Wallets, Coldkeys and Hotkeys](https://docs.learnbittensor.org/keys/wallets)).
 
-## Responsibilities
+## What It Represents
 
-- Hold and secure TAO balances and delegated stake.
-- Authorize staking, unstaking, moving stake, and transfers.
-- Own one or more hotkeys used for operational roles.
+A coldkey holds TAO balances and delegated stake, authorizes staking, unstaking, transfers, and
+subnet ownership actions, and controls one or more hotkeys used for operational roles
+([Glossary: Coldkey](https://docs.learnbittensor.org/resources/glossary#coldkey),
+[Glossary: Stake](https://docs.learnbittensor.org/resources/glossary#stake),
+[Glossary: Transfer](https://docs.learnbittensor.org/resources/glossary#transfer)).
 
-## Security practices
+Coldkey material belongs off live miner and validator nodes. Hotkeys handle routine subnet traffic;
+the coldkey remains the custody anchor for fund movement
+([Coldkey and hotkey workstation security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security)).
 
-- Keep the coldkey and its seed phrase offline when possible.
-- Never place the coldkey on internet-exposed nodes used for mining/validating.
-- Verify documented binaries and wallet guidance before performing key operations.
-
-## Operational relationship
-
-- Coldkey provides ownership and control; hotkeys derive authority for operational actions.
-- If a hotkey is compromised, the coldkey can rotate or revoke without exposing funds (assuming best
-  practices).
-
-## Tooling
-
-- `btcli` and the Wallet SDK support creating, importing, and managing coldkeys.
-- Use minimal on-chain interactions from environments you fully trust.
-
-## Development Stage Context
-
-The
-[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from localnet to testnet and then mainnet. For coldkey
-operations on a subnet such as netuid 1, that sequence changes how readers should interpret evidence
-about ownership, stake, and key state.
-
-In localnet, coldkey-based transaction mechanics can be tested in an isolated environment. Local
-wallet and stake state reflect local chain configuration rather than production TAO custody.
-
-On testnet, coldkey operations can be observed in a shared non-production network. Testnet stake and
-registration context on a selected netuid is separate from mainnet on-chain identity
+Coldkey examples from one network environment should not be read as representing production custody
+or stake state on another
 ([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
 
-On mainnet, coldkey context concerns actual TAO and stake in live on-chain state. Production coldkey
-operations authorize real financial movement and subnet ownership on the connected Bittensor network
-([Wallets, Coldkeys and Hotkeys](https://docs.learnbittensor.org/keys/wallets)).
+## Distinction from Hotkeys
 
-The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
-separates mainnet, testnet, and localnet. A coldkey operation observed in one environment should not
-be read as identical evidence about ownership or key state in another.
+Coldkeys hold funds and sign financial operations. Hotkeys perform operational subnet roles such as
+registration and weight submission without holding TAO balances
+([Glossary: Coldkey](https://docs.learnbittensor.org/resources/glossary#coldkey),
+[Glossary: Hotkey](https://docs.learnbittensor.org/resources/glossary#hotkey)).
 
-## Coldkey Owns Subnet Registrations
-
-The [Wallets](https://docs.learnbittensor.org/keys/wallets) documentation places subnet ownership
-and registration authority on the coldkey side of the wallet model. A coldkey can register subnets
-and control the hotkeys tied to those registrations
-([Glossary: Coldkey](https://docs.learnbittensor.org/resources/glossary#coldkey)).
-
-That ownership role is separate from day-to-day miner or validator operation. Operational nodes use
-hotkeys, but the coldkey remains the account layer that authorizes subnet ownership changes and
-other high-consequence wallet actions.
-
-For readers, subnet registration ownership belongs with coldkey vocabulary even when the visible
-subnet work happens through hotkeys on live machines.
-
-## Coldkey Material Belongs Off Live Nodes
-
-The
-[Coldkey and hotkey workstation security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security)
-guide treats coldkey material as highly sensitive and warns against placing it on internet-exposed
-validator or miner machines. The coldkey is meant for custody and financial signing, not for routine
-subnet traffic ([Glossary: Hotkey](https://docs.learnbittensor.org/resources/glossary#hotkey)).
-
-Keeping the coldkey off operational infrastructure limits how often high-value signing material is
-online. Hotkeys can run on nodes because they handle operational roles without holding TAO balances.
-
-The workstation-security guide is the reference for that separation. It is aimed at reducing
-exposure of coldkey material during mining and validation work.
-
-## Financial Signing Stays on the Coldkey
-
-Staking, unstaking, moving stake, and transfers are coldkey-side actions in Bittensor wallet
-vocabulary. The [Glossary: Stake](https://docs.learnbittensor.org/resources/glossary#stake) and
-[Glossary: Transfer](https://docs.learnbittensor.org/resources/glossary#transfer) describe those
-operations as part of token and delegation movement that requires the coldkey's authority.
-
-Readers should not read a hotkey registration action as permission to move TAO. Registration and
-weight submission belong to hotkey operational vocabulary; balance and stake changes belong to
-coldkey financial vocabulary.
-
-That split is why wallet documentation treats coldkeys as the custody anchor even when many visible
-subnet actions are signed by hotkeys.
-
-## Hotkey Swap Rotates Keys Under the Same Coldkey
-
-A coldkey is the security-sensitive key that holds TAO balances and controls the hotkeys associated
-with a wallet, while hotkey swap is the operational-key-rotation operation that moves subnet
-participation from a compromised or aging hotkey to a fresh replacement hotkey owned by the same
-coldkey
-([Coldkey and Hotkey Workstation Security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security),
-[Rotate or Swap your Coldkey](https://docs.learnbittensor.org/keys/coldkey-swap)).
-
-For readers, a coldkey is the identity that owns hotkeys, while hotkey swap is the operation that
-rotates the operational key under that same coldkey without involving the coldkey itself. A coldkey
-swap migrates the coldkey identity; a hotkey swap migrates the subnet role from one hotkey to
-another under the unchanged coldkey. Each operation addresses its own key level: hotkey swap
-addresses a compromised operational key, while coldkey swap addresses a compromised controlling key
-([Wallets, Coldkeys and Hotkeys](https://docs.learnbittensor.org/keys/wallets)).
-
-## Distinction from Proxy Wallets
-
-A coldkey is the ownership key that controls funds, stake, and paired hotkeys. A proxy wallet grants
-a separate account scoped authority to submit specific calls without changing which coldkey owns the
-wallet ([Glossary: Coldkey](https://docs.learnbittensor.org/resources/glossary#coldkey),
-[Proxies overview](https://docs.learnbittensor.org/keys/proxies)).
+- **Coldkey** — custody anchor for TAO, stake, and financial operations.
+- **Hotkey** — operational key for subnet roles on online infrastructure.
 
 ## Distinction from Wallet Address
 
-A coldkey and a wallet address name a signing key and its public identifier. The coldkey is the
-security-critical key that controls TAO and stake, while the wallet address is the coldkey's
-public-key-derived identifier used to receive TAO
-([Glossary: Coldkey](https://docs.learnbittensor.org/resources/glossary#coldkey),
-[Glossary: Wallet Address](https://docs.learnbittensor.org/resources/glossary#wallet-address)).
+A coldkey is the security-critical signing key. A wallet address is the coldkey's public-key-derived
+identifier used to receive TAO
+([Glossary: Wallet Address](https://docs.learnbittensor.org/resources/glossary#wallet-address)).
 
 - **Coldkey** — the security-critical signing key controlling TAO and stake.
 - **Wallet address** — the coldkey's public identifier used to receive TAO.
 
-A coldkey is the persistent cryptographic key that holds TAO balances and controls the hotkeys and
-subnet registrations associated with a wallet. A coldkey swap is the staged migration procedure that
-replaces a compromised or aging coldkey with a new one while preserving everything the old coldkey
-controlled ([Rotate or Swap your Coldkey](https://docs.learnbittensor.org/keys/coldkey-swap)).
+## Distinction from Coldkey Swap
 
-For readers, the coldkey is the identity being protected, while coldkey swap is the lifecycle
-operation that re-homes that identity when key rotation is necessary. The swap does not change the
-hotkeys owned by the old coldkey or the subnet registrations associated with them; the new coldkey
-inherits all of that state. This inheritance is what distinguishes a coldkey swap from an ordinary
-transfer: a transfer moves funds, while a swap migrates the identity and ownership itself
-([Wallets, Coldkeys and Hotkeys](https://docs.learnbittensor.org/keys/wallets)).
+Coldkey swap is the staged migration that replaces a compromised or aging coldkey with a new one
+while preserving hotkeys, balances, and subnet registrations
+([Rotate or Swap your Coldkey](https://docs.learnbittensor.org/keys/coldkey-swap)).
 
-The [Wallets, Coldkeys and Hotkeys](https://docs.learnbittensor.org/keys/wallets) documentation
-notes that in `btcli` the coldkey is equivalent to the wallet name, because the coldkey holds
-permissions and ownership over the hotkeys beneath it. The same documentation states that holding a
-balance, delegating stake, or creating a subnet can rely on a coldkey alone, while mining or
-validating requires a paired hotkey.
+- **Coldkey** — the identity being protected.
+- **Coldkey swap** — lifecycle operation that re-homes that identity.
 
-A coldkey balance is also subject to the documented existential deposit: if a wallet balance falls
-below the minimum required TAO, the account is deactivated and the remaining balance is destroyed
-([Wallets, Coldkeys and Hotkeys](https://docs.learnbittensor.org/keys/wallets)). That keeps custody
-and account-liveness concerns on the coldkey side rather than the operational hotkey side.
+## Distinction from Hotkey Swap
+
+Hotkey swap rotates the operational key under the same coldkey without changing coldkey ownership
+([Coldkey and Hotkey Workstation Security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security)).
+
+- **Coldkey** — ownership key that controls hotkeys.
+- **Hotkey swap** — operational-key rotation under the unchanged coldkey.
+
+## Distinction from Proxy Wallets
+
+A proxy wallet grants a separate account scoped authority to submit specific calls without changing
+which coldkey owns the wallet ([Proxies overview](https://docs.learnbittensor.org/keys/proxies)).
+
+- **Coldkey** — ownership key that controls funds, stake, and paired hotkeys.
+- **Proxy wallet** — scoped authority to submit specific calls.
 
 ## Distinction from Existential Deposit
 
-A coldkey and the existential deposit name a key and a balance rule that applies to it. The coldkey
-controls the wallet's funds, while the existential deposit is the minimum TAO a coldkey balance must
-keep to stay active; falling below it deactivates the account
-([Glossary: Coldkey](https://docs.learnbittensor.org/resources/glossary#coldkey),
-[Wallets, Coldkeys and Hotkeys](https://docs.learnbittensor.org/keys/wallets)).
+The existential deposit is the minimum TAO a coldkey balance must keep to stay active
+([Wallets, Coldkeys and Hotkeys](https://docs.learnbittensor.org/keys/wallets)).
 
 - **Coldkey** — the key that controls the wallet's TAO and stake.
-- **Existential deposit** — the minimum balance that keeps the coldkey account active.
+- **Existential deposit** — minimum balance that keeps the coldkey account active.
 
 ## Distinction from Regenerating a Key
 
-A coldkey is the custody key that controls TAO and hotkeys. Regenerating a key can restore that
-coldkey from its mnemonic when local files are lost
-([Glossary: Coldkey](https://docs.learnbittensor.org/resources/glossary#coldkey),
-[Glossary: Regenerating a Key](https://docs.learnbittensor.org/resources/glossary#regenerating-a-key)).
+Regenerating a key can restore a coldkey from its mnemonic when local files are lost
+([Glossary: Regenerating a Key](https://docs.learnbittensor.org/resources/glossary#regenerating-a-key)).
+
+- **Coldkey** — the custody key that controls TAO and hotkeys.
+- **Regenerating a key** — recovery from mnemonic when local files are lost.
+
+## Distinction from Seed Phrase
+
+A seed phrase is the offline recovery words that can restore coldkey access if the key is lost
+([Glossary: Seed Phrase](https://docs.learnbittensor.org/resources/glossary#seed-phrase)).
+
+- **Coldkey** — authority used to sign sensitive actions.
+- **Seed phrase** — recovery material that can restore the coldkey.
 
 ## Distinction from Seed Phrase Security
 
-Coldkey names the custody key whose recovery words carry the highest-consequence authority. Seed
-phrase security names how those words are stored and protected
-([Glossary: Coldkey](https://docs.learnbittensor.org/resources/glossary#coldkey),
-[Handle your Seed Phrase/Mnemonic Securely](https://docs.learnbittensor.org/keys/handle-seed-phrase)).
+Seed phrase security names how recovery words are stored and protected
+([Handle your Seed Phrase/Mnemonic Securely](https://docs.learnbittensor.org/keys/handle-seed-phrase)).
+
+- **Coldkey** — custody key whose recovery words carry the highest-consequence authority.
+- **Seed phrase security** — practices for protecting those recovery words.
 
 ## Distinction from Bittensor CLI: Permissions Guide
 
-A coldkey is the security-sensitive key that controls TAO and stake, while BTCLI permissions name
-which command-line actions require coldkey authority versus hotkey authority or permissionless reads
-([Glossary: Coldkey](https://docs.learnbittensor.org/resources/glossary#coldkey),
-[Bittensor CLI: Permissions Guide](https://docs.learnbittensor.org/btcli/btcli-permissions)).
-
-Custody-key vocabulary and CLI-authority vocabulary answer different questions. Coldkey names the
-protected ownership key; BTCLI permissions name when that key must authorize a CLI action.
+BTCLI permissions name which command-line actions require coldkey authority versus hotkey authority
+([Bittensor CLI: Permissions Guide](https://docs.learnbittensor.org/btcli/btcli-permissions)).
 
 - **Coldkey** — security-sensitive key that controls TAO and stake.
 - **BTCLI permissions** — which CLI actions require coldkey authority.
 
 ## Distinction from Yuma Consensus
 
-A coldkey is the custody key that holds TAO balances and authorizes staking and wallet operations in
-Bittensor. It names key custody vocabulary, not the on-chain step that turns validator weight
-submissions into emission shares
-([Glossary: Coldkey](https://docs.learnbittensor.org/resources/glossary#coldkey),
-[Wallets](https://docs.learnbittensor.org/keys/wallets)).
-
-Yuma Consensus is the on-chain process that converts submitted validator weights into emission
-shares after evaluation completes. Coldkeys sign extrinsics that move stake, but Yuma Consensus
-settles scoring outcomes on a subnet rather than defining custody roles
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
-[Emission](https://docs.learnbittensor.org/learn/emissions)).
-
-Readers should keep custody vocabulary separate from the settlement step. Coldkeys answer which key
-holds and authorizes balances; Yuma Consensus answers how validator weights become emission shares
-in a subnet ([Glossary: Coldkey](https://docs.learnbittensor.org/resources/glossary#coldkey),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+Coldkeys sign extrinsics that move stake. Yuma Consensus converts submitted validator weights into
+emission shares after evaluation completes
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
 - **Coldkey** — custody key that holds TAO and authorizes wallet actions.
 - **Yuma Consensus** — on-chain weight aggregation that settles emissions.
-
-## Distinction from Hotkeys
-
-Coldkeys and hotkeys occupy opposite ends of the Bittensor key model. The
-[Glossary: Coldkey](https://docs.learnbittensor.org/resources/glossary#coldkey) describes a coldkey
-as the security-sensitive key that holds funds and stake, while
-[Glossary: Hotkey](https://docs.learnbittensor.org/resources/glossary#hotkey) entries describe
-operational keys used for day-to-day network actions such as registering and submitting weights.
-
-For readers, a coldkey should not be confused with a hotkey despite both being part of the same
-wallet. The coldkey signs financial operations and owns one or more hotkeys, but it is not present
-on live network nodes. A hotkey, by contrast, is designed to run on online infrastructure without
-exposing funds ([Wallets, Coldkeys and Hotkeys](https://docs.learnbittensor.org/keys/wallets)).
-
-Coldkeys authorize staking, unstaking, transfers, and subnet ownership actions. Hotkeys handle
-operational roles such as registration and weight submission without holding TAO balances
-([Glossary: Transfer](https://docs.learnbittensor.org/resources/glossary#transfer),
-[Coldkey and hotkey workstation security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security)).
-
-## Distinction from Seed Phrase
-
-A coldkey is the high-authority key that owns a wallet's balances, stake, and registrations, while a
-seed phrase is the offline recovery words that can restore that coldkey's key access if it is lost
-([Glossary: Coldkey](https://docs.learnbittensor.org/resources/glossary#coldkey),
-[Glossary: Seed Phrase](https://docs.learnbittensor.org/resources/glossary#seed-phrase)).
-
-For readers, the coldkey is the authority used to sign sensitive actions, while the seed phrase is
-backup-and-recovery material that must stay secret, because anyone holding the seed phrase can
-restore the coldkey. The two are protected together but name different things
-([Wallets, Coldkeys and Hotkeys in Bittensor](https://docs.learnbittensor.org/keys/wallets)).
 
 ## Reader Boundary
 
 A coldkey is the custody and financial-signing key in Bittensor wallet vocabulary. It is not a
 hotkey, a seed phrase by itself, or permission to run routine subnet traffic on live nodes
-([Glossary: Coldkey](https://docs.learnbittensor.org/resources/glossary#coldkey),
-[Glossary: Hotkey](https://docs.learnbittensor.org/resources/glossary#hotkey)).
-
-Coldkeys authorize staking, unstaking, transfers, and subnet ownership actions. Hotkeys handle
-operational roles such as registration and weight submission without holding TAO balances
-([Glossary: Transfer](https://docs.learnbittensor.org/resources/glossary#transfer),
-[Coldkey and hotkey workstation security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security)).
+([Glossary: Coldkey](https://docs.learnbittensor.org/resources/glossary#coldkey)).
 
 ## Further Reading
 
 - [Glossary: Coldkey](https://docs.learnbittensor.org/resources/glossary#coldkey)
-- [Glossary: Seed Phrase](https://docs.learnbittensor.org/resources/glossary#seed-phrase)
 - [Wallets, Coldkeys and Hotkeys](https://docs.learnbittensor.org/keys/wallets)
-- [Working with Keys](https://docs.learnbittensor.org/keys/working-with-keys)
-- [Rotate or Swap your Coldkey](https://docs.learnbittensor.org/keys/coldkey-swap)
 - [Coldkey and hotkey workstation security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security)
-- [Introduction to Bittensor: Subnet development](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-- [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)
+- [Rotate or Swap your Coldkey](https://docs.learnbittensor.org/keys/coldkey-swap)
