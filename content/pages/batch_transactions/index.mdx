@@ -44,14 +44,74 @@ plus wrapper overhead, and each call still requires the signer authority that ac
 ([Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees),
 [Bittensor CLI: Permissions Guide](https://docs.learnbittensor.org/btcli/btcli-permissions)).
 
-SDK helpers that submit multiple individual extrinsics in sequence are not the same as a utility
-batch extrinsic. A helper name containing "multiple" does not prove that `batch`, `batch_all`, or
-`force_batch` was used on chain
-([Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions)).
-
 Observed batch records depend on which network you connect to. Examples from one environment should
 not be read as production chain activity on another
 ([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Wrapper and Inner-Call Reading
+
+A batch transaction has two useful reading layers: the wrapper and the inner calls. The wrapper
+explains the group behavior, while the inner calls explain the runtime actions being requested
+inside that group ([Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions),
+[Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics)).
+
+| Reading layer    | What it explains                                          | What it does not replace           |
+| ---------------- | --------------------------------------------------------- | ---------------------------------- |
+| Batch wrapper    | Why several calls share one outer submission              | The meaning of each inner call     |
+| Failure variant  | Whether failure stops, rolls back, or continues the group | The reason a specific call failed  |
+| Inner extrinsic  | The actual runtime method being requested                 | The wrapper's group-level rule     |
+| Signer authority | Which key or role can authorize the action                | The batch packaging itself         |
+| Fee context      | How grouped submission and inner calls are charged        | Runtime success or state change    |
+| Event record     | What the runtime emitted while processing                 | The full explanation of every call |
+| Storage state    | What public state remains inspectable later               | The submitted call sequence        |
+
+The practical reading order is to identify the wrapper, read each inner extrinsic, check authority
+and fee context, and then use events, errors, or storage to understand the observed result.
+
+A grouped submission can produce mixed evidence across inner calls, so event and error records
+should be read with the wrapper variant that produced them
+([Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions),
+[Subtensor Error Codes](https://docs.learnbittensor.org/errors)).
+
+Without that wrapper context, the same event list can be harder to interpret.
+
+## Reads and Chain Records
+
+Batch transactions belong to state-changing action vocabulary, not read-only inspection. Reading
+state observes the chain; a batch asks the runtime to process grouped calls
+([Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics),
+[Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees)).
+
+After processing, related records can come from events, storage, or errors. Those surfaces describe
+what the chain emitted, stored, or rejected after the submitted batch was evaluated
+([Subtensor Events](https://docs.learnbittensor.org/subtensor-api/events),
+[Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage),
+[Subtensor Error Codes](https://docs.learnbittensor.org/errors)).
+
+The selected batch form affects how those later signals are read. A failed `batch_all` has different
+meaning from a `force_batch` that records one failed inner call and still evaluates later calls
+([Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions),
+[Subtensor Error Codes](https://docs.learnbittensor.org/errors)).
+
+The batch wrapper is the submission context; events, storage, and errors are the records that help
+explain what the runtime did with that submission.
+
+## Registration and Staking Through Batching
+
+Participants sometimes batch subnet-entry and staking actions into one submission. A grouped
+transaction might combine [register](https://docs.learnbittensor.org/resources/glossary#register)
+with a [stake](https://docs.learnbittensor.org/resources/glossary#stake) call on a selected
+[netuid](https://docs.learnbittensor.org/resources/glossary#netuid), but the batch wrapper still
+preserves each inner call's authority and failure boundary
+([Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions),
+[Bittensor CLI: Permissions Guide](https://docs.learnbittensor.org/btcli/btcli-permissions)).
+
+The practical reading path is: identify the batch variant, read each inner extrinsic for
+registration burn and stake target, then inspect paired events for runtime confirmation
+([Subtensor Events](https://docs.learnbittensor.org/subtensor-api/events)). A `batch_all` wrapper
+means all inner calls must succeed together; a partial failure under `batch` or `force_batch` can
+leave registration confirmed while a later stake call fails, so outcome claims need wrapper-aware
+evidence rather than assuming every listed call took effect.
 
 ## Distinction from Transfer
 
@@ -83,6 +143,24 @@ handling but dispatch from the batch's origin
 
 - **Extrinsic** — a single submitted runtime call.
 - **Batch transaction** — a utility extrinsic that carries several calls as one transaction.
+
+[Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions) documentation
+distinguishes utility-pallet batch wrappers from SDK helpers that submit multiple actions in
+sequence. The SDK's `add_stake_multiple` and `unstake_multiple` send individual extrinsics one after
+another, so each transaction settles independently rather than as one grouped on-chain batch.
+
+Readers therefore should not treat a helper name containing "multiple" as proof that a single
+`batch`, `batch_all`, or `force_batch` extrinsic was used. When all-or-nothing semantics or one
+outer transaction fee for the group matters, the documentation points to composing a
+`Utility.batch_all` call through the low-level pallet path instead
+([Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions)).
+
+The same page notes a proxy-type boundary for that pattern. A `Staking` proxy allowlist covers
+specific staking extrinsics but does not permit `Utility::batch_all` as the outer call, so batch
+staking through a `Staking` proxy can fail with `CallFiltered`. Documentation recommends a
+`NonTransfer` proxy for batch staking because it blocks balance transfers and coldkey swaps while
+allowing batch wrappers; `NonCritical` also works but is more permissive than most users need
+([Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions)).
 
 ## Distinction from Transaction Fees
 
@@ -128,6 +206,10 @@ the question is what a particular inner call does.
 ## Further Reading
 
 - [Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions)
+- [Bittensor CLI: Permissions Guide](https://docs.learnbittensor.org/btcli/btcli-permissions)
 - [Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees)
 - [Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics)
+- [Subtensor Events](https://docs.learnbittensor.org/subtensor-api/events)
+- [Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage)
+- [Subtensor Error Codes](https://docs.learnbittensor.org/errors)
 - [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)
