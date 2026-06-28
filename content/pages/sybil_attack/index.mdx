@@ -20,251 +20,81 @@ infoboxRows:
 
 # Sybil Attack
 
-A Sybil attack is an attempt by a single actor to gain outsized influence over a network by creating
-many separate identities that appear independent. In a Bittensor subnet, that would mean one party
-registering many neurons or hotkeys, for example on a subnet such as netuid 1, hoping that
-controlling more identities translates into controlling more of the rewards or consensus
+A Sybil attack is an attempt by a single actor to gain outsized influence by creating many separate
+identities that appear independent. In a Bittensor subnet, that would mean one party registering
+many neurons or hotkeys hoping that more identities buy more rewards or consensus influence
 ([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
 
-## What It Would Target
+## What It Represents
 
-The goal of a Sybil attack is leverage from numbers. In Bittensor terms, an attacker holding many
-UIDs might hope to sway the weights that feed consensus, or to capture a larger share of emissions
-than an honest single participant. The attack only works if having more identities, on its own, buys
-more influence
-([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
-
-## Why Identity Count Alone Does Not Win
-
-Bittensor weights influence by stake rather than by headcount. The documentation describes Yuma
-Consensus using the stake associated with each UID when it calculates emissions, so a crowd of
-low-stake identities carries little weight. Gaining real influence still requires proportional
-stake, which cannot be conjured simply by registering more keys. This stake weighting is a core
-reason identity flooding does not pay off
+The attack seeks leverage from numbers: many UIDs might hope to sway weights or capture more
+emissions than a single honest participant. Bittensor weights influence by stake rather than
+headcount, so low-stake identity floods carry little weight in Yuma aggregation
 ([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism),
 [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
-## The Cost of Each Identity
-
-Numbers also are not free. Registering a neuron carries an economic cost, since registration
-consumes TAO, so every additional identity an attacker creates has a real price. Combined with stake
-weighting, this means a Sybil attempt pays a growing cost for identities that, without matching
-stake, add little influence. The economics are arranged so that flooding a subnet with identities is
-expensive and weak rather than cheap and powerful
-([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism),
-[Register](https://docs.learnbittensor.org/resources/glossary#register)).
-
-## Identity Attacks, Collusion Resistance, and Yuma Anti-Gaming Pipeline
-
-Sybil resistance sits in a broader incentive-defense pipeline on a subnet such as netuid 1. An
-identity-flooding actor tries to multiply
-[UID slots](https://docs.learnbittensor.org/resources/glossary#uid-slot); a
-[collusion](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism) actor instead
-tries to coordinate
-[validator weights](https://docs.learnbittensor.org/resources/glossary#weight-vector) toward favored
-miners. The two threats use different tools and should not be read as the same attack pattern
-([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
-
-The useful pipeline order is therefore registration cost and slot ceilings at entry, stake-weighted
-validator signal submission, [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
-aggregation with consensus clipping against inflated weights, and tempo-bound
-[emission](https://docs.learnbittensor.org/learn/emissions) distribution. Sybil flooding is blunted
-upstream by per-identity TAO cost and downstream by stake weighting; collusion is blunted by
-clipping and stake requirements inside the same consensus pass
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-A Sybil actor therefore pays for each identity without automatically gaining proportional consensus
-influence. A colluding validator group must still hold enough stake to move the stake-weighted
-agreement point and survive clipping before extra reward can land at the tempo boundary
-([Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo)).
-
-## Each Successful Registration Raises the Next Identity's Price
-
-The per-identity cost described above is not a flat fee. The registration burn is bounded by
-documented `MinBurn` and `MaxBurn` parameters, decays over time when registrations are quiet, and
-rises with each successful registration through a documented increase multiplier
-([Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register)).
-
-That rising-price behavior targets exactly the Sybil pattern: an actor registering many identities
-in quick succession drives the price of each subsequent identity higher, on top of stake weighting
-already limiting what those identities can achieve once registered.
-
-## Subnet Slot Ceilings Cap Total UID Count
-
-Each subnet has a configurable maximum number of UID slots. The
-[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters) reference
-includes `max_allowed_uids` as that ceiling. A Sybil actor cannot accumulate unlimited on-subnet
-identities without either winning open slots or displacing existing participants under documented
-[deregistration](https://docs.learnbittensor.org/resources/glossary#deregistration) rules
-([Mining: Miner deregistration](https://docs.learnbittensor.org/miners#miner-deregistration)).
-
-That capacity limit is separate from stake weighting. Even before emissions are calculated, the slot
-ceiling bounds how many registrations can coexist on one subnet at once
-([Glossary: UID Slot](https://docs.learnbittensor.org/resources/glossary#uid-slot)).
-
-## Neuron Lifecycle Includes a Post-Registration Immunity Window
-
-[Understanding Neurons](https://docs.learnbittensor.org/learn/neurons) lists registration and UID
-assignment as the first lifecycle steps, followed by an
-[immunity period](https://docs.learnbittensor.org/resources/glossary#immunity-period) during which a
-newly registered neuron is protected from ordinary pruning. Performance metrics build after that
-grace window rather than at the instant of registration.
-
-Each additional identity an attacker registers therefore pays its own entry cost and enters with the
-same post-registration immunity rules as any other neuron. This page does not treat that window as a
-complete Sybil defense on its own
-([Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register)).
-
-## Development Stage Context
-
-The
-[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from localnet to testnet and then mainnet. For a Sybil attack
-on a subnet such as netuid 1, that sequence changes how the economic resistance should be read,
-because registration cost and stake only carry production weight on mainnet
-([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
-
-In localnet, registering many identities happens in an isolated environment with no production cost,
-so identity flooding there demonstrates mechanics rather than real-world resistance on netuid 1.
-
-On testnet, registrations and stake exist on a shared non-production network whose TAO is not
-mainnet value, so the cost of identities is not a production economic barrier.
-
-On mainnet, each registered identity consumes real TAO and influence is weighted by real stake, so
-the cost-and-stake resistance described here applies to live subnets such as netuid 1
-([Register](https://docs.learnbittensor.org/resources/glossary#register)).
-
-The strength of Sybil resistance observed in one environment should not be read as the resistance on
-another.
-
-## Stake Weight Limits Influence After Each Registration
-
-Documentation treats subnet entry cost and validator weight submission as sequential steps.
-Registration makes each identity expensive to create, while stake-weighted weights and Yuma clipping
-limit how much any one identity can affect consensus outcomes after it exists
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
-[Glossary: Stake Weight](https://docs.learnbittensor.org/resources/glossary#stake-weight)).
-
-A Sybil actor therefore cannot assume that registering many low-stake neurons automatically produces
-proportional validator agreement. Consensus aggregates stake rather than raw UID count when
-emissions are finalized at tempo boundaries
-([Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo),
-[Emission](https://docs.learnbittensor.org/learn/emissions)).
-
-## Distinction from Burn Cost
-
-A Sybil attack and the burn cost meet at the economic barrier to fake identities. A Sybil attack is
-one actor registering many neurons to gain outsized influence, while the burn cost is the TAO each
-registration burns, so the per-registration burn cost makes mass identity creation expensive and
-blunts the attack
-([Glossary: Burn Cost](https://docs.learnbittensor.org/resources/glossary#burn-cost),
-[Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism),
+Each registration also consumes TAO through a dynamic burn that rises with each successful
+registration, bounded by documented `MinBurn` and `MaxBurn` parameters
+([Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register),
 [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
-Root-network stake and subnet registration sit on different layers. A Sybil actor on a subnet such
-as netuid 1 still pays a per-identity registration burn for each UID slot it tries to occupy, even
-when the same operator holds root stake elsewhere
-([Glossary: Root](https://docs.learnbittensor.org/resources/glossary#root),
-[Glossary: Burn Cost](https://docs.learnbittensor.org/resources/glossary#burn-cost)).
+Subnet slot ceilings such as `max_allowed_uids` further cap how many identities can coexist on one
+subnet at once ([Glossary: UID Slot](https://docs.learnbittensor.org/resources/glossary#uid-slot)).
 
-For readers, root stake changes validator influence in the root subnet context, while Sybil flooding
-on a child subnet still multiplies entry burns at the subnet registration boundary
-([Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets),
-[Mining: Miner registration](https://docs.learnbittensor.org/miners#miner-registration)).
+Examples tied to netuid 1 illustrate one subnet's Sybil-resistance path. They should not be read as
+representing production registration economics on another network
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
 
 ## Distinction from Collusion
 
-A Sybil attack and collusion sit in the same anti-gaming pipeline but use different tools. A Sybil
-actor multiplies identities at registration, hoping that more UID slots buy more influence, while a
-colluding group coordinates validator weights toward favored miners inside an existing participant
-set. Identity flooding raises entry cost per UID; coordinated weighting raises the stake required to
-move the agreement point and survive clipping
-([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-For readers, the defenses also split by stage. Registration burn, slot ceilings, and stake weighting
-blunt Sybil flooding upstream, while consensus clipping and stake thresholds blunt collusion inside
-the weight-aggregation pass. Similar-looking bad outcomes can therefore come from different exploit
-patterns until actor count and registration history are included
-([Glossary: UID Slot](https://docs.learnbittensor.org/resources/glossary#uid-slot),
-[Glossary: Stake Weight](https://docs.learnbittensor.org/resources/glossary#stake-weight)).
+A Sybil actor multiplies identities at registration. Collusion coordinates validator weights toward
+favored miners inside an existing participant set
+([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
 
 - **Sybil attack** — one actor registering many identities to seek outsized influence.
-- **Collusion** — multiple validators coordinating inflated weights toward chosen miners.
+- **Collusion** — validators coordinating inflated weights toward chosen miners.
 
-## Distinction from Self-Weighting
+## Distinction from Burn Cost
 
-A Sybil attack and self-weighting both try to capture more reward than honest participation would
-allow, but they scale influence differently. Sybil flooding adds identities at the registration
-boundary, while self-weighting is one validator inflating weights for entities it already controls
-without multiplying registrations
-([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism),
-[Yuma Consensus: Clipping excess weights](https://docs.learnbittensor.org/learn/yuma-consensus#clipping-excess-weights)).
-
-For readers, Sybil resistance is mostly economic at entry — burn cost, slot limits, and low-stake
-headcount — whereas self-weighting is resisted inside consensus clipping after the validator already
-holds a permit. A lone self-favoring validator lacks coalition stake; a Sybil actor lacks automatic
-stake per new identity even after paying each burn
-([Glossary: Validator Permit](https://docs.learnbittensor.org/resources/glossary#validator-permit),
-[Glossary: Burn Cost](https://docs.learnbittensor.org/resources/glossary#burn-cost)).
-
-- **Sybil attack** — multiplying identities at registration to seek leverage from numbers.
-- **Self-weighting** — one validator inflating weights for its own side without a coordinating
-  group.
-
-## Distinction from Max Allowed UIDs
-
-A Sybil attack and max allowed UIDs meet at subnet capacity, but they name different sides of the
-same ceiling. A Sybil actor tries to occupy as many UID slots as possible, while max allowed UIDs is
-the owner-settable hyperparameter that caps how many neurons can coexist on the subnet at once. The
-ceiling bounds how large an identity-flooding attempt can grow even before stake weighting is
-applied ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
-[Glossary: UID Slot](https://docs.learnbittensor.org/resources/glossary#uid-slot)).
-
-For readers, max allowed UIDs is a protocol limit on population size, not an attack pattern. A Sybil
-actor still competes for open slots and documented
-[deregistration](https://docs.learnbittensor.org/resources/glossary#deregistration) displacement
-rules when the subnet is full, so slot pressure and per-identity burn cost work together rather than
-either one replacing the other
-([Mining: Miner deregistration](https://docs.learnbittensor.org/miners#miner-deregistration)).
+Burn cost is the TAO each registration burns. Sybil attack names the identity-flooding threat that
+rising burn cost is meant to blunt
+([Glossary: Burn Cost](https://docs.learnbittensor.org/resources/glossary#burn-cost)).
 
 - **Sybil attack** — flooding a subnet with identities to seek disproportionate influence.
-- **Max allowed UIDs** — the hyperparameter ceiling on how many UIDs a subnet may hold.
+- **Burn cost** — per-registration TAO cost that raises the price of each new identity.
 
 ## Distinction from Register
 
-Sybil attack is when one actor creates many identities to gain disproportionate influence. Register
-is the subnet-entry process that assigns a UID slot after a participant pays the registration burn
-([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism),
-[Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register)).
+Register is the subnet-entry process that assigns a UID slot after the registration burn. Sybil
+attack names the multi-identity threat at that entry boundary
+([Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register)).
 
-Subnet registration rules make each entry consume a UID slot and a dynamic burn on netuid 1. Each
-additional identity an attacker registers therefore raises its own burn price. A newly registered
-identity also starts with an immunity window before pruning applies. Sybil attack names the
-multi-identity threat, while register names the controlled entry path that limits new identities
-through rising cost
-([Mining: Miner registration](https://docs.learnbittensor.org/miners#miner-registration),
-[Glossary: Burn Cost](https://docs.learnbittensor.org/resources/glossary#burn-cost)).
+- **Sybil attack** — identity flooding to seek disproportionate influence.
+- **Register** — controlled subnet-entry process that assigns a UID slot.
+
+## Distinction from Self-Weighting
+
+Self-weighting is one validator inflating weights for entities it already controls. Sybil flooding
+adds identities at the registration boundary
+([Yuma Consensus: Clipping excess weights](https://docs.learnbittensor.org/learn/yuma-consensus#clipping-excess-weights)).
+
+- **Sybil attack** — multiplying identities at registration to seek leverage from numbers.
+- **Self-weighting** — one validator inflating weights without multiplying registrations.
+
+## Distinction from Max Allowed UIDs
+
+Max allowed UIDs is the hyperparameter ceiling on subnet population size. Sybil attack names the
+attempt to occupy as many of those slots as possible
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
 - **Sybil attack** — flooding a subnet with identities to seek disproportionate influence.
-- **Register** — the subnet-entry process that assigns a UID slot after the registration burn.
+- **Max allowed UIDs** — hyperparameter ceiling on how many UIDs a subnet may hold.
 
 ## Distinction from Yuma Consensus
 
-A Sybil attack names many fake identities meant to distort incentives or governance outcomes. That
-identity-flooding risk is separate from the tempo pass that aggregates legitimate validator weight
-submissions into emission shares
-([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-Registration burn and UID slot limits raise the cost of spawning many miners. Yuma still settles
-from submitted weights on participants who hold active slots
-([Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register),
-[Emission](https://docs.learnbittensor.org/learn/emissions)).
-
-Sybil resistance is mostly economic at entry. Yuma addresses how included weight signals become
-credited shares each tempo on the relevant netuid
-([Glossary: UID Slot](https://docs.learnbittensor.org/resources/glossary#uid-slot)).
+Sybil attack names identity-flooding risk at registration. Yuma Consensus aggregates submitted
+validator weights into emission shares each tempo
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
 - **Sybil attack** — many fake identities meant to distort incentives.
 - **Yuma Consensus** — on-chain mechanism that turns validator weights into emission shares.
@@ -272,34 +102,13 @@ credited shares each tempo on the relevant netuid
 ## Reader Boundary
 
 This page defines the concept and Bittensor's economic resistance at a high level. It does not claim
-attacks are impossible, quantify any specific defense, or describe how to attempt one. The exact
-registration cost and stake distribution that determine how strong the resistance is on any subnet
-are live chain state and vary over time
-([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
-
-## Stake Weight Caps Influence After Registration
-
-Documentation separates identity cost at registration from stake-weighted influence inside
-consensus. A Sybil actor may register many neurons, but validator weights and Yuma aggregation still
-scale influence by stake rather than by raw UID count
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
-[Glossary: Stake Weight](https://docs.learnbittensor.org/resources/glossary#stake-weight)).
-
-For readers, that is why Sybil resistance is a pipeline rather than a single gate. Registration burn
-and slot ceilings raise the price of identities, while stake weighting limits how much each identity
-can move emissions even after it exists on the metagraph
-([Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph),
-[Understanding Neurons](https://docs.learnbittensor.org/learn/neurons)).
-
-Collusion resistance sits later in the same pipeline when validators coordinate weights rather than
-multiply registrations
+attacks are impossible or describe how to attempt one. Registration cost and stake distribution are
+live chain state that vary over time
 ([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
 
 ## Further Reading
 
 - [Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)
 - [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
-- [Register](https://docs.learnbittensor.org/resources/glossary#register)
-- [Collusion](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)
+- [Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register)
 - [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
-- [Understanding Neurons](https://docs.learnbittensor.org/learn/neurons)
