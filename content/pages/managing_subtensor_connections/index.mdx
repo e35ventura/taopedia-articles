@@ -1,0 +1,126 @@
+---
+title: "Managing Subtensor Connections"
+summary:
+  "How the Bittensor SDK opens websocket sessions to Subtensor and why those connections should be
+  closed cleanly and matched to the intended network."
+category: "Tools"
+tags: ["Tools", "SDK"]
+infoboxTitle: Managing Subtensor Connections
+infoboxCaption: SDK-side control of Subtensor websocket sessions.
+infoboxRows:
+  - label: Context
+    value: Bittensor SDK
+  - label: Opens
+    value: Websocket connection
+  - label: Main concern
+    value: Clean shutdown
+  - label: Network scope
+    value: Mainnet, testnet, localnet
+---
+
+# Managing Subtensor Connections
+
+Managing Subtensor connections means handling the websocket session that the Bittensor Python SDK
+opens when code instantiates `Subtensor` or `AsyncSubtensor`
+([Managing Subtensor Connections](https://docs.learnbittensor.org/sdk/managing-subtensor-connections)).
+The SDK documentation says those connections should be closed explicitly with `close()` or by using
+a context manager so the session is terminated cleanly when the code is done with it
+([Managing Subtensor Connections](https://docs.learnbittensor.org/sdk/managing-subtensor-connections)).
+
+The term belongs to SDK resource handling, not to chain-state meaning by itself. A connection gives
+code a path to Bittensor's blockchain layer, but the observed results still depend on the selected
+network, endpoint, and chain surface being queried
+([Managing Subtensor Connections](https://docs.learnbittensor.org/sdk/managing-subtensor-connections),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## What It Represents
+
+The SDK page states that every new `Subtensor` or `AsyncSubtensor` instance creates a new websocket
+connection to Subtensor. Managing those connections means reusing them carefully in code and closing
+them when they are no longer needed rather than leaving cleanup to garbage collection
+([Managing Subtensor Connections](https://docs.learnbittensor.org/sdk/managing-subtensor-connections)).
+
+That makes the term operational. It answers how SDK code should hold and release chain access, not
+which storage value, event, or block the code is reading.
+
+## Clean Shutdown Matters
+
+The official guidance prefers two shutdown paths: call `close()` directly or create the SDK object
+inside a `with` context manager so the connection closes automatically at the end of the context
+([Managing Subtensor Connections](https://docs.learnbittensor.org/sdk/managing-subtensor-connections)).
+
+The same page warns that relying on garbage collection alone is unreliable, especially when
+threading is involved. Readers should therefore treat connection cleanup as part of correct SDK
+usage rather than as an optional style preference
+([Managing Subtensor Connections](https://docs.learnbittensor.org/sdk/managing-subtensor-connections)).
+
+## Network Choice Stays Attached
+
+Connection management also includes choosing which Bittensor network the SDK instance should talk
+to. The networks reference distinguishes mainnet, testnet, and localnet, each with its own chain URL
+and operating context
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+A correctly closed connection can still point at the wrong environment for the claim being made.
+Mainnet observations belong to mainnet, testnet observations belong to testnet, and localnet is a
+development-only environment under the user's control
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Node Type Changes What the Endpoint Can Serve
+
+The Subtensor Nodes documentation explains that public Subtensor access can come from lite nodes or
+archive nodes, and those node types differ in how much blockchain history they keep available
+([Subtensor Nodes](https://docs.learnbittensor.org/subtensor-nodes)).
+
+That distinction matters when managing SDK connections because the connection lifecycle and the
+endpoint's data horizon are different questions. Closing a websocket cleanly does not guarantee that
+the chosen endpoint can answer deep historical queries; that depends on the node behind the
+connection ([Subtensor Nodes](https://docs.learnbittensor.org/subtensor-nodes)).
+
+## Distinction from Public Subtensor
+
+Managing Subtensor connections is SDK-side handling of how code opens and closes access to the chain
+layer. Public Subtensor is the broader idea of publicly reachable access to Subtensor
+([Managing Subtensor Connections](https://docs.learnbittensor.org/sdk/managing-subtensor-connections),
+[Glossary: Public Subtensor](https://docs.learnbittensor.org/resources/glossary#public-subtensor)).
+
+- **Managing Subtensor connections** — SDK handling of websocket lifecycle and network selection.
+- **Public Subtensor** — the publicly reachable chain-access context itself.
+
+## Distinction from Chain Reads
+
+Managing Subtensor connections describes how a program maintains the access path to Subtensor.
+[[Chain Reads]] describe the read-only inspection performed once that path is available
+([Managing Subtensor Connections](https://docs.learnbittensor.org/sdk/managing-subtensor-connections),
+[Inspecting the Chain with Polkadot.js](https://docs.learnbittensor.org/concepts/inspecting-the-chain)).
+
+- **Managing Subtensor connections** — opening, targeting, and closing the SDK session correctly.
+- **Chain reads** — using that session to inspect public chain state without submitting a change.
+
+## Distinction from Subtensor Nodes
+
+Managing Subtensor connections is about the client side of the link: the SDK object in application
+code. Subtensor Nodes describes the chain infrastructure the client connects to, including public
+node types and how they synchronize with Bittensor
+([Managing Subtensor Connections](https://docs.learnbittensor.org/sdk/managing-subtensor-connections),
+[Subtensor Nodes](https://docs.learnbittensor.org/subtensor-nodes)).
+
+- **Managing Subtensor connections** — client-side SDK connection lifecycle.
+- **Subtensor Nodes** — server-side chain infrastructure and node roles.
+
+## Reader Boundary
+
+This page explains the concept and the official shutdown guidance. It does not identify which
+endpoint a particular application should trust, whether a specific public node is healthy, or what
+live state a connection will return at a given moment. Those are network-specific operational
+questions that must be checked against the chosen endpoint and current chain context
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks),
+[Subtensor Nodes](https://docs.learnbittensor.org/subtensor-nodes)).
+
+## Further Reading
+
+- [Managing Subtensor Connections](https://docs.learnbittensor.org/sdk/managing-subtensor-connections)
+- [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)
+- [Subtensor Nodes](https://docs.learnbittensor.org/subtensor-nodes)
+- [Inspecting the Chain with Polkadot.js](https://docs.learnbittensor.org/concepts/inspecting-the-chain)
+- [Glossary: Public Subtensor](https://docs.learnbittensor.org/resources/glossary#public-subtensor)
