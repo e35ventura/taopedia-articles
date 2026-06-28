@@ -41,19 +41,21 @@ burn, which are the separate
 hyperparameters ([Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register)).
 
 A shorter half life means the live burn returns toward the floor faster after a registration spike,
-while a longer half life keeps an elevated burn in place for longer. The parameter therefore shapes
-how registration cost responds to demand over time rather than naming a fixed registration price.
+while a longer half life keeps an elevated burn in place for longer. The actual cost a registrant
+pays at any block depends on recent registration activity and on how half life, increase multiplier,
+and burn bounds interact for that subnet
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
 ## Documented Type and Setter
 
 The [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
 reference lists `BurnHalfLife` among the registration-burn hyperparameters and describes it as the
-decay horizon, in blocks, for the neuron registration burn cost between registrations. Because each
-subnet carries its own hyperparameters, the decay horizon is defined per subnet and applies only
-within that subnet's registration path.
+decay horizon, in blocks, for the neuron registration burn cost between registrations. The decay
+horizon on netuid 1 can differ from another subnet's half life
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
-The value in force is per-subnet chain state and can differ between subnets, so a subnet's real
-decay behavior should be read for that subnet rather than assumed from another subnet's setting.
+The value in force is per-subnet chain state and should be read for that subnet rather than assumed
+from another subnet's setting.
 
 ## Distinction from Min Burn and Max Burn
 
@@ -67,41 +69,17 @@ half life sets how fast the live burn moves downward inside that band between re
 
 ## Distinction from Burn Increase Mult
 
-Burn half life and burn increase mult act in opposite directions on the same dynamic burn. Burn
-increase mult raises the live burn when a registration succeeds, while burn half life pulls the live
-burn back down toward the floor during quieter periods
+Burn increase mult raises the live burn when a registration succeeds, while burn half life pulls the
+live burn back down toward the floor during quieter periods
 ([Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register)).
 
 - **Burn increase mult** — steps the burn up on each successful registration.
 - **Burn half life** — decays the burn back down between registrations.
 
-## BTCLI Reads the Live Value
-
-Any user can read subnet hyperparameters for a selected netuid with
-`btcli subnet hyperparameters --netuid 1`. The output includes the live registration-burn
-hyperparameter values for that subnet at query time
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
-
-Live values are network- and subnet-specific, so a burn-decay claim should be checked against the
-hyperparameter table for the relevant netuid rather than assumed from a single example.
-
-## Why the Decay Horizon Matters
-
-The decay horizon is what keeps registration cost demand-responsive rather than fixed. When many
-hotkeys register in a short window, the burn climbs; burn half life then determines how long that
-elevated cost persists before easing back toward
-[min burn](https://docs.learnbittensor.org/resources/glossary#register).
-
-For readers, this means burn half life is a timing control on registration economics, not a price by
-itself. The actual cost a registrant pays at any block depends on recent registration activity and
-on how the half life, increase multiplier, and burn bounds interact for that subnet
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
-[Emission](https://docs.learnbittensor.org/learn/emissions)).
-
 ## Distinction from Registration
 
-Burn half life is one hyperparameter that shapes how the dynamic registration burn changes over
-time. Neuron registration is the action of claiming a UID slot by paying that burn
+Burn half life shapes how the dynamic registration burn changes over time. Neuron registration is
+the action of claiming a UID slot by paying that burn
 ([Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register),
 [Miner registration](https://docs.learnbittensor.org/miners#miner-registration)).
 
@@ -110,33 +88,23 @@ time. Neuron registration is the action of claiming a UID slot by paying that bu
 
 ## Distinction from Adjustment Interval
 
-Burn half life and adjustment interval both affect how the registration burn cost changes over time,
-but they control different parts of the mechanism
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)). Burn
-half life sets the decay horizon over which the elevated burn cost eases back toward the floor
+Burn half life sets the decay horizon over which elevated burn cost eases back toward the floor
 between registration events; adjustment interval sets the block window between demand-comparison
-recalibrations.
-
-The two parameters complement each other. Adjustment interval governs when the mechanism
-recalibrates the burn cost against demand. Burn half life governs how quickly an elevated burn
-decays between registration events inside that cycle. A subnet owner can tune both independently to
-shape registration cost behavior on netuid 1 or any other subnet.
+recalibrations
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
 - **Adjustment interval** — block window between demand-comparison recalibrations.
 - **Burn half life** — decay horizon easing elevated burn between registrations.
 
 ## Distinction from Burn Cost
 
-Burn half life is the hyperparameter that sets how quickly subnet registration burn decays over
-time. Burn cost is the dynamic TAO amount a participant pays to register on a subnet at a given
-moment ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+Burn half life sets how quickly subnet registration burn decays over time. Burn cost is the dynamic
+TAO amount a participant pays to register on a subnet at a given moment
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
 [Glossary: Burn Cost](https://docs.learnbittensor.org/resources/glossary#burn-cost)).
 
 - **Burn half life** — decay schedule for registration burn over time.
 - **Burn cost** — current TAO price for subnet registration.
-
-Schedule vocabulary names how burn changes; burn-cost vocabulary names the price at registration
-time ([Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register)).
 
 ## Chain Reads for netuid 1
 
@@ -154,13 +122,14 @@ but the live value can differ from reference defaults and from half life on anot
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
 [Glossary: Burn Cost](https://docs.learnbittensor.org/resources/glossary#burn-cost)).
 
-This article's infobox uses netuid 1 as an example label when reading registration-burn behavior on
-a single subnet. That example does not prove every subnet shares the same decay horizon
+This article's infobox uses netuid 1 as an example label when reading one subnet's hyperparameter
+table on Finney mainnet. That example helps readers verify one row; it is not proof that every
+subnet exposes the same live decay horizon
 ([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
 
-Burn half life names decay timing inside the registration-cost band; it does not set the burn floor,
-ceiling, or adjustment interval themselves
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+Burn half life names decay timing inside the registration-cost band; Yuma Consensus still settles
+validator weights into emission shares each epoch on the active subnet
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
 - **Burn half life** — decay horizon for elevated registration burn between events on a subnet.
 - **Per-subnet boundary** — live half life is chain state on one netuid.
@@ -177,14 +146,18 @@ submissions into emission shares each epoch
 - **Burn half life** — decay schedule for the dynamic registration burn.
 - **Yuma Consensus** — mechanism that turns validator weights into emission shares.
 
+- **Registration vs settlement** — burn half life paces registration-burn decay; Yuma aggregates
+  validator weights into emission shares at epoch boundaries
+  ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+  [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+- **Timing not price** — half life names decay speed inside the min/max band, not the live burn
+  amount ([Glossary: Burn Cost](https://docs.learnbittensor.org/resources/glossary#burn-cost)).
+
 ## Reader Boundary
 
 Burn half life should not be read as a fixed registration price or as the min or max burn bounds. It
 names only the decay horizon for the live burn between registrations on a selected netuid
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
-
-Live values are per-subnet chain state and should be checked for the relevant netuid rather than
-assumed from the documented default alone.
 
 ## Further Reading
 
