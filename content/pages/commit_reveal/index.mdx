@@ -38,66 +38,6 @@ of weight disclosure; Yuma Consensus later interprets available validator signal
 ([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
 [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
-## Timing Model
-
-At a high level, the mechanism separates a concealed phase from a later reveal phase. That two-step
-timing model is the core of the mechanism
-([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)).
-
-The concealment period is measured through the subnet's configured Commit Reveal interval. During
-that period, the committed weights remain encrypted and are not yet included in Yuma Consensus
-([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-After the interval elapses, the chain reveals the weights when the corresponding Drand beacon pulse
-is available. The revealed weights then become public and can be used in the next consensus
-calculation ([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)).
-
-That timing model keeps the concept distinct from consensus scoring. Commit Reveal answers when
-weight information can be seen; available validator signals are aggregated into subnet outcomes
-through Yuma Consensus ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-## Subnet Settings
-
-The mechanism belongs to subnet-specific settings, and subnet hyperparameters provide the broader
-vocabulary for subnet mechanism settings
-([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
-[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
-
-That makes Commit Reveal a subnet mechanism rather than a universal description of every
-validator-weight path. A subnet can be discussed in terms of whether this visibility delay is part
-of its weight path, while the article definition stays focused on the mechanism itself.
-
-The subnet setting controls whether the mechanism is active and how long the reveal interval lasts.
-That places Commit Reveal beside subnet hyperparameter vocabulary without making it a general
-subnet-quality label ([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
-[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
-
-This keeps the setting separate from the validator's evaluation. A subnet can configure the
-visibility mechanism, while validators still supply the weight signals that later enter consensus.
-
-## Development Stage Context
-
-The
-[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from localnet to testnet and then mainnet. For commit reveal
-on a subnet such as netuid 1, that sequence changes how readers should interpret concealed weight
-submission and reveal-timing examples.
-
-In localnet, commit-reveal flows can be tested in an isolated environment. Local reveal intervals
-and weight visibility do not represent production subnet behavior.
-
-On testnet, commit-reveal hyperparameters can be exercised in a shared non-production network.
-Testnet concealment windows on a selected netuid are separate from mainnet subnet state.
-
-On mainnet, commit reveal is a live per-subnet mechanism on production networks. Observed reveal
-timing and weight visibility depend on the selected subnet's hyperparameter settings
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
-
-The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
-separates mainnet, testnet, and localnet. A commit-reveal example from one environment should not be
-read as representing production weight-disclosure behavior in another environment.
-
 ## Distinction from Activity Cutoff
 
 Commit reveal and activity cutoff are different weight-timing rules. Commit reveal delays when
@@ -112,18 +52,16 @@ count in the current Yuma Consensus pass
 
 ## Distinction from MEV Shield
 
-Commit Reveal and MEV Shield are both pre-inclusion concealment mechanisms, but they protect
-different things. Commit Reveal conceals validator weight submissions until a later reveal so
-recently produced weights are harder to copy, while MEV Shield encrypts sensitive pending
-transaction contents, such as staking and unstaking, until block inclusion so front-running and
-sandwich attacks cannot read them in the mempool
+Commit reveal conceals validator weight signals until a configured reveal window opens. MEV Shield
+names a separate protection layer for transaction ordering and front-running on chain
 ([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
 [MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield)).
 
-The two answer different questions. Commit Reveal protects a validator's fresh weights from copiers,
-while MEV Shield protects a trader's pending transaction from mempool observers, so one belongs to
-weight-disclosure timing and the other to transaction-ordering safety even though both delay when
-sensitive data becomes readable ([MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield)).
+- **Commit reveal** — delayed visibility for validator weight submissions.
+- **MEV Shield** — protection against transaction-ordering exploitation on chain.
+
+Weight-visibility vocabulary and transaction-ordering vocabulary answer different protection layers
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
 ## Distinction from Weights Rate Limit
 
@@ -143,80 +81,21 @@ Commit reveal delays when fresh committed weights become readable
 - **Weight copying** — dependence on copied visible weight signals.
 - **Commit reveal** — visibility delay before weights become readable.
 
-Problem vocabulary names the exploit; commit-reveal vocabulary names the timing defense
+Problem vocabulary and timing-defense vocabulary answer different parts of the weight-copying issue
 ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-The weight-copying problem comes from visible weight information being useful to validators that did
-not independently evaluate subnet work
-([Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor),
-[Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#weight-vector)).
-
-Commit Reveal reduces that timing advantage by hiding fresh weight signals until a later reveal
-point. The protection is narrow: it makes recent signals harder to copy before disclosure, while the
-underlying evaluation meaning of validator weights remains separate.
-
-The copying-resistance value comes from the delay. A validator that wants to copy fresh weights
-cannot read those encrypted weights during the concealment interval, so the copied signal is less
-useful for immediate weight-setting behavior
-([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
-[Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor)).
-
-That makes Commit Reveal most relevant to fresh, recently produced weights. Historical public
-weights can still be read, but the mechanism reduces the value of copying weights before their
-intended reveal point ([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)).
 
 ## Distinction from Yuma Consensus
 
-Commit reveal delays when validator weight signals become visible to observers. Validators still
-submit weights, but the chain conceals those signals until the configured reveal window opens
-([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
-[Glossary: Commit Reveal](https://docs.learnbittensor.org/resources/glossary#commit-reveal)).
-
-Yuma Consensus is the later step that aggregates revealed validator signals into subnet incentive
-outcomes at tempo boundaries. It concerns reward settlement once readable weights are present, not
-the concealment schedule that precedes them
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
-[Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)).
-
-During the concealment interval, committed weights stay encrypted and are not yet part of the open
-consensus calculation. After reveal, the same weights become ordinary validator signals for the next
-Yuma pass on the selected netuid
-([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
+Commit reveal delays when validator weight signals become visible to observers. Yuma Consensus is
+the later step that aggregates revealed validator signals into subnet incentive outcomes at tempo
+boundaries ([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
 [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-The weight-copying problem shows why that timing gap matters. Commit reveal makes recently produced
-weights harder to reuse before disclosure, while Yuma still depends on revealed validator signals
-when crediting subnet outcomes
-([Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor),
-[Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#weight-vector)).
-
-Subnet hyperparameters configure whether commit reveal is active and how long the reveal interval
-lasts on a netuid. Those settings change visibility timing; they do not replace Yuma settlement
-inside the same weight path
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
-[Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)).
 
 - **Commit reveal** — delayed visibility for validator weight signals.
 - **Yuma Consensus** — aggregation that turns revealed weights into emission shares.
 
-Commit Reveal and Yuma Consensus sit at different points in the validator-weight path. Commit Reveal
-concerns delayed visibility before weights are openly readable, while Yuma Consensus concerns
-aggregation after validator signals are available for consensus processing
-([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-Keeping that order clear prevents the terms from collapsing into one idea. Commit Reveal protects
-the timing of weight disclosure; disclosed signals affect subnet incentives through Yuma Consensus.
-
-The order is direct: weights are set, concealed, revealed, and then available for consensus
-processing. Each step belongs to the validator-weight path, but only the aggregation step is Yuma
-Consensus ([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-That order also keeps weight-copying language precise. Commit Reveal reduces the usefulness of
-recently visible weights; Yuma Consensus uses revealed validator signals in later aggregation
-([Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+Visibility-timing vocabulary and settlement vocabulary answer different stages on the weight path
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
 ## Distinction from Weight Setting
 
@@ -238,32 +117,24 @@ hyperparameter that sets how many subnet tempos the hidden window lasts
 ([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
 [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
-The mechanism names the encrypted commit-and-reveal path; the period names its duration in tempos.
-Precise timing claims should cite the subnet whose hyperparameters are being read.
+- **Commit reveal** — encrypted commit-and-reveal weight submission path.
+- **Commit reveal period** — hyperparameter setting the hidden window in tempos.
 
-The automatic reveal path is different from a manual disclosure step. Validators submit weights as
-usual, and the chain performs the time-lock encryption and reveal process around those weights
-([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)).
-
-This automatic path matters because revealed weights are still ordinary validator signals once they
-become readable. Commit Reveal changes their visibility schedule; it does not turn them into a
-separate kind of consensus input
-([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-The reveal step therefore changes availability, not meaning. Once readable, the weights are still
-validator-weight signals in the subnet's consensus path
-([Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#weight-vector)).
+Mechanism vocabulary and duration-setting vocabulary answer different configuration layers
+([Glossary: Commit Reveal](https://docs.learnbittensor.org/resources/glossary#commit-reveal)).
 
 ## Distinction from Consensus-Based Weights
 
-Consensus-based weights adjust validator bonds around consensus alignment as a separate copier
-deterrent. Commit reveal limits when fresh weight signals become visible
+Consensus-based weights adjust validator bonds around consensus alignment as a copier deterrent.
+Commit reveal limits when fresh weight signals become visible
 ([Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights),
 [Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)).
 
-Delayed visibility and bond adjustment address different parts of the weight-copying problem. One
-changes readability timing; the other changes how aligned or stale signals affect bond outcomes.
+- **Consensus-based weights** — bond adjustment around consensus alignment.
+- **Commit reveal** — delayed visibility before weights become readable.
+
+Bond-adjustment vocabulary and visibility-delay vocabulary address different copying defenses
+([Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor)).
 
 ## Distinction from Yuma Consensus 3
 
@@ -278,33 +149,16 @@ weight influences bond formation after consensus is known
 
 ## Distinction from Drand Time-Lock Encryption
 
-Commit Reveal is the commit-then-reveal weight submission process: validators submit concealed
-weights first and reveal readable weight information later
-([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)). Drand time-lock
-encryption is the timing layer inside that process — committed weight ciphertext stays unreadable
-until the public Drand beacon reaches the target round, even for the validator who created it
-([Glossary: Drand/time-lock encryption](https://docs.learnbittensor.org/resources/glossary#drandtime-lock-encryption),
-[Glossary: Weight Vector](https://docs.learnbittensor.org/resources/glossary#weight-vector)).
-
-- **Commit Reveal** — the two-step submission pattern that separates commit from later reveal.
-- **Drand time-lock encryption** — the beacon-timed lock that keeps committed weights concealed
-  until reveal.
-
-Drand time-lock encryption prevents concealed weight data from being decrypted before the intended
-reveal time ([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
+Commit reveal is the commit-then-reveal weight submission process. Drand time-lock encryption is the
+timing layer that keeps committed weight ciphertext unreadable until the public Drand beacon reaches
+the target round ([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
 [Glossary: Drand/time-lock encryption](https://docs.learnbittensor.org/resources/glossary#drandtime-lock-encryption)).
 
-Here, Drand is timing infrastructure for hidden weights. The important concept is the visibility
-gap: weight material can exist before observers can read it.
+- **Commit reveal** — two-step submission pattern separating commit from later reveal.
+- **Drand time-lock encryption** — beacon-timed lock keeping committed weights concealed.
 
-The Drand connection is therefore about unlock timing. The committed encrypted data is present
-before the reveal, but the cryptographic material needed to read it arrives only when the relevant
-beacon pulse is available ([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
-[Glossary: Drand/time-lock encryption](https://docs.learnbittensor.org/resources/glossary#drandtime-lock-encryption)).
-
-That timing relationship makes Drand time-lock encryption narrower than Commit Reveal. Commit Reveal
-is the whole conceal-and-reveal mechanism; Drand time-lock encryption supplies the
-delayed-readability piece.
+Whole-mechanism vocabulary and unlock-timing vocabulary answer different layers of the same path
+([Glossary: Weight Vector](https://docs.learnbittensor.org/resources/glossary#weight-vector)).
 
 ## Reader Boundary
 
