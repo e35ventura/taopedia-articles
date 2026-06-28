@@ -28,100 +28,35 @@ are tied to net TAO flows and the flow-based emission model
 The term is about relative emission share across subnets. It is not the same as validator weights,
 weight vectors, or weights used inside a single subnet's consensus process.
 
-## Flow Signal
+## What It Represents
 
-Subnet weights are tied to net TAO flow. Net flow is used to guide cross-subnet allocation, making
-subnet weights an allocation signal rather than a direct measure of work quality inside one subnet
+Subnet weights compare subnets for relative TAO injection share before rewards are resolved inside
+any one subnet. The signal is net TAO flow smoothed with an exponential moving average; positive net
+inflows increase relative share, while negative net flow can zero out injection after clipping
 ([Emission: Distribution Across Subnets](https://docs.learnbittensor.org/learn/emissions#distribution-across-subnets),
-[Glossary: Subnet Weights](https://docs.learnbittensor.org/resources/glossary#subnet-weights)).
+[Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema#subnet-flow-emission-smoothing)).
 
-This keeps the term tied to cross-subnet movement. A subnet can have miners, validators, and its own
-incentive mechanism, but subnet weights compare subnet-level flow signals.
+Registration burns from `burned_register` are excluded from net inflows, while stake and unstake
+operations count. Subnet weights therefore respond to staking movement rather than UID purchase
+burns alone ([Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register)).
 
-## Emission Allocation
+Cross-subnet allocation examples should not be read as representing production injection shares on
+another network ([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
 
-Subnet weights belong to the cross-subnet allocation stage. They help answer how much relative
-emission importance is assigned to a subnet before rewards are resolved inside that subnet
-([Emission: Injection and Distribution](https://docs.learnbittensor.org/learn/emissions#injection-and-distribution-two-stages-of-the-emissions-process),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+## Distinction from Validator Weights
 
-This keeps allocation and distribution layers separate. Subnet weights help determine relative
-importance across subnets, while within-subnet consensus determines how rewards are resolved among
-miners and validators.
-
-## Validator Weight Contrast
-
-Subnet weights and validator weights use similar vocabulary but refer to different scopes. Subnet
-weights compare subnets; validator weights compare miner outputs inside one subnet's consensus
-context
+Subnet weights compare subnets for cross-subnet allocation. Validator weights compare miner outputs
+inside one subnet's consensus context
 ([Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#weight-vector),
 [Glossary: Subnet Weights](https://docs.learnbittensor.org/resources/glossary#subnet-weights)).
 
-Reading the object being weighted usually resolves the ambiguity. Subnet weights are subnet-level;
-validator weights are miner-evaluation signals inside a subnet.
-
-## Development Stage Context
-
-The
-[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from localnet to testnet and then mainnet. The subnet weights
-concept applies across the Bittensor lifecycle: flow-based allocation signals are relevant on
-testnet for non-production evaluation and on mainnet for live cross-subnet emission distribution.
-
-The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
-separates mainnet, testnet, and localnet. Subnet weight examples or emission allocation outcomes
-from one environment should not be read as representing production cross-subnet allocation in
-another environment.
-
-## Consensus Scope
-
-Subnet weights should stay attached to the subnet and consensus context where they are used. Yuma
-Consensus explains validator weighting, while the metagraph source keeps subnet state tied to a
-selected netuid ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
-[Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)).
-
-For readers, a subnet weight claim is incomplete without the subnet context. The same vocabulary can
-describe different participants or mechanisms depending on the selected netuid and network state.
-
-## Negative Net Flow Can Zero Out Injection
-
-[Emission: Distribution across subnets](https://docs.learnbittensor.org/learn/emissions#distribution-across-subnets)
-documentation describes the flow-based model as rewarding subnets with positive net TAO inflows from
-staking activity and assigning zero emissions to subnets whose offset net flow falls to zero after
-clipping. Subnet weights in that reading are relative importance signals inside a competitive
-cross-subnet allocation step, not guaranteed emission regardless of staking behavior.
-
-That clipping rule keeps subnet weights tied to sustained staking direction. A subnet can lose
-injection share when outflows dominate inflows long enough for its smoothed net flow to fall below
-the model's lower bound.
-
-## Registration Burns Do Not Count as User Inflow
-
-The same emission reference notes an exception to user-flow tracking:
-[registration](https://docs.learnbittensor.org/resources/glossary#register) burns from
-`burned_register` are excluded from net inflows, while stake and unstake operations are counted.
-Subnet weights therefore respond to staking movement rather than to UID purchase burns alone.
-
-That boundary prevents registration spending from being read as the same signal as ongoing stake
-support when interpreting cross-subnet allocation.
-
-## Cross-Subnet Share Precedes Within-Subnet Yuma
-
-Emission documentation separates injection from distribution. Injection adds TAO to subnet pools
-each block using flow-based shares, while distribution at each
-[tempo](https://docs.learnbittensor.org/resources/glossary#tempo) boundary allocates accumulated
-rewards inside a subnet through
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
-([Emission: Injection and Distribution](https://docs.learnbittensor.org/learn/emissions#injection-and-distribution-two-stages-of-the-emissions-process)).
-
-Subnet weights belong to the first stage. They compare subnets for relative TAO injection share
-before validator weights, rank, and dividends are resolved inside any one subnet's consensus pass.
+- **Subnet weights** — subnet-level relative emission share across netuids.
+- **Validator weights** — miner-evaluation signals inside one subnet.
 
 ## Distinction from Tempo
 
-Subnet weights and tempo describe different axes of the emission process. Subnet weights set how
-much relative emission share a subnet receives in the cross-subnet injection stage, while a tempo
-sets how often a subnet distributes its accumulated rewards through consensus
+Subnet weights set how much relative emission share a subnet receives in the cross-subnet injection
+stage. Tempo sets how often a subnet distributes its accumulated rewards through consensus
 ([Glossary: Subnet Weights](https://docs.learnbittensor.org/resources/glossary#subnet-weights),
 [Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo),
 [Emission: Injection and Distribution](https://docs.learnbittensor.org/learn/emissions#injection-and-distribution-two-stages-of-the-emissions-process)).
@@ -131,50 +66,35 @@ sets how often a subnet distributes its accumulated rewards through consensus
 
 ## Distinction from Yuma Consensus
 
-Subnet weights name the relative cross-subnet share of TAO injection assigned to each netuid. They
-belong to the injection stage that adds TAO to subnet pools, not the within-subnet settlement that
-allocates rewards to miners and validators
+Subnet weights name the relative cross-subnet share of TAO injection assigned to each netuid. Yuma
+Consensus runs at the epoch boundary inside one subnet, converting validator weights into incentive
+and dividend shares from that subnet's accumulated pool
 ([Glossary: Subnet Weights](https://docs.learnbittensor.org/resources/glossary#subnet-weights),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
 [Emission: Injection and Distribution](https://docs.learnbittensor.org/learn/emissions#injection-and-distribution-two-stages-of-the-emissions-process)).
 
-Yuma Consensus is the on-chain mechanism that runs at the epoch boundary inside one subnet. It reads
-the weight matrix from eligible validators, applies clipping and bonding, and converts the result
-into incentive and dividend shares from that subnet's accumulated pool
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
-[Emission](https://docs.learnbittensor.org/learn/emissions)).
-
-Earlier sections separate subnet weights from tempo and from alpha-token vocabulary. Subnet weights
-compare netuids for injection share; Yuma settles validator submissions after TAO has already flowed
-into the subnet pool.
-
-Readers should not read a higher subnet weight as proof of higher miner rank inside that subnet.
-Injection share and within-subnet consensus outcomes answer different questions
-([Yuma Consensus: Validator emissions](https://docs.learnbittensor.org/learn/yuma-consensus#validator-emissions)).
-
 - **Subnet weights** — relative cross-subnet share of TAO injection per netuid.
-- **Yuma Consensus** — epoch-boundary settlement from validator weights to emission shares inside
-  one subnet.
+- **Yuma Consensus** — epoch-boundary settlement from validator weights inside one subnet.
 
 ## Distinction from Alpha Token
 
-Subnet weights are related to alpha-token tokenomics, but they are not alpha tokens themselves.
-Alpha tokens are subnet-specific assets, while subnet weights describe relative cross-subnet
-allocation
+Subnet weights describe relative cross-subnet allocation. Alpha tokens are subnet-specific assets
+within Dynamic TAO tokenomics
 ([Glossary: Alpha Tokens](https://docs.learnbittensor.org/resources/glossary#protocol-alpha),
 [Emission: Distribution Across Subnets](https://docs.learnbittensor.org/learn/emissions#distribution-across-subnets)).
 
-That distinction is useful when reading Dynamic TAO material. Alpha tokens name subnet assets;
-subnet weights name relative allocation across subnets.
+- **Subnet weights** — relative allocation share across subnets.
+- **Alpha token** — subnet-specific asset within Dynamic TAO.
 
 ## Distinction from Smoothing
 
-The flow signal is smoothed with an exponential moving average. Smoothing keeps a brief movement
-from being treated as a durable allocation signal
+Subnet weights use a smoothed net-flow signal rather than raw event totals. Smoothing keeps brief
+movement from being treated as a durable allocation signal
 ([Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema#subnet-flow-emission-smoothing),
 [Emission: Distribution Across Subnets](https://docs.learnbittensor.org/learn/emissions#distribution-across-subnets)).
 
-That distinction helps keep subnet weights from being read as a direct event log. They are part of
-the emission-allocation model, not a complete record of every individual flow event.
+- **Subnet weights** — allocation shares derived from smoothed net flow.
+- **Smoothing** — EMA window that filters short-lived flow spikes.
 
 ## Reader Boundary
 
@@ -183,16 +103,9 @@ vectors, or weight matrices when the focus is narrower within-subnet consensus s
 ([Glossary: Subnet Weights](https://docs.learnbittensor.org/resources/glossary#subnet-weights),
 [Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#weight-vector)).
 
-The term sits between Dynamic TAO's broad subnet tokenomics and the more specific weight terms used
-inside consensus.
-
 ## Further Reading
 
 - [Glossary: Subnet Weights](https://docs.learnbittensor.org/resources/glossary#subnet-weights)
 - [Emission: Distribution Across Subnets](https://docs.learnbittensor.org/learn/emissions#distribution-across-subnets)
 - [Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema#subnet-flow-emission-smoothing)
 - [Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#weight-vector)
-- [Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo)
-- [Glossary: Alpha Tokens](https://docs.learnbittensor.org/resources/glossary#protocol-alpha)
-- [Introduction to Bittensor: Subnet development](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-- [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)
