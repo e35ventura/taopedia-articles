@@ -23,162 +23,29 @@ locked so that it builds a time-based commitment signal
 ([Conviction and locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking),
 [Staking and delegation overview](https://docs.learnbittensor.org/staking-and-delegation/delegation)).
 
-The feature is commitment vocabulary. It does not create a separate token, a separate subnet role,
-or a general staking recommendation.
+## What It Represents
 
-## Conviction Score
-
-Conviction is the score that grows from locked stake over time. The locked amount and the passage of
-time both matter, so conviction should be read as a maturing commitment signal rather than a simple
-balance number
-([Conviction score](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking#the-conviction-score),
-[Conviction and locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking)).
-
-This keeps conviction separate from stake itself. Stake names the amount associated with a staking
-position; conviction names the time-based signal built from locked stake.
-
-## Lock Modes
-
-The conviction model includes decaying and perpetual modes. Decaying mode reduces the locked amount
-over time, while perpetual mode keeps the locked amount from decaying until the mode changes
-([Decaying and perpetual modes](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking#decaying-and-perpetual-modes),
-[Conviction and locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking)).
-
-The mode affects how the commitment signal evolves. It should not be treated as a separate asset
-type or as a promise about validator rewards.
-
-## Movement Boundary
-
-Locked stake should be read as a movement constraint on an existing subnet alpha staking position,
-not as a new wallet or a separate token balance. The conviction-staking documentation describes the
-lock in terms of how far the staked alpha balance can fall, while subnet staking keeps the position
-inside subnet-local alpha context
-([Conviction and locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking),
-[Staking into Subnets](https://docs.learnbittensor.org/staking-and-delegation/delegation#staking-into-subnets)).
-
-That distinction keeps the commitment signal separate from custody language. The lock constrains
-movement of the staked alpha position; it does not rename the asset or make conviction a wallet
-authority term.
-
-## Exiting a Lock Starts With a Public Signal
-
-New locks begin in decaying mode by default under conviction documentation. A holder who wants the
-locked mass to stop shrinking must explicitly switch to perpetual mode; returning to decaying mode
-starts the unwind path instead
-([Decaying and perpetual modes](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking#decaying-and-perpetual-modes),
-[Conviction and locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking)).
-
-The documentation treats that mode change as visible commitment vocabulary rather than a silent
-local setting. Switching from perpetual back to decaying is recorded on chain immediately, and the
-following decay period exists so other stakers can observe a large holder winding down before the
-lock fully clears.
-
-That timing keeps conviction aligned with its role as a public commitment signal. A reader watching
-subnet stake should treat a decaying-mode switch as advance notice that locked mass will shrink over
-time rather than as an instant release of the whole position.
-
-## Development Stage Context
-
-The
-[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from localnet to testnet and then mainnet. For conviction and
-locked stake on a subnet such as netuid 1, that sequence changes how lock-state examples should be
-read.
-
-In localnet, conviction and locked stake on netuid 1 can be tested in isolation. Local lock state
-and alpha balances reflect that test chain rather than production subnet staking behavior.
-
-On testnet, conviction examples on netuid 1 apply in a shared non-production network where lock
-state and subnet conditions are separate from mainnet.
-
-On mainnet, conviction and locked stake on netuid 1 concern production subnet alpha and production
-subnet state ([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
-
-The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
-separates mainnet, testnet, and localnet. A conviction example from one environment should not be
-read as evidence for another environment.
-
-## Distinction from Stake Weight
-
-Stake weight names the influence measure derived from staked value. Conviction names the separate
-time-based commitment signal produced by locking stake
-([Glossary: Stake Weight](https://docs.learnbittensor.org/resources/glossary#stake-weight),
-[Conviction and locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking)).
-
-Locked stake limits how far a subnet alpha staking position can fall while the lock remains active.
-Conviction-staking documentation describes the lock as a floor on total staked alpha for one coldkey
-on a subnet, so reductions below that locked amount are blocked until the lock unwinds
-([Conviction and locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking),
-[Staking into Subnets](https://docs.learnbittensor.org/staking-and-delegation/delegation#staking-into-subnets)).
-
-That constraint is the practical unstaking delay for the locked portion. Stake above the locked
-floor can still leave through ordinary
-[unstaking](https://docs.learnbittensor.org/resources/glossary#unstaking) paths, but the locked mass
-itself cannot be withdrawn until decaying mode erodes it or the holder changes lock mode according
-to conviction documentation
-([Decaying and perpetual modes](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking#decaying-and-perpetual-modes)).
-
-For readers, the delay is intentional rather than a wallet bug. Switching from perpetual back to
-decaying mode is recorded on chain immediately, and the following decay period gives other stakers
-time to observe a large holder winding down before the lock fully clears
+Locked stake is subnet alpha constrained by a lock that limits how far the staked alpha balance on
+that subnet can fall while the lock is active
 ([Conviction and locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking)).
 
-Conviction then names the time-based signal built while that locked mass remains in place. It grows
-from locked stake over time and can outlast the remaining locked amount in decaying mode because it
-records maturing commitment rather than mirroring every movable alpha unit in the wallet
+Conviction is the score that grows from locked stake over time. In perpetual mode it rises quickly
+at first and then levels off, approaching but never quite reaching the full locked mass
 ([Conviction score](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking#the-conviction-score)).
 
-Locked stake therefore combines movement constraint with public commitment vocabulary. It is not a
-separate token and does not replace validator evaluation or emission allocation terms
-([Glossary: Alpha Tokens](https://docs.learnbittensor.org/resources/glossary#protocol-alpha)).
+Decaying mode reduces the locked amount over time; perpetual mode keeps the locked amount from
+decaying until the mode changes. Switching from perpetual back to decaying is recorded on chain and
+starts the unwind path
+([Decaying and perpetual modes](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking#decaying-and-perpetual-modes)).
 
-[Conviction and locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking)
-documentation describes the lock as a floor on how low total staked
-[Glossary: Alpha Tokens](https://docs.learnbittensor.org/resources/glossary#protocol-alpha) on a
-subnet can fall for one coldkey. Stake above that locked floor is not itself locked and can leave
-through ordinary [Glossary: Unstaking](https://docs.learnbittensor.org/resources/glossary#unstaking)
-paths
-([Staking into Subnets](https://docs.learnbittensor.org/staking-and-delegation/delegation#staking-into-subnets)).
-
-The same guide also states that a coldkey can keep staking additional alpha on the subnet after a
-lock exists. The lock blocks only reductions below the locked amount; it does not cap how much new
-alpha can be added to the position.
-
-That reading separates the commitment floor from the full staking position. Conviction names the
-signal built from the locked portion, while surplus alpha above the floor remains ordinary movable
-[Glossary: Stake](https://docs.learnbittensor.org/resources/glossary#stake) on the same subnet
-position.
-
-On a subnet such as netuid 1, locked
-[alpha](https://docs.learnbittensor.org/resources/glossary#protocol-alpha) stake constrains how far
-a staked position can fall while building a public conviction signal
-([Conviction and locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking)).
-
-That commitment path sits on subnet staking vocabulary rather than on
-[validator weights](https://docs.learnbittensor.org/resources/glossary#weight-vector) or
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) scoring
-([Emission](https://docs.learnbittensor.org/learn/emissions)).
-
-Conviction therefore names a time-based commitment signal on netuid 1; it does not replace emission
-allocation or validator evaluation vocabulary.
-
-Locked stake is subnet alpha stake constrained by a lock. The conviction staking documentation
-explains that the locked amount limits how far the staked alpha balance on that subnet can fall
-while the lock is active
-([Conviction and locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking),
-[Glossary: Alpha Tokens](https://docs.learnbittensor.org/resources/glossary#protocol-alpha)).
-
-That makes locked stake narrower than ordinary stake. The stake still belongs to a subnet alpha
-context, but the locked portion carries an additional commitment constraint.
-
-The subnet context should stay visible whenever the term is used. Conviction is tied to locked alpha
-in a subnet position, not to every staking balance in Bittensor.
+Examples tied to netuid 1 illustrate one subnet's conviction path. They should not be read as
+representing production staking behavior on another network
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
 
 ## Distinction from Staking
 
-Staking and locked stake act on a position at different points. Staking is the act of attaching
-alpha support inside a subnet, while locked stake applies a commitment constraint to alpha that is
-already staked, so a position can be staked without being locked
+Staking attaches alpha support inside a subnet. Locked stake applies a commitment constraint to
+alpha that is already staked
 ([Conviction and locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking),
 [Glossary: Staking](https://docs.learnbittensor.org/resources/glossary#staking)).
 
@@ -187,110 +54,63 @@ already staked, so a position can be staked without being locked
 
 ## Distinction from Unstaking
 
-Locked stake and unstaking sit on opposite sides of withdrawal. Unstaking is the ordinary path that
-converts staked alpha back toward TAO, while locked stake is the floor that blocks reductions below
-the locked amount until the lock unwinds; surplus above the floor can still unstake normally
-([Conviction and locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking),
-[Glossary: Unstaking](https://docs.learnbittensor.org/resources/glossary#unstaking)).
+Unstaking is the ordinary path that withdraws staked alpha. Locked stake is the floor that blocks
+reductions below the locked amount until the lock unwinds
+([Glossary: Unstaking](https://docs.learnbittensor.org/resources/glossary#unstaking),
+[Conviction and locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking)).
 
 - **Unstaking** — the ordinary withdrawal of staked alpha.
 - **Locked stake** — the floor that blocks withdrawal below the locked amount.
 
+## Distinction from Stake Weight
+
+Stake weight names the influence measure derived from staked value. Conviction names the separate
+time-based commitment signal produced by locking stake
+([Glossary: Stake Weight](https://docs.learnbittensor.org/resources/glossary#stake-weight),
+[Conviction and locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking)).
+
+- **Stake weight** — influence measure derived from staked value.
+- **Conviction** — time-based commitment signal built from locked stake.
+
 ## Distinction from Validator Take
 
-Conviction and locked stake describe a staker locking alpha to build a time-based commitment that
-cannot be reduced below the locked amount, while validator take is the share of delegated-stake
-emissions a validator keeps before the rest flows to stakers
-([Conviction Staking](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking),
-[Glossary: Validator Take](https://docs.learnbittensor.org/resources/glossary#validator-take)).
+Validator take is the share of delegated-stake emissions a validator keeps. Conviction and locked
+stake describe a staker locking alpha to build a public commitment signal
+([Glossary: Validator Take](https://docs.learnbittensor.org/resources/glossary#validator-take),
+[Conviction Staking](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking)).
 
-Staker-commitment vocabulary names a locked position; validator-take vocabulary names the
-validator's commission on emissions.
+- **Conviction and locked stake** — time-locked alpha with a commitment signal.
+- **Validator take** — validator commission on delegated-stake emissions.
 
 ## Distinction from Conviction Score
 
 Locked stake is the floor on subnet alpha that cannot be reduced below the locked amount. Conviction
-score is the time-based commitment signal built while that locked mass remains in place
+score is the time-based signal built while that locked mass remains in place
 ([Conviction and locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking),
 [The conviction score](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking#the-conviction-score)).
 
 - **Locked stake** — minimum alpha mass that cannot be reduced below the locked floor.
 - **Conviction score** — time-based signal built from locked commitment over time.
 
-In decaying mode, conviction can outlast the remaining locked amount because it records maturing
-commitment rather than mirroring every movable alpha unit
-([Decaying and perpetual modes](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking#decaying-and-perpetual-modes)).
-
-In decaying mode, conviction documentation describes two linked curves: locked mass erodes over time
-while conviction first rises and then falls. Because conviction accumulates maturing time from the
-lock, it can peak partway through the decay and later remain higher than the alpha still locked at
-that moment
-([The conviction score](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking#the-conviction-score),
-[Decaying and perpetual modes](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking#decaying-and-perpetual-modes)).
-
-That behavior makes decaying conviction a record of past commitment rather than a live mirror of
-current locked holdings. After the lock has been shrinking for long enough, the score can reflect
-duration already served even when much of the original locked mass is gone.
-
-Readers comparing conviction to wallet balances should therefore keep the two separate. Stake names
-what is held now; decaying conviction can still carry weight from earlier locked periods until both
-values finish falling toward zero.
-
-In perpetual mode, conviction does not climb toward the locked amount at a constant rate. It rises
-quickly at first and then levels off, approaching but never quite reaching the full locked mass. The
-conviction-staking documentation gives concrete checkpoints along that curve: conviction reaches
-about 63% of the locked amount after one maturity time constant has passed, and about 90% after
-roughly 2.3 time constants
-([Conviction score](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking#the-conviction-score)).
-
-That maturity time constant is itself a governance-settable value rather than a fixed duration, so
-the same elapsed time can represent different progress toward full conviction on different subnets
-or after a parameter change. The shape of the curve is stable; the pace at which any specific lock
-climbs it is not.
-
 ## Distinction from Yuma Consensus
 
 Conviction and locked stake name time-locked alpha staking that builds a public commitment signal.
-That staking-market vocabulary is separate from the tempo mechanism that converts validator weight
-submissions into emission shares
+Yuma Consensus converts validator weight submissions into emission shares each tempo
 ([Conviction and locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking),
 [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
 - **Conviction and locked stake** — time-locked alpha with a commitment signal.
 - **Yuma Consensus** — on-chain settlement that turns validator weights into emission shares.
-  Conviction and locked stake name commitment signals; Yuma processes validator weights into rewards
-  ([Yuma Consensus: Validator emissions](https://docs.learnbittensor.org/learn/yuma-consensus#validator-emissions)).
-
-## Distinction from Subnet
-
-Conviction and locked stake apply to subnet alpha already staked inside a specific subnet. Alpha
-tokens are subnet-specific, and staking into subnets places stake in subnet-local context
-([Glossary: Alpha Tokens](https://docs.learnbittensor.org/resources/glossary#protocol-alpha),
-[Staking into Subnets](https://docs.learnbittensor.org/staking-and-delegation/delegation#staking-into-subnets)).
-
-The concept is therefore separate from Root Subnet TAO staking and from ordinary unlocked stake. An
-alpha position can be staked without being locked; conviction begins when part of that staked alpha
-is locked for commitment signaling.
 
 ## Reader Boundary
 
 Conviction and locked stake are commitment vocabulary for subnet alpha, not a separate token, a
 validator recommendation, or a reward forecast
-([Conviction and locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking),
-[Glossary: Alpha Tokens](https://docs.learnbittensor.org/resources/glossary#protocol-alpha)).
-
-Conviction names the time-based signal built from locked stake; stake names the amount in the
-position. Root Subnet TAO staking and ordinary unlocked alpha stake are separate paths
-([Glossary: Root Subnet](https://docs.learnbittensor.org/resources/glossary#root-subnetsubnet-zero),
-[Staking into Subnets](https://docs.learnbittensor.org/staking-and-delegation/delegation#staking-into-subnets)).
+([Conviction and locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking)).
 
 ## Further Reading
 
 - [Conviction and locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking)
-- [Conviction score](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking#the-conviction-score)
-- [Decaying and perpetual modes](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking#decaying-and-perpetual-modes)
 - [Staking into Subnets](https://docs.learnbittensor.org/staking-and-delegation/delegation#staking-into-subnets)
 - [Glossary: Alpha Tokens](https://docs.learnbittensor.org/resources/glossary#protocol-alpha)
-- [Glossary: Stake](https://docs.learnbittensor.org/resources/glossary#stake)
-- [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
 - [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)
