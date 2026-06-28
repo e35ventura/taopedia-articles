@@ -135,21 +135,28 @@ weights into emission shares each epoch on the active subnet
 
 ## Distinction from Yuma Consensus
 
-Bonds penalty names the hyperparameter magnitude that pulls bond-weight toward the consensus
-benchmark when weights exceed consensus. Yuma Consensus is the full tempo settlement that converts
-filtered weights into emission shares
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+Bonds penalty is the subnet hyperparameter that sets how strongly out-of-consensus validator weights
+are pulled toward the consensus benchmark before smoothed validator-miner bonds update. It names one
+bond-path magnitude on the hyperparameter table, not the full settlement step that allocates
+emissions ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Yuma Consensus: Penalizing out-of-consensus bonds](https://docs.learnbittensor.org/learn/yuma-consensus#penalizing-out-of-consensus-bonds)).
 
-- **Bonds penalty** — out-of-consensus bond penalty magnitude on a subnet.
-- **Yuma Consensus** — aggregation that turns filtered weights and bond state into emission shares.
+Yuma Consensus is the on-chain mechanism that runs at the epoch boundary. It reads the weight
+matrix, applies clipping and bonding (including out-of-consensus bond penalties), and converts the
+result into incentive and dividend shares
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
+[Emission](https://docs.learnbittensor.org/learn/emissions)).
 
-- **Bond path vs settlement** — bonds penalty configures one bond-path input; Yuma names full
-  settlement
-  ([Yuma Consensus: Penalizing out-of-consensus bonds](https://docs.learnbittensor.org/learn/yuma-consensus#penalizing-out-of-consensus-bonds)).
-- **Clipping separate** — clipping caps excess emissions; bonds penalty adjusts bond-weight before
-  bonds update
-  ([Yuma Consensus: Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping)).
+During bonding, weights above the consensus benchmark are interpolated toward clipped,
+consensus-capped weights—not toward an abstract bond state. Bonds penalty sets the strength of that
+pull; clipping and dividend rules still run inside Yuma afterward
+([Yuma Consensus: Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping)).
+
+Readers should treat bonds penalty as a configurable input to the bond path on one netuid, and Yuma
+as the mechanism that settles the filtered matrix into payouts.
+
+- **Bonds penalty** — hyperparameter magnitude for out-of-consensus bond-path adjustment.
+- **Yuma Consensus** — epoch-boundary settlement from filtered weights to emission shares.
 
 ## Distinction from Yuma Consensus 3
 
