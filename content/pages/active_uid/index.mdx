@@ -26,32 +26,36 @@ participant in a UID slot, but active status describes whether that slot is curr
 participating in the subnet context being observed
 ([Glossary: UID Slot](https://docs.learnbittensor.org/resources/glossary#uid-slot)).
 
-## Development Stage Context
+## What It Represents
 
-The
-[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from localnet to testnet and then mainnet. For active UID on
-a subnet such as netuid 1, that sequence determines which network's metagraph state is being read.
-
-In localnet, active UID observations reflect a locally running chain's metagraph state. Localnet
-activity flags come from local validator weights, subnet rules, and local chain state rather than
-production Bittensor participant behavior.
-
-On testnet, active UID observations can be read in a shared, non-production network. Testnet
-metagraph state shows how activity flags, `activity_cutoff`, and participant counts behave under
-shared chain conditions while staying separate from mainnet participant state.
-
-On mainnet, active UID is the live metagraph flag for participants currently participating in a
-production Bittensor subnet. The
-[Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph) reference exposes the `active`
-field per UID, and
+The [Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph) reference exposes an
+`active` field per UID on a selected netuid. That field is the usual evidence surface for active
+status, while
 [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutoff)
 defines `activity_cutoff` as the block-based window that drives the activity boundary
 ([Glossary: Active UID](https://docs.learnbittensor.org/resources/glossary#active-uid)).
 
-The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
-separates mainnet, testnet, and localnet. An active UID observation in one environment should not be
-read as evidence of the same participant activity in another environment.
+Active UID vocabulary therefore names participation-ready status for a slot, not the slot position
+itself and not a guarantee of performance or reward outcome.
+
+## Reading Metagraph Activity
+
+Active UID claims need subnet and timing context. A useful reading order is to select the
+[netuid](https://docs.learnbittensor.org/resources/glossary#netuid), locate the UID row in the
+metagraph, read the `active` field, and then check related timing evidence such as `last_update`
+against the subnet's `activity_cutoff` hyperparameter
+([Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutoff),
+[Glossary: Last Update](https://docs.learnbittensor.org/resources/glossary#last-update)).
+
+That order keeps slot position separate from current activity. A participant can hold a UID slot
+while the observed `active` value changes with subnet state, block context, and the network being
+read ([Glossary: UID Slot](https://docs.learnbittensor.org/resources/glossary#uid-slot),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+Observed active UID records from one environment should not be read as production participant
+activity in another
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
 
 ## Distinction from Pruning Score
 
@@ -63,9 +67,6 @@ incumbents when registration pressure displaces a slot on a full subnet
 - **Active UID** — current participation-ready status for a subnet slot.
 - **Pruning score** — emission standing used when one slot must open.
 
-Activity vocabulary names current status; pruning-score vocabulary names displacement ranking
-([Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)).
-
 ## Distinction from Deregistration
 
 An active UID names whether a slot currently counts as participating. Deregistration removes a miner
@@ -76,18 +77,17 @@ or validator when capacity and eligibility rules allow replacement
 - **Active UID** — metagraph evidence of current participation standing.
 - **Deregistration** — documented removal when a full subnet admits a new registration.
 
-Status vocabulary and removal vocabulary answer different slot-lifecycle questions
-([Mining: Miner deregistration](https://docs.learnbittensor.org/miners#miner-deregistration)).
-
 ## Distinction from Immunity Period
 
-An active UID and the immunity period both describe a UID's standing on a subnet but answer
-different questions. An active UID is the participant slot that currently counts as usable for
-validating or mining, while the immunity period is the block window that exempts a newly registered
-UID from deregistration regardless of its score, giving it time to reach usable standing
+An active UID is the participant slot that currently counts as usable for validating or mining,
+while the immunity period is the block window that exempts a newly registered UID from
+deregistration regardless of its score, giving it time to reach usable standing
 ([Glossary: Active UID](https://docs.learnbittensor.org/resources/glossary#active-uid),
 [Glossary: Immunity Period](https://docs.learnbittensor.org/resources/glossary#immunity-period),
 [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+- **Active UID** — whether the slot currently counts as participating.
+- **Immunity period** — post-registration window that can block early displacement.
 
 ## Distinction from UID Slot
 
@@ -99,9 +99,6 @@ is the positional identifier for a participant inside a subnet regardless of cur
 - **Active UID** — current participation-ready status for a subnet slot.
 - **UID slot** — positional identifier inside a subnet.
 
-Slot vocabulary names position; active vocabulary names whether that position currently counts as
-participating ([Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)).
-
 ## Distinction from Yuma Consensus
 
 Active UID is a metagraph flag showing whether a subnet slot currently satisfies activity conditions
@@ -112,9 +109,7 @@ validators' weight submissions into emission shares each epoch
 [Emission](https://docs.learnbittensor.org/learn/emissions)).
 
 - **Active UID** — runtime participation status for a subnet slot.
-- **Yuma Consensus** — on-chain settlement that turns validator weights into emission shares. Active
-  UID names slot participation status; Yuma processes validator weights into rewards
-  ([Yuma Consensus: Validator emissions](https://docs.learnbittensor.org/learn/yuma-consensus#validator-emissions)).
+- **Yuma Consensus** — on-chain settlement that turns validator weights into emission shares.
 
 ## Distinction from Subnet Miner
 
@@ -126,9 +121,6 @@ validators evaluate inside a subnet market
 - **Active UID** — whether the slot currently counts as participating.
 - **Subnet miner** — participant that produces evaluated subnet work.
 
-Slot-status vocabulary and role vocabulary answer different participation questions
-([Miners](https://docs.learnbittensor.org/miners)).
-
 ## Distinction from Netuid
 
 Active UID claims are scoped to a selected subnet. A netuid is the numeric identifier used to select
@@ -138,9 +130,6 @@ that subnet in chain state and tooling
 
 - **Active UID** — participation status for a slot in the selected subnet.
 - **Netuid** — identifier selecting which subnet is being read.
-
-Status vocabulary needs subnet context; netuid vocabulary names that selector
-([Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)).
 
 ## Reader Boundary
 
@@ -165,6 +154,7 @@ describes removal of an entire subnet context under different rules
 - [Glossary: Active UID](https://docs.learnbittensor.org/resources/glossary#active-uid)
 - [Glossary: UID Slot](https://docs.learnbittensor.org/resources/glossary#uid-slot)
 - [Glossary: Netuid](https://docs.learnbittensor.org/resources/glossary#netuid)
+- [Glossary: Last Update](https://docs.learnbittensor.org/resources/glossary#last-update)
 - [Glossary: Validator Permit](https://docs.learnbittensor.org/resources/glossary#validator-permit)
 - [Miners](https://docs.learnbittensor.org/miners)
 - [Validators](https://docs.learnbittensor.org/validators)
@@ -173,4 +163,3 @@ describes removal of an entire subnet context under different rules
 - [Subnet Hyperparameters: activity_cutoff](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutoff)
 - [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)
 - [Subnet Deregistration](https://docs.learnbittensor.org/subnets/subnet-deregistration)
-- [Introduction to Bittensor: Subnet development](https://docs.learnbittensor.org/learn/introduction#subnet-development)
