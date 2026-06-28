@@ -26,24 +26,6 @@ observation with the running average instead of replacing it. In Bittensor, the
 [validator-miner bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds)
 are updated across epochs rather than recomputed from scratch each time.
 
-## How the Smoothing Works
-
-An exponential moving average keeps a blend of past and present: each update mixes the latest value
-with the prior average using a weighting coefficient, usually called alpha. A higher alpha weights
-the newest observation more, making the average react faster, while a lower alpha leans on history
-and reacts slower ([EMA](https://docs.learnbittensor.org/learn/ema)).
-
-Applied to bonds, this means a validator's bond toward a miner moves gradually as new weight signals
-arrive, so a single epoch does not erase the relationship built over prior epochs
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-## Why Bittensor Smooths Bonds
-
-Smoothing makes the bond path stable. Without it, bonds would swing fully to each epoch's latest
-weights; with an EMA, they accumulate, which rewards consistent validator behavior and dampens
-short-lived spikes
-([Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds)).
-
 ## Distinction from Liquid Alpha
 
 The EMA is the smoothing method; liquid alpha is a feature that varies the EMA's alpha coefficient
@@ -66,42 +48,15 @@ the quantity, the other is the method applied to it across epochs
 
 ## Distinction from a Simple Moving Average
 
-An exponential moving average is not the only way to smooth a series; a simple moving average is the
-common alternative. A simple moving average takes the unweighted mean of a fixed window of recent
-values and drops anything outside that window, so every observation inside the window counts equally
-and old data leaves abruptly when it passes the window edge. An EMA instead weights the most recent
-observation most heavily and lets older values fade gradually without ever fully dropping out, with
-the alpha coefficient controlling how fast that fade happens
+An exponential moving average weights recent observations more heavily and lets older values fade
+gradually. A simple moving average takes the equal-weighted mean of a fixed recent window
 ([EMA](https://docs.learnbittensor.org/learn/ema)).
 
-That difference is why Bittensor smooths validator-miner bonds with an EMA rather than a
-fixed-window average. Bonds are meant to accumulate a validator's history with a miner and decay
-smoothly, not reset when a window boundary passes, so the exponential fade matches the goal of
-rewarding sustained, consistent behavior instead of abrupt windowed snapshots
-([Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+- **EMA** — recency-weighted blend where older values fade gradually.
+- **Simple moving average** — equal-weighted mean of a fixed recent window.
 
-- **Simple moving average** — the equal-weighted mean of a fixed recent window.
-- **EMA** — a recency-weighted blend where older values fade gradually.
-
-## Development Stage Context
-
-The
-[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from localnet to testnet and then mainnet. For the EMA
-smoothing of bonds on a subnet such as netuid 1, that sequence changes how readers should interpret
-bond-update and liquid-alpha examples.
-
-In localnet, EMA bond smoothing can be exercised in an isolated environment. Local bond values
-reflect local chain configuration rather than production consensus. On testnet, EMA-smoothed bonds
-can be observed in a shared, non-production network whose state is separate from mainnet.
-
-On mainnet, the EMA describes the live bond-update behavior on production subnets such as netuid 1,
-where the coefficient and any liquid-alpha variation depend on that subnet's hyperparameter state
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)). The
-[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
-separates mainnet, testnet, and localnet, so an EMA example from one environment should not be read
-as representing production bond behavior on another.
+Bond smoothing favors gradual accumulation over abrupt window resets
+([Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds)).
 
 ## Distinction from Bonds Moving Average
 
@@ -115,35 +70,16 @@ per-subnet `BondsMovingAverage` hyperparameter that configures that smoothing on
 
 ## Distinction from Yuma Consensus
 
-EMA describes how validator-miner bonds are smoothed over time. Each epoch blends a validator's
-latest weight signal with the bond history already on record, so one epoch does not fully replace
-the relationship built before it ([EMA](https://docs.learnbittensor.org/learn/ema),
-[Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds)).
-
-Yuma Consensus is the separate tempo mechanism that reads validator weight submissions and credits
-miner incentives and validator dividends on a subnet. It uses the bond state that EMA helps
-maintain, but settlement itself happens at the tempo boundary rather than inside the smoothing step
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
-[Emission](https://docs.learnbittensor.org/learn/emissions)).
-
-Liquid alpha can change the EMA coefficient based on how closely a validator aligns with consensus.
-That adjustment affects how quickly bonds move, while Yuma still performs the weight-to-emission
-settlement that follows once weights are available for the epoch
-([Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights),
-[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
-
-The bonds moving average hyperparameter sets how much smoothing a subnet applies to those bond
-updates. EMA names the technique; Yuma names the consensus process that turns submitted weights and
-bond context into credited emission shares
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+EMA names the smoothing technique applied to validator-miner bonds across epochs. Yuma Consensus
+settles validator weight submissions into emission shares each tempo
+([EMA](https://docs.learnbittensor.org/learn/ema),
 [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
-For readers on a subnet such as netuid 1, EMA vocabulary belongs to bond persistence across epochs.
-Yuma vocabulary belongs to reward settlement once the tempo interval closes on that netuid
-([Introduction to Bittensor: Subnet development](https://docs.learnbittensor.org/learn/introduction#subnet-development)).
+- **EMA** — smoothing technique for bond updates across epochs.
+- **Yuma Consensus** — settlement turning validator weights into emission shares.
 
-- **EMA** — smoothing applied to validator-miner bonds over time.
-- **Yuma Consensus** — mechanism that turns validator weights into emission shares.
+Smoothing vocabulary names bond updates over time; Yuma vocabulary names reward settlement
+([Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds)).
 
 ## Distinction from Alpha Sigmoid Steepness
 
