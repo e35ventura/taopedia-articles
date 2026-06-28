@@ -138,53 +138,46 @@ Consensus weight aggregation
 ([Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction),
 [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
-## Development Stage Context
-
-Bittensor's subnet-development path moves from localnet to testnet and then mainnet
-([Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)).
-For Allways (SN7), that sequence changes how readers should interpret examples of swap execution,
-collateral handling, validator votes, and settlement outcomes.
-
-In localnet, miners and validators can develop and test Allways-compatible swap logic in an isolated
-environment. Localnet examples can explain the order flow and verification model, but they do not
-represent production settlement or collateral risk.
-
-On testnet, Allways-compatible implementations can be exercised in a shared, non-production network.
-Testnet examples can show realistic coordination between quoted rates, reported fulfillment, and
-validator checks, but they remain separate from mainnet swap outcomes.
-
-On mainnet, Allways (SN7) is the production subnet where miners quote native-asset swaps and
-validators verify settlement before collateral is released or slashed
-([Allways repository](https://github.com/entrius/allways)). That makes the production context
-important for interpreting whether a quoted swap, validator vote, or settlement result actually
-reflects the subnet's active trust model.
-
-The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
-separates mainnet, testnet, and localnet. A swap example, collateral event, or validator vote from
-one environment should not be read as representing production subnet performance in another
-environment.
-
-That distinction matters for Allways because external-chain settlement depends on the specific asset
-pair, order, time window, and validator observations involved. A local or test example can explain
-the mechanism, while a production example depends on the actual native-chain transfers and
-verification context that produced it.
-
 ## Miner and Validator Roles
 
 Subnet 7 operates under the standard Bittensor two-role structure. Miners supply the subnet's
 capability and validators evaluate those contributions and set weights. Reward distribution follows
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus), which converts those weights
-into per-tempo [emissions](https://docs.learnbittensor.org/learn/emissions).
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus).
 
 ## Distinction from Yuma Consensus
 
-Subnet 7 is a Bittensor subnet at netuid 7. Yuma Consensus is the separate mechanism that converts
-validator weight submissions into emission shares each tempo
+Allways on netuid 7 is a trustless native-asset swap subnet where miners post collateral-backed
+exchange rates and validators independently verify on-chain fulfillment before collateral is
+released or slashed. That swap-verification vocabulary names how Allways measures validated trade
+volume on netuid 7, not the on-chain step that turns validator weight submissions into emission
+shares each tempo ([Allways repository](https://github.com/entrius/allways),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+Yuma Consensus is the on-chain mechanism that runs at the epoch boundary on the selected netuid. It
+reads the weight matrix from eligible validators, applies clipping and bonding, and converts the
+result into miner incentives and validator dividend shares
 ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
 [Emission](https://docs.learnbittensor.org/learn/emissions)).
 
-- **Subnet 7** — subnet market covered in this article on netuid 7.
-- **Yuma Consensus** — mechanism that turns validator weights into emission shares.
+Earlier sections describe collateral posting, native-chain settlement, and independent validator
+votes on fulfillment. Those inputs shape the validator weights; they do not settle emissions
+themselves. Yuma aggregates the weight signals that flow from that swap-verification path rather
+than executing cross-chain transfers itself
+([Allways repository](https://github.com/entrius/allways),
+[Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)).
+
+Swap verification therefore sits upstream of settlement. Yuma still credits emissions from included
+validator weights on netuid 7 once the tempo closes
+([Allways repository](https://github.com/entrius/allways),
+[Emission](https://docs.learnbittensor.org/learn/emissions)).
+
+Readers should treat Allways as the trustless native swap protocol on netuid 7, and Yuma Consensus
+as the recurring mechanism that allocates rewards from validator weights each tempo.
+
+- **Subnet 7 (Allways)** — trustless native cross-chain swap subnet with collateral enforcement.
+- **Yuma Consensus** — epoch-boundary settlement from validator weights to emission shares on a task
+  subnet
+  ([Yuma Consensus: Validator emissions](https://docs.learnbittensor.org/learn/yuma-consensus#validator-emissions)).
 
 ## Reader Boundary
 
