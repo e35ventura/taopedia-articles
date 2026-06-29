@@ -25,27 +25,28 @@ infoboxRows:
 Cacheon is Bittensor Subnet 14 (SN14), operated by latent-to. The subnet runs a live inference
 optimization competition: miners submit customized LLM inference servers that are benchmarked
 against a pinned baseline, and the fastest correct implementation earns the majority of subnet
-emissions. The competition currently focuses on serving large open-source models at scale, with
-scoring designed to reward meaningful speed improvements over commodity inference setups.
+emissions. The V1 arena targets `Qwen2.5-72B-Instruct` on identical 8-GPU pods against a pinned vLLM
+baseline ([Cacheon repository](https://github.com/latent-to/cacheon),
+[cacheon.ai/docs](https://cacheon.ai/docs)).
 
 ## How the Mechanism Works
 
 According to the [Cacheon repository](https://github.com/latent-to/cacheon), Cacheon uses a
 challenger model with a seated winner. The current leading inference server holds the winner
 position and earns the top share of emissions. A new submission must exceed the winner's performance
-score by a fixed margin to take the seat, preventing minor fluctuations from causing constant
+score by a fixed 1% margin to take the seat, preventing minor fluctuations from causing constant
 turnover.
 
-Each submission is evaluated in two passes. The first measures raw speed — specifically
-time-to-first-token and overall throughput — against the same pinned baseline on identical hardware.
-The second pass verifies correctness by checking that the server's outputs match expected values.
-Submissions that fail correctness verification score zero regardless of speed. Only servers that
-pass the correctness gate compete on performance.
+Each submission is evaluated in two stages on identical hardware. The harness first measures median
+end-to-end response-time improvement over the pinned vLLM generation baseline—the score uses wall
+time to an aligned output-token count, not decode-only throughput, so buffering tricks cannot earn
+extra credit ([cacheon.ai/docs/evaluation/scoring](https://cacheon.ai/docs/evaluation/scoring)). A
+separate correctness gate then teacher-forces the same outputs on a scoring vLLM; submissions that
+fail correctness verification score zero regardless of speed. Only servers that pass the correctness
+gate compete on performance.
 
 The winner earns approximately 80% of the competition pool; the runner-up earns the remaining 20%.
-The total pool size scales with how much the winner improves over the baseline — larger improvements
-produce larger rewards, aligning incentives with substantial optimization progress. Weight vectors
-from validator scoring feed into
+Weight vectors from validator scoring feed into
 [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus), distributing emissions via
 Dynamic TAO.
 
@@ -93,8 +94,9 @@ role.
 
 ## Correctness Verification Precedes Speed Ranking
 
-Each challenger submission must pass an output-correctness check before speed metrics count toward
-the score ([Cacheon repository](https://github.com/latent-to/cacheon)).
+Each challenger submission must pass a teacher-forcing correctness gate on a scoring vLLM before
+end-to-end speed metrics count toward the score
+([cacheon.ai/docs/evaluation/scoring](https://cacheon.ai/docs/evaluation/scoring)).
 
 A fast but incorrect server therefore scores zero rather than trading accuracy for throughput.
 
@@ -124,10 +126,10 @@ result into miner incentives and validator dividend shares
 ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
 [Emission](https://docs.learnbittensor.org/learn/emissions)).
 
-Earlier sections separate time-to-first-token speed from output correctness verification. A
-challenger must beat the seated winner by a fixed margin on identical hardware before taking the top
-emission share. Yuma aggregates the weight signals that flow from that two-pass evaluation rather
-than running inference servers itself
+Earlier sections separate median end-to-end wall-time speedup from teacher-forcing correctness
+verification. A challenger must beat the seated winner by a fixed 1% margin on identical hardware
+before taking the top emission share. Yuma aggregates the weight signals that flow from that
+two-stage evaluation rather than running inference servers itself
 ([Cacheon README](https://raw.githubusercontent.com/latent-to/cacheon/main/README.md),
 [Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)).
 
