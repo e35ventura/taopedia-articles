@@ -134,6 +134,34 @@ cost each time before decay has room to act. This is why creation cost can spike
 launches and then ease over the following blocks
 ([Create a Subnet: Burn cost](https://docs.learnbittensor.org/subnets/create-a-subnet#burn-cost)).
 
+## Subnet Creation Rate Limit and Commands
+
+Burn cost names the recycled TAO price, but subnet creation also carries a documented block-based
+pace separate from that dynamic amount. The create-a-subnet guide limits successful subnet
+registrations to one per 14,400 blocks (approximately two days). Readers can query the live interval
+with `subtensorModule.networkRateLimit()` on chain
+([Create a Subnet: Subnet creation rate limit](https://docs.learnbittensor.org/subnets/create-a-subnet#subnet-creation-rate-limit),
+[Chain Rate Limits: Network registration rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#network-registration-rate-limit)).
+
+Before paying the burn, owners read the current recycled TAO amount with
+`btcli subnet burn-cost --network finney`, then submit creation with `btcli subnet create`. The
+guide's examples return a newly assigned netuid such as netuid 1 on test networks; that netuid is
+the subnet the owner must configure and later start
+([Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet),
+[BTCLI: subnet burn-cost](https://docs.learnbittensor.org/btcli/#btcli-subnets-burn-cost)).
+
+Newly created subnets are inactive until the owner runs `btcli subnet start --netuid 1` (or the
+netuid returned at registration). Paying burn cost therefore opens the market, while
+[start call](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#startcall) is the
+separate owner action that activates emissions on that netuid
+([Create a Subnet: Start the subnet](https://docs.learnbittensor.org/subnets/create-a-subnet#start-the-subnet)).
+
+The same guide notes that the subnet owner's share of each epoch's emissions is automatically locked
+through conviction staking at creation, so creation cost is only the opening payment; owner alpha
+remains subject to the documented unlock path afterward
+([Create a Subnet: Subnet owner alpha is automatically locked](https://docs.learnbittensor.org/subnets/create-a-subnet#subnet-owner-alpha-is-automatically-locked),
+[Conviction Staking](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking)).
+
 ## Distinction from Yuma Consensus
 
 Burn cost names the recycled TAO required to create a new subnet market. Yuma Consensus is the
@@ -173,7 +201,11 @@ subnet-creation burn cost is the separate network-level TAO charge that opens a 
 
 Burn cost is a conceptual and accounting term, not timing advice, a price forecast, or a general
 transfer fee. It names the dynamic TAO amount required for subnet creation, and Bittensor
-documentation treats that TAO as recycled rather than simply destroyed
+documentation treats that TAO as recycled rather than simply destroyed. It does not report whether a
+coldkey is currently inside the 14,400-block creation interval, the live burn-cost quote, or whether
+a newly assigned netuid has already been started. Those are live chain state and operational steps
+that should be checked with `btcli subnet burn-cost`, `subtensorModule.networkRateLimit()`, and the
+subnet's start status before planning another creation
 ([Create a Subnet: Burn cost](https://docs.learnbittensor.org/subnets/create-a-subnet#burn-cost),
 [Glossary: Burn Cost](https://docs.learnbittensor.org/resources/glossary#burn-cost)).
 
