@@ -1,0 +1,102 @@
+---
+title: "Recycle Or Burn"
+summary:
+  "How the recycle or burn subnet hyperparameter decides whether miner emission sent to burn UIDs is
+  destroyed or returned to circulation."
+category: "Subnets"
+tags: ["Subnets", "Emission"]
+infoboxTitle: Recycle Or Burn
+infoboxCaption: Fate of miner emission routed to burn UIDs.
+infoboxRows:
+  - label: Parameter
+    value: RecycleOrBurn
+  - label: Type
+    value: RecycleOrBurnEnum
+  - label: Default
+    value: Burn
+  - label: Example
+    value: netuid 1
+  - label: Set by
+    value: Subnet owner
+---
+
+# Recycle Or Burn
+
+Recycle or burn is a per-subnet hyperparameter, listed in the documentation as `RecycleOrBurn`, that
+sets what happens to miner emission routed to burn UIDs on a subnet. The reference describes it as
+choosing whether that emission is burned or recycled, with a default of burn
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#recycleorburn)).
+
+## What It Controls
+
+The hyperparameter governs the fate of miner emission allocated to burn UIDs, not which miners earn
+incentives or how validator weights are aggregated. When set to `Burn`, miner emission sent to burn
+UIDs is burned; when set to `Recycle`, the same routed emission is recycled instead
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#recycleorburn),
+[Emission](https://docs.learnbittensor.org/learn/emissions)).
+
+During coinbase distribution, that choice is applied to miner incentive routed to owner/immune
+hotkeys on the netuid: the runtime calls `burn_subnet_alpha` when the enum is `Burn` (or unset) and
+`recycle_subnet_alpha` when it is `Recycle`
+([`run_coinbase`](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/run_coinbase.rs)).
+
+That makes recycle or burn a supply-handling choice for the burn-UID path on one subnet. It does not
+replace Yuma Consensus settlement, subnet owner cut rules, or the broader incentive split; it only
+decides whether that withheld miner emission is burned or recycled on the selected netuid
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+The setting is owner-tunable per subnet, so netuid 1 can use the default burn mode while another
+netuid recycles burn-UID emission, and the live value is chain state rather than a network constant
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Documented Type and Default
+
+The [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+reference lists `RecycleOrBurn` as a `RecycleOrBurnEnum` with a default of burn and marks the
+permission required to change it as subnet owner. The setter extrinsic is `sudo_set_recycle_or_burn`
+([Subnet Hyperparameters: RecycleOrBurn](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#recycleorburn)).
+
+Because each subnet carries its own hyperparameters, the burn-UID handling mode on one netuid can
+differ from the documented default and from the mode active on another subnet
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## Reading the Live Value for netuid 1
+
+Recycle or burn is per-subnet chain state, so any live claim is tied to a specific netuid. For the
+documented example netuid 1 on Finney mainnet, the enum appears in that subnet's hyperparameter
+table, which the reference describes under viewing a subnet's hyperparameters
+([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
+The infobox uses netuid 1 only as an example label; other subnets expose their own values
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Distinction from Recycling and Burning
+
+Recycling and burning are the broader glossary terms for removing tokens from circulation in
+different ways. Recycled tokens are deducted from issuance and can be emitted again; burned tokens
+remain in issuance records but are not re-emitted
+([Glossary: Recycling and burning](https://docs.learnbittensor.org/resources/glossary#recycling-and-burning),
+[Glossary: Recycling](https://docs.learnbittensor.org/resources/glossary#recycling)).
+
+Recycle or burn is the per-subnet enum that picks which of those treatments applies to miner
+emission sent to burn UIDs on that netuid
+([Subnet Hyperparameters: RecycleOrBurn](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#recycleorburn)).
+
+- **Recycling and burning** — glossary terms for how removed tokens affect issuance and supply.
+- **Recycle or burn** — per-subnet enum for burn-UID miner emission fate.
+
+## Reader Boundary
+
+Recycle or burn should not be read as the subnet registration burn, transaction-fee recycling, or
+the manual `recycle_alpha` / `burn_alpha` extrinsics. It names one hyperparameter that chooses burn
+versus recycle for miner emission routed to burn UIDs after Yuma settlement on a specific netuid
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#recycleorburn),
+[Glossary: Recycling and burning](https://docs.learnbittensor.org/resources/glossary#recycling-and-burning)).
+
+## Further Reading
+
+- [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+- [Emission](https://docs.learnbittensor.org/learn/emissions)
+- [Glossary: Recycling](https://docs.learnbittensor.org/resources/glossary#recycling)
+- [Glossary: Recycling and burning](https://docs.learnbittensor.org/resources/glossary#recycling-and-burning)
+- [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
