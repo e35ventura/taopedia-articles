@@ -31,6 +31,31 @@ observation more, so the average reacts faster to change, while a lower alpha le
 history, so the average moves more slowly and smooths short-term noise
 ([EMA](https://docs.learnbittensor.org/learn/ema)).
 
+## How the EMA Update Works
+
+Each epoch the EMA does not replace the old value—it blends. The updated bond is the new observation
+weighted by alpha plus the previous bond weighted by one minus alpha, so prior history is carried
+forward and only partly displaced by the latest epoch
+([EMA](https://docs.learnbittensor.org/learn/ema),
+[Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds)).
+
+That single coefficient sets the balance. An alpha near one makes the average track the newest
+observation closely; an alpha near zero leans on accumulated history and changes slowly, damping
+short-term noise ([EMA](https://docs.learnbittensor.org/learn/ema)).
+
+## Why Bonds Are Smoothed This Way
+
+Bittensor applies this smoothing to validator-miner bonds so the bond state evolves gradually across
+epochs instead of resetting each time. A validator's accumulated relationship to a miner builds and
+fades over many epochs rather than swinging with a single epoch's result
+([EMA](https://docs.learnbittensor.org/learn/ema),
+[Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds)).
+
+The smoothed bond state then feeds consensus: Yuma Consensus reads it as input when it applies
+bonding at the epoch boundary, so the EMA shapes the bond history that settlement consumes rather
+than the settlement itself ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
+[Emission](https://docs.learnbittensor.org/learn/emissions)).
+
 ## Distinction from Liquid Alpha
 
 The EMA is the smoothing method; liquid alpha is a feature that varies the EMA's alpha coefficient
