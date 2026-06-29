@@ -83,6 +83,43 @@ the floor that action respects, so trimming stops at the minimum rather than rem
 - **UID trimming** — the owner resize that removes low emitters to a target.
 - **Min allowed UIDs** — the floor that target cannot go below.
 
+## Distinction from Min Non-Immune UIDs
+
+Both names describe a floor, but they bound different counts. Min allowed UIDs is the floor on a
+subnet's total UID count, the size an owner resize through
+[UID trimming](https://docs.learnbittensor.org/subnets/uid-trimming) cannot reduce the subnet below.
+Min non-immune UIDs is a separate floor on only the non-immune portion of that table, the minimum
+number of UIDs that must remain outside immune categories
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+The two floors also act at different moments. Min allowed UIDs constrains a deliberate owner-driven
+resize of the whole participant set, while min non-immune UIDs constrains pruning when a full subnet
+accepts a new registration: once removing a non-immune neuron would drop the non-immune count to
+that floor, selection falls back to the lowest-ranked immune neuron instead
+([`get_neuron_to_prune`](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)).
+
+- **Min allowed UIDs** — floor on the subnet's total UID count under trimming.
+- **Min non-immune UIDs** — floor on the non-immune UID count that pruning preserves.
+
+## Chain Reads for netuid 1
+
+Min allowed UIDs is per-subnet chain state, so any live claim is tied to a specific netuid. For the
+documented example netuid 1 on Finney mainnet, the floor appears in that subnet's hyperparameter
+table, which the reference describes under viewing a subnet's hyperparameters
+([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
+
+The infobox uses netuid 1 only as an example label; reading the value for one subnet does not prove
+that every subnet shares the same floor
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Reader Boundary
+
+Min allowed UIDs should not be read as the current UID count, a registration price, or a guarantee
+about which neurons keep their slots. It names only the root-governed floor that a subnet's UID
+count may be reduced to, leaving emitter ranking and immunity rules to decide what is removed
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming)).
+
 ## Further Reading
 
 - [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
