@@ -1,0 +1,113 @@
+---
+title: "Bonds Reset Enabled"
+summary:
+  "How the bonds reset enabled subnet hyperparameter decides whether validator-miner bonds are
+  cleared on certain triggers or persist through registration changes."
+category: "Subnets"
+tags: ["Subnets", "Validation"]
+infoboxTitle: Bonds Reset Enabled
+infoboxCaption: Whether validator-miner bonds clear on triggers or persist.
+infoboxRows:
+  - label: Parameter
+    value: BondsResetEnabled
+  - label: Type
+    value: bool
+  - label: Default
+    value: "false"
+  - label: Example
+    value: netuid 1
+  - label: Set by
+    value: Subnet owner
+---
+
+# Bonds Reset Enabled
+
+Bonds reset enabled is a per-subnet hyperparameter, listed in the documentation as
+`BondsResetEnabled`, that determines whether validator-miner bonds on a subnet are reset under
+certain conditions or left to persist. The reference describes it as a boolean defaulting to false,
+set through the `sudo_set_bonds_reset_enabled` extrinsic at subnet owner permission
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## What Bonds Are
+
+[Validator-miner bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds)
+represent a validator's accumulated assessment of each miner's performance over time and serve as
+the starting point of Yuma Consensus. Each epoch they are updated through an exponential moving
+average of validator weights and previous bond values, and validator dividends are computed by
+combining bonds with miner incentives
+([Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+## What It Controls
+
+The flag governs whether that accumulated bond history can be wiped. When bonds reset is enabled,
+bonds are cleared on certain triggers so the affected validator-miner relationships start fresh;
+when it is disabled, bonds persist through those changes and the accumulated history carries forward
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+The protocol tracks when a reset last happened. The Bittensor SDK exposes a per-hotkey lookup for
+the block at which bonds were last reset on a subnet, and a separate lookup for resets triggered
+through metadata publication, which confirms that resets are recorded per relationship rather than
+as a single network-wide wipe
+([Bittensor SDK: Subtensor](https://docs.learnbittensor.org/python-api/html/autoapi/bittensor/core/subtensor/)).
+
+## Why It Matters
+
+The setting is a trade-off about how much past performance should count. Resetting bonds prevents a
+miner that loses and regains a slot from carrying forward old bond strength it may no longer
+deserve, which supports a level playing field. Leaving bonds in place preserves legitimate history
+but lets those relationships persist across registration changes
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Yuma Consensus 3](https://docs.learnbittensor.org/learn/yc3-blog)).
+
+Because the default is false, a subnet keeps bonds unless the owner opts in. The YC3 documentation
+notes that bond reset functionality is available for subnets that need it, framing it as an optional
+tool rather than standard behavior
+([Yuma Consensus 3](https://docs.learnbittensor.org/learn/yc3-blog)).
+
+## Documented Type, Default, and Setter
+
+The [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+reference lists `BondsResetEnabled` as a boolean defaulting to false. It is changed through the
+`sudo_set_bonds_reset_enabled` extrinsic and is settable by the subnet owner
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+Because each subnet carries its own value as per-netuid state, the flag on one netuid can differ
+from the documented default and from another subnet's value
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## Reading the Live Value for netuid 1
+
+Bonds reset enabled is per-subnet chain state, so any live claim is tied to a specific netuid. For
+the documented example netuid 1 on Finney mainnet, the value appears in that subnet's hyperparameter
+table, which the reference describes under viewing a subnet's hyperparameters
+([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
+The infobox uses netuid 1 only as an example label; other subnets expose their own values
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Distinction from Bonds Moving Average
+
+Bonds moving average sets the smoothing window for how bonds accumulate each epoch. Bonds reset
+enabled decides whether that accumulated bond can be cleared on certain triggers, so one shapes the
+ongoing update and the other governs wiping it
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+- **Bonds moving average** — smoothing window for ongoing bond updates.
+- **Bonds reset enabled** — whether accumulated bonds can be cleared on triggers.
+
+## Distinction from Bonds Penalty
+
+Bonds penalty subtracts from weights that exceed consensus. Bonds reset enabled does not penalize a
+value; it governs whether the bond history itself is wiped under certain conditions
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+- **Bonds penalty** — magnitude subtracted for exceeding consensus.
+- **Bonds reset enabled** — whether bond history is cleared on triggers.
+
+## Further Reading
+
+- [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+- [Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds)
+- [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
+- [Yuma Consensus 3](https://docs.learnbittensor.org/learn/yc3-blog)
