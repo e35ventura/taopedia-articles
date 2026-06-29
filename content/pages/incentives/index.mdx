@@ -36,6 +36,69 @@ describes how validators evaluate miner work and how miner scores can affect emi
 The direction is important: miner work is evaluated first, evaluation affects allocation, and the
 miner-facing allocation is the incentive outcome.
 
+## Rank Aggregation Before Incentives
+
+Miner [incentives](https://docs.learnbittensor.org/resources/glossary#incentives) are credited after
+Yuma builds a miner-side aggregate rank from clipped validator weights. Documentation describes each
+miner's rank as the stake-weighted sum of post-clip validator weights:
+
+`R_j = Σ_i S_i · W̄_ij`
+
+where `S_i` is validator `i`'s stake and `W̄_ij` is that validator's clipped weight toward miner `j`
+([Yuma Consensus: Miner emissions](https://docs.learnbittensor.org/learn/yuma-consensus#miner-emissions),
+[Glossary: Rank](https://docs.learnbittensor.org/resources/glossary#rank)).
+
+That aggregation sits after clipping. The
+[consensus score](https://docs.learnbittensor.org/resources/glossary#consensus-score) benchmark
+limits outlier weights before they enter the rank sum, so `R_j` reflects stake-weighted support that
+survived filtering rather than raw submitted scores alone
+([Yuma Consensus: Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping)).
+
+## Miner Incentive Share
+
+Each miner's incentive is its proportion of total aggregate rank across miners on the subnet:
+
+`M_j = R_j / Σ_k R_k`
+
+Documentation treats this normalized share as the miner-side incentive outcome credited inside the
+same Yuma pass
+([Yuma Consensus: Miner emissions](https://docs.learnbittensor.org/learn/yuma-consensus#miner-emissions),
+[Glossary: Incentives](https://docs.learnbittensor.org/resources/glossary#incentives)).
+
+Incentive vocabulary therefore names a credited emission share, not one validator's raw score.
+[Rank](https://docs.learnbittensor.org/resources/glossary#rank) orders miners by aggregated
+standing; `M_j` turns that standing into each miner's portion of the miner-facing branch before
+wider [emission](https://docs.learnbittensor.org/learn/emissions) distribution applies
+([Emission: Distribution](https://docs.learnbittensor.org/learn/emissions#distribution)).
+
+## Parallel Validator Dividends
+
+The same Yuma pass credits a validator-side branch in parallel. Validator
+[dividends](https://docs.learnbittensor.org/resources/glossary#dividends) pair smoothed
+[validator-miner bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds)
+with these miner incentives: `V_i = Σ_j B_ij × M_j`
+([Yuma Consensus: Validator emissions](https://docs.learnbittensor.org/learn/yuma-consensus#validator-emissions)).
+
+Miner incentives and validator dividends are sibling outcomes from one settlement. Incentive
+vocabulary stays on the miner branch; dividend vocabulary names the validator branch that multiplies
+bonds against those miner results
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+## Validator Scores Versus Credited Incentives
+
+A subnet's incentive mechanism tells validators how to judge miner work, but that upstream scoring
+is not the same object as a credited incentive. Validators submit
+[weight vectors](https://docs.learnbittensor.org/resources/glossary#weight-vector); Yuma clips,
+aggregates, and normalizes those signals into `R_j` and then `M_j`
+([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism),
+[Yuma Consensus: Miner emissions](https://docs.learnbittensor.org/learn/yuma-consensus#miner-emissions)).
+
+Readers should keep evaluation vocabulary separate from payout vocabulary. A high validator score
+for one miner can influence that miner's rank, but the incentive is the miner-facing emission share
+credited after the full validator set is processed, not the raw score on its own
+([Glossary: Incentives](https://docs.learnbittensor.org/resources/glossary#incentives),
+[Emission](https://docs.learnbittensor.org/learn/emissions)).
+
 ## Development Stage Context
 
 The
@@ -63,35 +126,13 @@ read as evidence of production behavior in another environment.
 
 ## Distinction from Consensus Score
 
-Consensus score is the stake-weighted clipping benchmark Yuma uses while processing validator weight
-input. Incentives are miner-facing emission outcomes credited after that input is clipped,
-aggregated into rank, and normalized
-([Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score),
-[Glossary: Incentives](https://docs.learnbittensor.org/resources/glossary#incentives),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
 - **Consensus score** — clipping benchmark inside Yuma.
 - **Incentives** — miner-facing credited results after rank is normalized.
-
-An incentive should not be read as the raw score a validator gives a miner. Validator scoring
-belongs to the subnet's incentive mechanism, while incentives name the miner-facing emission outcome
-after those evaluations are resolved
-([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism),
-[Emission](https://docs.learnbittensor.org/learn/emissions)).
-
-That boundary keeps evaluation vocabulary separate from payout vocabulary. A score can help shape an
-allocation, but the incentive is the reward-side result.
 
 ## Distinction from Rank
 
 - **Rank** — consensus standing after clipped weights are merged.
 - **Incentives** — miner-facing emission credited in proportion to that standing.
-
-Rank orders miners inside Yuma on the selected subnet; incentives name the miner reward share that
-follows from normalized standing
-([Glossary: Rank](https://docs.learnbittensor.org/resources/glossary#rank),
-[Glossary: Incentives](https://docs.learnbittensor.org/resources/glossary#incentives),
-[Yuma Consensus: Miner emissions](https://docs.learnbittensor.org/learn/yuma-consensus#miner-emissions)).
 
 ## Distinction from Trust
 
@@ -122,13 +163,6 @@ the emission picture.
 
 ## Distinction from Validator Dividends
 
-Yuma resolves weight signals into separate miner and validator outcomes on the selected subnet.
-Incentives belong to the miner-emission branch; validator dividends belong to the validator-side
-branch documented under validator emissions
-([Yuma Consensus: Miner emissions](https://docs.learnbittensor.org/learn/yuma-consensus#miner-emissions),
-[Yuma Consensus: Validator emissions](https://docs.learnbittensor.org/learn/yuma-consensus#validator-emissions),
-[Glossary: Incentives](https://docs.learnbittensor.org/resources/glossary#incentives)).
-
 - **Incentives** — miner-facing credited results.
 - **Validator dividends** — validator-facing credited results from the parallel branch.
 
@@ -147,37 +181,8 @@ portion after that branch is credited.
 
 ## Distinction from Yuma Consensus
 
-Incentives name the miner-facing emission share credited after Yuma resolves submitted validator
-weights on a subnet. They label a payout outcome on the selected netuid, not the tempo step that
-produced it ([Glossary: Incentives](https://docs.learnbittensor.org/resources/glossary#incentives),
-[Yuma Consensus: Miner emissions](https://docs.learnbittensor.org/learn/yuma-consensus#miner-emissions)).
-
-Yuma Consensus is the on-chain tempo process that reads the weight matrix, applies clipping against
-the consensus score benchmark, runs bonding, and then assigns miner incentives together with
-validator dividends ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
-[Glossary: Weight Matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix),
-[Emission: Distribution](https://docs.learnbittensor.org/learn/emissions#distribution)).
-
-The sections above already separate incentives from rank, trust, validator dividends, and the wider
-emission flow. Incentive vocabulary names the miner branch of that settlement pass; Yuma vocabulary
-names the full tempo step
-([Glossary: Dividends](https://docs.learnbittensor.org/resources/glossary#dividends)).
-
-Readers should not read incentives as one validator's raw score or as a fixed payout quote. Credited
-amounts depend on clipped weights, subnet emission context, and the Yuma pass on the relevant netuid
-([Glossary: Rank](https://docs.learnbittensor.org/resources/glossary#rank),
-[Emission](https://docs.learnbittensor.org/learn/emissions)).
-
 - **Incentives** — miner-facing emission share after Yuma settlement.
 - **Yuma Consensus** — tempo step that turns submitted weights into emission shares.
-
-Incentives are one miner-facing outcome of Yuma Consensus inside a subnet. Yuma Consensus aggregates
-validator weight signals before subnet emissions are allocated
-([Yuma Consensus: Miner emissions](https://docs.learnbittensor.org/learn/yuma-consensus#miner-emissions),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-For readers, incentives should be read inside the consensus resolution path. Validators evaluate
-miner work, consensus resolves those signals, and the miner-facing share is called incentives.
 
 ## Distinction from Miner Reward
 
