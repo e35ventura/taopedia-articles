@@ -38,15 +38,16 @@ merchant platform. Only webhook-confirmed sales count toward a miner's score —
 that generates clicks but no purchases earns nothing.
 
 Validators collect 30-day rolling performance data for each miner and compute scores using a
-dual-weighted formula: sales volume contributes 15% of the score and total USD revenue contributes
-85%. Both metrics are normalized to prevent a small number of high-volume miners from dominating the
-weight distribution. Refund rates apply a multiplicative penalty — a 10% refund rate reduces a
-miner's score by 10% — aligning incentives with genuine customer satisfaction.
+dual-weighted formula: verified order count contributes 15% of the base score and USD revenue
+contributes 85%. Sales normalize with square-root scaling against the network P95 order count;
+revenue normalizes with logarithmic scaling against the P95 USD total. Refund rates apply a
+multiplicative penalty—a 10% refund rate multiplies the base score by 0.90—aligning incentives with
+genuine customer satisfaction ([BitAds repository](https://github.com/FirstTensorLabs/BitAds)).
 
-The subnet also includes an emission-burn mechanism: if total alpha emissions exceed the dollar
-value of sales generated, validators burn the excess to maintain a sustainable ratio between
-emissions and actual commerce value. This prevents the network from over-rewarding miners relative
-to the value they produce.
+The subnet also includes an automatic emission-burn mechanism: validators compare period emissions
+(in USD) against verified sales and a configurable target sales-to-emission ratio—for example 1:1 or
+1.5:1—and burn the excess portion by routing that weight share to the subnet creator hotkey, which
+the chain burns automatically ([BitAds repository](https://github.com/FirstTensorLabs/BitAds)).
 
 Weight vectors from validator scoring feed into
 [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus), distributing emissions via
@@ -135,8 +136,8 @@ Unconverted campaign traffic therefore does not advance a miner's verified-sales
 
 ## Emission Burn Aligns Rewards With Commerce Value
 
-When alpha emissions exceed the dollar value of verified sales, validators burn the excess to keep
-rewards proportional to commerce outcomes
+When alpha emissions exceed verified sales at the configured target sales-to-emission ratio,
+validators route the excess weight share to the subnet creator hotkey for automatic on-chain burn
 ([BitAds repository](https://github.com/FirstTensorLabs/BitAds)).
 
 That mechanism ties subnet emissions to measured sales rather than unconstrained token issuance.
