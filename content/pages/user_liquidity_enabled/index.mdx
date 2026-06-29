@@ -1,0 +1,131 @@
+---
+title: "User Liquidity Enabled"
+summary:
+  "How the user liquidity enabled subnet hyperparameter is the documented boolean intended to gate
+  user liquidity provision on a subnet, and what the current swap pallet actually enforces."
+category: "Subnets"
+tags: ["Subnets", "Tokenomics"]
+infoboxTitle: User Liquidity Enabled
+infoboxCaption: Documented gate for user liquidity provision on a subnet.
+infoboxRows:
+  - label: Parameter
+    value: UserLiquidityEnabled
+  - label: Type
+    value: Bool
+  - label: Default
+    value: "false"
+  - label: Example
+    value: netuid 1
+  - label: Set by
+    value: Sudo or subnet owner
+---
+
+# User Liquidity Enabled
+
+User liquidity enabled is a per-subnet hyperparameter, listed in the documentation as
+`UserLiquidityEnabled`, that is described as determining whether the user liquidity feature is
+enabled on a subnet. The reference documents it as a boolean with a default of `false`
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## What It Is
+
+The hyperparameter is a documented availability flag rather than a pool, a position, or a price. Its
+intended role is to gate the user liquidity feature, under which users would supply range-based
+[liquidity positions](https://docs.learnbittensor.org/liquidity-positions) to a subnet's
+TAO-and-alpha pool. The flag itself does not set pool reserves, fees, or ranges; it only carries the
+on/off state the swap logic checks
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Understanding Subnets: Liquidity pools](https://docs.learnbittensor.org/subnets/understanding-subnets#liquidity-pools)).
+
+Because the default is `false`, a subnet does not expose user liquidity provision automatically, and
+the live state can differ from one subnet to the next
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Current Implementation Behavior
+
+The flag should be read against the current swap pallet rather than assumed to unlock a complete
+workflow. In the Subtensor swap pallet, adding liquidity returns a `UserLiquidityDisabled` error
+when the feature is not enabled, which is the gate this boolean governs. The `toggle_user_liquidity`
+call is constrained: enabling is permitted for sudo or the subnet owner, while disabling is
+restricted to sudo, and parts of the user-liquidity flow (such as position modification) are marked
+deprecated in the current code
+([Subtensor swap pallet](https://github.com/opentensor/subtensor/blob/main/pallets/swap/src/pallet/mod.rs)).
+
+For that reason this page treats `UserLiquidityEnabled` as the documented gating boolean and avoids
+implying that a `true` value alone makes a full user position-management workflow available today.
+Readers verifying behavior should consult the current swap pallet alongside the hyperparameter table
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Subtensor swap pallet](https://github.com/opentensor/subtensor/blob/main/pallets/swap/src/pallet/mod.rs)).
+
+## Type, Setter, and Default
+
+The [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+reference lists `UserLiquidityEnabled` as a `Bool` with a default of `false`, surfaced in tooling as
+`btcli sudo set --param user_liquidity_enabled`. The change path is the `toggle_user_liquidity`
+extrinsic, whose enable permission is sudo or the subnet owner and whose disable permission is sudo
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Subtensor swap pallet](https://github.com/opentensor/subtensor/blob/main/pallets/swap/src/pallet/mod.rs)).
+
+## Reading the Live Value for netuid 1
+
+User liquidity enabled is per-subnet chain state, so any live claim is tied to a specific netuid.
+For the documented example netuid 1 on Finney mainnet, readers can verify the live
+`UserLiquidityEnabled` value with `btcli subnet hyperparameters --netuid 1 --network finney`, which
+prints the subnet's hyperparameter table including this boolean row
+([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
+The infobox uses netuid 1 only as an example label; other subnets expose their own values
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Distinction from Liquidity Positions
+
+Liquidity positions are the range-based commitments providers supply to a subnet's pool. User
+liquidity enabled is the documented per-subnet boolean that gates whether the user liquidity feature
+is on, so the flag governs feature state while a position is the commitment itself
+([User Liquidity Positions](https://docs.learnbittensor.org/liquidity-positions),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+- **User liquidity enabled** — the documented gate for the user liquidity feature.
+- **Liquidity positions** — the range-based depth commitments that feature is meant to allow.
+
+## Distinction from Staking
+
+Staking attaches TAO or alpha support behind a validator hotkey through the subnet's delegation
+model. User liquidity enabled does not govern staking; it concerns the separate pool-liquidity
+feature path
+([Staking and delegation overview](https://docs.learnbittensor.org/staking-and-delegation/delegation),
+[User Liquidity Positions](https://docs.learnbittensor.org/liquidity-positions)).
+
+- **Staking** — support placed behind a validator hotkey for dividends.
+- **User liquidity enabled** — the documented gate for the pool-liquidity feature.
+
+## Distinction from Yuma Consensus
+
+User liquidity enabled concerns a pool-side feature flag. It does not participate in the
+epoch-boundary settlement that converts validator weights into miner incentives and validator
+dividends ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+Yuma Consensus reads the weight matrix, applies clipping and bonding, and allocates emission shares
+each epoch on the active subnet. The state of this flag does not change how consensus settles
+weights into rewards ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
+[Emission](https://docs.learnbittensor.org/learn/emissions)).
+
+- **User liquidity enabled** — documented gate for the user liquidity feature.
+- **Yuma Consensus** — epoch-boundary settlement from weights to emission shares.
+
+## Reader Boundary
+
+This page defines the concept at a high level. It does not assert that a `true` value makes a full
+user position-management workflow live, report whether the flag is set on any particular subnet, or
+describe pool returns. Those depend on the current swap pallet and live chain state for the relevant
+netuid. The default of `false` is the documented value, enabling is permitted for sudo or the subnet
+owner, and disabling is restricted to sudo.
+
+## Further Reading
+
+- [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+- [User Liquidity Positions](https://docs.learnbittensor.org/liquidity-positions)
+- [Subtensor swap pallet](https://github.com/opentensor/subtensor/blob/main/pallets/swap/src/pallet/mod.rs)
+- [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
+- [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)
