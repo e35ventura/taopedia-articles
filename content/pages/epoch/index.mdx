@@ -26,6 +26,63 @@ The term is useful because it separates timing from scoring. An epoch names the 
 consensus processing occurs; the subnet's incentive mechanism and validator weights explain what is
 being evaluated inside that period.
 
+## When the Next Epoch Becomes Due
+
+On chain, the epoch boundary is tracked per subnet from the block of the previous epoch rather than
+from a network-wide formula. The next epoch becomes due once the number of blocks since that
+recorded last-epoch block reaches the subnet's tempo, so the cadence is a per-subnet period measured
+from the prior boundary
+([`should_run_epoch`](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/run_coinbase.rs),
+[Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)).
+
+Two subnets that share the same tempo value can therefore close epochs on different blocks because
+each one counts from its own last-epoch block, not from a shared schedule
+([Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo)).
+
+## Activity Cutoff Gates Which Validators Count
+
+When an epoch runs, the subnet builds an inactive mask by comparing each neuron's last update block
+to the current block. A neuron is inactive when its last update plus the effective activity cutoff
+is still below the current block. Inactive neurons are removed from the stake vector used for
+consensus, so their stake is masked to zero before active stake is normalized and a stale validator
+carries no weight in that epoch's stake-weighted pass
+([`run_epoch`](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/epoch/run_epoch.rs),
+[Subnet Hyperparameters: Activity Cutoff Factor](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutofffactor)).
+
+That participation gate is why epoch vocabulary spans submission timing, not only settlement timing.
+A validator can miss an epoch by submitting too late even when tempo eventually reaches the boundary
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+## Pre-Consensus Filtering Before Settlement
+
+Not every submitted weight row survives into the Yuma pass unchanged. Epoch implementation
+documentation lists pre-consensus filtering that removes certain weights before stake-weighted
+aggregation begins
+([Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)).
+
+Self-assigned weights are removed so validators cannot vote for themselves, with an exception for
+the subnet creator when that role exists. Weights tied to a neuron before that neuron's latest
+[registration](https://docs.learnbittensor.org/resources/glossary#register) are also dropped so
+stale assignments do not follow re-registered identities. Only rows from validators holding a
+[validator permit](https://docs.learnbittensor.org/resources/glossary#validator-permit) influence
+consensus.
+
+Readers should treat an epoch as both a timing window and a filtered input set. Settlement still
+depends on which validator rows and weight values remain after those checks
+([Glossary: Weight Matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix)).
+
+## Coinbase Triggers Settlement at the Boundary
+
+Coinbase is the per-block emission operation that accumulates pending emissions and triggers Yuma
+Consensus when the epoch boundary arrives. Epoch names the recurring consensus period; coinbase
+names the operational step that processes pending emissions at that boundary
+([Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase),
+[Emission](https://docs.learnbittensor.org/learn/emissions)).
+
+Per-block coinbase advances injection into subnet emission pools, but tempo still marks when Yuma
+turns accumulated weights into miner and validator payouts—not every coinbase block closes an epoch
+([Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo)).
+
 ## Distinction from Tempo
 
 Epoch and tempo are related timing terms on a subnet. Tempo is the hyperparameter that counts how
@@ -36,25 +93,16 @@ to that tempo boundary ([Glossary: Tempo](https://docs.learnbittensor.org/resour
 - **Tempo** — block count for one consensus cycle.
 - **Epoch** — the consensus period spanning submission and settlement within that cycle.
 
-Validator weights can be updated across the tempo, but Yuma outcomes tied to that pass finalize at
-the epoch boundary when the tempo completes
-([Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)).
-
 ## Distinction from Coinbase
 
 Coinbase is the per-block emission operation that accumulates pending emissions and triggers Yuma
 Consensus at epoch boundaries. Epoch names the recurring consensus period; coinbase names the
 operational step that processes pending emissions when that boundary arrives
 ([Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase),
-[Glossary: Epoch](https://docs.learnbittensor.org/resources/glossary#epoch)). Coinbase therefore
-concerns emission processing at the boundary, while epoch frames the full period during which
-validator weights can enter the pass ([Emission](https://docs.learnbittensor.org/learn/emissions)).
+[Glossary: Epoch](https://docs.learnbittensor.org/resources/glossary#epoch)).
 
-- **Epoch** — concept vocabulary for this article's topic.
-- **Coinbase** — related term at a different layer of the same flow.
-
-The two labels answer different reader questions on the same path
-([Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)).
+- **Epoch** — consensus period from submission through settlement.
+- **Coinbase** — per-block emission step that triggers settlement at the boundary.
 
 ## Distinction from Yuma Consensus
 
@@ -62,21 +110,6 @@ An epoch names the consensus window on a subnet from weight submission through s
 tempo boundary. It answers when that pass runs, not how Yuma turns submitted weights into emission
 shares ([Glossary: Epoch](https://docs.learnbittensor.org/resources/glossary#epoch),
 [Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)).
-
-Yuma Consensus is the on-chain tempo step that reads the weight matrix, applies clipping and
-bonding, and then credits miner incentives and validator dividends when that window closes
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
-[Glossary: Weight Matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix),
-[Emission: Distribution](https://docs.learnbittensor.org/learn/emissions#distribution)).
-
-The tempo and coinbase sections above already separate epoch timing from emission processing at the
-boundary. Epoch vocabulary names the period; Yuma vocabulary names the settlement logic inside it
-([Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo),
-[Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase)).
-
-Readers should not read an epoch label as a payout amount or as proof that one validator's latest
-submission has settled. Outcomes still depend on the weight matrix recorded for that pass on the
-relevant netuid ([Emission](https://docs.learnbittensor.org/learn/emissions)).
 
 - **Epoch** — consensus period from submission through settlement.
 - **Yuma Consensus** — on-chain mechanism that uses validator weights to determine emission shares
@@ -166,6 +199,10 @@ aggregation logic, [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-c
 precise. If the focus is evaluation signals themselves, validator weights are more precise
 ([Glossary: Epoch](https://docs.learnbittensor.org/resources/glossary#epoch)).
 
+Readers should not read an epoch label as a payout amount or as proof that one validator's latest
+submission has settled. Outcomes still depend on the weight matrix recorded for that pass on the
+relevant netuid ([Emission](https://docs.learnbittensor.org/learn/emissions)).
+
 These boundaries keep epoch focused on consensus timing, not a subnet task description or a complete
 account of reward outcomes.
 
@@ -173,6 +210,9 @@ account of reward outcomes.
 
 - [Glossary: Epoch](https://docs.learnbittensor.org/resources/glossary#epoch)
 - [Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo)
+- [Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)
+- [Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase)
+- [Subnet Hyperparameters: Activity Cutoff Factor](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutofffactor)
 - [Glossary: Weight Vector](https://docs.learnbittensor.org/resources/glossary#weight-vector)
 - [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
 - [Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)
