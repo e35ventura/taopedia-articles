@@ -1,0 +1,141 @@
+---
+title: "Owner Hyperparam Rate Limit"
+summary:
+  "How the owner hyperparam rate limit sets the cooldown a subnet owner must wait between
+  hyperparameter changes, measured as a multiple of the subnet's tempo."
+category: "Subnets"
+tags: ["Subnets", "Consensus"]
+infoboxTitle: Owner Hyperparam Rate Limit
+infoboxCaption: Cooldown multiplier on subnet owner hyperparameter updates.
+infoboxRows:
+  - label: Parameter
+    value: OwnerHyperparamRateLimit
+  - label: Type
+    value: u16
+  - label: Default
+    value: 2 (tempos)
+  - label: Example
+    value: netuid 1
+  - label: Set by
+    value: Root
+---
+
+# Owner Hyperparam Rate Limit
+
+Owner hyperparam rate limit is a hyperparameter, listed in the documentation as
+`OwnerHyperparamRateLimit`, that paces how frequently a subnet owner can update the subnet's
+hyperparameters. The reference describes it as a global multiplier whose cooldown window equals the
+subnet's tempo multiplied by this value, measured in blocks
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## What It Controls
+
+The setting governs the minimum spacing between accepted owner hyperparameter changes; it does not
+change what any individual hyperparameter does. After a subnet owner successfully updates a
+hyperparameter, a further change to that same hyperparameter is rejected until the cooldown window
+has elapsed, so the limit caps how rapidly a subnet's configuration can churn rather than altering
+consensus, emission, or registration behavior directly
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+Because it is expressed as a multiplier on
+[tempo](https://docs.learnbittensor.org/resources/glossary#tempo) rather than a fixed block count,
+the real-time cooldown scales with the subnet's epoch length. A subnet with a longer tempo therefore
+enforces a longer wall-clock wait between owner changes than a subnet with a shorter tempo, even
+though both carry the same multiplier
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo)).
+
+## The Cooldown Window
+
+The documented cooldown window equals `Tempo(netuid) × OwnerHyperparamRateLimit` blocks. With the
+default multiplier of 2, an owner must wait two full tempos worth of blocks after one accepted
+change before the next change to that hyperparameter is accepted. Raising the multiplier widens that
+window and slows the pace of permitted updates; lowering it tightens the spacing
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo)).
+
+The window is computed per subnet from that subnet's own tempo, so the same multiplier produces
+different block-count cooldowns on subnets whose tempos differ. The live tempo and multiplier for a
+subnet are chain state rather than fixed network constants
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Tracked Independently Per Hyperparameter
+
+The reference states that the rate limit is tracked independently per hyperparameter. Changing one
+hyperparameter does not start a cooldown on the others, so an owner who has just adjusted `kappa`
+can still change `rho` in the same window. Each hyperparameter carries its own last-changed
+bookkeeping against the shared multiplier
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+That per-parameter tracking means the limit constrains repeated edits to a single setting, not the
+total number of distinct settings an owner can touch before the next window
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## Documented Type, Default, and Setter
+
+The [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+reference lists `OwnerHyperparamRateLimit` as a `u16` with a default of 2 tempos. It is changed
+through the `sudo_set_owner_hparam_rate_limit` extrinsic, and the reference marks the permission
+required to set it as root
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+This is the structural reason the parameter sits a level above ordinary subnet hyperparameters: a
+subnet owner is the party the cooldown applies to, but the multiplier that defines the cooldown is a
+root-controlled setting rather than something the owner tunes for their own subnet
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## Distinction from Tempo
+
+[Tempo](https://docs.learnbittensor.org/resources/glossary#tempo) is the per-subnet epoch length in
+blocks that paces consensus rounds and emission. Owner hyperparam rate limit is the multiplier
+applied to that tempo to derive the owner-change cooldown, so tempo supplies the base unit while
+this parameter scales it into a governance pacing window
+([Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+- **Tempo** — the subnet's epoch length in blocks.
+- **Owner hyperparam rate limit** — the multiplier on tempo that sets the owner-change cooldown.
+
+## Distinction from Yuma Consensus
+
+Owner hyperparam rate limit governs how often a subnet owner may change configuration. It does not
+participate in the epoch-boundary settlement that converts validator weights into emission shares
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+Yuma Consensus reads the weight matrix, applies clipping and bonding, and allocates miner incentives
+and validator dividends each epoch on the active subnet. The rate limit only paces administrative
+edits to the hyperparameters those mechanics read; it never reranks neurons or moves emission itself
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
+[Emission](https://docs.learnbittensor.org/learn/emissions)).
+
+- **Owner hyperparam rate limit** — cooldown pacing on owner hyperparameter changes.
+- **Yuma Consensus** — epoch-boundary settlement from weights to emission shares.
+
+## Reading the Live Value for netuid 1
+
+The live cooldown for a subnet depends on both this multiplier and that subnet's tempo, so any
+real-time claim is tied to a specific netuid. For the documented example netuid 1 on Finney mainnet,
+readers can inspect the subnet's hyperparameter table, including tempo, with
+`btcli subnet hyperparameters --netuid 1 --network finney`, then multiply tempo by the multiplier to
+estimate the block-count window
+([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
+The infobox uses netuid 1 only as an example label; other subnets expose their own tempo and
+therefore their own cooldown
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Reader Boundary
+
+This page defines the concept at a high level. It does not report the multiplier or tempo in force
+on any particular subnet, how many blocks remain before a given owner change would be accepted, or
+which specific hyperparameter is currently in cooldown. Those are live chain state and should be
+checked for the relevant netuid. The default multiplier of 2 tempos is the documented value, and the
+setter is a root-level extrinsic.
+
+## Further Reading
+
+- [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+- [Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo)
+- [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
+- [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)
