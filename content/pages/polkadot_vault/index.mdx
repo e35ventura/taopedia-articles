@@ -33,112 +33,44 @@ private-key custody. An online device can prepare a transaction, while the Vault
 offline and signs through a QR-based workflow. That makes it a custody concept rather than a
 general-purpose Bittensor wallet application.
 
-## Air-Gapped Signing Model
+## What It Represents
 
-The core idea is air-gapped signing. The official Bittensor workstation-security guide says the
-private key is generated on the Vault device, the device is kept in airplane mode, and transactions
-pass between the hot and cold device through QR codes. The key is not intended to leave the offline
-device.
-
-That gives Polkadot Vault a different risk profile from ordinary software wallets. The online
-environment can still be compromised, confused, or misleading, but it should not directly hold the
-private key. The user approves signatures from the offline signing device rather than exposing
-coldkey material to the host operating system.
-
-Reference:
-[Coldkey and Hotkey Workstation Security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security)
-
-## QR Transaction Boundary
-
-Polkadot Vault uses QR codes as the communication channel between online and offline contexts. The
-online side prepares a payload. The offline device scans, displays, and signs the transaction. The
-signed result is then transferred back without connecting the signing device to the network.
-
-For readers, the boundary is not simply "phone versus laptop." It is online preparation versus
-offline signing. A QR workflow can reduce private-key exposure, but it still depends on careful
-review of what is being signed. Air gap does not make a malicious or mistaken transaction safe once
-the user approves it.
-
-References:
-[Coldkey and Hotkey Workstation Security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security),
-[Polkadot Vault](https://vault.novasama.io/)
-
-## Subtensor Extrinsic Scope
-
-The Bittensor workstation-security guide draws an important distinction between Ledger and Polkadot
-Vault. It says Polkadot Vault can decode and sign any Subtensor extrinsic, while Ledger wallet apps
-expose a more limited set of supported operations.
-
-That does not mean every wallet interface is automatically safe or simple. It means the signing
-device can serve a broader extrinsic-signing role when the surrounding tooling prepares a valid
-payload. The practical concept is operation coverage: Polkadot Vault can be relevant for Bittensor
-actions that go beyond basic transfer or staking screens. Vault therefore fits custody discussions
-where a signer may need to approve a wider range of prepared Subtensor calls, not only the subset
-exposed by a particular wallet-app screen
+Polkadot Vault uses an air-gapped signing model. The private key is generated on the Vault device,
+which is kept in airplane mode, and transactions pass between the online and offline devices through
+QR codes without connecting the signer to the network
 ([Coldkey and Hotkey Workstation Security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security),
-[Subtensor Extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics)).
+[Polkadot Vault](https://vault.novasama.io/)).
 
-Reference:
-[Coldkey and Hotkey Workstation Security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security)
+The online side prepares a payload; the Vault device scans, displays, and signs it; the signed
+result returns for broadcast from the connected interface. Signing and broadcasting are separate
+steps: the Vault device produces a signature, while the online wallet application submits it to the
+chain ([Wallets, Coldkeys and Hotkeys in Bittensor](https://docs.learnbittensor.org/keys/wallets)).
 
-## Dedicated Offline Smartphone Signer
-
-The official workstation-security guide describes Polkadot Vault, formerly Parity Signer, as a way
-to turn a dedicated offline smartphone into a cold-signing device for Bittensor coldkeys. The
-private key is generated on the Vault device and is intended to remain on that offline device.
-
-Readers should treat Vault as a custody device choice, not as a subnet role or validator server. Its
-value is keeping coldkey signing material away from routine internet-connected workstations.
-
-References:
-[Coldkey and Hotkey Workstation Security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security),
-[Wallets](https://docs.learnbittensor.org/keys/wallets)
-
-## QR Codes Carry Transaction Data Only
-
-The same guide says transactions pass between the online and offline devices through QR codes. The
-online side prepares a payload; the Vault device scans, displays, and signs it; the signed result
-returns without connecting the signing device to the network.
-
-That workflow keeps the boundary at transaction review rather than at private-key export. Air gap
-reduces key exposure, but the user still must verify what the QR payload asks the Vault device to
-sign.
-
-References:
-[Coldkey and Hotkey Workstation Security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security),
-[Polkadot Vault](https://vault.novasama.io/)
-
-## Risk Boundary
-
-Polkadot Vault reduces private-key exposure by keeping the signing key offline. It does not remove
-the need to understand and verify the transaction. A user can still approve the wrong destination,
-wrong amount, wrong call, wrong network context, or wrong proxy relationship if the prepared payload
-is misleading or the review process is rushed.
-
-The strongest Bittensor use of Vault is layered. Keep the primary coldkey offline, use official
-wallet and chain interfaces, prefer scoped proxies for repeated operations, and treat each signature
-as a high-authority act. Vault is a signing boundary, not a blanket guarantee that the surrounding
-workflow is correct.
-
-References:
-[Coldkey and Hotkey Workstation Security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security),
-[Polkadot Vault](https://vault.novasama.io/)
-
-## Signing and Broadcasting Are Separate Steps
-
-It is easy to assume that approving a transaction on the Vault device also sends it to the network.
-It does not. The Vault device only produces a signature. Sending that signed transaction to the
-chain happens later, from the online interface that prepared it
+That boundary is online preparation versus offline signing, not merely phone versus laptop. Air gap
+reduces private-key exposure, but users still must verify destination, amount, call type, network
+context, and proxy relationships before approving a payload. Vault is a signing boundary, not proof
+that the surrounding workflow is correct
 ([Coldkey and Hotkey Workstation Security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security)).
 
-For readers, this split is the whole point of the air gap. The offline device proves you authorized
-a specific call, while the online device handles network contact. The private key never has to touch
-the connected machine, even though the connected machine is what finally broadcasts the result
-([Wallets, Coldkeys and Hotkeys in Bittensor](https://docs.learnbittensor.org/keys/wallets)).
+The workstation-security guide notes Polkadot Vault can decode and sign any Subtensor extrinsic,
+while Ledger wallet apps expose a more limited supported-operation set. Vault therefore fits custody
+discussions where a signer may need to approve a wider range of prepared Subtensor calls, not only
+the subset exposed by a particular wallet-app screen
+([Subtensor Extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics)).
 
-That separation also explains why a failed broadcast is not the same as a failed signature. A
-signature can be valid while a later submission still fails for ordinary chain reasons such as fees,
-nonce, or network state. The Vault device's job ends at signing.
+Vault is a custody device choice for the primary coldkey, not a validator server, miner server, or
+daily hotkey environment. Layered use keeps the coldkey offline, prefers scoped proxies for repeated
+operations, and treats each signature as a high-authority act
+([Proxies overview](https://docs.learnbittensor.org/keys/proxies)).
+
+## Development Stage Context
+
+The
+[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
+describes subnet development as moving from localnet to testnet and then mainnet. Vault signing
+examples should be read against that network boundary: localnet and testnet exercises do not carry
+the same custody stakes as mainnet, where air-gapped coldkey signing protects live TAO
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
 
 ## Distinction from Coldkey
 
@@ -149,19 +81,8 @@ transactions ([Glossary: Coldkey](https://docs.learnbittensor.org/resources/glos
 
 Key-role vocabulary names custody authority; Vault vocabulary names the air-gapped signing setup.
 
-Bittensor wallet documentation treats the coldkey as the high-authority key for balances, staking,
-hotkey management, subnet management, and governance-sensitive actions. The primary coldkey
-therefore belongs in the highest custody tier, where the goal is to keep the private key out of
-routine internet-connected workstations.
-
-Polkadot Vault fits that custody role by using a dedicated offline device as the signer. It is not
-meant to be a validator server, miner server, or daily hotkey environment. Its value is strongest
-when the private coldkey remains isolated and only signed transaction data crosses the
-online-offline boundary.
-
-References:
-[Wallets, Coldkeys and Hotkeys in Bittensor](https://docs.learnbittensor.org/keys/wallets),
-[Coldkey and Hotkey Workstation Security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security)
+- **Coldkey** — ownership key that controls TAO balances and hotkeys.
+- **Polkadot Vault** — offline signing environment for that custody key.
 
 ## Distinction from Private Key
 
@@ -181,19 +102,8 @@ an air-gapped mobile signer with QR transaction transfer rather than a USB hardw
 ([Using Ledger Hardware Wallet](https://docs.learnbittensor.org/staking-and-delegation/using-ledger-hw-wallet),
 [Coldkey and Hotkey Workstation Security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security)).
 
-Both support offline custody; the signing workflow and device model differ.
-
-Ledger and Polkadot Vault both appear in the official workstation-security guide as cold-custody
-hardware-style options. They differ in operating model. Ledger is a dedicated hardware wallet used
-with compatible wallet apps. Polkadot Vault is an offline smartphone signer that uses QR transport.
-
-The reader-facing distinction is not that one is universally better. Ledger may be simpler for
-supported wallet-app operations. Polkadot Vault may be more relevant when broader Subtensor
-extrinsic signing is needed. In either case, the core custody principle is the same: avoid loading
-the primary coldkey into ordinary online tooling.
-
-Reference:
-[Coldkey and Hotkey Workstation Security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security)
+- **Ledger hardware wallet** — USB hardware signer with wallet-app operation limits.
+- **Polkadot Vault** — air-gapped mobile signer with broader Subtensor extrinsic coverage.
 
 ## Distinction from Proxy Wallets
 
@@ -232,36 +142,6 @@ is a coldkey custody option that keeps signing material off the online machine
 
 Operational signing and offline custody sit on different tiers of the wallet model.
 
-## Development Stage Context
-
-The
-[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from localnet to testnet and then mainnet. For Polkadot
-Vault, this sequence gives readers a boundary for interpreting vault examples and
-signing-environment notes.
-
-Localnet examples are isolated and reflect local chain state, so they are useful for controlled
-experiments rather than evidence of live Bittensor behavior. Testnet examples add shared
-non-production conditions, which can reveal integration behavior without touching mainnet state.
-
-On mainnet, Polkadot Vault examples should be read as live production vault-signing behavior on the
-production Bittensor network.
-
-The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
-separates mainnet, testnet, and localnet, so outcomes from one environment should not be treated as
-proof of behavior in another.
-
-## Airplane Mode Keeps the Vault Device Offline
-
-The
-[Coldkey and Hotkey Workstation Security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security)
-guide describes generating the private key on the Vault device and keeping that device in airplane
-mode. Polkadot Vault custody therefore depends on network isolation for the signing hardware, not
-only on choosing a separate phone or tablet.
-
-Readers should treat online transaction preparation and offline signing as distinct steps. The host
-can stay connected while the Vault device remains disconnected from the network.
-
 ## Distinction from Mnemonic
 
 A mnemonic is a word sequence used to regenerate and restore Bittensor coldkeys and hotkeys, whereas
@@ -284,20 +164,9 @@ authorizes those transfers while staying offline
 
 ## Distinction from Yuma Consensus
 
-Polkadot Vault is an offline mobile signing environment used for air-gapped Bittensor coldkey
-custody through QR-based transaction signing. It names offline custody vocabulary, not the on-chain
-step that turns validator weight submissions into emission shares
-([Coldkey and Hotkey Workstation Security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security)).
-
+Polkadot Vault is an offline mobile signing environment for air-gapped Bittensor coldkey custody.
 Yuma Consensus is the on-chain process that converts submitted validator weights into emission
-shares after evaluation completes. Vault signing keeps private keys offline; Yuma Consensus settles
-scoring outcomes on a subnet after signed extrinsics are included
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
-[Emission](https://docs.learnbittensor.org/learn/emissions)).
-
-Readers should keep air-gapped custody vocabulary separate from the settlement step. Polkadot Vault
-answers how coldkey signing stays offline; Yuma Consensus answers how validator weights become
-emission shares in a subnet
+shares
 ([Coldkey and Hotkey Workstation Security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security),
 [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
