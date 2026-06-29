@@ -1,0 +1,103 @@
+---
+title: "Tx Delegate Take Rate Limit"
+summary:
+  "How the tx delegate take rate limit sets the block-counted cooldown a delegate must wait before
+  increasing their take again, pacing how often validator commission can rise."
+category: "Staking"
+tags: ["Staking", "Tokenomics"]
+infoboxTitle: Tx Delegate Take Rate Limit
+infoboxCaption: Cooldown in blocks before a delegate can raise their take again.
+infoboxRows:
+  - label: Parameter
+    value: TxDelegateTakeRateLimit
+  - label: Default
+    value: "216000 blocks"
+  - label: Scope
+    value: Network-global
+  - label: Set by
+    value: Root
+---
+
+# Tx Delegate Take Rate Limit
+
+Tx delegate take rate limit is a network-global chain setting, stored on chain as
+`TxDelegateTakeRateLimit`, that sets how frequently a delegate's take can be increased. The
+documentation lists it as a rate limit on delegate-take increases, and the chain rate-limit
+reference documents a value of 216,000 blocks, roughly 30 days, between accepted updates
+([Chain Rate Limits: Delegate take rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#delegate-take-rate-limit),
+[TxDelegateTakeRateLimit Storage](https://subtensor.com/reference/subtensormodule/storage/TxDelegateTakeRateLimit)).
+
+## What It Controls
+
+The setting paces how often a delegate may raise the take they keep from delegated-stake emissions;
+it does not set the take percentage itself. A validator configures take with `btcli sudo set-take`
+within the documented range, but after an accepted increase this cooldown must elapse before another
+increase is accepted
+([Staking and Delegation Overview](https://docs.learnbittensor.org/staking-and-delegation/delegation),
+[Bittensor CLI: set-take](https://docs.learnbittensor.org/btcli#btcli-sudo-set-take)).
+
+The pacing protects nominators from sudden, repeated commission hikes. By forcing a wait between
+take increases, it gives delegated stakers a predictable window rather than allowing a delegate to
+ratchet their take up rapidly across consecutive blocks
+([Chain Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits),
+[Glossary: Validator Take %](https://docs.learnbittensor.org/resources/glossary#validator-take-)).
+
+## Scope and Permission
+
+Tx delegate take rate limit is a global value rather than a per-subnet hyperparameter, so the same
+cooldown governs delegate-take increases network-wide rather than being tuned per netuid. The
+documentation groups it with variables configured under root permission
+([Chain Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits),
+[TxDelegateTakeRateLimit Storage](https://subtensor.com/reference/subtensormodule/storage/TxDelegateTakeRateLimit)).
+
+Because it is measured in blocks, the real-time wait depends on block production, and the live value
+is chain state that can differ from the documented default
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Distinction from Validator Take
+
+Validator take is the share a delegate keeps from delegated-stake emissions before the remainder
+flows to stakers. Tx delegate take rate limit does not set that share; it only paces how often the
+share can be increased, so the take is the commission while this limit is the cooldown on raising it
+([Glossary: Validator Take %](https://docs.learnbittensor.org/resources/glossary#validator-take-),
+[Chain Rate Limits: Delegate take rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#delegate-take-rate-limit)).
+
+- **Validator take** — the commission a delegate keeps from delegated-stake dividends.
+- **Tx delegate take rate limit** — the block-counted cooldown before that commission can be raised
+  again.
+
+## Distinction from Subnet Owner Take
+
+Subnet owner take is a documented owner cut from a subnet's emission bucket. Tx delegate take rate
+limit concerns the timing of delegate-take increases, a separate commission and a separate control
+from the owner cut
+([Glossary: Validator Take %](https://docs.learnbittensor.org/resources/glossary#validator-take-),
+[Emission: Distribution](https://docs.learnbittensor.org/learn/emissions#distribution)).
+
+- **Subnet owner take** — the owner's share of a subnet's emission bucket.
+- **Tx delegate take rate limit** — the cooldown on delegate-take increases.
+
+## Distinction from Serving Rate Limit
+
+Serving rate limit is a per-subnet hyperparameter pacing how often a neuron may update its on-chain
+axon endpoint. Tx delegate take rate limit is a network-global cooldown on delegate-take increases,
+so they pace different actions at different scopes
+([Chain Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+- **Serving rate limit** — per-subnet pacing of axon endpoint updates.
+- **Tx delegate take rate limit** — network-global pacing of delegate-take increases.
+
+## Reader Boundary
+
+This page defines the concept at a high level. It does not report any delegate's current take, when
+a specific delegate could next raise it, or the live limit in force. Those are live chain state on
+the delegate hotkey and should be checked before planning a take change. The value of 216,000 blocks
+is the documented figure, and the setting is global and root-controlled.
+
+## Further Reading
+
+- [Chain Rate Limits: Delegate take rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#delegate-take-rate-limit)
+- [Glossary: Validator Take %](https://docs.learnbittensor.org/resources/glossary#validator-take-)
+- [Staking and Delegation Overview](https://docs.learnbittensor.org/staking-and-delegation/delegation)
+- [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)
