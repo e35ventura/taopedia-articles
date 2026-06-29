@@ -1,0 +1,105 @@
+---
+title: "Consensus"
+summary:
+  "How the consensus value sets the stake-weighted median threshold that clips validator weights
+  before miner ranks are computed in Yuma Consensus."
+category: "Consensus"
+tags: ["Consensus", "Subnets"]
+infoboxTitle: Consensus
+infoboxCaption: Stake-weighted median threshold for clipping weights.
+infoboxRows:
+  - label: Area
+    value: Yuma Consensus
+  - label: Built from
+    value: Validator weights and stake
+  - label: Computed as
+    value: Stake-weighted median
+  - label: Threshold set by
+    value: Kappa
+  - label: Used for
+    value: Clipping weights before ranks
+---
+
+# Consensus
+
+Consensus is a per-miner value computed by Yuma Consensus as the stake-weighted median of the
+weights that validators assign to that miner. It becomes the threshold against which validator
+weights are clipped before miner ranks are calculated
+([Glossary: Consensus](https://docs.learnbittensor.org/resources/glossary#consensus),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+The term belongs to the miner-evaluation side of consensus. It is a computed aggregate per miner,
+not one validator's raw weight and not the overall Yuma Consensus algorithm itself
+([Glossary: Consensus](https://docs.learnbittensor.org/resources/glossary#consensus)).
+
+## What It Represents
+
+For each miner, Yuma Consensus gathers every validator's weight on that miner, sorts those weights,
+and walks through them accumulating each validator's stake. The weight supported by at least a
+kappa-fraction of total stake is the consensus value, so it is the stake-weighted median rather than
+a simple average
+([Glossary: Consensus](https://docs.learnbittensor.org/resources/glossary#consensus),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+Using a stake-weighted median is what gives the value its manipulation resistance. A simple average
+would let a minority-stake validator drag a miner's score with an extreme rating, but the median
+ignores such outliers because only weights backed by majority stake can move it
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+As a metagraph property the consensus value is normalized to the range zero to one. Values near one
+indicate strong validator agreement on a miner, while values near zero indicate weak agreement
+([Glossary: Consensus](https://docs.learnbittensor.org/resources/glossary#consensus)).
+
+## How It Is Used
+
+The consensus value is the clipping threshold for validator weights. Each validator's weight on a
+miner is reduced to the consensus value when it exceeds it, so weight above the threshold earns
+neither the miner nor the validator any reward for that excess
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
+[Glossary: Consensus](https://docs.learnbittensor.org/resources/glossary#consensus)).
+
+Miner ranks are then computed as the stake-weighted sum of these consensus-clipped weights, which is
+why consensus sits directly upstream of rank and the resulting miner incentive
+([Glossary: Rank](https://docs.learnbittensor.org/resources/glossary#rank),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+## Role of Kappa
+
+Kappa is the hyperparameter that sets the majority stake ratio the consensus median requires. It
+defines the fraction of total stake that must support a weight level for that level to become the
+consensus value, so changing kappa changes how broad the stake agreement must be
+([Kappa](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Glossary: Consensus](https://docs.learnbittensor.org/resources/glossary#consensus)).
+
+Examples tied to netuid 1 illustrate one subnet's miner-side consensus result. They should not be
+read as representing production evaluation on another network
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Distinction from Rank
+
+Consensus is the stake-weighted median threshold used to clip validator weights. Rank is the
+downstream result, the stake-weighted sum of the clipped weights, so consensus feeds rank rather
+than being the same value
+([Glossary: Consensus](https://docs.learnbittensor.org/resources/glossary#consensus),
+[Glossary: Rank](https://docs.learnbittensor.org/resources/glossary#rank)).
+
+- **Consensus** — stake-weighted median threshold that clips weights.
+- **Rank** — stake-weighted sum of the consensus-clipped weights.
+
+## Distinction from Validator Trust
+
+Validator trust measures how well a validator's submitted weights aligned with consensus. Consensus
+is the per-miner threshold itself, while validator trust is a per-validator measure derived from how
+their weights compared to it
+([Glossary: Consensus](https://docs.learnbittensor.org/resources/glossary#consensus),
+[Validator Trust](https://docs.learnbittensor.org/resources/glossary#validator-trust)).
+
+- **Consensus** — per-miner stake-weighted median threshold.
+- **Validator trust** — per-validator alignment with that threshold.
+
+## Further Reading
+
+- [Glossary: Consensus](https://docs.learnbittensor.org/resources/glossary#consensus)
+- [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
+- [Glossary: Rank](https://docs.learnbittensor.org/resources/glossary#rank)
+- [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
