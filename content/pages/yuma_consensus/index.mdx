@@ -53,6 +53,17 @@ Consensus names the broader aggregation process, while Yuma Consensus 3 names a 
 around bond responsiveness
 ([How Yuma Consensus 3 Makes Bittensor More Fair](https://docs.learnbittensor.org/learn/yc3-blog)).
 
+When a validator assigns a miner weight above the clipped consensus benchmark, the bond update
+blends that submission toward the benchmark rather than accepting the full value. A configurable
+penalty factor controls how strongly out-of-consensus weights are pulled back toward the consensus
+level, and an exponential moving average then smooths validator-miner bonds across epochs
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
+[Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)).
+
+Validators who stay near consensus build stronger smoothed bonds and therefore participate more
+fully in validator-side emission allocation, while repeated over-evaluation relative to the
+benchmark erodes bond contribution over time.
+
 ## Input and Output Scope
 
 Yuma Consensus turns validator weighting activity into consensus and incentive outcomes. It is not a
@@ -62,6 +73,18 @@ single raw score, a subnet task definition, or a substitute for emission account
 
 Weights, consensus measures, ranks, trust, bonds, incentives, dividends, and emissions are related
 but not interchangeable. A precise claim needs the part of the mechanism it is using.
+
+Validator weights are the main input vocabulary for Yuma Consensus. They are per-validator
+evaluation signals for miners, formed after subnet-specific scoring and then used by consensus to
+calculate outcomes
+([Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#weight-vector),
+[Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
+
+That input boundary separates Yuma Consensus from the off-chain scoring process. A subnet's
+incentive mechanism defines how work is measured, while Yuma Consensus combines the resulting
+validator weights after they are available to the consensus process
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
+[Glossary: Yuma Consensus](https://docs.learnbittensor.org/resources/glossary#yuma-consensus)).
 
 ## Development Stage Context
 
@@ -120,6 +143,50 @@ bond readings alone, so a dividend claim depends on both bond history and the mi
 outcomes being paired in the same epoch
 ([Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)).
 
+## Clipping Compares Submissions to a Consensus Benchmark
+
+Yuma Consensus runs a clipping step before final reward outcomes are calculated. Clipping is
+designed to punish inaccurate miner evaluation, especially patterns that could manipulate consensus
+to favor certain miners
+([Yuma Consensus: Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping)).
+
+The consensus score is the stake-weighted median benchmark used in that step. That median creates a
+threshold that filters outlier
+[validator weights](https://docs.learnbittensor.org/resources/glossary#weight-vector) before they
+reach final [rank](https://docs.learnbittensor.org/resources/glossary#rank) calculations
+([Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score)).
+
+When a submitted weight exceeds the clipped benchmark for a miner, neither the miner nor the
+submitting validator receives emissions for the excess portion. Clipping therefore turns raw
+validator submissions into a post-filter signal that later drives incentive allocation rather than
+passing every submitted value through unchanged.
+
+Before rank and trust are computed, the hyperparameter kappa sets how much of the subnet's validator
+stake must support a weight level before that level becomes the clipping ceiling for a miner. With
+the default kappa of 0.5, at least half of stake-weighted validator support must agree that a miner
+deserves weight above a given level before more generous weights are left unclipped
+([Yuma Consensus: Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+Readers should not treat kappa as a miner-quality score. It governs how aggressively outlier weights
+are trimmed relative to stake-backed consensus, not how useful a miner's subnet work was in
+isolation
+([Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score)).
+
+## The Weight Matrix Feeds Each Consensus Pass
+
+Each validator on a subnet submits a weight vector ranking miners it has evaluated. Yuma Consensus
+treats those vectors as rows in a matrix of validator evaluations rather than as isolated scores.
+The on-chain process reads that combined input and resolves it into two emission vectors — one for
+miners and one for validators — that allocate each tempo's subnet emissions by role
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+That matrix framing keeps input and output vocabulary separate. Validator weights name the submitted
+evaluations; miner and validator emission shares name the two allocation results produced after
+aggregation, clipping, bonding, and normalization inside the same epoch
+([Glossary: Weight Matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix),
+[Emissions](https://docs.learnbittensor.org/learn/emissions)).
+
 ## Distinction from Epoch
 
 Yuma Consensus names how validator weights are aggregated into miner incentives and validator
@@ -152,16 +219,6 @@ weights into miner incentives and validator dividends
 Coinbase vocabulary belongs to per-block issuance advancement. Yuma vocabulary belongs to epoch
 consensus aggregation on the selected subnet.
 
-Coinbase is the per-block mechanism that advances emission processing and triggers epoch-boundary
-activity. Yuma Consensus is the aggregation process that runs when the relevant subnet epoch is
-processed
-([Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-Emission is the broader value-creation and allocation flow around those outcomes. Yuma Consensus
-shapes miner incentives and validator dividends, while emission names the tokenomics process in
-which those outcomes are allocated ([Emissions](https://docs.learnbittensor.org/learn/emissions)).
-
 ## Distinction from Kappa
 
 Kappa sets the stake threshold used when clipping validator weights during Yuma Consensus. Yuma
@@ -171,19 +228,6 @@ allocation ([Glossary: Kappa](https://docs.learnbittensor.org/resources/glossary
 
 Kappa vocabulary names one clipping parameter inside the pass. Yuma vocabulary names the full
 consensus flow that uses that parameter.
-
-Before rank and trust are computed, clipping compares each validator's miner weights against a
-stake-weighted benchmark. The hyperparameter kappa sets how much of the subnet's validator stake
-must support a weight level before that level becomes the clipping ceiling for a miner. With the
-default kappa of 0.5, at least half of stake-weighted validator support must agree that a miner
-deserves weight above a given level before more generous weights are left unclipped
-([Yuma Consensus: Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping),
-[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
-
-Readers should not treat kappa as a miner-quality score. It governs how aggressively outlier weights
-are trimmed relative to stake-backed consensus, not how useful a miner's subnet work was in
-isolation
-([Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score)).
 
 ## Distinction from Consensus Score
 
@@ -196,44 +240,8 @@ outcomes
 Consensus-score vocabulary names the agreement benchmark. Yuma vocabulary names the aggregation
 process that applies it on the selected subnet.
 
-Yuma Consensus runs a clipping step before final reward outcomes are calculated. Clipping is
-designed to punish inaccurate miner evaluation, especially patterns that could manipulate consensus
-to favor certain miners
-([Yuma Consensus: Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping)).
-
-The consensus score is the stake-weighted median benchmark used in that step. That median creates a
-threshold that filters outlier
-[validator weights](https://docs.learnbittensor.org/resources/glossary#weight-vector) before they
-reach final [rank](https://docs.learnbittensor.org/resources/glossary#rank) calculations
-([Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score)).
-
-When a submitted weight exceeds the clipped benchmark for a miner, neither the miner nor the
-submitting validator receives emissions for the excess portion. Clipping therefore turns raw
-validator submissions into a post-filter signal that later drives incentive allocation rather than
-passing every submitted value through unchanged.
-
-Each validator on a subnet submits a weight vector ranking miners it has evaluated. Yuma Consensus
-treats those vectors as rows in a matrix of validator evaluations rather than as isolated scores.
-The on-chain process reads that combined input and resolves it into two emission vectors — one for
-miners and one for validators — that allocate each tempo's subnet emissions by role
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-That matrix framing keeps input and output vocabulary separate. Validator weights name the submitted
-evaluations; miner and validator emission shares name the two allocation results produced after
-aggregation, clipping, bonding, and normalization inside the same epoch
-([Glossary: Weight Matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix),
-[Emissions](https://docs.learnbittensor.org/learn/emissions)).
-
-When a validator assigns a miner weight above the clipped consensus benchmark, the bond update
-blends that submission toward the benchmark rather than accepting the full value. A configurable
-penalty factor controls how strongly out-of-consensus weights are pulled back toward the consensus
-level, and an exponential moving average then smooths validator-miner bonds across epochs
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
-[Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)).
-
-Validators who stay near consensus build stronger smoothed bonds and therefore participate more
-fully in validator-side emission allocation, while repeated over-evaluation relative to the
-benchmark erodes bond contribution over time.
+- **Consensus score** — stake-weighted clipping benchmark derived from grouped validator input.
+- **Yuma Consensus** — full aggregation process that applies that benchmark on the selected subnet.
 
 ## Distinction from Governance
 
@@ -412,18 +420,6 @@ converts subnet validator weight submissions into emission shares each tempo
 - **Blockchain vs subnet validator** — chain production versus subnet evaluation roles.
 - **Yuma Consensus** — mechanism that turns validator weights into emission shares.
 
-Validator weights are the main input vocabulary for Yuma Consensus. They are per-validator
-evaluation signals for miners, formed after subnet-specific scoring and then used by consensus to
-calculate outcomes
-([Glossary: Validator Weights](https://docs.learnbittensor.org/resources/glossary#weight-vector),
-[Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
-
-That input boundary separates Yuma Consensus from the off-chain scoring process. A subnet's
-incentive mechanism defines how work is measured, while Yuma Consensus combines the resulting
-validator weights after they are available to the consensus process
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
-[Glossary: Yuma Consensus](https://docs.learnbittensor.org/resources/glossary#yuma-consensus)).
-
 ## Distinction from Crowdloans
 
 Crowdloans name the collective funding structure that pools TAO toward a specified extrinsic or
@@ -542,15 +538,8 @@ mechanism context visible when a subnet has more than one mechanism
 ([Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets),
 [Glossary: Multiple Incentive Mechanisms](https://docs.learnbittensor.org/resources/glossary#multiple-incentive-mechanisms)).
 
-Network environment matters as well. Localnet, testnet, and mainnet are separate contexts, so a Yuma
-Consensus example from one environment is evidence about that environment rather than a universal
-result for every Bittensor network
-([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks),
-[Introduction to Bittensor: Subnet development](https://docs.learnbittensor.org/learn/introduction#subnet-development)).
-
-A localnet example can demonstrate the mechanism in isolation. A testnet example belongs to shared
-non-production state. A mainnet example belongs to production subnet history. The mechanism name is
-shared across environments, but the observed result is environment-bound.
+- **Incentive mechanism** — subnet evaluation setting that defines what work is scored.
+- **Yuma Consensus** — aggregation path that combines validator weights for each mechanism context.
 
 ## Reader Boundary
 
@@ -568,6 +557,9 @@ proves.
 - [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
 - [Glossary: Yuma Consensus](https://docs.learnbittensor.org/resources/glossary#yuma-consensus)
 - [Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)
+- [Glossary: Weight Matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix)
+- [Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score)
+- [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
 - [Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)
 - [How Yuma Consensus 3 Makes Bittensor More Fair](https://docs.learnbittensor.org/learn/yc3-blog)
 - [Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase)
