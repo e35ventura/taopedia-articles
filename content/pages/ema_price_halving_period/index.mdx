@@ -1,0 +1,114 @@
+---
+title: "EMA Price Halving Period"
+summary:
+  "How the EMA price halving period hyperparameter sets the halving term in a subnet's moving-price
+  EMA, controlling how quickly that price adapts to the spot price."
+category: "Subnets"
+tags: ["Subnets", "Emission"]
+infoboxTitle: EMA Price Halving Period
+infoboxCaption: Halving term in the subnet moving-price EMA.
+infoboxRows:
+  - label: Parameter
+    value: EMAPriceHalvingPeriod
+  - label: Type
+    value: u64
+  - label: Default
+    value: "201600"
+  - label: Measured in
+    value: Blocks
+  - label: Example
+    value: netuid 1
+  - label: Set by
+    value: Root
+---
+
+# EMA Price Halving Period
+
+EMA price halving period is a per-subnet hyperparameter, listed in the documentation as
+`EMAPriceHalvingPeriod`, that sets the halving time of a subnet's moving average price. The
+reference describes it as a `u64` with a default of 201,600 blocks, set through the
+`sudo_set_ema_price_halving_period` extrinsic at root permission
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## What It Controls
+
+A subnet's moving price is an exponential moving average (EMA) of its token price, written as
+`SubnetMovingPrice`, rather than the live spot price. The EMA blends the current price with the
+prior EMA using a smoothing factor, and the halving period is the term that shapes that factor
+([Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema),
+[Subnet Deregistration](https://docs.learnbittensor.org/subnets/subnet-deregistration)).
+
+The smoothing factor is computed dynamically from subnet age and this halving period: it scales with
+blocks since the subnet started divided by those blocks plus the halving period. A larger halving
+period yields a smaller factor and a smoother, slower-adapting price, while a smaller one makes the
+moving price more responsive to spot movements
+([Subnet Deregistration](https://docs.learnbittensor.org/subnets/subnet-deregistration),
+[Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema)).
+
+A consequence of that age term is that new subnets adapt slowly. A freshly registered subnet starts
+with a near-zero smoothing factor and gradually approaches the base value as it matures, so the
+halving period governs how that ramp behaves over the subnet's life
+([Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema)).
+
+## Why It Matters
+
+The moving price is not just a display value. A subnet's share of TAO block emission is determined
+from its EMA price, scaled by its root proportion and reduced by any miner-burn penalty, so the
+halving period influences how quickly emission shares track price changes
+([Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema)).
+
+The same EMA price also decides subnet deregistration: the subnet selected for deregistration is the
+one with the lowest EMA price among non-immune subnets. By smoothing the price, the halving period
+makes both emission shares and deregistration selection slow to respond to short-term price
+fluctuations, which the documentation frames as protection against manipulation
+([Subnet Deregistration](https://docs.learnbittensor.org/subnets/subnet-deregistration),
+[Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema)).
+
+## Documented Type, Default, and Setter
+
+The [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+reference lists `EMAPriceHalvingPeriod` as a `u64` with a default of 201,600 blocks. It is changed
+through the `sudo_set_ema_price_halving_period` extrinsic and requires root permission
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+Because each subnet carries its own value as per-netuid state, the halving period on one netuid can
+differ from the documented default and from another subnet's value
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## Reading the Live Value for netuid 1
+
+EMA price halving period is per-subnet chain state, so any live claim is tied to a specific netuid.
+For the documented example netuid 1 on Finney mainnet, the value appears in that subnet's
+hyperparameter table, which the reference describes under viewing a subnet's hyperparameters
+([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
+The infobox uses netuid 1 only as an example label; other subnets expose their own values
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Distinction from Burn Half Life
+
+Both parameters are halving terms, but they govern different quantities. Burn half life is the decay
+horizon for a subnet's dynamic registration burn cost, while EMA price halving period is the halving
+term in the subnet's moving-price EMA
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema)).
+
+- **Burn half life** — decay horizon for the registration burn cost.
+- **EMA price halving period** — halving term in the subnet moving-price EMA.
+
+## Distinction from Spot Price
+
+Spot price is a subnet's instantaneous token price. EMA price halving period shapes the smoothed
+moving price derived from that spot price, which is the value used for emission shares and
+deregistration rather than the raw spot value
+([Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema),
+[Subnet Deregistration](https://docs.learnbittensor.org/subnets/subnet-deregistration)).
+
+- **Spot price** — the instantaneous token price.
+- **EMA price halving period** — control on how fast the smoothed moving price follows spot.
+
+## Further Reading
+
+- [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+- [Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema)
+- [Subnet Deregistration](https://docs.learnbittensor.org/subnets/subnet-deregistration)
+- [Emission](https://docs.learnbittensor.org/learn/emissions)
