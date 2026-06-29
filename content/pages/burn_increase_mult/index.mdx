@@ -51,6 +51,13 @@ raises it only at registration boundaries
 [Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register),
 [Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo)).
 
+Neuron registration is continuous on ordinary subnets such as netuid 1. There are no registration
+windows, rate limits, or per-block caps on the admission action itself. Burn increase mult therefore
+steps the live burn only after successful registration events rather than on interval timers or
+tempo boundaries
+([Rate Limits: Neuron registration](https://docs.learnbittensor.org/learn/chain-rate-limits#neuron-uid-registration),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
 ## On-Chain Application
 
 On chain, the step-up is applied as a direct multiply of the live burn immediately after each
@@ -101,13 +108,28 @@ steps the live burn higher without ever exceeding that ceiling
 ## Distinction from Registration
 
 Burn increase mult shapes how the dynamic registration burn responds to demand. Neuron registration
-is the action that triggers the step-up by paying the current burn to claim a UID slot
+is the action that triggers the step-up by paying the current burn to claim a UID slot. On ordinary
+subnets such as netuid 1, registration is continuous with no windows or per-block caps; burn
+increase mult governs how sharply the live charge rises after each of those registration events
 ([Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register),
-[Miner registration](https://docs.learnbittensor.org/miners#miner-registration)).
+[Miner registration](https://docs.learnbittensor.org/miners#miner-registration),
+[Rate Limits: Neuron registration](https://docs.learnbittensor.org/learn/chain-rate-limits#neuron-uid-registration)).
 
 - **Neuron registration** — claiming a UID slot by paying the dynamic registration burn.
 - **Burn increase mult** — factor that multiplies the burn upward after each successful
   registration.
+
+## Distinction from Adjustment Interval
+
+Burn increase mult steps the live registration burn upward after each successful registration on
+ordinary subnets such as netuid 1. Adjustment interval is legacy registration-pricing vocabulary for
+the block window between demand-comparison recalibrations. The canonical `get_subnet_hyperparams_v3`
+API no longer returns `AdjustmentInterval`; live burn step-up and decay are instead governed by
+`BurnIncreaseMult` and `BurnHalfLife`
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+- **Adjustment interval** — legacy interval-based burn recalibration vocabulary removed from V3.
+- **Burn increase mult** — per-registration step-up inside the burn band.
 
 ## Chain Reads for netuid 1
 
