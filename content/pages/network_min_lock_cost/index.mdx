@@ -1,0 +1,97 @@
+---
+title: "Network Min Lock Cost"
+summary:
+  "How the network min lock cost parameter sets the floor for the dynamic TAO cost of creating a new
+  subnet, the level the cost decays toward between registrations."
+category: "Subnets"
+tags: ["Subnets", "Economics"]
+infoboxTitle: Network Min Lock Cost
+infoboxCaption: Floor for the dynamic subnet creation cost.
+infoboxRows:
+  - label: Parameter
+    value: NetworkMinLockCost
+  - label: Scope
+    value: Network-wide
+  - label: Paid in
+    value: TAO
+  - label: Related
+    value: LockReductionInterval
+  - label: Set by
+    value: Root
+---
+
+# Network Min Lock Cost
+
+Network min lock cost is a network-wide parameter, listed in the documentation as
+`NetworkMinLockCost`, that sets the minimum amount of TAO required to register a new subnet. The
+reference describes it as the minimum TAO to pay for subnet registration, set at root permission
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet)).
+
+## What It Controls
+
+The cost to create a subnet is dynamic rather than fixed. The documentation explains that this cost
+lowers gradually over time and doubles every time a subnet is created, so demand pushes it up and
+quiet periods let it fall
+([Create a Subnet: Burn cost](https://docs.learnbittensor.org/subnets/create-a-subnet#burn-cost)).
+
+Network min lock cost is the floor of that dynamic range. As the cost decays between registrations
+it settles toward this minimum rather than dropping to zero, so it sets the least a prospective
+subnet owner can expect to pay regardless of how long the cost has been easing
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet)).
+
+The cost is recycled rather than kept. The documentation notes the subnet creation amount is labeled
+a burn cost even though it is recycled, and that the funds cannot be recovered by the creator
+([Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet),
+[Glossary: Recycling and burning](https://docs.learnbittensor.org/resources/glossary#recycling-and-burning)).
+
+## Why It Is Network-Wide
+
+Subnet creation is a network-level action, so this cost is a single network parameter rather than
+per-subnet chain state. It applies to the act of registering any new subnet, which is why it is not
+keyed to an existing netuid the way per-subnet hyperparameters are
+([Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+The current creation cost can be checked directly through the `btcli subnets lock_cost` command,
+which reports the live TAO required to register a new subnet at that moment. Because the value
+anneals over roughly a couple of days, the documentation suggests checking again later if the
+current cost is unappealing
+([Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet)).
+
+## Relationship to Lock Reduction Interval
+
+Network min lock cost works alongside the lock reduction interval. The lock reduction interval sets
+how long it takes the creation cost to halve as it decays, while network min lock cost sets the
+floor that decay approaches
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+- **Network min lock cost** — the minimum the creation cost can fall to.
+- **Lock reduction interval** — how quickly the creation cost decays toward that minimum.
+
+## Distinction from Registration Burn
+
+Registration burn is the per-subnet cost a neuron pays to obtain a UID on an existing subnet.
+Network min lock cost is the floor for the separate cost of creating a whole new subnet, so one is
+about joining a subnet and the other about bringing a subnet into existence
+([Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet),
+[Glossary: Burn Cost](https://docs.learnbittensor.org/resources/glossary#burn-cost)).
+
+- **Network min lock cost** — floor for the cost of creating a new subnet.
+- **Registration burn** — cost a neuron pays to register on an existing subnet.
+
+## Documented Setter
+
+The [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+reference describes `NetworkMinLockCost` as the minimum TAO for subnet registration, changed through
+the `sudo_set_network_min_lock_cost` extrinsic at root permission. Because it governs network-wide
+subnet creation, it is set at the root level rather than by individual subnet owners
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## Further Reading
+
+- [Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet)
+- [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+- [Glossary: Recycling and burning](https://docs.learnbittensor.org/resources/glossary#recycling-and-burning)
+- [Glossary: Burn Cost](https://docs.learnbittensor.org/resources/glossary#burn-cost)
