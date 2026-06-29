@@ -44,6 +44,17 @@ One submission is exempt from the floor: on a non-root subnet, a validator setti
 single self-weight is accepted regardless of the configured minimum
 ([`check_length`](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
 
+A worked example makes the effective minimum concrete. With a configured minimum of 8 on a subnet
+that holds 50 neurons, the effective minimum is `min(8, 50) = 8`, so a submission must include at
+least eight weights. On a subnet that holds only 3 neurons, the same configured minimum yields
+`min(8, 3) = 3`, so a submission of three weights passes even though the configured value is higher
+([`check_length`](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+This is why raising the configured minimum never blocks weight setting on a small subnet: the count
+the chain actually requires can never exceed the number of neurons available to point at. The
+self-weight submission above sits outside this comparison entirely
+([`check_length`](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
 ## Default and Setting
 
 The documentation lists min allowed weights as a `u16` value with a default of 1, and marks it as
@@ -51,6 +62,11 @@ owner-settable, so a subnet owner can raise it for their subnet. A value above o
 weight submission must cover more than one target. The value in force is per-subnet chain state and
 can differ from the default, so the minimum configured on netuid 1 can differ from another subnet's
 floor ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+It is changed through the `sudo_set_min_allowed_weights` extrinsic, exposed in tooling as
+`btcli sudo set --param min_allowed_weights`, and the reference marks the permission required to set
+it as subnet owner rather than root
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
 ## Why It Matters
 
