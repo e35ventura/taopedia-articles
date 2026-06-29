@@ -41,6 +41,19 @@ That makes weights rate limit a submission-pacing rule. It limits how frequently
 change its on-chain weight signal, rather than deciding whether a particular submission counts in
 the current [epoch](https://docs.learnbittensor.org/resources/glossary#epoch).
 
+## How the Limit Is Checked
+
+On chain, a weight submission passes the pacing check when the blocks elapsed since the validator's
+last weight update are at least the rate limit. Reaching the limit exactly is enough, since the
+comparison is inclusive, and a submission that arrives sooner is rejected as setting weights too
+fast
+([`check_rate_limit`](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+A validator's first weight submission is exempt. While the stored last-update value is still its
+default of zero, the check passes regardless of the rate limit, so the interval only applies between
+an existing commit and the next one
+([`check_rate_limit`](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
 ## Documented Type, Default, and Setter
 
 The [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
