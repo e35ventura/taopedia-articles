@@ -1,0 +1,99 @@
+---
+title: "Tx Delegate Take Rate Limit"
+summary:
+  "How the tx delegate take rate limit sets the block-counted cooldown that paces how often a
+  delegate's take can be increased on chain."
+category: "Staking"
+tags: ["Staking", "Tokenomics"]
+infoboxTitle: Tx Delegate Take Rate Limit
+infoboxCaption: Cooldown in blocks that paces delegate-take increases.
+infoboxRows:
+  - label: Parameter
+    value: TxDelegateTakeRateLimit
+  - label: Default
+    value: "216000 blocks"
+  - label: Scope
+    value: Network-global
+  - label: Set by
+    value: Root
+---
+
+# Tx Delegate Take Rate Limit
+
+Tx delegate take rate limit is a network-global chain setting, stored on chain as
+`TxDelegateTakeRateLimit`, that paces how frequently a delegate's take can be increased. The chain
+rate-limit reference documents a value of 216,000 blocks, roughly 30 days, as the cooldown applied
+to delegate-take increases
+([Chain Rate Limits: Delegate take rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#delegate-take-rate-limit),
+[TxDelegateTakeRateLimit Storage](https://subtensor.com/reference/subtensormodule/storage/TxDelegateTakeRateLimit)).
+
+## What It Controls
+
+The setting bounds how often a delegate may raise the take they keep from delegated-stake emissions;
+it does not set the take percentage itself. A delegate configures take within the documented range,
+and an increase is only accepted once this cooldown has elapsed since the last recorded
+delegate-take transaction
+([Staking and Delegation Overview](https://docs.learnbittensor.org/staking-and-delegation/delegation),
+[Glossary: Validator Take %](https://docs.learnbittensor.org/resources/glossary#validator-take-)).
+
+The rate limit gates increases specifically. The last delegate-take transaction block is also
+updated when a delegate decreases their take, so a recent decrease can push out when a subsequent
+increase becomes allowed. In practice the limit prevents a delegate from ratcheting their take up
+rapidly across consecutive changes
+([Chain Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+
+## Why the Cooldown Exists
+
+The pacing protects nominators from sudden, repeated commission hikes. By forcing a wait before a
+take increase is accepted, it gives delegated stakers a predictable window instead of allowing
+frequent upward changes to the share a delegate keeps
+([Chain Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits),
+[Glossary: Validator Take %](https://docs.learnbittensor.org/resources/glossary#validator-take-)).
+
+## Scope and Permission
+
+Tx delegate take rate limit is a global value rather than a per-subnet hyperparameter, so the same
+cooldown governs delegate-take increases network-wide rather than being tuned individually. The
+documentation groups it with variables configured under root permission
+([Chain Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits),
+[TxDelegateTakeRateLimit Storage](https://subtensor.com/reference/subtensormodule/storage/TxDelegateTakeRateLimit)).
+
+Because it is measured in blocks, the real-time wait depends on block production, and the live value
+is chain state that can differ from the documented default
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Distinction from Validator Take
+
+Validator take is the share a delegate keeps from delegated-stake emissions before the remainder
+flows to stakers. Tx delegate take rate limit does not set that share; it paces how often the share
+can be increased, so the take is the commission while this limit is the cooldown on raising it
+([Glossary: Validator Take %](https://docs.learnbittensor.org/resources/glossary#validator-take-),
+[Chain Rate Limits: Delegate take rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#delegate-take-rate-limit)).
+
+- **Validator take** — the commission a delegate keeps from delegated-stake dividends.
+- **Tx delegate take rate limit** — the block-counted cooldown before that commission can be raised
+  again.
+
+## Distinction from Tx Rate Limit
+
+Tx rate limit is a separate network-global limit applied to its own extrinsic path. Tx delegate take
+rate limit specifically paces delegate-take increases, so the two bound different operations even
+though both are global block-counted limits
+([Chain Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+
+- **Tx rate limit** — global limit on its own transaction path.
+- **Tx delegate take rate limit** — global cooldown on delegate-take increases.
+
+## Reader Boundary
+
+This page defines the concept at a high level. It does not report any delegate's current take or
+when a specific delegate could next raise it. Those are live chain state on the delegate hotkey and
+should be checked before planning a take change. The value of 216,000 blocks is the documented
+figure, and the setting is global and root-controlled.
+
+## Further Reading
+
+- [Chain Rate Limits: Delegate take rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#delegate-take-rate-limit)
+- [Glossary: Validator Take %](https://docs.learnbittensor.org/resources/glossary#validator-take-)
+- [Staking and Delegation Overview](https://docs.learnbittensor.org/staking-and-delegation/delegation)
+- [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)
