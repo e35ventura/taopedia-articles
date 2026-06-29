@@ -1,0 +1,93 @@
+---
+title: "Min Non Immune Uids"
+summary:
+  "How the min non immune uids subnet hyperparameter sets the minimum number of non-immune UIDs that
+  must remain on a subnet."
+category: "Subnets"
+tags: ["Subnets", "Registration"]
+infoboxTitle: Min Non Immune Uids
+infoboxCaption: Floor on non-immune UID slots per subnet.
+infoboxRows:
+  - label: Parameter
+    value: MinNonImmuneUids
+  - label: Type
+    value: u16
+  - label: Default
+    value: "10"
+  - label: Example
+    value: netuid 1
+  - label: Set by
+    value: Root
+---
+
+# Min Non Immune Uids
+
+Min non immune uids is a per-subnet hyperparameter, listed in the documentation as
+`MinNonImmuneUids`, that sets the minimum number of non-immune UIDs that must remain on a subnet.
+The reference describes it as setting that floor and marks the permission required to change it as
+root ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## What It Controls
+
+The hyperparameter sets a count floor for ordinary competitive slots, not which specific UIDs are
+immune or how long post-registration
+[immunity period](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#immunityperiod)
+protection lasts. It requires that at least the configured number of UIDs on the subnet remain
+outside owner-immune or other immune categories
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Glossary: Immunity Period](https://docs.learnbittensor.org/resources/glossary#immunity-period)).
+
+That floor shapes how many slots stay subject to ordinary competitive displacement rules. It does
+not set max allowed UIDs, registration burn, or validator weight rules; it only bounds how far
+immune designations can shrink the non-immune portion of the UID table
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+The value is set at root permission rather than by the subnet owner alone, reflecting network-level
+policy for subnet composition. The live floor on netuid 1 can differ from the documented default and
+from another subnet's setting
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Effect on Pruning
+
+When a full subnet accepts a new registration, the chain normally replaces the lowest-ranked
+non-immune neuron, but only while the number of non-immune UIDs stays above this floor. If pruning a
+non-immune neuron would drop the count to the floor, selection falls back to the lowest-ranked
+immune neuron instead, so this value is what can force a registration to displace an immune UID
+rather than a non-immune one
+([`get_neuron_to_prune`](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)).
+
+## Documented Type and Default
+
+The [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+reference lists `MinNonImmuneUids` as a `u16` with a default of ten
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+Because each subnet carries its own hyperparameters, the non-immune floor on one netuid can differ
+from the documented default and from the floor on another subnet
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## Reading the Live Value for netuid 1
+
+Min non immune uids is per-subnet chain state, so any live claim is tied to a specific netuid. For
+the documented example netuid 1 on Finney mainnet, the floor appears in that subnet's hyperparameter
+table, which the reference describes under viewing a subnet's hyperparameters
+([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
+The infobox uses netuid 1 only as an example label; other subnets expose their own values
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Distinction from Immune Owner Uids Limit
+
+Immune owner uids limit caps how many neurons may be marked owner-immune. Min non immune uids sets
+the minimum count of UIDs that must remain non-immune on the subnet
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+- **Immune owner uids limit** — maximum owner-immune neurons allowed.
+- **Min non immune uids** — minimum non-immune UID slots required.
+
+## Further Reading
+
+- [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+- [Glossary: Immunity Period](https://docs.learnbittensor.org/resources/glossary#immunity-period)
+- [Miner registration](https://docs.learnbittensor.org/miners#miner-registration)
+- [Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)
