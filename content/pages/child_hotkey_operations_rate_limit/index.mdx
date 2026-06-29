@@ -1,0 +1,76 @@
+---
+title: "Child Hotkey Operations Rate Limit"
+summary:
+  "How the child hotkey operations rate limit caps how often a parent hotkey can set or revoke child
+  hotkeys on a subnet, with revokes sharing the same cooldown as sets."
+category: "Staking"
+tags: ["Staking", "Security"]
+infoboxTitle: Child Hotkey Operations Rate Limit
+infoboxCaption: Cooldown for setting or revoking children.
+infoboxRows:
+  - label: Interval
+    value: "150 blocks (~30 minutes)"
+  - label: Measured in
+    value: Blocks
+  - label: Scope
+    value: Per subnet (netuid)
+  - label: Applies to
+    value: Parent hotkey
+  - label: Action gated
+    value: set_children
+---
+
+# Child Hotkey Operations Rate Limit
+
+Child hotkey operations rate limit controls how often a parent hotkey can set or revoke
+[child hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys) on a given subnet. The
+rate-limits reference puts it at 150 blocks, roughly 30 minutes, and notes that it applies per
+subnet ([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+
+## What It Controls
+
+[Child hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys) let a parent hotkey
+delegate a proportion of its stake weight to other hotkeys, which then participate in consensus as
+if they held that stake. Setting that arrangement is done with the `set_children` call, which takes
+a netuid ([set_children](https://subtensor.com/reference/subtensormodule/calls/set_children)). This
+rate limit is the cooldown between such operations, so it governs how frequently the parent's child
+configuration can change, not how the stake is split.
+
+## When It Matters
+
+A common misconception is that revoking children is a separate, unrestricted action from setting
+them. It is not: revoking is implemented by calling `set_children` with an empty list, so a revoke
+draws from the same 150-block budget as a set
+([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+
+Concretely, suppose a parent hotkey sets children on netuid 1 with
+`btcli stake child set --netuid 1 ...` and then immediately notices a wrong proportion. It cannot
+fix the mistake right away: a follow-up `set_children` on netuid 1, whether to re-set the list or to
+revoke it entirely, is rejected until the roughly 150-block (~30-minute) window elapses. Because the
+limit is per subnet, the same parent could still operate on a different netuid in the meantime; only
+netuid 1 is on cooldown ([Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys),
+[Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+
+## Why the Limit Exists
+
+Sharing one cooldown across sets and revokes prevents a parent from rapidly churning child
+assignments to manipulate where stake weight lands between epochs. Pairing it with the per-subnet
+scope keeps the restriction targeted: a rate-limited action on one subnet does not freeze the
+parent's child management everywhere
+([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+
+## Distinction from Child Key Take Rate Limit
+
+The two limits gate different child-hotkey actions. This rate limit covers setting or revoking the
+children themselves, while the child key take rate limit covers changing a child's take percentage,
+on a far longer cycle ([Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys)).
+
+- **Child hotkey operations rate limit** — ~150 blocks between set/revoke operations.
+- **Child key take rate limit** — about 30 days between take changes.
+
+## Further Reading
+
+- [Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys)
+- [Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)
+- [set_children Call](https://subtensor.com/reference/subtensormodule/calls/set_children)
+- [Glossary: Block](https://docs.learnbittensor.org/resources/glossary#block)
