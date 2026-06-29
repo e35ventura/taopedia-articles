@@ -1,0 +1,100 @@
+---
+title: "Hotkey Swap On Subnet Interval"
+summary:
+  "How the hotkey swap on subnet interval sets the per-subnet cooldown a hotkey swap must respect,
+  the longer of the two rate limits that gate swapping a hotkey."
+category: "Subnets"
+tags: ["Subnets", "Security"]
+infoboxTitle: Hotkey Swap On Subnet Interval
+infoboxCaption: Per-subnet cooldown for hotkey swaps.
+infoboxRows:
+  - label: Parameter
+    value: HotkeySwapOnSubnetInterval
+  - label: Interval
+    value: "~36,000 blocks (~5 days)"
+  - label: Measured in
+    value: Blocks
+  - label: Applies to
+    value: Hotkey swaps per subnet
+  - label: Example
+    value: netuid 1
+---
+
+# Hotkey Swap On Subnet Interval
+
+Hotkey swap on subnet interval is the per-subnet rate limit that a hotkey swap must satisfy, named
+in the documentation as `HotkeySwapOnSubnetInterval`. The rate-limits reference lists it as the
+per-subnet portion of the hotkey swap rate limit, at roughly 36,000 blocks or about five days
+([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+
+## What It Controls
+
+A hotkey swap is the operation that replaces the hotkey associated with an account's stake and
+registrations. The documentation describes hotkey swaps as subject to two separate rate limits that
+must both be satisfied: a short network-wide transaction limit and this longer per-subnet interval
+([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits),
+[Hotkey Swap](https://docs.learnbittensor.org/resources/glossary#hotkey-swap)).
+
+This interval is the per-subnet half of that pair. It sets how long must pass on a given subnet
+before a hotkey can be swapped again there, so it limits how frequently an account can rotate its
+hotkey on that subnet ([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+
+Because the interval is counted in blocks, the real-time wait depends on block time. The reference
+puts the interval near 36,000 blocks, which is roughly five days, making it a substantially longer
+gate than the short network-wide transaction limit
+([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+
+## Why Two Limits
+
+The two-limit design separates a fast global check from a slow per-subnet one. The network-wide
+transaction limit spaces swaps at the chain level, while the per-subnet interval prevents rapid
+hotkey rotation on any single subnet, which together raise the cost of churning hotkeys to game
+subnet participation ([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+
+A swap is accepted only when both limits are clear. Satisfying the short transaction limit alone is
+not enough if the per-subnet interval on the target subnet has not yet elapsed
+([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+
+## Applying It to netuid 1
+
+The interval is enforced per subnet, so whether a hotkey can be swapped is evaluated against a
+specific netuid. For the documented example netuid 1 on Finney mainnet, a hotkey swap touching
+netuid 1 must respect netuid 1's own elapsed swap interval in addition to the network-wide
+transaction limit ([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)). The
+infobox uses netuid 1 only as an example label; the same per-subnet interval logic applies to every
+subnet a swap touches
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Documented Nature
+
+The [Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits) reference describes
+`HotkeySwapOnSubnetInterval` as a global interval constant rather than a per-subnet owner setting,
+and notes it is not queryable from chain state the way mutable hyperparameters are. The same fixed
+interval therefore governs the per-subnet swap cooldown across subnets
+([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+
+## Distinction from Tx Rate Limit
+
+Tx rate limit is the short network-wide general transaction limit that also applies to hotkey swaps.
+Hotkey swap on subnet interval is the longer per-subnet cooldown, so a swap must clear both
+([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+
+- **Tx rate limit** — short network-wide transaction cooldown.
+- **Hotkey swap on subnet interval** — longer per-subnet hotkey-swap cooldown.
+
+## Distinction from Hotkey Swap
+
+Hotkey swap is the operation that replaces an account's hotkey. Hotkey swap on subnet interval is
+the per-subnet cooldown that limits how often that operation can run on a subnet
+([Hotkey Swap](https://docs.learnbittensor.org/resources/glossary#hotkey-swap),
+[Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+
+- **Hotkey swap** — the operation that replaces a hotkey.
+- **Hotkey swap on subnet interval** — the per-subnet cooldown between such swaps.
+
+## Further Reading
+
+- [Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)
+- [Glossary: Hotkey Swap](https://docs.learnbittensor.org/resources/glossary#hotkey-swap)
+- [Glossary: Block](https://docs.learnbittensor.org/resources/glossary#block)
+- [Hotkeys](https://docs.learnbittensor.org/getting-started/wallets)
