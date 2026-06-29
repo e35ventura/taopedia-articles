@@ -1,8 +1,8 @@
 ---
 title: "Stake Threshold"
 summary:
-  "How the stake threshold hyperparameter sets the minimum stake weight a neuron needs before it can
-  be considered for a validator permit during the epoch."
+  "How the global stake threshold root parameter sets the minimum stake weight a neuron needs before
+  it can be considered for a validator permit during the epoch."
 category: "Subnets"
 tags: ["Subnets", "Validation"]
 infoboxTitle: Stake Threshold
@@ -10,6 +10,8 @@ infoboxCaption: Minimum stake weight to be considered for a validator permit.
 infoboxRows:
   - label: Parameter
     value: StakeThreshold
+  - label: Type
+    value: u64
   - label: Measured in
     value: Stake weight
   - label: Default
@@ -17,75 +19,93 @@ infoboxRows:
   - label: Example
     value: netuid 1
   - label: Set by
-    value: Root
+    value: Root (global)
 ---
 
 # Stake Threshold
 
-Stake threshold is a hyperparameter, listed in the documentation as `StakeThreshold`, that sets the
-minimum stake weight a neuron must hold before it is eligible to validate on a subnet. The reference
-describes it as the minimum stake required for validating, with a current value of 1000, set through
-the `sudo_set_stake_threshold` extrinsic at root permission
+Stake threshold is a global root parameter, listed in the documentation as `StakeThreshold`, that
+sets the minimum stake weight a neuron must hold before it is eligible to receive a validator permit
+on any subnet. The reference describes it as the minimum stake required for validating, with a
+current value of 1000, changed through the `sudo_set_stake_threshold` extrinsic at root permission
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
 ## What It Controls
 
-The threshold is applied during the epoch as a filter on validator-permit candidates. The epoch
-reads the stake threshold and zeroes out any hotkey whose stake weight falls below it, so neurons
-under the threshold are excluded from the permit selection before ranking
-([Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch),
-[Validator Permit](https://docs.learnbittensor.org/validators)).
+The threshold is applied during each subnet's epoch as a filter on validator-permit candidates. The
+epoch reads the global stake threshold and zeroes out any hotkey whose stake weight falls below it,
+so neurons under the threshold are excluded from permit selection before ranking
+([Yuma Consensus Epoch: Validator Permit Management](https://docs.learnbittensor.org/navigating-subtensor/epoch#3-validator-permit-management),
+[Validating in Bittensor](https://docs.learnbittensor.org/validators)).
 
-Meeting the threshold is necessary but not sufficient. After the below-threshold stakes are filtered
-out, the top neurons by stake weight, typically the top 64, receive the permits; a neuron can clear
-the threshold and still miss a permit if it does not rank highly enough
-([Validator Permit](https://docs.learnbittensor.org/validators),
-[Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)).
+Meeting the threshold is necessary but not sufficient. After below-threshold stakes are filtered
+out, the top neurons by stake weight up to
+[MaxAllowedValidators](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#maxallowedvalidators)
+receive the permits; a neuron can clear the threshold and still miss a permit if it does not rank
+highly enough ([Validating in Bittensor](https://docs.learnbittensor.org/validators),
+[Yuma Consensus Epoch: Validator Permit Management](https://docs.learnbittensor.org/navigating-subtensor/epoch#3-validator-permit-management)).
 
 The value is measured in stake weight, which the validator documentation defines as a hotkey's alpha
-stake plus its TAO stake scaled by the `tao_weight` parameter. So the threshold compares against
-that combined figure rather than raw TAO alone
-([Validating in Bittensor](https://docs.learnbittensor.org/validators)).
+stake plus its TAO stake scaled by the `tao_weight` parameter. The threshold compares against that
+combined figure rather than raw TAO alone
+([Validating in Bittensor](https://docs.learnbittensor.org/validators),
+[Glossary: Stake Weight](https://docs.learnbittensor.org/resources/glossary#stake-weight)).
 
 ## Why It Matters
 
-Because permits are recalculated every epoch from the current stake distribution, the threshold acts
-as a per-epoch floor that filters out low-commitment participants before the top-K ranking runs. It
-keeps neurons with negligible stake weight out of the validator set even when permit slots are
-available ([Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch),
+Because permits are recalculated every epoch from the current stake distribution on each subnet, the
+threshold acts as a per-epoch floor that filters out low-commitment participants before the top-K
+ranking runs. It keeps neurons with negligible stake weight out of the validator set even when
+permit slots are available
+([Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch),
 [Understanding Neurons](https://docs.learnbittensor.org/learn/neurons)).
 
 Only neurons that hold a permit can set non-self weights and take part in consensus, so the
 threshold sits at the boundary between merely being registered and being able to validate
 ([Understanding Neurons](https://docs.learnbittensor.org/learn/neurons)).
 
-## Documented Default and Setter
+## Documented Type, Default, and Setter
 
 The [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
-reference lists `StakeThreshold` with a default of 1000 and notes it is changed through the
-`sudo_set_stake_threshold` extrinsic at root permission
+reference lists `StakeThreshold` under global root state variables with a default of 1000. The
+setter extrinsic accepts a `u64` minimum stake argument at root permission. The reference lists no
+`btcli` setter for this parameter. A change emits the `StakeThresholdSet` on-chain event
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
-The epoch implementation reads this value with a stake-threshold getter and uses it as the minimum
-stake comparison when filtering permit candidates, matching the documented minimum of 1000 stake
-weight ([Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)).
+The epoch implementation reads this value through `get_stake_threshold()` and uses it as the minimum
+stake comparison when filtering permit candidates on every subnet
+([Yuma Consensus Epoch: Stake Processing and Validation](https://docs.learnbittensor.org/navigating-subtensor/epoch#2-stake-processing-and-validation)).
 
 ## Reading the Live Value for netuid 1
 
-Permit selection runs per subnet, so any live claim is tied to a specific netuid. For the documented
-example netuid 1 on Finney mainnet, the threshold and the resulting permit set are observed through
-that subnet's hyperparameters and metagraph, which the references describe under viewing a subnet's
-hyperparameters and validator requirements
+Stake threshold is network-wide root state, but permit selection runs per subnet. For the documented
+example netuid 1 on Finney mainnet, readers can verify the live threshold with
+`btcli subnet hyperparameters --netuid 1 --network finney`, which prints the global value alongside
+that subnet's other hyperparameter rows, and can inspect which UIDs hold permits through the
+metagraph `validator_permit` field
 ([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters),
-[Validating in Bittensor](https://docs.learnbittensor.org/validators)). The infobox uses netuid 1
-only as an example label; other subnets apply the same rule to their own stake distributions
+[Validating in Bittensor](https://docs.learnbittensor.org/validators),
+[Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)). The infobox uses netuid 1
+only as an example read path; the threshold itself applies across subnets while each netuid applies
+it to its own stake distribution
 ([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Distinction from Kappa
+
+Kappa is a per-subnet consensus majority ratio used when clipping validator weights during Yuma
+settlement. Stake threshold is the separate global minimum stake weight that filters permit
+candidates before top-K ranking runs
+([Subnet Hyperparameters: Kappa](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#kappa),
+[Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)).
+
+- **Stake threshold** — global minimum stake weight to enter the permit candidate pool.
+- **Kappa** — per-subnet stake fraction that sets the consensus clipping ceiling during Yuma.
 
 ## Distinction from Max Validators
 
-Max validators caps how many validators a subnet allows. Stake threshold sets the minimum stake
-weight a neuron needs to enter the permit candidate pool in the first place, so the two act at
-different stages of permit selection
+Max validators caps how many validators a subnet allows through `MaxAllowedValidators`. Stake
+threshold sets the minimum stake weight a neuron needs to enter the permit candidate pool in the
+first place, so the two act at different stages of permit selection
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
 [Validating in Bittensor](https://docs.learnbittensor.org/validators)).
 
@@ -98,3 +118,4 @@ different stages of permit selection
 - [Validating in Bittensor](https://docs.learnbittensor.org/validators)
 - [Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)
 - [Understanding Neurons](https://docs.learnbittensor.org/learn/neurons)
+- [Glossary: Stake Weight](https://docs.learnbittensor.org/resources/glossary#stake-weight)
