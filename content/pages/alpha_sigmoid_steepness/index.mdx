@@ -58,8 +58,35 @@ reference lists `AlphaSigmoidSteepness` as an `i16` with a default of `1000`. Be
 carries its own hyperparameters, the steepness is defined per subnet and applies only within that
 subnet's bond-smoothing path.
 
+It is changed through the `sudo_set_alpha_sigmoid_steepness` extrinsic, exposed in tooling as
+`btcli sudo set --param alpha_sigmoid_steepness`. In the current `btcli` mapping this parameter is
+marked as not owner-settable and root-sudo-only, so changing it requires a root sudo call rather
+than an ordinary subnet-owner hyperparameter update
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+The reference describes the parameter itself as determining how the consensus mechanism assigns an
+alpha value for a given miner-validator pair based on voting alignment, which is why it sits on the
+bond-smoothing path rather than on registration or emission directly
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+The setter writes only this steepness; it does not move the `alpha_low` and `alpha_high` bounds,
+which the reference documents as a separate `AlphaValues` setting. Steepness therefore reshapes how
+sharply the assigned alpha travels between those endpoints, but the endpoints themselves remain
+fixed until `AlphaValues` is changed
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+The reference also fixes the direction of the control: it describes lower steepness values as
+producing moderate alpha values, while higher steepness values push the assigned alpha closer to the
+defined `alpha_low` or `alpha_high` bounds, depending on which side of consensus a miner-validator
+pair falls on
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
 The value in force is per-subnet chain state and can differ from the documented default, so a
 subnet's real steepness should be read for that subnet rather than assumed from the reference value.
+For the documented example netuid 1 on Finney mainnet, the live value can be read from that subnet's
+hyperparameter table with `btcli subnet hyperparameters --netuid 1 --network finney`, which keeps
+the steepness claim reproducible against a parseable netuid
+([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
 
 ## Distinction from Liquid Alpha
 
