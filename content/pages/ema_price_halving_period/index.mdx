@@ -71,15 +71,41 @@ reference lists `EMAPriceHalvingPeriod` as a `u64` with a default of 201,600 blo
 through the `sudo_set_ema_price_halving_period` extrinsic and requires root permission
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
+`EMAPriceHalvingPeriod` is also one of the rows returned by the canonical
+`get_subnet_hyperparams_v3` runtime API, so the live halving period for a subnet can be read from
+the current hyperparameter table rather than inferred from the default
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
 Because each subnet carries its own value as per-netuid state, the halving period on one netuid can
 differ from the documented default and from another subnet's value
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
+## A Worked Example of the Smoothing Factor
+
+The documented smoothing factor scales as blocks since the subnet started divided by those blocks
+plus the halving period, written here as `age / (age + H)` where `H` is the halving period
+([Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema),
+[Subnet Deregistration](https://docs.learnbittensor.org/subnets/subnet-deregistration)).
+
+That form explains the parameter's name. When a subnet's age equals one halving period, the factor
+is `H / (H + H) = 0.5`; at two halving periods it is `2H / 3H ≈ 0.67`, and at three it is
+`3H / 4H = 0.75`, approaching one as the subnet ages further. Each additional halving period closes
+half of the remaining gap to the base value
+([Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema)).
+
+At the documented default of 201,600 blocks, one halving period is 560 tempos at the default tempo
+of 360 blocks, so a freshly registered subnet reaches the half-weight point only after that many
+tempos of operation. Raising `H` pushes that midpoint later; lowering it brings the moving price to
+half weight sooner
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo)).
+
 ## Reading the Live Value for netuid 1
 
 EMA price halving period is per-subnet chain state, so any live claim is tied to a specific netuid.
-For the documented example netuid 1 on Finney mainnet, the value appears in that subnet's
-hyperparameter table, which the reference describes under viewing a subnet's hyperparameters
+For the documented example netuid 1 on Finney mainnet, readers can verify the live value with
+`btcli subnet hyperparameters --netuid 1 --network finney`, which prints that subnet's
+hyperparameter table
 ([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
 The infobox uses netuid 1 only as an example label; other subnets expose their own values
 ([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
