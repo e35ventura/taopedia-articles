@@ -1,0 +1,99 @@
+---
+title: "Subnet Emission Enabled"
+summary:
+  "How the subnet emission enabled hyperparameter toggles a subnet's pool-side emission injection,
+  which flows stop when it is off, and which emissions continue regardless."
+category: "Subnets"
+tags: ["Subnets", "Emission"]
+infoboxTitle: Subnet Emission Enabled
+infoboxCaption: Toggle for a subnet's pool-side emission injection.
+infoboxRows:
+  - label: Parameter
+    value: SubnetEmissionEnabled
+  - label: Type
+    value: bool
+  - label: Default
+    value: "true"
+  - label: Example
+    value: netuid 1
+  - label: Set by
+    value: Root (sudo)
+---
+
+# Subnet Emission Enabled
+
+Subnet emission enabled is a per-subnet hyperparameter, listed in the documentation as
+`SubnetEmissionEnabled`, that controls whether a subnet receives pool-side emission injection each
+epoch. The reference describes it as a boolean defaulting to true, settable only by root sudo rather
+than by subnet owners
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## What It Controls
+
+When the flag is true, the subnet receives its pool-side injection on each epoch. When set to false,
+the subnet receives no alpha-in, tao-in, or chain-buy injections, and that subnet's emission share
+is redistributed to the remaining enabled subnets instead
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Emission](https://docs.learnbittensor.org/learn/emissions)).
+
+Crucially, the toggle does not stop every reward flow. The documentation notes that alpha-out, owner
+cut, root proportion, and validator and server emissions continue regardless of this flag, so
+turning it off halts the pool-side injections specifically rather than freezing all subnet activity
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Emission](https://docs.learnbittensor.org/learn/emissions)).
+
+That scoping is what makes it a targeted control rather than a full shutdown. The injection side of
+a subnet's economy can be paused while the consensus-driven distribution side keeps operating on the
+metagraph ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+## Why It Matters
+
+The reference frames this flag as an emergency governance tool. It exists to temporarily halt
+emissions to a subnet that is exhibiting problematic behavior without fully dissolving the subnet,
+so the network can intervene reversibly rather than tearing the subnet down
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+Because the share from a disabled subnet is redistributed to enabled subnets, the setting also has a
+network-wide effect: disabling one subnet's injection shifts that portion of pool-side emission
+toward the rest
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Documented Type, Default, and Setter
+
+The [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+reference lists `SubnetEmissionEnabled` as a per-subnet boolean defaulting to true. It is changed
+through the `sudoSetSubnetEmissionEnabled` admin extrinsic and is root sudo only, explicitly not
+settable by subnet owners. A change emits an on-chain event recording the new state
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+Because each subnet carries its own value as per-netuid state, the flag on one netuid can differ
+from the documented default and from another subnet's value
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## Reading the Live Value for netuid 1
+
+Subnet emission enabled is per-subnet chain state, so any live claim is tied to a specific netuid.
+For the documented example netuid 1 on Finney mainnet, the value appears in that subnet's
+hyperparameter table, which the reference describes under viewing a subnet's hyperparameters
+([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
+The infobox uses netuid 1 only as an example label; other subnets expose their own values
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Distinction from Owner Cut
+
+Owner cut is the share of subnet alpha emissions paid to the subnet owner as stake. Subnet emission
+enabled is the toggle for pool-side injection, and owner cut is among the flows the documentation
+says continue even when the toggle is off
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+- **Subnet emission enabled** — on/off switch for a subnet's pool-side injection.
+- **Owner cut** — owner's share of alpha emissions, which continues regardless of the toggle.
+
+## Further Reading
+
+- [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+- [Emission](https://docs.learnbittensor.org/learn/emissions)
+- [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
+- [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)
