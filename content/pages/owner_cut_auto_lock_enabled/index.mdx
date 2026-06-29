@@ -13,7 +13,7 @@ infoboxRows:
   - label: Type
     value: Bool
   - label: Default
-    value: "true"
+    value: "false"
   - label: Example
     value: netuid 1
   - label: Set by
@@ -25,7 +25,7 @@ infoboxRows:
 Owner cut auto lock enabled is a per-subnet hyperparameter, listed in the documentation as
 `OwnerCutAutoLockEnabled`, that controls whether the subnet owner's distributed cut of emissions is
 automatically locked rather than received as free stake. The reference documents it as a boolean
-with a default of `true`
+defaulting to false
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
 ## What It Controls
@@ -38,13 +38,42 @@ stake with no auto-locking
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
 [Conviction and locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking)).
 
-## Type, Setter, and Live Value
+The setting is owner-tunable per subnet, so netuid 1 can keep the default while another netuid
+enables auto-locking, and the live value is chain state rather than a network constant
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Why It Matters
+
+Because the owner cut is denominated in the subnet's alpha and credited as stake, auto-locking
+changes whether that payout immediately adds to liquid alpha stake or enters the conviction-lock
+path with its unlock schedule. Owners who want every distributed cut to compound under lock can
+enable the flag; owners who prefer spendable stake can leave it off
+([Emission](https://docs.learnbittensor.org/learn/emissions),
+[Conviction and locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking)).
+
+The flag only applies when an owner cut is actually being distributed. If
+[owner cut enabled](https://docs.learnbittensor.org/subnets/subnet-hyperparameters) is false, there
+is no cut for this setting to lock or release
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## Documented Type, Default, and Setter
 
 The [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
-reference lists `OwnerCutAutoLockEnabled` as a `Bool` set through the
-`sudo_set_owner_cut_auto_lock_enabled` extrinsic by the subnet owner. It is one of the parameters
-exposed in the `get_subnet_hyperparams_v3` runtime API, so the live boolean for a subnet can be read
-from the current hyperparameter table rather than assumed
+reference lists `OwnerCutAutoLockEnabled` as a `Bool` defaulting to false. It is changed through the
+`sudo_set_owner_cut_auto_lock_enabled` extrinsic, exposed in tooling as
+`btcli sudo set --param owner_cut_auto_lock_enabled`, and the reference marks the permission
+required to set it as subnet owner
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Conviction and locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking)).
+
+`OwnerCutAutoLockEnabled` is one of the parameters added in the v3 hyperparameter set and is exposed
+in the `get_subnet_hyperparams_v3` runtime API, so the live boolean for a subnet can be read from
+the current hyperparameter table rather than inferred from the default
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+Because each subnet carries its own hyperparameters, the auto-lock flag on one netuid can differ
+from the documented default and from the setting on another subnet
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
 ## Reading the Live Value for netuid 1
@@ -77,16 +106,27 @@ paid out ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subne
 - **Subnet owner take** — the size of the owner's reserved emission share.
 - **Owner cut auto lock enabled** — the form (locked vs free) of the distributed cut.
 
+## Distinction from Conviction and Locked Stake
+
+Conviction and locked stake names the time-based commitment mechanism for locking already-staked
+alpha. Owner cut auto lock enabled is the subnet boolean that routes each distributed owner cut into
+that lock path or leaves it as free stake
+([Conviction and locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+- **Conviction and locked stake** — the lock mechanism and unlock schedule.
+- **Owner cut auto lock enabled** — whether each distributed owner cut uses that path automatically.
+
 ## Reader Boundary
 
 This page defines the concept at a high level. It does not report whether auto-locking is currently
 enabled on any particular subnet, the size of the owner cut, or the state of any owner's conviction
 lock. Those are live chain state and related settings that should be checked for the relevant
-netuid. The default of `true` is the documented value, and the parameter is owner-settable per
-subnet.
+netuid. The documented default is false, and the parameter is owner-settable per subnet.
 
 ## Further Reading
 
 - [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
 - [Emission](https://docs.learnbittensor.org/learn/emissions)
+- [Conviction and locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking)
 - [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)
