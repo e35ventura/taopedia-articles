@@ -54,6 +54,24 @@ subnet
 [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
 [Glossary: Stake Weight](https://docs.learnbittensor.org/resources/glossary#stake-weight)).
 
+## The Subnet Owner Always Holds a Permit
+
+Top stake-weight ranking is not the only way a UID receives a validator permit. During the epoch
+computation, permits are first assigned to the highest-stake neurons up to the cap through
+`is_topk_nonzero(&stake, max_allowed_validators)`. The subnet owner UID is then force-set to `true`
+in the recomputed permit vector regardless of where its stake ranks, and the same override is
+applied to the owner's current permit before weights are masked
+([`run_epoch.rs`](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/epoch/run_epoch.rs)).
+
+For readers, that means the "top stake holders up to the cap" rule has one protocol-level exception:
+the owner UID. Losing top-stake standing does not strip the owner of its permit the way it can for
+an ordinary validator, so an owner seat can hold weight-submission rights even when its stake would
+otherwise fall outside the permitted set
+([Glossary: Validator Permit](https://docs.learnbittensor.org/resources/glossary#validator-permit)).
+
+- **Stake-ranked permits** — granted to the highest-stake neurons up to `max_allowed_validators`.
+- **Owner permit** — the subnet owner UID is always granted a permit on top of that ranking.
+
 ## Distinction from Max Validators
 
 A validator permit is the rights flag granted to higher-stake neurons. Max validators is the
