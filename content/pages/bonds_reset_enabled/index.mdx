@@ -11,7 +11,7 @@ infoboxRows:
   - label: Parameter
     value: BondsResetEnabled
   - label: Type
-    value: bool
+    value: Bool
   - label: Default
     value: "false"
   - label: Example
@@ -42,14 +42,14 @@ combining bonds with miner incentives
 
 The flag enables or disables bond resets on a subnet. When it is disabled, which is the default,
 bonds are not reset and the accumulated history carries forward; when it is enabled, a reset can be
-triggered so the affected bonds are cleared and rebuild from scratch
+triggered so the affected bonds are cleared and rebuilt from scratch
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
 [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
-A reset is invoked through metadata commitment rather than automatically each epoch. The Bittensor
-SDK exposes a lookup for the last block at which bonds were reset for a neuron via metadata
-publication, so a reset is an event tied to that commitment path while the flag is enabled
-([Bittensor SDK: Subtensor](https://docs.learnbittensor.org/python-api/html/autoapi/bittensor/core/subtensor/)).
+A reset is not applied automatically each epoch. While the flag is enabled, a reset is invoked
+through metadata commitment: the SDK documents `get_last_commitment_bonds_reset_block` as returning
+the last block when bonds reset was triggered by `publish_metadata` for a neuron on the subnet
+([Bittensor SDK: get_last_commitment_bonds_reset_block](https://docs.learnbittensor.org/python-api/html/autoapi/bittensor/core/subtensor/index.html#bittensor.core.subtensor.Subtensor.get_last_commitment_bonds_reset_block)).
 
 ## Why It Matters
 
@@ -65,16 +65,18 @@ setting ([Yuma Consensus 3](https://docs.learnbittensor.org/learn/yc3-blog)).
 
 ## Scope of a Reset
 
-The protocol tracks resets by subnet and hotkey. The SDK lookup for the last reset block is keyed by
+The protocol tracks resets by subnet and hotkey. The SDK's `get_last_bonds_reset` lookup is keyed by
 netuid and hotkey, so a reset clears the bonds associated with the affected hotkey on that subnet
 rather than being a single network-wide wipe of every bond
-([Bittensor SDK: Subtensor](https://docs.learnbittensor.org/python-api/html/autoapi/bittensor/core/subtensor/)).
+([Bittensor SDK: get_last_bonds_reset](https://docs.learnbittensor.org/python-api/html/autoapi/bittensor/core/subtensor/index.html#bittensor.core.subtensor.Subtensor.get_last_bonds_reset)).
 
 ## Documented Type, Default, and Setter
 
 The [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
-reference lists `BondsResetEnabled` as a boolean defaulting to false. It is changed through the
-`sudo_set_bonds_reset_enabled` extrinsic and is settable by the subnet owner
+reference lists `BondsResetEnabled` as a `Bool` defaulting to false. It is changed through the
+`sudo_set_bonds_reset_enabled` extrinsic, exposed in tooling as
+`btcli sudo set --param bonds_reset_enabled`, and the reference marks the permission required to set
+it as subnet owner. A change emits the `BondsResetToggled` on-chain event
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
 Because each subnet carries its own value as per-netuid state, the flag on one netuid can differ
@@ -84,8 +86,9 @@ from the documented default and from another subnet's value
 ## Reading the Live Value for netuid 1
 
 Bonds reset enabled is per-subnet chain state, so any live claim is tied to a specific netuid. For
-the documented example netuid 1 on Finney mainnet, the value appears in that subnet's hyperparameter
-table, which the reference describes under viewing a subnet's hyperparameters
+the documented example netuid 1 on Finney mainnet, readers can verify the live flag with
+`btcli subnet hyperparameters --netuid 1 --network finney`, which prints that subnet's
+hyperparameter table including this Boolean row
 ([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
 The infobox uses netuid 1 only as an example label; other subnets expose their own values
 ([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
@@ -103,7 +106,7 @@ the other governs wiping it
 ## Distinction from Bonds Penalty
 
 Bonds penalty subtracts from weights that exceed consensus. Bonds reset enabled does not penalize a
-value; it governs whether the bonds for an affected hotkey are cleared
+weight value; it governs whether the bonds for an affected hotkey are cleared
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
 - **Bonds penalty** — magnitude subtracted for exceeding consensus.
