@@ -36,6 +36,46 @@ outcome on a selected subnet. On netuid 1, examples illustrate one subnet's vali
 reading; they should not be read as representing production metrics on another network
 ([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
 
+## Clipping Path Before Validator Trust
+
+Validator trust is read only after Yuma Consensus clips the
+[weight matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix). Each validator
+submits a [weight vector](https://docs.learnbittensor.org/resources/glossary#weight-vector); Yuma
+compares those values against the per-miner
+[consensus score](https://docs.learnbittensor.org/resources/glossary#consensus-score) benchmark and
+caps weights that exceed it with `W̄_ij = min(W_ij, W̄_j)`
+([Yuma Consensus: Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping),
+[Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score)).
+
+Validator trust therefore measures influence from weights that survived that filter, not from raw
+submitted scores alone
+([Glossary: Validator Trust](https://docs.learnbittensor.org/resources/glossary#validator-trust)).
+
+## How Validator Trust Is Summed
+
+For each validator `i`, documentation defines validator trust as the sum of that validator's
+consensus-clipped weights across all miners in the subnet: `T_vi = Σ_j W̄_ij`
+([Glossary: Validator Trust](https://docs.learnbittensor.org/resources/glossary#validator-trust)).
+
+Higher totals mean the validator contributed more clipped weight that still counted toward
+consensus. Lower totals mean more of that validator's submitted influence was trimmed when weights
+were compared with the shared benchmark
+([Glossary: Validator Trust](https://docs.learnbittensor.org/resources/glossary#validator-trust),
+[Yuma Consensus: Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping)).
+
+## Miner Trust Versus Validator Trust
+
+[Trust](https://docs.learnbittensor.org/resources/glossary#trust) and validator trust are both read
+after clipping in the same Yuma pass but on opposite sides of evaluation. Trust is a per-miner ratio
+`T_j = R_j / P_j` showing how much pre-rank support survived filtering. Validator trust sums each
+validator's clipped weights across miners
+([Glossary: Trust](https://docs.learnbittensor.org/resources/glossary#trust),
+[Glossary: Validator Trust](https://docs.learnbittensor.org/resources/glossary#validator-trust)).
+
+A validator can read high validator trust when its clipped weights align with consensus, while an
+individual miner can still read low trust if validators disagreed sharply about that miner's work
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
 ## Distinction from Subjective Evaluation
 
 Subjective evaluation is the challenge that subnet work often has no single correct answer, so
@@ -61,12 +101,6 @@ over time, so a copier forecasting the benchmark can still score high on alignme
 - **Validator trust** — validator-side consensus-alignment measure after clipping.
 
 ## Distinction from Trust
-
-Trust measures miner-side support retained after clipping. Validator trust measures validator-side
-influence left by clipped weights on the selected subnet
-([Glossary: Trust](https://docs.learnbittensor.org/resources/glossary#trust),
-[Glossary: Validator Trust](https://docs.learnbittensor.org/resources/glossary#validator-trust),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
 - **Trust** — miner-side clipping outcome.
 - **Validator trust** — validator-side clipped influence.
@@ -126,46 +160,15 @@ on the selected subnet
 
 ## Distinction from Validator Permit
 
-Validator trust and a validator permit sit on opposite sides of the same validation path. A
-validator permit is the per-subnet permission flag that, for ordinary non-owner validators setting
-weights on other neurons, gates whether a UID's submission enters consensus aggregation. Validator
-trust is an outcome metric read afterward, summarizing how closely that validator's clipped weights
-aligned with the consensus result
-([Glossary: Validator Permit](https://docs.learnbittensor.org/resources/glossary#validator-permit),
-[Glossary: Validator Trust](https://docs.learnbittensor.org/resources/glossary#validator-trust),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-For that ordinary path the permit is a precondition, not a result. Holding the permit does not imply
-high validator trust, and a permitted validator whose weights diverge from consensus can still read
-low on that alignment metric
-([Glossary: Validator Permit](https://docs.learnbittensor.org/resources/glossary#validator-permit),
-[Yuma Consensus: Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping)).
-
-Because the permit is reassigned among registered neurons by stake standing, a UID can gain or lose
-the right to set counting weights between epochs without registering or deregistering. The two
-fields answer different questions on the metagraph: the permit is the authorization gate for the
-next submission, while validator trust reports alignment from a settlement pass that has already run
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
-[Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)).
-
 - **Validator permit** — per-subnet flag gating whether a UID's weights enter aggregation.
 - **Validator trust** — post-clipping measure of how well those weights tracked consensus.
 
+Holding a permit does not imply high validator trust; the permit gates the next submission while
+validator trust reports alignment from the settlement pass that has already run
+([Glossary: Validator Permit](https://docs.learnbittensor.org/resources/glossary#validator-permit),
+[Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)).
+
 ## Distinction from Yuma Consensus
-
-Validator trust measures how closely a validator's clipped weights align with the consensus outcome.
-That post-settlement alignment metric is separate from the tempo pass that produces the consensus
-benchmark itself
-([Glossary: Validator Trust](https://docs.learnbittensor.org/resources/glossary#validator-trust),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-Yuma Consensus aggregates submitted weights, applies clipping, and credits miner incentives and
-validator dividends when the epoch closes
-([Emission](https://docs.learnbittensor.org/learn/emissions)).
-
-Weight copying and self-weighting describe risky submission patterns before aggregation. Validator
-trust names alignment with the accepted outcome after clipping
-([Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor)).
 
 - **Validator trust** — alignment with consensus after clipping.
 - **Yuma Consensus** — tempo pass that turns submitted weights into emission shares.
