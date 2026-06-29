@@ -33,6 +33,34 @@ are based on the BaseModel of the Pydantic data validation library, so the struc
 carries typed, validated fields rather than arbitrary data
 ([Glossary: Synapse](https://docs.learnbittensor.org/resources/glossary#synapse)).
 
+## How a Synapse Carries a Request and Response
+
+A synapse moves work as one round trip. A validator's dendrite client initializes a synapse with the
+challenge fields for the task and sends it to a miner's axon endpoint; the miner fills in the
+response fields and returns the same object, which the validator then reads back
+([Glossary: Dendrite](https://docs.learnbittensor.org/resources/glossary#dendrite),
+[Glossary: Axon](https://docs.learnbittensor.org/resources/glossary#axon),
+[Understanding Neurons](https://docs.learnbittensor.org/learn/neurons#neuron-to-neuron-communication)).
+
+Keeping the challenge and the response inside one structured object is what lets a validator match a
+miner's answer to the exact request that produced it. The synapse is the carrier for that exchange,
+not the rule set or the work itself
+([Glossary: Subnet Protocol](https://docs.learnbittensor.org/resources/glossary#subnet-protocol),
+[Glossary: Subnet Task](https://docs.learnbittensor.org/resources/glossary#subnet-task)).
+
+## Each Subnet Defines Its Own Synapse Fields
+
+The synapse is a shared message type, but its fields are subnet-specific. A subnet's design decides
+which challenge fields a validator sends and which response fields a miner must fill, so the same
+synapse class can carry different work on different subnets
+([Glossary: Subnet Task](https://docs.learnbittensor.org/resources/glossary#subnet-task),
+[Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
+
+That is why a synapse type name alone does not describe the work: the subnet task defines what is
+being asked and the subnet protocol defines the exchange, while the synapse only standardizes how
+the fields travel
+([Glossary: Subnet Protocol](https://docs.learnbittensor.org/resources/glossary#subnet-protocol)).
+
 ## Distinction from Axon
 
 Synapse names the structured message object exchanged in subnet communication. Axon names the
