@@ -129,6 +129,37 @@ the subnet's weights version key
 - **Min allowed weights** — structural minimum on submission shape.
 - **Weight setting** — action that must satisfy that minimum.
 
+## Distinction from Weights Rate Limit
+
+Weight setting and weights rate limit govern different parts of the same validator submission path.
+Weight setting is the scoring action that records miner evaluation through `set_weights`, while
+weights rate limit sets how many blocks must pass between successive weight commits on a subnet
+([Glossary: Weight Setting](https://docs.learnbittensor.org/resources/glossary#weight-setting),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+The rate limit paces how frequently a validator can change its on-chain weight signal. It does not
+say how miners should be scored or how many targets a valid submission must include; those belong to
+the subnet scoring model and min allowed weights. A validator can be permitted and structurally
+valid yet still blocked from committing again until the required gap elapses
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Glossary: Validator Permit](https://docs.learnbittensor.org/resources/glossary#validator-permit)).
+
+Because the wait is counted in blocks while a subnet's consensus cycle length is its tempo, the
+relationship between rate limit and tempo decides whether a validator can refresh its weights every
+epoch. When the minimum wait is shorter than the tempo, a validator can commit new weights within
+each cycle; when the wait is longer than the tempo, some epochs may pass without a fresh commit and
+Yuma reads the validator's most recent stored weights instead
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+Readers should treat weight setting as the evaluation act and weights rate limit as the submission
+pacing rule that bounds how often that act can be repeated
+([Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)).
+
+- **Weight setting** — the on-chain act that records miner scores.
+- **Weights rate limit** — blocks a validator must wait before the next weight commit.
+
 ## Distinction from Off-Chain Validation Systems
 
 - **Off-chain validation systems** — subnet-side evaluation layer before chain-facing signals.
