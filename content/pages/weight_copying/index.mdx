@@ -45,12 +45,48 @@ Examples tied to netuid 1 illustrate one subnet's weight-visibility path. They s
 representing production consensus behavior on another network
 ([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
 
-The two defenses work in different ways. Commit Reveal hides submitted weights until a later reveal,
-so there is no fresh signal to copy within the window, while consensus-based weights reward
-agreement with the stake-weighted majority rather than with any single source, so reused weights
-help only when they already match consensus
-([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
-[Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)).
+## How Copied Weights Still Enter Consensus
+
+Weight copying is a provenance problem, not an automatic rejection rule. A validator that reuses
+another validator's visible scores still submits a
+[weight vector](https://docs.learnbittensor.org/resources/glossary#weight-vector) through
+[weight setting](https://docs.learnbittensor.org/resources/glossary#weight-setting), and that row
+can still enter the subnet
+[weight matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix) that
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) processes
+([Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor)).
+
+Yuma then applies the same clipping, rank, and emission path as for independently formed scores. The
+[consensus score](https://docs.learnbittensor.org/resources/glossary#consensus-score) benchmark
+still caps outliers; copied signals that lag or diverge from consensus can therefore contribute less
+influence than timely independent evaluation would
+([Yuma Consensus: Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping)).
+
+Weight-copying vocabulary names how a submission was formed. Yuma vocabulary names how included rows
+settle into miner [incentives](https://docs.learnbittensor.org/resources/glossary#incentives) and
+validator [dividends](https://docs.learnbittensor.org/resources/glossary#dividends) once structural
+submission rules pass ([Emission](https://docs.learnbittensor.org/learn/emissions)).
+
+## Documented Defenses Against Copying
+
+Bittensor documentation describes two complementary defenses that target different copying risks.
+
+[Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal) delays when freshly
+committed weights become readable. During the concealment window, observers cannot copy visible
+signals that are not yet revealed, which reduces the value of mirroring another validator's latest
+submission before it is meant to be public
+([Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor),
+[Glossary: Drand/time-lock encryption](https://docs.learnbittensor.org/resources/glossary#drandtime-lock-encryption)).
+
+[Consensus-based weights](https://docs.learnbittensor.org/concepts/consensus-based-weights) adjust
+validator-miner bond responsiveness by consensus alignment. Reused weights that already match the
+stake-weighted majority can still align, but stale or mistimed copied signals gain less bond benefit
+than timely independent evaluation that tracks consensus
+([Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)).
+
+Visibility delay and bond alignment therefore act on different layers: one limits readable fresh
+signals; the other shapes validator-side outcomes after weights are processed
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
 ## Distinction from Similar Validator Rankings
 
@@ -103,22 +139,6 @@ independently ([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-r
 - **Weight copying** — dependence on copied signals once they are visible.
 
 ## Distinction from Yuma Consensus
-
-Weight copying names whether a validator derived its submitted scores from independent miner
-evaluation or from another validator's visible signals. That evaluation-integrity question is
-separate from the tempo pass that aggregates submitted weights into emission shares
-([Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor),
-[Glossary: Weight Vector](https://docs.learnbittensor.org/resources/glossary#weight-vector)).
-
-Yuma Consensus combines many validator submissions into rank and credited outcomes when the epoch
-closes on the selected netuid
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
-[Emission](https://docs.learnbittensor.org/learn/emissions)).
-
-Copied weights may still enter aggregation. Weight copying describes how those signals were
-produced; Yuma describes how included submissions settle into miner incentives and validator
-dividends
-([Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)).
 
 - **Weight copying** — reuse of visible scores instead of independent evaluation.
 - **Yuma Consensus** — tempo step that turns submitted weights into emission shares.
@@ -177,30 +197,17 @@ window
 
 ## Distinction from Trust
 
-Weight copying and trust sit on different sides of consensus quality. Weight copying is a
-freeloading strategy where a validator replicates other validators' published weights instead of
-evaluating miners, while trust is a legitimate consensus metric describing how broadly a miner's
-weight is supported across validators
-([Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor),
-[Glossary: Trust](https://docs.learnbittensor.org/resources/glossary#trust),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-Trust can stay high when many validators independently support a miner's weights. Weight copying
-instead names validators who mirror another validator's published weights without doing that
-independent evaluation, so similar-looking trust or ranking patterns do not by themselves prove
-copying
-([Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor)).
-
 - **Weight copying** — a strategy that imitates others' weights instead of evaluating.
 - **Trust** — a consensus metric for how broadly a miner's weight is supported.
 
 ## Reader Boundary
 
 Weight copying should not be read as a synonym for agreement, rank, trust, validator trust, or every
-repeated-looking score. It names a consensus-quality risk where submitted weights depend on another
-validator's weight information rather than on independent miner evaluation
+repeated-looking score. Similar-looking trust or ranking patterns do not by themselves prove
+copying; provenance separates independent evaluation from reuse of visible scores
 ([Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor),
-[Glossary: Weight Copying](https://docs.learnbittensor.org/resources/glossary#weight-copying)).
+[Glossary: Weight Copying](https://docs.learnbittensor.org/resources/glossary#weight-copying),
+[Glossary: Trust](https://docs.learnbittensor.org/resources/glossary#trust)).
 
 ## Further Reading
 
