@@ -35,6 +35,60 @@ signals are compared with consensus
 ([Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights),
 [Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds)).
 
+## Bond EMA and Validator Dividends
+
+Yuma Consensus smooths each validator-miner instantaneous bond across epochs with an exponential
+moving average. Documentation gives the update as `B_ij^(t) = α · ΔB_ij^(t) + (1 − α) · B_ij^(t−1)`,
+where `ΔB_ij` is the instantaneous bond for validator `i` and miner `j`, `t` is the current epoch,
+and `α` is the smoothing factor
+([Yuma Consensus: Bonding mechanics](https://docs.learnbittensor.org/learn/yuma-consensus#bonding-mechanics),
+[Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)).
+
+Validator dividend share then pairs those smoothed bonds with miner incentives:
+`D_i = Σ_j B_ij · I_j`, where `I_j` is miner `j`'s incentive for the epoch
+([Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights),
+[Yuma Consensus: Validator emissions](https://docs.learnbittensor.org/learn/yuma-consensus#validator-emissions)).
+
+In this bond path, `α` names the EMA smoothing parameter, not subnet alpha tokens held in pool
+reserves
+([Glossary: Protocol Alpha](https://docs.learnbittensor.org/resources/glossary#protocol-alpha)).
+
+## Fixed Alpha Versus Consensus-Based Alpha
+
+Without consensus-based weights enabled, documentation describes the bond EMA using a fixed
+`α = 0.9`. With the feature enabled, that smoothing factor becomes a variable tuned from current
+consensus alignment rather than a single subnet-wide constant
+([Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights),
+[Yuma Consensus: Bonding mechanics](https://docs.learnbittensor.org/learn/yuma-consensus#bonding-mechanics)).
+
+The variable `α` is what makes dividends track subnet-miner performance more closely: bond history
+still smooths abrupt swings, but the responsiveness of that smoothing can tighten or relax with how
+well a validator's weights align with consensus
+([Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)).
+
+## Bounds and Hyperparameters
+
+Subnet owners enable consensus-based weights with the `liquid_alpha_enabled` hyperparameter. The
+documented defaults are `False` for that flag, `0.7` for `alpha_low`, and `0.9` for `alpha_high`
+([Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+Both bounds must be set together through `alpha_values`. Documentation requires `alpha_low` to stay
+strictly below `alpha_high`, keeps each bound inside `(0, 1)`, and until further notice requires
+`alpha_high ≥ 0.8`
+([Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)).
+
+On chain, `alpha_low` and `alpha_high` are stored as `u16` integers. The conversion formula is
+`integer = decimal × 65535`, so a desired `alpha_low` of `0.1` is passed as `6554` and a desired
+`alpha_high` of `0.8` as `52428`
+([Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)).
+
+Those bounds cap how far pair-specific smoothing can move. Liquid alpha interpolates the active `α`
+between them from consensus alignment; `AlphaSigmoidSteepness` shapes how sharply that interpolation
+responds without changing the endpoints
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)).
+
 ## Distinction from Exponential Moving Average
 
 Consensus-based weights make the bond-smoothing alpha parameter vary with consensus alignment. EMA
@@ -42,9 +96,8 @@ is the broader smoothing method that updates validator-miner bond history gradua
 ([Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema),
 [Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)).
 
-For netuid 1 readers, alpha here names the smoothing parameter in the bond update, not subnet alpha
-tokens held in pool reserves
-([Glossary: Protocol Alpha](https://docs.learnbittensor.org/resources/glossary#protocol-alpha)).
+- **EMA** — the bond-history smoothing method across epochs.
+- **Consensus-based weights** — the rule that makes the EMA's `α` vary with consensus alignment.
 
 ## Distinction from Clipping
 
