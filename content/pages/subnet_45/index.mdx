@@ -27,13 +27,20 @@ Miners receive batches of posts from validators and analyze each one with a lang
 returning enriched records — for example, the subnet a post is about, its sentiment on a five-point
 scale, and its content type. The miner's job is accurate classification at scale, not opinion.
 
-Validators enforce quality by re-doing the work. A validator independently re-analyzes a sampled
-subset of a miner's batch and requires an exact match on the key categorical fields; if any sampled
-post disagrees, the entire batch is rejected and the miner is penalized for that epoch, while a
-fully matching batch is accepted. Rewards are tracked as per-epoch points, validators share compact
-epoch snapshots with each other, and weights are set on chain on a delayed epoch window. Those
-weights feed into [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus), which
-converts them into the incentive split across miners and validators.
+Validators enforce quality by independently re-running the analyzer on a sampled subset of each
+miner batch and scoring agreement through a multi-tier validation ladder: exact categorical matches,
+deterministic field checks, embedding similarity thresholds, and a weighted composite on
+near-deterministic fields
+([Talisman AI README: Validation](https://raw.githubusercontent.com/Team-Rizzo/talisman-ai/main/README.md)).
+
+Accepted items earn epoch-bucketed points and rejected items accrue penalties; validators pool local
+scores with signed peer snapshots and, on a delayed epoch window, set on-chain weights proportional
+to each miner's net-positive pooled points. Those points are subnet-local scoring signals, not
+emissions themselves—Yuma Consensus later settles the submitted weights into miner and validator
+emission shares each tempo
+([Talisman AI README: Rewards](https://raw.githubusercontent.com/Team-Rizzo/talisman-ai/main/README.md),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
+[Emission](https://docs.learnbittensor.org/learn/emissions)).
 
 ## Validation Pipeline Context
 
@@ -104,32 +111,21 @@ separates mainnet, testnet, and localnet. A market-signal analysis result or emi
 one environment should not be read as representing production subnet performance in another
 environment.
 
-## Structured Labels, Not Raw Social Posts
-
-The same README describes miners analyzing tweets for subnet relevance, sentiment, content type, and
-related categorical fields, then returning enriched records for validator verification. The
-competitive output is labeled signal data stored for downstream use, not the post text or miner
-opinion by itself.
-
-## Exact-Match Validation From the Main README
-
-The README's validation section requires re-running the analyzer on a sampled subset and an exact
-match on key categorical fields before a batch is marked valid. Fluent but inconsistent labels do
-not substitute for validator-reproducible analysis when epoch points and weights are set.
-
-Validator weights still flow through Yuma Consensus to determine emissions each tempo
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
-[Emission](https://docs.learnbittensor.org/learn/emissions)).
-
 ## Distinction from Yuma Consensus
 
 Talisman AI on netuid 45 runs a perception subnet that rewards miners for analyzing social media
-posts into structured, verified market signals. That subnet scoring produces the validator weights
-Yuma Consensus later aggregates into emission shares each tempo; it does not replace Yuma's role in
-turning submitted weights into miner and validator emissions
+posts into structured, verified market signals. Validator scoring there produces epoch-bucketed
+points and the on-chain weights that Yuma Consensus later aggregates into emission shares each
+tempo; it does not replace Yuma's role in turning submitted weights into miner and validator
+emissions
 ([Talisman AI README](https://raw.githubusercontent.com/Team-Rizzo/talisman-ai/main/README.md),
 [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
 [Emission](https://docs.learnbittensor.org/learn/emissions)).
+
+- **Subnet 45 (Talisman AI)** — social perception subnet that scores labeled signal quality.
+- **Yuma Consensus** — on-chain settlement from validator weights to emission shares on a task
+  subnet
+  ([Yuma Consensus: Validator emissions](https://docs.learnbittensor.org/learn/yuma-consensus#validator-emissions)).
 
 ## Reader Boundary
 
