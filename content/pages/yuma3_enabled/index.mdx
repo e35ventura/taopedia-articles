@@ -14,77 +14,80 @@ infoboxRows:
     value: Bool
   - label: Default
     value: "false"
-  - label: Scope
-    value: Per subnet
+  - label: Example
+    value: netuid 1
   - label: Set by
     value: Subnet owner
 ---
 
 # Yuma3 Enabled
 
-Yuma3 enabled is the per-subnet toggle that selects whether a subnet runs
-[Yuma Consensus 3 (YC3)](https://docs.learnbittensor.org/learn/yuma3-migration-guide) or stays on
-Yuma Consensus v2. The
-[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters) reference
-documents the flag as YumaVersion: a boolean defaulting to false, settable by the subnet owner, that
-switches the consensus mechanism used by the subnet between v2 and v3
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+Yuma3 enabled is the per-subnet choice between Yuma Consensus v2 and
+[Yuma Consensus 3 (YC3)](https://docs.learnbittensor.org/learn/yuma3-migration-guide). With the flag
+off, a subnet keeps the earlier bonding path; with it on, the subnet uses the v3 settlement rules
+described in the migration guide
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
+[YC3 Migration Guide](https://docs.learnbittensor.org/learn/yuma3-migration-guide)).
 
-## What It Switches
+## Documented Default and Owner Control
 
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) computes validator and miner
-emissions and maintains the
-[validator-miner bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds)
-that reward validators for aligning with consensus. With the flag off, the subnet keeps the v2
-bonding path; with it on, the subnet uses YC3, which the migration guide describes as improving
-validator fairness, bond mechanics, and precision
+The hyperparameter reference lists YumaVersion as a boolean that defaults to false and can be
+changed only by the subnet owner. That default means new subnets start on the v2 path until the
+owner explicitly opts into v3 for that netuid
+([Subnet Hyperparameters: YumaVersion](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#yumaversion)).
+
+The reference also documents how an owner turns v3 on or off for one subnet and notes that the flag
+does not change tempo, epoch timing, or the subnet task
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
 [YC3 Migration Guide](https://docs.learnbittensor.org/learn/yuma3-migration-guide)).
 
-The toggle changes consensus settlement rules on the selected netuid. It does not replace tempo,
-epoch timing, or the subnet's incentive task
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+## Live Value on netuid 1
 
-## Why It Matters
+Any live claim about YumaVersion must name a netuid. On Finney mainnet, netuid 1 stores its own
+YumaVersion row in that subnet's hyperparameter table, which the reference describes under viewing a
+subnet's hyperparameters
+([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
 
-A common misconception is that subnets move to YC3 automatically. They do not: the migration guide
-states a subnet keeps functioning under the previous version until its owner explicitly enables YC3,
-so the upgrade is opt-in per subnet rather than a network-wide change
-([YC3 Migration Guide](https://docs.learnbittensor.org/learn/yuma3-migration-guide)).
-
-Because the flag is per-subnet and defaults to false, different netuids can run different consensus
-versions at the same time. One subnet can enable v3 while another remains on v2
+At documentation review time, netuid 1 on Finney had YumaVersion enabled, so that subnet was running
+the v3 path even though the documented default for subnets remains false. That gap between default
+and live state is expected: each netuid keeps its own value after owner action, and another subnet
+can still remain on v2
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
 [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
 
-## How Owners Change It
+## What Changes When v3 Is On
 
-The hyperparameter reference marks YumaVersion as owner-settable and documents the on-chain setter
-and tooling path a subnet owner uses to turn v3 on or off for one netuid
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
-[YC3 Migration Guide](https://docs.learnbittensor.org/learn/yuma3-migration-guide)).
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) still computes validator and
+miner emissions and maintains
+[validator-miner bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds).
+Enabling v3 changes how those bonds evolve inside consensus. The migration guide and YC3 overview
+describe the refinement as improving validator fairness, bond mechanics, and precision relative to
+the v2 path ([YC3 Migration Guide](https://docs.learnbittensor.org/learn/yuma3-migration-guide),
+[How Yuma Consensus 3 Makes Bittensor More Fair](https://docs.learnbittensor.org/learn/yc3-blog)).
 
-The live value for any subnet is part of that netuid's hyperparameter table rather than a
-network-wide default, so readers should check the selected subnet instead of assuming every netuid
-matches the documented starting value of false
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+## Why Adoption Is Opt-In
+
+Subnets do not migrate to YC3 automatically. The migration guide states that a subnet keeps
+functioning under its current version until the owner explicitly enables v3, so the network can run
+mixed versions at the same time
+([YC3 Migration Guide](https://docs.learnbittensor.org/learn/yuma3-migration-guide)).
 
 ## Distinction from Yuma Consensus 3
 
-Yuma3 enabled is the per-subnet toggle that opts a netuid into the v3 consensus path. Yuma Consensus
-3 is the bonding and settlement refinement that runs when v3 is selected
+Yuma3 enabled is the per-subnet switch that opts a netuid into the v3 path. Yuma Consensus 3 is the
+bonding and settlement refinement that runs when that switch is on
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
 [How Yuma Consensus 3 Makes Bittensor More Fair](https://docs.learnbittensor.org/learn/yc3-blog)).
 
-- **Yuma3 enabled** — owner-settable switch between v2 and v3 on a subnet.
+- **Yuma3 enabled** — owner-settable choice between v2 and v3 on a subnet.
 - **Yuma Consensus 3** — the v3 consensus model applied when the switch is on.
 
 ## Distinction from Liquid Alpha Enabled
 
-The two toggles are related but separate. Yuma3 enabled selects the consensus version, while liquid
-alpha enabled controls whether bond-smoothing alpha varies by consensus alignment on the v3 path.
-The migration guide notes YC3 works with liquid alpha only when liquid alpha is itself enabled and
-the required consensus values and activity are present
+Yuma3 enabled selects the consensus version. Liquid alpha enabled is a separate subnet flag that
+controls whether bond-smoothing alpha varies by consensus alignment on the v3 path. The migration
+guide notes YC3 works with liquid alpha only when liquid alpha is itself enabled and the required
+consensus values and activity are present
 ([YC3 Migration Guide](https://docs.learnbittensor.org/learn/yuma3-migration-guide),
 [Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights),
 [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
@@ -94,10 +97,11 @@ the required consensus values and activity are present
 
 ## Reader Boundary
 
-This page defines the v3 opt-in toggle at a high level. It does not report which consensus version
-is live on any particular netuid, whether liquid alpha is active there, or how individual validators
-rank inside YC3. Those are live chain state and related settings that should be checked for the
-relevant netuid. The documented default is false, and the parameter is owner-settable per subnet.
+This page explains the v3 opt-in toggle in general terms. Netuid 1 on Finney is used above only as a
+documented example of how live YumaVersion state can differ from the reference default. It does not
+report liquid-alpha status, validator ranks, or the live flag on any other netuid. Check the
+hyperparameter table for the subnet you care about
+([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
 
 ## Further Reading
 
