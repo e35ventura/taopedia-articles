@@ -1,0 +1,202 @@
+---
+title: "Activity Cutoff Factor"
+summary:
+  "How the activity cutoff factor subnet hyperparameter expresses validator inactivity tolerance in
+  per-mille epochs so the effective cutoff scales with tempo."
+category: "Consensus"
+tags: ["Consensus", "Subnets"]
+infoboxTitle: Activity Cutoff Factor
+infoboxCaption: Per-mille epoch tolerance that scales the inactivity window with tempo.
+infoboxRows:
+  - label: Parameter
+    value: ActivityCutoffFactor
+  - label: Type
+    value: u32
+  - label: Default
+    value: "13889"
+  - label: Measured in
+    value: Per-mille epochs
+  - label: Example
+    value: netuid 1
+  - label: Set by
+    value: Subnet owner
+---
+
+# Activity Cutoff Factor
+
+Activity cutoff factor is a per-subnet hyperparameter, listed in the documentation as
+`ActivityCutoffFactor`, that expresses how much validator inactivity a subnet tolerates before a
+validator's stake stops counting for epoch participation. It is given in per-mille epochs rather
+than a fixed block count, so the effective tolerance scales with the subnet's tempo
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+The parameter exists because dynamic tempos made a fixed block cutoff a poor fit. A subnet with a
+long tempo would otherwise risk excluding validators that submit weights at a cadence matching their
+epoch schedule, so the tolerance is now expressed relative to the epoch length instead of as an
+absolute number of blocks
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## What It Controls
+
+The hyperparameter sets the inactivity tolerance used when an epoch decides which validators still
+count as active. Per-mille means thousandths of an epoch, so a value of one thousand equals one full
+tempo and larger values allow proportionally longer silence before a validator is treated as
+inactive ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+It does not by itself decide whether any one validator is active. It supplies the allowed span,
+while the per-neuron last-update block supplies the timestamp from which that span is measured. A
+validator counts as inactive only when the gap since its last update exceeds the effective tolerance
+derived from this factor and the subnet's tempo
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[The Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)).
+
+The tolerance is a participation gate, not a performance score. It governs whether a validator's
+stake and weights still enter the current Yuma Consensus pass, not how good those weights are or how
+much the validator earns ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+## How the Tolerance Scales With Tempo
+
+The effective inactivity window is the factor read against the tempo rather than a constant. Because
+the factor is expressed in thousandths of an epoch, a factor of one thousand corresponds to one
+tempo, a factor of two thousand corresponds to two tempos, and the default sits at roughly fourteen
+tempos of allowed silence
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+The practical effect is that the same factor yields a longer real-time window on a subnet with a
+long tempo and a shorter window on a subnet with a short tempo. A subnet owner tuning the factor is
+therefore tuning the tolerance in epoch units, and the block-level span follows automatically from
+whatever tempo the subnet runs
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo)).
+
+At the default tempo this default tolerance corresponds to the window that the legacy fixed cutoff
+once expressed as a constant block count, so the per-mille model preserves familiar behavior while
+letting the window track the epoch length on subnets that run faster or slower cycles
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## Documented Type and Default
+
+The [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+reference lists `ActivityCutoffFactor` as a `u32` with a default of 13,889. The default is chosen so
+that, at the default tempo, the tolerance matches the inactivity window subnets previously used,
+which keeps the move to per-mille tolerance transparent for readers comparing old and new behavior
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+The value is bounded so the tolerance cannot fall below a single epoch, which would risk excluding
+validators that submit once per epoch, nor stretch so far that long-silent validators keep counting
+indefinitely. The configured tolerance therefore stays inside a band that keeps epoch participation
+meaningful
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## Who Sets It
+
+The factor is owner-tunable, so a subnet owner adjusts the tolerance for their own subnet while
+other subnets keep their own values. Because each subnet carries its own hyperparameters, the
+tolerance on netuid 1 can differ from another subnet's factor, and the value in force is per-subnet
+chain state rather than a network constant
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Distinction from Activity Cutoff
+
+Activity cutoff factor is the live, settable parameter under dynamic tempos, while activity cutoff
+is the older fixed block-count setting that is no longer the configured input. The documentation
+still shows the computed activity-cutoff block value for readability, but the tolerance is now
+expressed through the factor
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Glossary: Activity Cutoff](https://docs.learnbittensor.org/resources/glossary#activity-cutoff)).
+
+- **Activity cutoff** — the legacy fixed block-count cutoff still shown for readability.
+- **Activity cutoff factor** — the live per-mille tolerance that scales the window with tempo.
+
+## Distinction from Tempo
+
+Tempo is the block length of one consensus cycle, while activity cutoff factor is expressed in
+thousandths of that cycle. Tempo sets how long an epoch is; the factor sets how many epochs of
+silence are tolerated, and the two combine into the effective window
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo)).
+
+- **Tempo** — the block count of one consensus cycle.
+- **Activity cutoff factor** — the inactivity tolerance measured in those cycles.
+
+## Distinction from Last Update
+
+Last update is the per-neuron block height of a neuron's most recent on-chain change. Activity
+cutoff factor supplies the allowed inactivity span that last update is compared against, so neither
+value decides activity on its own
+([The Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+- **Last update** — the block timestamp of a neuron's most recent change.
+- **Activity cutoff factor** — the tolerance span measured from that timestamp.
+
+## Distinction from Weights Rate Limit
+
+Activity cutoff factor decides how long a validator may stay silent before its weights stop
+counting, while weights rate limit decides how soon a validator may submit again after a prior
+commit. One bounds tolerated silence; the other bounds submission frequency
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+- **Activity cutoff factor** — tolerated inactivity before exclusion.
+- **Weights rate limit** — minimum wait between weight commits.
+
+## Distinction from Immunity Period
+
+Activity cutoff factor governs ongoing participation: whether an existing validator's recent silence
+excludes it from the current pass. Immunity period governs lifecycle entry: how long a newly
+registered neuron is shielded from deregistration
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Glossary: Immunity Period](https://docs.learnbittensor.org/resources/glossary#immunity-period)).
+
+- **Activity cutoff factor** — inactivity tolerance for ongoing participation.
+- **Immunity period** — post-registration protection from deregistration.
+
+## Per-Subnet Live Value Boundary
+
+Activity cutoff factor is per-subnet chain state. The tolerance configured on one netuid applies
+only to that subnet's epoch rules, and the live value can differ from the documented default and
+from the factor on another netuid
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+This article's infobox uses netuid 1 as an example label when reading one subnet's hyperparameter
+table on Finney mainnet. That example helps readers anchor one row; it is not a claim that every
+subnet exposes the same live tolerance
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Distinction from Yuma Consensus
+
+Activity cutoff factor is the per-subnet hyperparameter that sets how recently a validator must have
+acted for its stake to count in the upcoming epoch. It names a participation freshness gate, not the
+mechanism that credits emission shares at the epoch boundary
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+Yuma Consensus is the on-chain mechanism that reads the eligible weight matrix, applies stake
+weighting, clipping, and bonding, and then credits miner incentives and validator dividends on the
+selected netuid ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
+[Emission](https://docs.learnbittensor.org/learn/emissions)).
+
+The factor filters which validators are still active before that settlement runs; it does not change
+how eligible weights are aggregated into rewards
+([Yuma Consensus: Validator emissions](https://docs.learnbittensor.org/learn/yuma-consensus#validator-emissions)).
+
+- **Activity cutoff factor** — freshness tolerance for stake to count in an epoch.
+- **Yuma Consensus** — settlement that turns eligible validator weights into emission shares.
+
+## Reader Boundary
+
+Activity cutoff factor should not be read as a fixed block cutoff, a validator weight rule, or a
+performance score. It names only the per-mille inactivity tolerance that, combined with tempo,
+produces the effective participation window on the selected netuid
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## Further Reading
+
+- [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+- [Glossary: Activity Cutoff](https://docs.learnbittensor.org/resources/glossary#activity-cutoff)
+- [Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo)
+- [The Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)
+- [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
+- [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)
