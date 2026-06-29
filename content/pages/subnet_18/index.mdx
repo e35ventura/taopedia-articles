@@ -35,18 +35,20 @@ problem.
 
 According to the [Zeus repository](https://github.com/Orpheus-AI/Zeus), validators issue forecasting
 challenges that ask miners to predict environmental variables across a global 0.25-degree grid. The
-subnet runs two parallel forecasting horizons: a short-term challenge covering the next 48 hours,
-and a long-term challenge covering up to 15 days ahead. Miners submit their predictions and
-validators reveal scores after ground truth becomes available from ERA5 — a continuously-updated
-global reanalysis dataset maintained by the Copernicus Earth observation programme.
+subnet currently scores four ERA5 variables—2 m temperature, 100 m u- and v-wind components, and
+surface solar radiation downwards—and runs two parallel horizons: a short-range challenge from the
+current hour through +48 hours (49 hourly steps) and a long-range challenge through +360 hours (361
+hourly steps, 15 days). Miners commit prediction hashes on-chain through the Subtensor Commitments
+pallet, then reveal matching forecasts over axon; validators score only after ERA5 reanalysis ground
+truth for the forecast window is published.
 
-Scoring uses area-weighted error metrics (Root Mean Squared Error and Mean Absolute Error) that
-account for spherical grid geometry, giving appropriate weight to grid cells at different latitudes.
-Rankings aggregate over a rolling window of recent challenges rather than any single submission,
-ensuring that miners demonstrate consistent performance over time.
+Scoring uses area-weighted RMSE and MAE averaged into one error score, with latitude weighting so
+polar and equatorial grid cells compare fairly. Rankings aggregate over rolling windows of recent
+challenges, with separate short and long averaging windows; combined validator weights weight the
+long horizon at 80% and the short horizon at 20% of the available challenge mix.
 
-The reward structure follows a winner-take-most model: the top-ranked miner captures the large
-majority of weight for each challenge, with remaining weight distributed logarithmically to
+The reward structure follows a winner-take-most model per challenge: the best-ranked miner receives
+95% of that challenge's weight allocation, with the remaining 5% distributed logarithmically to
 runners-up. Weight vectors from validator scoring feed into
 [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus), distributing emissions via
 Dynamic TAO.
@@ -88,8 +90,8 @@ Zeus aggregates rankings over a rolling window of recent challenges rather than 
 submission, so a miner has to forecast accurately again and again rather than succeed once by
 chance. The [Zeus repository](https://github.com/Orpheus-AI/Zeus) describes a commit-reveal protocol
 that prevents a miner from altering a submission after seeing other entries or the eventual ground
-truth, keeping the comparison fair. The winner-take-most reward structure, in which the top-ranked
-miner captures the large majority of weight and runners-up receive logarithmically less, means that
+truth, keeping the comparison fair. The winner-take-most reward structure, in which the best-ranked
+miner receives 95% of each challenge's weight and runners-up receive logarithmically less, means that
 small but consistent gains in forecast accuracy translate into a much larger share of emissions.
 
 ## On-Chain Identity
