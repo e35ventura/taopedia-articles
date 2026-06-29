@@ -8,10 +8,10 @@ infoboxCaption: Consensus period inside a Bittensor subnet.
 infoboxRows:
   - label: Context
     value: Subnet consensus
+  - label: Scope
+    value: Per subnet
   - label: Cadence
     value: Tempo-defined
-  - label: Uses
-    value: Validator signals
   - label: Related
     value: Yuma Consensus
 ---
@@ -25,6 +25,57 @@ tempo and marks the timing window in which subnet consensus work is executed.
 The term is useful because it separates timing from scoring. An epoch names the period in which
 consensus processing occurs; the subnet's incentive mechanism and validator weights explain what is
 being evaluated inside that period.
+
+## When an Epoch Runs
+
+Each subnet keeps its own epoch schedule. During every block, the coinbase step checks whether that
+subnet's consensus period has elapsed by comparing the current block to the block recorded at the
+previous epoch boundary and the subnet's tempo setting. Subnets can therefore finish epochs on
+different blocks even when they share the same tempo value
+([Coinbase Implementation: Epoch execution](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase#7-epoch-execution),
+[Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)).
+
+The coinbase flow also documents owner-triggered pending epochs that can fire before the automatic
+schedule on a selected netuid
+([Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase)).
+
+## What Happens at the Boundary
+
+When a subnet's epoch boundary arrives, accumulated pending emission is settled and Yuma Consensus
+runs once for that subnet. That pass reviews submitted validator weights, applies the participation
+and filtering rules below, and credits miner and validator shares for the closed period
+([Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)).
+
+## Activity Cutoff and Participation
+
+A validator's weights count only while the validator is treated as active for the epoch. The chain
+marks a neuron inactive when too many blocks have passed since its last weight update relative to
+the subnet's activity cutoff, and inactive validators are excluded from the stake pool that drives
+consensus for that pass
+([Implementation of the Yuma Consensus Epoch: Network State Collection](https://docs.learnbittensor.org/navigating-subtensor/epoch#1-network-state-collection)).
+
+On subnets with dynamic tempos, that cutoff is derived from
+[activity cutoff factor](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutofffactor)
+and tempo rather than from a single fixed block count
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## Weight Filtering Before Settlement
+
+Before Yuma aggregates weights, the pass refreshes validator permits from current stake, ignores
+submissions from neurons without permits, removes self-votes except where the rules allow them, and
+discards weights that predate a miner's latest registration. These filters run per subnet on the
+weight matrix stored for that epoch
+([Implementation of the Yuma Consensus Epoch: Validator Permit Management](https://docs.learnbittensor.org/navigating-subtensor/epoch#3-validator-permit-management),
+[Implementation of the Yuma Consensus Epoch: Weight Processing](https://docs.learnbittensor.org/navigating-subtensor/epoch#5-weight-processing)).
+
+## Per-Subnet Live Values
+
+Tempo, activity cutoff factor, and other timing inputs are live hyperparameter state on each netuid.
+Neuron fields such as last update time and validator permit status come from that subnet's metagraph
+snapshot rather than from the epoch concept itself
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
 
 ## Distinction from Tempo
 
@@ -107,15 +158,14 @@ Period vocabulary names when signals arrive; emission vocabulary names the wider
 
 ## Distinction from Kappa
 
-Kappa sets the stake threshold used during an epoch's Yuma pass. Epoch names the period in which
-that pass runs
+Kappa sets the stake-weighted majority ratio used during an epoch's Yuma clipping pass. Epoch names
+the period in which that pass runs
 ([Subnet Hyperparameters: Kappa](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#kappa),
 [Glossary: Epoch](https://docs.learnbittensor.org/resources/glossary#epoch),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)). Kappa vocabulary belongs to
-clipping support inside the pass; epoch vocabulary names the pass itself.
+[Yuma Consensus: Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping)).
 
 - **Epoch** — concept vocabulary for this article's topic.
-- **Kappa** — related term at a different layer of the same flow.
+- **Kappa** — stake fraction that sets the consensus clipping ceiling inside the pass.
 
 The two labels answer different reader questions on the same path
 ([Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)).
@@ -173,6 +223,8 @@ account of reward outcomes.
 
 - [Glossary: Epoch](https://docs.learnbittensor.org/resources/glossary#epoch)
 - [Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo)
+- [Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)
+- [Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase)
 - [Glossary: Weight Vector](https://docs.learnbittensor.org/resources/glossary#weight-vector)
 - [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
 - [Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)
