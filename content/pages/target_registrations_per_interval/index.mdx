@@ -1,0 +1,99 @@
+---
+title: "Target Registrations Per Interval"
+summary:
+  "How the target registrations per interval subnet hyperparameter sets a reference count the
+  runtime uses as a per-interval ceiling on new registrations."
+category: "Subnets"
+tags: ["Subnets", "Registration"]
+infoboxTitle: Target Registrations Per Interval
+infoboxCaption: Reference count behind the per-interval registration ceiling.
+infoboxRows:
+  - label: Parameter
+    value: TargetRegistrationsPerInterval
+  - label: Type
+    value: u16
+  - label: Default
+    value: "1"
+  - label: Example
+    value: netuid 1
+  - label: Set by
+    value: Root
+---
+
+# Target Registrations Per Interval
+
+Target registrations per interval is a per-subnet hyperparameter, listed in the documentation as
+`TargetRegistrationsPerInterval`, that holds a reference registration count for a subnet. The
+official hyperparameter reference notes it is not the lever for neuron registration pricing on
+ordinary subnets, where burn cost is governed by burn half life and burn increase mult; even so, the
+value remains live chain state the runtime reads when admitting registrations
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## What It Controls
+
+The code-backed behavior on current subnets is an interval ceiling. The runtime tracks how many
+registrations have occurred in the current adjustment interval and rejects a new registration once
+that count reaches three times this target, returning a too-many-registrations error. The target
+therefore bounds how many registrations an interval can absorb before further entry is refused
+([RegistrationsThisInterval](https://subtensor.com/reference/subtensormodule/storage/RegistrationsThisInterval),
+[Neuron Registration](https://subtensor.com/reference/mechanisms/registration)).
+
+It does not set the burn price on ordinary subnets. The official reference is explicit that neuron
+registration pricing is governed by burn half life and burn increase mult, so this parameter should
+be read as the reference count behind the interval ceiling rather than as the cost lever
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Glossary: Burn Cost](https://docs.learnbittensor.org/resources/glossary#burn-cost)).
+
+The value is set at root permission rather than by the subnet owner alone, reflecting network-level
+tuning. The live target on netuid 1 can differ from the documented default and from another subnet's
+value ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Relationship to Adjustment Interval
+
+The ceiling is meaningful only over the adjustment interval window it is measured across. Adjustment
+interval sets the block window; the registrations counter accumulates within that window and is
+checked against three times this target on each new registration attempt
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[RegistrationsThisInterval](https://subtensor.com/reference/subtensormodule/storage/RegistrationsThisInterval)).
+
+A lower target tightens the ceiling so an interval refuses further registrations sooner, while a
+higher target lets more registrations land within the same window before the ceiling is reached.
+
+## Documented Type and Default
+
+The [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+reference lists `TargetRegistrationsPerInterval` as a `u16` with a default of one and notes it is
+set at root permission
+([TargetRegistrationsPerInterval](https://subtensor.com/reference/subtensormodule/storage/TargetRegistrationsPerInterval)).
+
+Because each subnet carries its own value, the target on one netuid can differ from the documented
+default and from the target on another subnet
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## Reading the Live Value for netuid 1
+
+Target registrations per interval is per-subnet chain state, so any live claim is tied to a specific
+netuid. For the documented example netuid 1 on Finney mainnet, the value appears in that subnet's
+hyperparameter table, which the reference describes under viewing a subnet's hyperparameters
+([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
+The infobox uses netuid 1 only as an example label; other subnets expose their own values
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Distinction from Registrations This Interval
+
+Registrations this interval is the live counter of registrations so far in the current window.
+Target registrations per interval is the reference count that counter is compared against to enforce
+the per-interval ceiling
+([RegistrationsThisInterval](https://subtensor.com/reference/subtensormodule/storage/RegistrationsThisInterval),
+[TargetRegistrationsPerInterval](https://subtensor.com/reference/subtensormodule/storage/TargetRegistrationsPerInterval)).
+
+- **Registrations this interval** — actual count accumulated in the current window.
+- **Target registrations per interval** — reference count behind the three-times interval ceiling.
+
+## Further Reading
+
+- [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+- [Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register)
+- [Glossary: Burn Cost](https://docs.learnbittensor.org/resources/glossary#burn-cost)
+- [Neuron Registration](https://subtensor.com/reference/mechanisms/registration)
