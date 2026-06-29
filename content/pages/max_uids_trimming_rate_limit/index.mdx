@@ -1,0 +1,87 @@
+---
+title: "Max UIDs Trimming Rate Limit"
+summary:
+  "How the UID trimming rate limit caps how often a subnet owner can trim UIDs, locking the subnet's
+  UID count for roughly 30 days after each trim."
+category: "Subnets"
+tags: ["Subnets", "Security"]
+infoboxTitle: Max UIDs Trimming Rate Limit
+infoboxCaption: Cooldown between subnet UID trims.
+infoboxRows:
+  - label: Parameter
+    value: MaxUidsTrimmingRateLimit
+  - label: Interval
+    value: "216,000 blocks (~30 days)"
+  - label: Measured in
+    value: Blocks
+  - label: Applies to
+    value: Subnet owners
+  - label: Action gated
+    value: UID trimming
+---
+
+# Max UIDs Trimming Rate Limit
+
+Max UIDs trimming rate limit, named `MaxUidsTrimmingRateLimit` in the documentation, controls how
+often a subnet owner can [trim UIDs](https://docs.learnbittensor.org/subnets/uid-trimming) on their
+subnet. The rate-limits reference lists it at 216,000 blocks, about 30 days, on main net, and
+explains that the cap exists to prevent disruptions in subnet stability and excessive network
+reorganization ([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+
+## What Trimming Does
+
+UID trimming lets a subnet owner reduce the number of registered neurons on their subnet, removing
+the lowest-emission UIDs while preserving temporally immune and owner-controlled UIDs, then
+compressing the remaining UIDs to keep consecutive indexing
+([UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming)). It is a forceful management
+action: excess neurons are deregistered, so it is meant to be used deliberately rather than
+routinely.
+
+## What the Rate Limit Controls
+
+This parameter is the cooldown between those trims, not a limit on how far a single trim can go. The
+UID trimming guide states the chain's trim rate limit is 216,000 blocks (~30 days), so subnet owners
+can only change their UID count once roughly every 30 days
+([UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming),
+[Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+
+## When It Matters
+
+A common misconception is that an owner can keep resizing their subnet to react to performance week
+by week. The rate limit blocks that: once a trim lands, the UID count is locked for about 30 days
+before it can be trimmed again
+([UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming)).
+
+Concretely, suppose the owner of netuid 14 trims it down to 100 UIDs with
+`btcli sudo trim --netuid 14 --max 100`. If a week later they decide 100 was still too many and want
+to trim to the documented minimum of 64, the chain will reject the second trim until the roughly
+216,000-block window elapses. Because trimming deregisters the excess neurons, that waiting period
+is the safeguard: it forces owners to size their subnet carefully rather than churn participants
+repeatedly ([UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming),
+[Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+
+## Documented Nature
+
+The [Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits) reference lists
+`MaxUidsTrimmingRateLimit` as a block-counted limit that is not queryable from chain state, with the
+interval at 216,000 blocks on main net and 1 block in fastblocks development mode. The trim itself
+is a subnet-owner sudo action performed with `btcli sudo trim` or the
+`sudo_trim_to_max_allowed_uids` extrinsic
+([UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming),
+[Extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics)).
+
+## Distinction from Min Allowed UIDs
+
+The two interact but answer different questions. Min allowed UIDs is the floor a trim cannot drop
+the subnet below, while the trimming rate limit is how long the owner must wait between trims
+([UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming)).
+
+- **Min allowed UIDs** — the lowest UID count a trim may target.
+- **Max UIDs trimming rate limit** — the cooldown between successive trims.
+
+## Further Reading
+
+- [UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming)
+- [Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)
+- [Extrinsics: sudoTrimToMaxAllowedUids](https://docs.learnbittensor.org/subtensor-api/extrinsics)
+- [Glossary: Block](https://docs.learnbittensor.org/resources/glossary#block)
