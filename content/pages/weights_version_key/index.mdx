@@ -51,6 +51,22 @@ can raise it for their subnet. A default of 0 means no minimum is enforced. The 
 netuid 1 can differ from the documented default and from another subnet's required version
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
+Subtensor stores the weights-version-key update limit in tempos rather than as a fixed block count.
+Chain storage documents `WeightsVersionKeyRateLimit` as a rate limit measured in tempos with a
+default of 5, and accepted owner updates on a subnet must wait until the subnet's tempo multiplied
+by that tempo count has elapsed
+([WeightsVersionKeyRateLimit Storage](https://subtensor.com/reference/subtensormodule/storage/WeightsVersionKeyRateLimit),
+[Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo)).
+
+That pacing governs how often the owner may raise the required version on chain, separate from
+weights rate limit, which paces how often validators may commit weight vectors on the subnet
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+On netuid 1, the real-time gap between accepted version-key increases therefore depends on both the
+stored tempo count and that subnet's tempo. Owners can read the live required version with
+`btcli subnet hyperparameters --netuid 1 --network finney` before planning another increase
+([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
+
 ## Distinction from Validator Permit
 
 The version key check rejects a `set_weights` call whose declared version is below the subnet's
@@ -200,7 +216,8 @@ mechanism that allocates rewards from accepted weight vectors at the epoch bound
 ## Reader Boundary
 
 This page defines the concept at a high level. It does not report the weights version key set on any
-particular subnet or whether a given validator's submission currently meets it. Those are live chain
+particular subnet, whether a given validator's submission currently meets it, or how many tempos
+must elapse before another owner increase could be accepted on that subnet. Those are live chain
 state and should be checked for the relevant netuid. The default of 0 is the documented value, and
 the parameter is owner-settable per subnet.
 
