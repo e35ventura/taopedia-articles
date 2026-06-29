@@ -43,6 +43,19 @@ next slot and throttles a registration rush. It does not set the floor or ceilin
 are the separate min burn and max burn hyperparameters
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
+## On-Chain Application
+
+On chain, the step-up is applied as a direct multiply of the live burn immediately after each
+successful registration. The effective multiplier is floored at one, so a configured value below one
+cannot lower the burn; the multiplied result is then clamped back inside the `MinBurn` and `MaxBurn`
+band before it takes effect
+([`bump_registration_price_after_registration`](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)).
+
+This per-registration bump is skipped for the root subnet, which keeps interval-based admission
+rather than the per-block decay and per-registration step-up used by other subnets. So burn increase
+mult shapes registration price on ordinary subnets, not on root
+([`update_registration_prices_for_networks`](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)).
+
 ## Documented Description and Setter
 
 The [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
