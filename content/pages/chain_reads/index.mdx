@@ -125,29 +125,7 @@ The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-netw
 separates mainnet, testnet, and localnet. A chain-read example from one environment should not be
 read as representing production chain state in another environment.
 
-## Distinction from Extrinsics
-
-A chain read and an extrinsic sit on opposite sides of the chain's request boundary. A chain read
-queries public state — storage, events, constants, or runtime calls — without asking Subtensor to
-record anything, and the documentation treats it as free inspection, while an extrinsic is a
-submitted, fee-bearing call that asks the runtime to change state such as staking, transferring, or
-registering, so a read observes what already exists and an extrinsic is what produces a new recorded
-change ([Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees),
-[Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics)).
-
-- **Chain read** — free, read-only observation of public chain state.
-- **Extrinsic** — a submitted, fee-bearing call that changes chain state.
-
-[Subtensor Constants](https://docs.learnbittensor.org/subtensor-api/constants) document
-protocol-wide fixed values, while
-[Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage) exposes per-key state
-that changes as blocks advance. Chain reads can target either surface depending on whether the
-reader needs a static parameter or a live field
-([Inspecting the Chain with Polkadot.js](https://docs.learnbittensor.org/concepts/inspecting-the-chain)).
-
-For readers, constants vocabulary names durable configuration, while storage vocabulary names
-mutable chain state at a block height. Both remain read-only observation paths
-([Glossary: Block](https://docs.learnbittensor.org/resources/glossary#block)).
+## Typical Inspection Path From Read to Action
 
 A typical inspection path starts with choosing the network and block context, then selecting the
 read surface that answers the question
@@ -166,6 +144,52 @@ When the goal shifts from observation to mutation, the path crosses into
 transactions ([Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees)). Chain
 reads inform those later actions but do not replace them.
 
+## Events Show Historical Outcomes; Storage Shows Current Values
+
+[Subtensor Events](https://docs.learnbittensor.org/subtensor-api/events) document emitted records
+that follow successful extrinsic processing. Chain reads of events therefore show historical
+outcomes rather than pending intent in the mempool
+([Glossary: Mempool](https://docs.learnbittensor.org/resources/glossary#mempool),
+[Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees)).
+
+For readers, event vocabulary complements storage reads. Storage can show current values at a block,
+while events show which actions produced observable state changes on the connected network
+([Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics)).
+
+## Yuma Settlement Is Unrelated to Chain Reads
+
+Yuma Consensus is the on-chain process that converts submitted validator weights into emission
+shares after evaluation completes. Read queries can show weights or emissions outcomes, but Yuma
+Consensus names the settlement mechanism rather than the query format
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
+[Emission](https://docs.learnbittensor.org/learn/emissions)).
+
+Readers should keep read-query vocabulary separate from the settlement step. Chain reads answer what
+live values can be queried; Yuma Consensus answers how validator weights become emission shares in a
+subnet ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+## Chain Reads Need Mechanism Context Beyond the Value
+
+A storage read can show a recorded value, but surrounding mechanism documentation may be needed to
+explain why the value exists. An event can show that runtime activity was emitted, but the event
+name is not the same as the full action reference
+([Subtensor Events](https://docs.learnbittensor.org/subtensor-api/events),
+[Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics)).
+
+## Distinction from Extrinsics
+
+A chain read and an extrinsic sit on opposite sides of the chain's request boundary. A chain read
+queries public state — storage, events, constants, or runtime calls — without asking Subtensor to
+record anything, and the documentation treats it as free inspection, while an extrinsic is a
+submitted, fee-bearing call that asks the runtime to change state such as staking, transferring, or
+registering, so a read observes what already exists and an extrinsic is what produces a new recorded
+change ([Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees),
+[Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics)).
+
+- **Chain read** — free, read-only observation of public chain state.
+- **Extrinsic** — a submitted, fee-bearing call that changes chain state.
+
 ## Distinction from Transaction Fees
 
 A chain read and a transaction fee sit on opposite sides of the free/paid boundary. Documentation
@@ -177,20 +201,6 @@ to process a state-changing action
 - **Chain read** — free, read-only observation of public state.
 - **Transaction fee** — the cost charged to process a state-changing action.
 
-Read-only inspection is separate from state-changing actions, so fee language belongs with the
-action unless the point is specifically that a read is free
-([Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees),
-[Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics)).
-
-That boundary keeps chain-read vocabulary from being treated as transaction vocabulary. A read can
-inform a later decision, but the read itself is not the fee-bearing action.
-
-The fee split also keeps article prose from overclaiming. A read may be part of understanding chain
-state before an action, but the action and its fee behavior belong to the transaction or extrinsic
-surface, not to the read itself
-([Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees),
-[Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics)).
-
 ## Distinction from Subtensor Events
 
 A chain read and a Subtensor event differ in what they show. A chain read inspects current public
@@ -200,16 +210,6 @@ was processed ([Subtensor Storage](https://docs.learnbittensor.org/subtensor-api
 
 - **Chain read** — inspection of current public state.
 - **Subtensor event** — a record emitted after an action is processed.
-
-[Subtensor Events](https://docs.learnbittensor.org/subtensor-api/events) document emitted records
-that follow successful extrinsic processing. Chain reads of events therefore show historical
-outcomes rather than pending intent in the mempool
-([Glossary: Mempool](https://docs.learnbittensor.org/resources/glossary#mempool),
-[Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees)).
-
-For readers, event vocabulary complements storage reads. Storage can show current values at a block,
-while events show which actions produced observable state changes on the connected network
-([Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics)).
 
 ## Distinction from Inspecting the Chain with Polkadot.js
 
@@ -256,17 +256,7 @@ Chain reads are queries that return live hyperparameter, metagraph, or storage v
 without submitting a state-changing extrinsic. They name observation vocabulary, not the on-chain
 step that turns validator weight submissions into emission shares
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
-[The Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)).
-
-Yuma Consensus is the on-chain process that converts submitted validator weights into emission
-shares after evaluation completes. Read queries can show weights or emissions outcomes, but Yuma
-Consensus names the settlement mechanism rather than the query format
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
-[Emission](https://docs.learnbittensor.org/learn/emissions)).
-
-Readers should keep read-query vocabulary separate from the settlement step. Chain reads answer what
-live values can be queried; Yuma Consensus answers how validator weights become emission shares in a
-subnet ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[The Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph),
 [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
 - **Chain reads** — live queries of chain state without changing it.
@@ -282,11 +272,8 @@ constant, or a block-context observation
 [Subtensor Constants](https://docs.learnbittensor.org/subtensor-api/constants),
 [Glossary: Block](https://docs.learnbittensor.org/resources/glossary#block)).
 
-That evidence still has limits. A storage read can show a recorded value, but surrounding mechanism
-documentation may be needed to explain why the value exists. An event can show that runtime activity
-was emitted, but the event name is not the same as the full action reference
-([Subtensor Events](https://docs.learnbittensor.org/subtensor-api/events),
-[Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics)).
+- **Chain reads** — evidence from a selected read surface on public chain state.
+- **Evidence** — the broader proof concept chain reads can supply when surface type is named.
 
 ## Distinction from Network
 
