@@ -52,6 +52,14 @@ The interval therefore shapes the responsiveness of the registration cost mechan
 the cost band itself. The burn floor and ceiling are separate parameters that define the range
 inside which each adjustment operates.
 
+Unlike the per-registration step from burn increase mult, which fires after every successful slot
+claim, adjustment interval waits until a full block window ends before comparing actual
+registrations to the target rate and moving burn within the min/max band. The two mechanisms stack:
+individual registrations can still bump burn between interval boundaries, while the interval check
+can ease or raise burn when sustained demand across the window diverges from target
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Glossary: Burn Cost](https://docs.learnbittensor.org/resources/glossary#burn-cost)).
+
 ## Documented Type and Setter
 
 The [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
@@ -71,6 +79,24 @@ interval sets how many registrations the mechanism aims for during that window
 
 - **Adjustment interval** — blocks between demand-comparison recalibrations.
 - **Target registrations per interval** — reference registration count for each window.
+
+## Distinction from Burn Increase Mult
+
+Burn increase mult and adjustment interval both influence dynamic registration burn but on different
+triggers. Burn increase mult steps the live burn up immediately after each successful registration,
+while adjustment interval compares how many registrations occurred during a fixed block window
+against the target rate and recalibrates the burn at the end of that window
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register)).
+
+The per-registration multiplier reacts to each individual slot claim. The adjustment interval reacts
+to sustained demand over the full window. A burst of registrations can raise burn quickly through
+repeated multiplier bumps even before the interval closes, while a quiet period at interval end can
+still pull the burn down when actual registrations fell short of target
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+- **Burn increase mult** — immediate step-up on each successful registration.
+- **Adjustment interval** — block window between demand-comparison recalibrations.
 
 ## Distinction from Burn Half Life
 
