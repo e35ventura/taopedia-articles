@@ -11,7 +11,7 @@ infoboxRows:
   - label: Parameter
     value: SubnetEmissionEnabled
   - label: Type
-    value: bool
+    value: Bool
   - label: Default
     value: "true"
   - label: Example
@@ -64,8 +64,9 @@ toward the rest
 
 The [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
 reference lists `SubnetEmissionEnabled` as a per-subnet boolean defaulting to true. It is changed
-through the `sudoSetSubnetEmissionEnabled` admin extrinsic and is root sudo only, explicitly not
-settable by subnet owners. A change emits an on-chain event recording the new state
+through the `adminUtils.sudoSetSubnetEmissionEnabled(netuid, enabled)` extrinsic and is root sudo
+only, explicitly not settable by subnet owners. The reference lists no `btcli` setter for this
+parameter. A change emits the `adminUtils.SubnetEmissionEnabledSet` on-chain event
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
 Because each subnet carries its own value as per-netuid state, the flag on one netuid can differ
@@ -75,11 +76,23 @@ from the documented default and from another subnet's value
 ## Reading the Live Value for netuid 1
 
 Subnet emission enabled is per-subnet chain state, so any live claim is tied to a specific netuid.
-For the documented example netuid 1 on Finney mainnet, the value appears in that subnet's
-hyperparameter table, which the reference describes under viewing a subnet's hyperparameters
+For the documented example netuid 1 on Finney mainnet, readers can verify the live flag with
+`btcli subnet hyperparameters --netuid 1 --network finney`, which prints that subnet's
+hyperparameter table including this Boolean row
 ([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
 The infobox uses netuid 1 only as an example label; other subnets expose their own values
 ([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Distinction from Subnet Is Active
+
+Subnet is active reports whether a subnet's emission path has started after the owner start call.
+Subnet emission enabled is the separate root-governance toggle that can halt pool-side injection on
+an already-active subnet without dissolving it
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Emission](https://docs.learnbittensor.org/learn/emissions)).
+
+- **Subnet is active** — whether the subnet's emissions have started.
+- **Subnet emission enabled** — whether pool-side injection runs each epoch on an active subnet.
 
 ## Distinction from Owner Cut
 
