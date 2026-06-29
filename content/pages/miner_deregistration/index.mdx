@@ -23,6 +23,34 @@ Miner deregistration is the miner-specific case of deregistration in a Bittensor
 describes it as the removal of a low-performing miner when a subnet is full and a new miner is
 registered.
 
+## What Triggers Miner Removal
+
+Miner deregistration is not a routine eviction. Mining documentation describes it as the removal of
+a low-performing miner when the subnet is full and a new miner registers
+([Mining: Miner deregistration](https://docs.learnbittensor.org/miners#miner-deregistration),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+The trigger chain has three concrete gates. First, the subnet must be at its `max_allowed_uids`
+capacity so no empty UID slot is available. Second, `registration_allowed` must still admit new
+neuron entry on that netuid. Third, the incoming registration pays the live dynamic registration
+burn and succeeds only if an eligible incumbent can be displaced
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register)).
+
+Among eligible incumbents, pruning score ranks who earned least; the lowest-standing miner is the
+first candidate removed when displacement is required
+([Glossary: Pruning Score](https://docs.learnbittensor.org/resources/glossary#pruning-score),
+[Mining: Miner deregistration](https://docs.learnbittensor.org/miners#miner-deregistration)).
+
+Neurons still inside their post-registration immunity period are shielded from displacement, so a
+new registrant cannot immediately replace another entrant that recently joined
+([Glossary: Immunity Period](https://docs.learnbittensor.org/resources/glossary#immunity-period),
+[Mining: Miner registration](https://docs.learnbittensor.org/miners#miner-registration)).
+
+Examples tied to netuid 1 illustrate one subnet's displacement path. They should not be read as
+representing live pruning outcomes on another network
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
 ## Distinction from UID Trimming
 
 Miner deregistration removes one low-scoring miner when a full subnet accepts a new registration.
@@ -134,8 +162,9 @@ Removal-event vocabulary and position vocabulary answer different slot-lifecycle
 ## Reader Boundary
 
 This article defines the term at a high level. It does not list current miners, count available
-slots, rank subnet participants, or describe registration steps. Current displacement eligibility
-belongs in mining references and live subnet state at the time of observation
+slots, rank subnet participants, or describe registration steps. Current displacement eligibility,
+the live registration burn quote, and which UID would be pruned belong in mining references and live
+subnet state at the time of observation
 ([Mining: Miner deregistration](https://docs.learnbittensor.org/miners#miner-deregistration)).
 
 Miner deregistration should be read as removal from a subnet miner slot, not as proof that the
