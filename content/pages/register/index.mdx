@@ -35,12 +35,16 @@ Examples tied to netuid 1 illustrate one subnet's registration path. They should
 representing burn costs or slot availability on another network
 ([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
 
-Neuron registration is continuous on ordinary subnets. There are no registration windows, rate
-limits, or per-block caps on the admission action itself. Admission is governed by a burn price that
-decays over time between registrations and rises with each successful registration through
-`BurnHalfLife` and `BurnIncreaseMult` on a subnet such as netuid 1
-([Rate Limits: Neuron registration](https://docs.learnbittensor.org/learn/chain-rate-limits#neuron-uid-registration),
-[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+Neuron registration is continuous on ordinary subnets such as netuid 1. There are no interval-based
+registration windows; admission is priced through a burn that decays between registrations and rises
+with each successful registration through `BurnHalfLife` and `BurnIncreaseMult`
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+That continuity still leaves a per-block success cap. `MaxRegistrationsPerBlock` limits how many
+registrations can succeed on a netuid in the current block; when the block counter is full,
+additional attempts fail until the next block
+([Subnet Hyperparameters: MaxRegistrationsPerBlock](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#maxregistrationsperblock),
+[TooManyRegistrationsThisBlock](https://subtensor.com/reference/subtensormodule/errors/TooManyRegistrationsThisBlock)).
 
 ## Distinction from Registration Allowed
 
@@ -174,6 +178,18 @@ through `BurnHalfLife` and `BurnIncreaseMult` instead
 
 - **Register** — the subnet entry action claiming a UID slot.
 - **Adjustment interval** — legacy interval-based burn recalibration vocabulary removed from V3.
+
+## Distinction from Max Registrations Per Block
+
+Register names the subnet-entry action that claims a UID slot by paying the dynamic burn. Max
+registrations per block is the separate per-netuid limit on how many successful registrations can
+land in the current block before additional attempts must wait for the next block
+([Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register),
+[Subnet Hyperparameters: MaxRegistrationsPerBlock](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#maxregistrationsperblock),
+[RegistrationsThisBlock](https://subtensor.com/reference/subtensormodule/storage/RegistrationsThisBlock)).
+
+- **Register** — subnet-entry process purchasing a UID slot through the burn path.
+- **Max registrations per block** — per-block cap on successful registrations on one netuid.
 
 ## Distinction from Hotkey-Coldkey Pair
 
