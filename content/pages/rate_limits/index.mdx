@@ -103,6 +103,26 @@ setting rate limit as configurable per subnet, with a default of 100 blocks and 
 Configurable subnet limits should be read with their subnet setting. A default block count gives
 orientation, but the action family and subnet context still determine the effective pacing.
 
+Subnet owner hyperparameter changes are another action family. The rate-limit reference lists an
+owner hyperparameter rate limit of 2 tempos, stored as `OwnerHyperparamRateLimit`, and notes that
+the limit is enforced independently per hyperparameter. That means changing one setting on a subnet
+does not necessarily block a different setting during the same window
+([Rate Limits: Owner hyperparameter rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#owner-hyperparameter-rate-limit),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+The same reference also lists an administrative freeze window at the end of each epoch. During that
+10-block `AdminFreezeWindow`, subnet owner operations are disallowed even if a per-parameter
+cooldown has otherwise elapsed. For readers, this separates ordinary action cooldowns from the
+epoch-boundary window that temporarily blocks owner operations
+([Rate Limits: Administrative freeze window](https://docs.learnbittensor.org/learn/chain-rate-limits#administrative-freeze-window)).
+
+Both owner-hyperparameter pacing and the administrative freeze window can surface the same broad
+`TxRateLimitExceeded` error name. The error alone therefore does not identify which timing rule was
+hit. Readers need the attempted action, selected netuid, current epoch position, and relevant
+hyperparameter history to tell whether the failure came from a per-parameter cooldown or from the
+end-of-epoch freeze window ([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
 That is why the number alone is incomplete. The action family, scope, and block count travel
 together: a 1-block general transaction limit, a 10-block serving update default, a 100-block
 weight-setting default, and a 216,000-block delegate-take limit describe different rules, not one
