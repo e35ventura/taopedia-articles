@@ -34,6 +34,19 @@ documentation states it is treated as inactive for the epoch and waits until the
 part again. The cutoff is measured in blocks, not in wall-clock time
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
+## Effect on Consensus
+
+When an epoch runs, the subnet builds an inactive mask by comparing each neuron's last update block
+to the current block: a neuron is inactive when its last update plus the activity cutoff is still
+below the current block. Inactive neurons are then removed from the stake vector used for consensus,
+their stake masked to zero before the active stake is normalized, so a stale validator carries no
+weight in that epoch's stake-weighted consensus
+([`run_epoch`](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/epoch/run_epoch.rs)).
+
+This is why missing the cutoff costs influence and not just status: an inactive validator's weights
+do not move consensus until it updates again and re-enters the active set
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
 ## Configured Per Subnet
 
 Each subnet stores its own activity cutoff value. The block window on netuid 1 applies only to that
