@@ -187,6 +187,50 @@ References:
 [Subtensor Pallets and Extrinsics](https://docs.learnbittensor.org/navigating-subtensor/subtensor-extrinsics),
 [Glossary: Netuid](https://docs.learnbittensor.org/resources/glossary#netuid)
 
+## Extrinsics Begin Outside the Runtime
+
+A clear extrinsic example should name the requested runtime method before describing whether the
+request changed chain state, produced events, or failed validation
+([Subtensor Events](https://docs.learnbittensor.org/subtensor-api/events)).
+
+A method name identifies the action family. Fees, selected network, and surrounding chain context
+help explain how that action should be read in a particular example
+([Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+These calls begin outside the blockchain runtime, which is why Bittensor documentation names them
+extrinsics rather than internal runtime steps: the runtime checks permissions and then decides
+whether to accept the submitted action
+([Subtensor Pallets and Extrinsics](https://docs.learnbittensor.org/navigating-subtensor/subtensor-extrinsics),
+[Glossary: Subtensor](https://docs.learnbittensor.org/resources/glossary#subtensor),
+[Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics)).
+
+## Broadcast Submits; Inclusion Needs Block Evidence
+
+Broadcasting an extrinsic only submits the signed call. Until a block includes it, the action lives
+in the mempool and is not final chain history—inclusion evidence belongs to block and event reads,
+not to the submission step alone
+([Glossary: Mempool](https://docs.learnbittensor.org/resources/glossary#mempool),
+[Glossary: Block](https://docs.learnbittensor.org/resources/glossary#block),
+[Subtensor Events](https://docs.learnbittensor.org/subtensor-api/events)).
+
+That pending-versus-included boundary pairs with the lifecycle table above. A submitted extrinsic
+names intent and method; mempool vocabulary names where the transaction waits; block and event
+vocabulary name when inclusion becomes observable chain history.
+
+## Weight Extrinsics Supply Consensus Inputs
+
+Weight-setting extrinsics such as `set_weights`, `commit_weights`, and `reveal_weights` feed
+consensus inputs on a subnet. They name submitted validator-weight actions, not the on-chain
+settlement step that turns those submissions into emission shares
+([Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
+[Glossary: Weight Vector](https://docs.learnbittensor.org/resources/glossary#weight-vector)).
+
+Readers should keep extrinsic vocabulary on the submission side and Yuma vocabulary on the
+settlement side. Extrinsics answer what action is being submitted; Yuma Consensus answers how
+validator weights become emission shares after eligible submissions are recorded.
+
 ## Distinction from Chain Reads
 
 Extrinsics and chain reads sit on opposite sides of Subtensor interaction. An extrinsic asks the
@@ -246,51 +290,29 @@ documentation describes a campaign that, on finalization, runs exactly one speci
 
 ## Distinction from Runtime Action
 
-The Subtensor extrinsics reference lists runtime methods exposed as chain actions
+The Subtensor extrinsics reference lists runtime methods exposed as chain actions, while runtime
+action vocabulary can name any callable step inside the runtime surface
 ([Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics),
 [Inspecting the Chain with Polkadot.js](https://docs.learnbittensor.org/concepts/inspecting-the-chain)).
 
-A clear extrinsic example should name the requested runtime method before describing whether the
-request changed chain state, produced events, or failed validation
-([Subtensor Events](https://docs.learnbittensor.org/subtensor-api/events)).
-
-A method name identifies the action family. Fees, selected network, and surrounding chain context
-help explain how that action should be read in a particular example
-([Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees),
-[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
-
-These calls begin outside the blockchain runtime, which is why Bittensor documentation names them
-extrinsics rather than internal runtime steps: the runtime checks permissions and then decides
-whether to accept the submitted action
-([Subtensor Pallets and Extrinsics](https://docs.learnbittensor.org/navigating-subtensor/subtensor-extrinsics),
-[Glossary: Subtensor](https://docs.learnbittensor.org/resources/glossary#subtensor)).
+- **Extrinsic** — a submitted call from outside the runtime awaiting acceptance.
+- **Runtime action** — the broader callable method family the runtime exposes.
 
 ## Distinction from Block
 
-Extrinsics are adjacent to block and mempool vocabulary. The mempool is the pending-transaction area
-before block inclusion, while a block is the ordered chain unit that can contain accepted
-transactions ([Glossary: Mempool](https://docs.learnbittensor.org/resources/glossary#mempool),
-[Glossary: Block](https://docs.learnbittensor.org/resources/glossary#block)).
+An extrinsic names a submitted action. A block names the ordered chain unit that can include
+accepted transactions ([Glossary: Block](https://docs.learnbittensor.org/resources/glossary#block),
+[Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics)).
 
-This boundary keeps timing clear. An extrinsic can name the action being processed, while mempool
-and block vocabulary describe pending and included chain contexts.
+- **Extrinsic** — the submitted action sent for processing.
+- **Block** — the ordered chain unit that can record included transactions.
 
 ## Distinction from Yuma Consensus
 
 An extrinsic is a signed transaction payload a participant submits to change Bittensor chain state.
 It names the submission unit for on-chain actions, not the on-chain step that turns validator weight
 submissions into emission shares
-([Glossary: Extrinsic](https://docs.learnbittensor.org/resources/glossary#extrinsic)).
-
-Yuma Consensus is the on-chain process that converts submitted validator weights into emission
-shares after evaluation completes. Weight-setting extrinsics feed consensus inputs, but Yuma
-Consensus names the settlement mechanism rather than the extrinsic format itself
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
-[Emission](https://docs.learnbittensor.org/learn/emissions)).
-
-Readers should keep submission vocabulary separate from the settlement step. Extrinsics answer what
-action is being submitted; Yuma Consensus answers how validator weights become emission shares in a
-subnet ([Glossary: Extrinsic](https://docs.learnbittensor.org/resources/glossary#extrinsic),
+([Glossary: Extrinsic](https://docs.learnbittensor.org/resources/glossary#extrinsic),
 [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
 - **Extrinsic** — signed transaction payload that changes chain state.
@@ -305,12 +327,6 @@ that holds submitted extrinsics until a validator includes them in a block
 ([Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics),
 [Glossary: Mempool](https://docs.learnbittensor.org/resources/glossary#mempool),
 [Glossary: Block](https://docs.learnbittensor.org/resources/glossary#block)).
-
-Broadcasting an extrinsic only submits the signed call; until a block includes it, the action lives
-in the mempool and is not final chain history—inclusion evidence belongs to block and event reads,
-not to the submission step alone
-([Glossary: Mempool](https://docs.learnbittensor.org/resources/glossary#mempool),
-[Subtensor Events](https://docs.learnbittensor.org/subtensor-api/events)).
 
 - **Extrinsic** — a signed instruction submitted to change chain state.
 - **Mempool** — the staging area holding pending extrinsics before inclusion.
