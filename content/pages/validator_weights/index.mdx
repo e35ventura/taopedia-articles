@@ -28,6 +28,55 @@ The term is subnet-specific. A validator weight only has meaning inside the task
 and incentive setting that produced it, so it is different from a general validator reputation
 score.
 
+## What Validator Weights Contain
+
+A validator's weights are carried as a
+[weight vector](https://docs.learnbittensor.org/resources/glossary#weight-vector): a list of miner
+targets paired with evaluation scores. The vector expresses relative standing among miners the
+validator evaluated, not an absolute performance grade detached from subnet context
+([Glossary: Weight Vector](https://docs.learnbittensor.org/resources/glossary#weight-vector),
+[Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
+
+Each entry names one miner the validator rated and the score assigned to that miner's work.
+Validators can disagree on both which miners deserve attention and how high each score should be, so
+one validator's vector is only one row of evidence before subnet-wide aggregation begins.
+
+## From One Vector to the Weight Matrix
+
+Validators record weights through
+[weight setting](https://docs.learnbittensor.org/resources/glossary#weight-setting), the on-chain
+action that submits one validator's vector for an epoch. Yuma Consensus processes the
+[weight matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix), the subnet-level
+collection that stacks every participating validator's row into structured consensus input
+([Glossary: Weight Matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+Reading down one miner column therefore gathers every validator's score for that miner, while
+reading across one validator row recovers that validator's full evaluation. Matrix vocabulary names
+the assembled input; validator-weights vocabulary names the per-validator scores inside each row
+([Glossary: Weight Matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix)).
+
+## Stake Weight Scales Each Matrix Row
+
+Validator weights and
+[stake weight](https://docs.learnbittensor.org/resources/glossary#stake-weight) answer different
+questions on the same path. Validator weights are the per-miner scores a validator submits; stake
+weight is the stake-derived influence that determines how heavily that validator's row counts when
+Yuma Consensus aggregates the matrix
+([Understanding Subnets: Validator stake weight](https://docs.learnbittensor.org/subnets/understanding-subnets#validator-stake-weight),
+[Yuma Consensus: Miner emissions](https://docs.learnbittensor.org/learn/yuma-consensus#miner-emissions)).
+
+Two validators can submit similar miner evaluations yet carry different influence when their stake
+weights differ. Yuma documentation describes miner-side aggregation as summing clipped validator
+weights scaled by validator stake, so matrix rows are stake-weighted inputs rather than
+one-vote-per-validator tallies
+([Yuma Consensus: Miner emissions](https://docs.learnbittensor.org/learn/yuma-consensus#miner-emissions)).
+
+That scaling sits between submission and outcomes. Validator weights name what a validator thought
+about miner work; stake weight names how much that opinion should move consensus relative to other
+validators on the selected subnet
+([Glossary: Stake Weight](https://docs.learnbittensor.org/resources/glossary#stake-weight)).
+
 ## Distinction from Liquid Alpha
 
 Validator weights are the evaluation signals validators submit for miners. Liquid alpha adjusts bond
@@ -89,21 +138,13 @@ Consensus settles those submissions into emission shares each tempo
 
 ## Distinction from Stake Weight
 
-Validator weights and stake weight are different inputs to consensus. Validator weights are the
-per-miner scores a validator submits to rate miner performance, while stake weight is the
-stake-derived influence that determines how heavily that validator's submitted weights count when
-Yuma Consensus aggregates them
+Validator weights are the per-miner scores a validator submits. Stake weight is the stake-derived
+influence applied when Yuma Consensus aggregates those scores in the matrix
 ([Glossary: Weight Vector](https://docs.learnbittensor.org/resources/glossary#weight-vector),
-[Glossary: Stake Weight](https://docs.learnbittensor.org/resources/glossary#stake-weight),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-Two validators can submit similar miner evaluations, yet their matrix rows carry different influence
-when their stake weights differ on the selected netuid
-([Understanding Subnets: Validator stake weight](https://docs.learnbittensor.org/subnets/understanding-subnets#validator-stake-weight),
-[Glossary: Weight Matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix)).
+[Glossary: Stake Weight](https://docs.learnbittensor.org/resources/glossary#stake-weight)).
 
 - **Validator weights** — the per-miner scores a validator submits.
-- **Stake weight** — the stake-based influence applied to those weights in consensus.
+- **Stake weight** — the stake-based influence applied to those scores in consensus.
 
 ## Reader Boundary
 
