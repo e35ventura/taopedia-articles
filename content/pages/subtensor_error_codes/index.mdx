@@ -59,6 +59,28 @@ Subtensor rule was involved
 ([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor),
 [Subtensor Custom Errors](https://docs.learnbittensor.org/errors/custom)).
 
+## Registration Block-Cap Errors
+
+`TooManyRegistrationsThisBlock` is a Subtensor-module error for a registration attempt that arrives
+after the selected subnet has already accepted its configured number of registrations in the current
+block. The error is tied to the live `RegistrationsThisBlock(netuid)` counter and the
+`MaxRegistrationsPerBlock(netuid)` cap, not to the registration burn price itself
+([TooManyRegistrationsThisBlock](https://subtensor.com/reference/subtensormodule/errors/TooManyRegistrationsThisBlock),
+[RegistrationsThisBlock Storage](https://subtensor.com/reference/subtensormodule/storage/RegistrationsThisBlock),
+[MaxRegistrationsPerBlock Storage](https://subtensor.com/reference/subtensormodule/storage/MaxRegistrationsPerBlock)).
+
+For readers, that makes the error a timing and throughput signal. If netuid 1 has already reached
+its per-block registration cap, another registration attempt can fail even when the caller can pay
+the current burn. The next block starts a new counter, while dynamic burn parameters continue to
+govern entry price separately
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+That separation keeps the diagnosis narrow. A high burn quote points to registration economics, a
+full `RegistrationsThisBlock` counter points to current-block capacity, and a missing subnet or
+unregistered hotkey points to a different standard-error family. The error name should therefore be
+read with the attempted extrinsic and the selected netuid rather than as a generic registration
+failure.
+
 ## Standard and Custom Families
 
 Standard errors describe named failure categories from the Subtensor layer, while custom errors list
