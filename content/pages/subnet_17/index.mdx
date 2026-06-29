@@ -33,18 +33,18 @@ game-ready assets for virtual worlds, games, and AR/VR experiences.
 ## How the Mechanism Works
 
 According to the [404-GEN repository](https://github.com/404-Repo/404-gen-subnet), each competition
-round opens with a published set of text prompts. Miners generate 3D models from those prompts and
-upload them for validator evaluation. Validators then run a multi-stage evaluation pipeline: they
-render each submission to multi-view images, conduct pairwise duels between outputs using a
-vision-language model as judge, verify winning submissions by regenerating them from the same prompt
-to confirm reproducibility, and finally compare the regeneration against the original using
-perceptual similarity scoring. Submissions that cannot be reproduced or that diverge significantly
-from the verified regeneration are disqualified.
+round opens with a published seed and prompt set. Miners run open-source Docker-based generation
+solutions, produce 3D outputs from those inputs, and upload files to their CDNs for collection.
+Validators then run a multi-stage evaluation pipeline: they download submissions, render multi-view
+previews, conduct pairwise duels between outputs using a vision-language model as judge, and audit
+candidate winners by regenerating outputs from the miner's Docker image on serverless GPUs with the
+same seed. Regenerated renders are compared to submissions with DINOv3 embedding distance and
+VLM-based judging; submissions that cannot be reproduced or fail verification are disqualified.
 
-The competition uses a winner-stays-in format with a decaying leader weight. The leading miner's
-emissions share decreases slightly with each successful defense, creating ongoing competitive
-pressure. A new winner starts at the top weight and must defend their position in subsequent rounds.
-This structure incentivizes continuous improvement rather than locking in any single approach.
+The competition uses a winner-stays-in format with decaying leader weight. The leading miner's
+weight decreases slightly with each successful defense down to a floor; a new winner starts at
+weight 1.0 and must defend in subsequent rounds. This structure incentivizes continuous improvement
+rather than locking in any single approach.
 
 All competition state — submissions, renders, duel results, and verification reports — is recorded
 in the public repository, making every outcome auditable. Weight vectors from validator scoring feed
@@ -91,8 +91,9 @@ Round rankings therefore reflect relative visual quality rather than a single ab
 
 ## Regeneration Verification Filters Non-Reproducible Outputs
 
-Validators regenerate top submissions from the same prompt inputs and compare the result with
-perceptual similarity scoring ([404-GEN repository](https://github.com/404-Repo/404-gen-subnet)).
+Validators regenerate top submissions from the same seed using the miner's Docker image on
+serverless GPUs, then compare regenerated renders to submissions with DINOv3 embedding distance and
+VLM-based judging ([404-GEN repository](https://github.com/404-Repo/404-gen-subnet)).
 
 Submissions that cannot be reproduced or diverge from the verified regeneration are disqualified.
 
