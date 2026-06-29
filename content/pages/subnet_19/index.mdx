@@ -39,13 +39,14 @@ USD-denominated price per request unit — a normalized measure of RPC work — 
 directs customer traffic toward miners offering favorable price-to-quality ratios.
 
 Quality is measured by validators operating independently outside the gateway. Each scoring epoch
-(roughly 72 minutes), validators retrieve logs of recent gateway activity from public cloud storage
-and compare what each miner returned against reference responses from independent blockchain nodes.
-The correctness check is external: validators do not rely on the gateway's own records to judge
-accuracy, but instead re-query the same data themselves. Scores are then converted to weights and
-committed on-chain, where [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
-translates them into emissions. Miners who serve more request units at a competitive price with high
-response correctness earn proportionally higher rewards.
+lasts 360 blocks—roughly 72 minutes at 12 seconds per block—after which validators retrieve archived
+gateway logs from public storage and sample recorded request-response pairs. They re-execute the
+same RPC call against trusted reference nodes and compare response hashes; a single mismatch
+permanently bans the miner's coldkey. Miner weights are proportional to verified request units
+served multiplied by each miner's USD bid per request unit; unclaimed emissions go to a burn sink
+rather than being redistributed ([blockmachine.io/technology](https://blockmachine.io/technology),
+[blockmachine validator guide](https://github.com/taostat/blockmachine-validator)). Scores convert
+to on-chain weights through [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus).
 
 The subnet supports RPC traffic for multiple blockchain networks, including Bittensor's own chain,
 Ethereum, and BSC. A central registry maintained by the Blockmachine team distributes scoring
@@ -91,9 +92,10 @@ dedicated repositories for the [miner](https://github.com/taostat/blockmachine-m
 
 ## Reference Nodes Supply External Correctness Checks
 
-The blockmachine repository describes validators comparing miner responses against independent
-reference nodes rather than trusting gateway records alone
-([blockmachine repository](https://github.com/taostat/blockmachine)).
+The blockmachine repository describes validators comparing miner response hashes against independent
+reference-node re-executions rather than trusting gateway records alone
+([blockmachine repository](https://github.com/taostat/blockmachine),
+[blockmachine.io/technology](https://blockmachine.io/technology)).
 
 Correctness scoring therefore depends on re-querying the same data outside the routing layer.
 
