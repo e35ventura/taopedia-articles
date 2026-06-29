@@ -1,8 +1,8 @@
 ---
 title: "Subnet Weights"
 summary:
-  "How subnet weights describe each subnet's relative share of Bittensor emissions under the
-  flow-based emission model."
+  "How subnet weights describe each subnet's relative share of Bittensor cross-subnet TAO injection
+  under price-based allocation."
 category: "Tokenomics"
 tags: ["Tokenomics", "Subnets"]
 infoboxTitle: Subnet Weights
@@ -11,19 +11,19 @@ infoboxRows:
   - label: Context
     value: Emission allocation
   - label: Signal
-    value: Net TAO flow
+    value: EMA token price
   - label: Smoothing
-    value: EMA-based
+    value: SubnetMovingPrice
   - label: Related
     value: Dynamic TAO
 ---
 
 # Subnet Weights
 
-Subnet weights describe how Bittensor compares subnets for cross-subnet emission allocation. They
-are tied to net TAO flows and the flow-based emission model
+Subnet weights describe how Bittensor compares subnets for cross-subnet TAO reserve injection. They
+are tied to each subnet's EMA token price under price-based allocation
 ([Glossary: Subnet Weights](https://docs.learnbittensor.org/resources/glossary#subnet-weights),
-[Emission: Distribution Across Subnets](https://docs.learnbittensor.org/learn/emissions#distribution-across-subnets)).
+[Emission](https://docs.learnbittensor.org/learn/emissions)).
 
 The term is about relative emission share across subnets. It is not the same as validator weights,
 weight vectors, or weights used inside a single subnet's consensus process.
@@ -31,14 +31,16 @@ weight vectors, or weights used inside a single subnet's consensus process.
 ## What It Represents
 
 Subnet weights compare subnets for relative TAO injection share before rewards are resolved inside
-any one subnet. The signal is net TAO flow smoothed with an exponential moving average; positive net
-inflows increase relative share, while negative net flow can zero out injection after clipping
-([Emission: Distribution Across Subnets](https://docs.learnbittensor.org/learn/emissions#distribution-across-subnets),
-[Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema#subnet-flow-emission-smoothing)).
+any one subnet. Cross-subnet injection is assigned in proportion to each subnet's EMA token price
+(SubnetMovingPrice), so higher-priced subnets receive a larger share of each block's TAO reserve
+injection ([Emission](https://docs.learnbittensor.org/learn/emissions),
+[Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)).
 
-Registration burns from `burned_register` are excluded from net inflows, while stake and unstake
-operations count. Subnet weights therefore respond to staking movement rather than UID purchase
-burns alone ([Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register)).
+An earlier flow-based model that compared net TAO movement across subnets was used until June 2026
+and is now deprecated. Under that older model, subnet weights responded to smoothed net inflows from
+stake and unstake activity rather than to token price
+([Flow-Based Emissions](https://docs.learnbittensor.org/learn/flow-based-emissions),
+[Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema#subnet-flow-emission-smoothing)).
 
 Cross-subnet allocation examples should not be read as representing production injection shares on
 another network ([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
@@ -86,15 +88,29 @@ within Dynamic TAO tokenomics
 - **Subnet weights** — relative allocation share across subnets.
 - **Alpha token** — subnet-specific asset within Dynamic TAO.
 
+## Distinction from Alpha Price
+
+Subnet weights set each subnet's relative cross-subnet injection share. Alpha price is the
+subnet-local pool ratio that prices alpha against TAO inside one netuid
+([Glossary: Subnet Weights](https://docs.learnbittensor.org/resources/glossary#subnet-weights),
+[Glossary: Alpha Price](https://docs.learnbittensor.org/resources/glossary#alpha-price)).
+
+Price-based allocation uses each subnet's EMA token price as the cross-subnet signal. Alpha price
+still names the instantaneous pool ratio readers use for swaps and staking math on that subnet
+alone.
+
+- **Subnet weights** — relative cross-subnet share of TAO reserve injection.
+- **Alpha price** — subnet-local TAO-to-alpha pool ratio on one netuid.
+
 ## Distinction from Smoothing
 
-Subnet weights use a smoothed net-flow signal rather than raw event totals. Smoothing keeps brief
-movement from being treated as a durable allocation signal
-([Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema#subnet-flow-emission-smoothing),
-[Emission: Distribution Across Subnets](https://docs.learnbittensor.org/learn/emissions#distribution-across-subnets)).
+Under the deprecated flow-based model, subnet weights used a smoothed net-flow signal rather than
+raw event totals. Price-based allocation instead compares subnets through SubnetMovingPrice, the EMA
+of each subnet's token price ([Emission](https://docs.learnbittensor.org/learn/emissions),
+[Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema#subnet-flow-emission-smoothing)).
 
-- **Subnet weights** — allocation shares derived from smoothed net flow.
-- **Smoothing** — EMA window that filters short-lived flow spikes.
+- **Subnet weights** — relative cross-subnet injection shares under price-based allocation.
+- **Smoothing** — EMA window that stabilizes the price signal used for cross-subnet comparison.
 
 ## Reader Boundary
 
