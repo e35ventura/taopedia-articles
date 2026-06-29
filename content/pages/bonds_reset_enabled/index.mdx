@@ -1,0 +1,185 @@
+---
+title: "Bonds Reset Enabled"
+summary:
+  "How the bonds reset enabled subnet hyperparameter controls whether accumulated validator-miner
+  bonds can be cleared so a neuron's standing rebuilds from scratch."
+category: "Consensus"
+tags: ["Consensus", "Validation"]
+infoboxTitle: Bonds Reset Enabled
+infoboxCaption: Per-subnet toggle for clearing validator-miner bonds.
+infoboxRows:
+  - label: Parameter
+    value: BondsResetEnabled
+  - label: Context
+    value: Yuma Consensus bond path
+  - label: Type
+    value: Boolean
+  - label: Default
+    value: "False"
+  - label: Example
+    value: netuid 1
+  - label: Set by
+    value: Subnet owner or root
+---
+
+# Bonds Reset Enabled
+
+Bonds reset enabled is a per-subnet hyperparameter, listed in the documentation as
+`BondsResetEnabled`, that controls whether accumulated validator-miner bonds can be cleared on a
+subnet so a neuron's standing rebuilds from scratch. It is a boolean flag stored per subnet, not a
+value that shapes scoring on its own
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[BondsResetOn storage](https://subtensor.com/reference/subtensormodule/storage/BondsResetOn)).
+
+The flag belongs to the Yuma Consensus bond path. It decides whether the bond-reset capability is
+available; it does not change how validators evaluate miners or how weights are submitted
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+## What It Controls
+
+A validator-miner bond is the smoothed record of how much a validator has backed a miner over time,
+and that bond record is what pairs validators into the dividend split. Bonds reset enabled answers
+one narrow question: may that accumulated record be wiped for a neuron on this subnet
+([Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+When the flag is off, the reset path is a no-op and bonds keep accumulating through their normal
+exponential moving average smoothing. When the flag is on, the reset path is allowed to run and
+clear the bonds directed at a neuron, so its standing has to rebuild from the next epoch onward
+([BondsResetOn storage](https://subtensor.com/reference/subtensormodule/storage/BondsResetOn)).
+
+The trade-off is continuity versus responsiveness. Keeping bonds produces more historical continuity
+and steadier ranking; allowing resets produces more dynamic ranking but discards the bond record
+that would otherwise carry forward
+([BondsResetOn storage](https://subtensor.com/reference/subtensormodule/storage/BondsResetOn)).
+
+## How the Reset Works
+
+The on-chain reset is gated by this flag. The `do_reset_bonds` routine first reads the subnet's
+bonds-reset setting and returns immediately when it is disabled, so no bonds change unless the
+subnet has opted in
+([run_epoch.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/epoch/run_epoch.rs)).
+
+When the flag is enabled, the routine resolves the target neuron's UID and then walks each
+validator's stored bond vector, removing the entries that point at that UID. The bond mass other
+validators had built toward that neuron is dropped, while bonds toward other neurons are left intact
+([run_epoch.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/epoch/run_epoch.rs)).
+
+Because the clearing is scoped to one UID rather than a subnet-wide wipe, a reset targets a single
+neuron's accumulated standing. Validators then rebuild bonds toward that neuron through the normal
+per-epoch smoothing update ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+## Documented Type and Setter
+
+The [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+reference lists `BondsResetEnabled` as a boolean that enables or disables periodic bond resets, with
+a default of `False`. The value in force is per-subnet chain state stored in the `BondsResetOn` map
+and should be read for that subnet rather than assumed from another subnet's setting
+([BondsResetOn storage](https://subtensor.com/reference/subtensormodule/storage/BondsResetOn)).
+
+It is set with the `sudo_set_bonds_reset_enabled` extrinsic, callable by the subnet owner or root,
+which updates the flag and emits a `BondsResetToggled` event; the call carries the netuid and the
+boolean to apply
+([sudo_set_bonds_reset_enabled](https://subtensor.com/reference/adminutils/calls/sudo_set_bonds_reset_enabled),
+[Extrinsics: sudoSetBondsResetEnabled](https://docs.learnbittensor.org/subtensor-api/extrinsics)).
+
+## Distinction from Validator-Miner Bonds
+
+Validator-miner bonds name the smoothed standing a validator accumulates toward miners. Bonds reset
+enabled names whether that accumulated standing may be cleared for a neuron on the subnet
+([Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+- **Validator-miner bonds** — the bond state that accumulates through smoothing.
+- **Bonds reset enabled** — the toggle deciding whether that state may be wiped.
+
+## Distinction from Bonds Moving Average
+
+Bonds moving average sets how quickly bond history reacts to new weights under normal operation.
+Bonds reset enabled does not tune that smoothing speed; it governs whether the accumulated result
+can be discarded entirely
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema)).
+
+- **Bonds moving average** — how fast bonds smooth toward new weights.
+- **Bonds reset enabled** — whether bonds can be cleared back to nothing.
+
+## Distinction from Bonds Penalty
+
+Bonds penalty sets how much weight is subtracted for exceeding the subnet consensus benchmark before
+bonds update. Bonds reset enabled acts on the stored bond result, not on the per-epoch penalty
+applied to out-of-consensus weights
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+- **Bonds penalty** — the penalty magnitude on out-of-consensus weights each epoch.
+- **Bonds reset enabled** — whether accumulated bonds can be cleared.
+
+## Distinction from Liquid Alpha
+
+Liquid alpha varies the bond-smoothing factor by a pair's consensus alignment within configured
+bounds. Bonds reset enabled is a separate switch that allows the bond state to be cleared rather
+than smoothed
+([Consensus-Based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+- **Liquid alpha** — varies how fast bonds smooth, by alignment.
+- **Bonds reset enabled** — whether bonds can be reset to zero.
+
+## Distinction from Deregistration
+
+Deregistration removes a neuron from its UID slot when capacity is needed. Bonds reset enabled does
+not remove a neuron; it clears the bonds pointing at a UID while the neuron keeps its slot
+([Glossary: Deregistration](https://docs.learnbittensor.org/resources/glossary#deregistration),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+- **Deregistration** — removal of a neuron from its slot.
+- **Bonds reset enabled** — clearing of bond standing without removing the neuron.
+
+## Chain Reads for netuid 1
+
+Readers can verify the live bonds-reset setting for the documented example netuid with
+`btcli subnet hyperparameters --netuid 1 --network finney`
+([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
+
+That read path keeps live hyperparameter claims tied to a parseable netuid. The infobox uses netuid
+1 only as an example label for reading one subnet's hyperparameter row on Finney mainnet; it is not
+proof that every subnet shares the same setting
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Per-Subnet Live Value Boundary
+
+Bonds reset enabled is per-subnet chain state. The setting on one netuid governs only whether bonds
+can be cleared on that subnet, and different subnets may choose different bond-reset policies, so an
+observed reset on one netuid should not be read as network-wide behavior
+([BondsResetOn storage](https://subtensor.com/reference/subtensormodule/storage/BondsResetOn),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Distinction from Yuma Consensus
+
+Yuma Consensus is the epoch-boundary settlement that aggregates validator weights, applies clipping
+and bonding, and turns the result into incentive and dividend shares. Bonds reset enabled is one
+bond-path switch that can clear bond standing before that settlement reads it
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
+[Emission](https://docs.learnbittensor.org/learn/emissions)).
+
+- **Bonds reset enabled** — toggle for clearing bond standing on the path into settlement.
+- **Yuma Consensus** — settlement that turns validator weights into emission shares each epoch.
+
+## Reader Boundary
+
+Bonds reset enabled is a per-subnet boolean on the bond path. It is not a scoring metric, a
+validator recommendation, or a guarantee about ranking outcomes; exact behavior depends on the
+subnet's setting and consensus data on the selected netuid
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+## Further Reading
+
+- [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+- [BondsResetOn storage](https://subtensor.com/reference/subtensormodule/storage/BondsResetOn)
+- [sudo_set_bonds_reset_enabled](https://subtensor.com/reference/adminutils/calls/sudo_set_bonds_reset_enabled)
+- [Extrinsics: sudoSetBondsResetEnabled](https://docs.learnbittensor.org/subtensor-api/extrinsics)
+- [run_epoch.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/epoch/run_epoch.rs)
+- [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
+- [Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds)
