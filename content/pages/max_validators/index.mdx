@@ -52,6 +52,21 @@ keeps the total number of permitted validators constant
 [Glossary: Validator Permit](https://docs.learnbittensor.org/resources/glossary#validator-permit),
 [Glossary: Stake Weight](https://docs.learnbittensor.org/resources/glossary#stake-weight)).
 
+## The Subnet Owner Permit Sits Outside the Stake Ranking
+
+Filling the cap by stake ranking has one documented exception. During the epoch computation, permits
+are first assigned to the highest-stake neurons up to the cap through
+`is_topk_nonzero(&stake, max_allowed_validators)`, after which the subnet owner UID permit is
+force-set to `true` regardless of where its stake ranks
+([`run_epoch.rs`](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/epoch/run_epoch.rs)).
+
+For a reader, that means the cap bounds the stake-ranked permits, but the owner seat is granted on
+top of that ranking rather than competing for a slot within it. An owner whose stake would otherwise
+fall outside the top set still keeps a permit, so the "top stake holders up to the cap" rule should
+be read as the stake-ranked portion of the permitted set plus the owner exception
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Glossary: Validator Permit](https://docs.learnbittensor.org/resources/glossary#validator-permit)).
+
 ## Registration Count Can Exceed the Validator Cap
 
 A subnet can register more neurons than its max-validators setting allows. The hyperparameter caps
