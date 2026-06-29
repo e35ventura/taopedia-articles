@@ -39,7 +39,24 @@ Child hotkeys are configured for a specific subnet, identified by
 child hotkeys on a given netuid, and the same parent can hold a separate set of children on a
 different netuid. Child-hotkey statements therefore need the netuid attached before readers compare
 limits, take settings, or routed stake shares across subnets
-([Chain Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+([Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys),
+[Chain Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+
+The child-hotkeys guide documents a 150-block cooldown (about 30 minutes) between successful
+`set_children` calls on a subnet, including when a parent revokes every child by setting an empty
+list. Both set and revoke paths share that limit because revoking is implemented as another
+`set_children` call ([Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys),
+[Chain Rate Limits: Child hotkey operations rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#child-hotkey-operations-rate-limit)).
+
+Before children can be configured, the parent hotkey must meet a documented minimum stake threshold:
+1,000 TAO worth of alpha on mainnet or 100 TAO on testnet. The check sums TAO-equivalent alpha stake
+across all subnets, not only on the netuid where children are being set. Readers can query the live
+threshold with `subtensorModule.stakeThreshold()` on chain
+([Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys)).
+
+The guide's setting example uses `btcli stake child set --netuid 1` with a parent hotkey, child SS58
+list, and proportions. That command form makes the target netuid explicit when routing stake to
+children on one subnet ([Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys)).
 
 Readers should separate take vocabulary on the same delegation path:
 
@@ -141,8 +158,9 @@ be read as representing production validator configuration on another network
 This page defines the concept at a high level. It does not report which child hotkeys a parent
 currently has, current take values, current stake proportions, or wallet ownership. Those are live
 chain state and change over time; they should be checked for the relevant netuid with the Bittensor
-CLI when current data is needed. The numeric rules described here, such as the five-child limit and
-the 18% take ceiling, are protocol limits from the documentation.
+CLI when current data is needed. The numeric rules described here, such as the five-child limit, the
+150-block set/revoke cooldown, the mainnet and testnet minimum-stake thresholds, and the 18% take
+ceiling, are protocol limits from the documentation.
 
 ## Further Reading
 
