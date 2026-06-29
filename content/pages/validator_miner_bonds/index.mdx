@@ -33,17 +33,66 @@ dividends
 
 ## What It Represents
 
-Yuma Consensus places bonding after validator weights are compared with consensus. Weights are fresh
-evaluation signals, while bonds carry a smoothed validator-miner relationship across consensus
-rounds using exponential moving average behavior
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
-[Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema),
-[Glossary: Exponential Moving Average (EMA)](https://docs.learnbittensor.org/resources/glossary#exponential-moving-average-ema)).
+Validator-miner bonds carry a smoothed validator-miner relationship across Yuma passes. Weights are
+fresh evaluation signals each epoch; bonds accumulate how that evaluation history connects a
+validator to each miner over time
+([Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
 On netuid 1, bond examples illustrate one subnet's metagraph relationship fields. They should not be
 read as representing production validator-miner relationships on another network
 ([Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph),
 [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Instant Bond From Stake-Weighted Weights
+
+Each epoch, Yuma forms an instantaneous bond `ΔB_ij` between validator `i` and miner `j` from
+stake-weighted bond-weights. Documentation gives:
+
+`ΔB_ij = (S_i · W̃_ij) / Σ_k S_k · W̃_kj`
+
+where `S_i` is validator `i`'s stake and `W̃_ij` is that validator's bond-weight toward miner `j`
+after out-of-consensus adjustment toward the consensus benchmark
+([Yuma Consensus: Bonding mechanics](https://docs.learnbittensor.org/learn/yuma-consensus#bonding-mechanics),
+[Glossary: Stake Weight](https://docs.learnbittensor.org/resources/glossary#stake-weight)).
+
+Instant bonds therefore normalize each validator's influence across miners on the subnet. Bond
+vocabulary names the smoothed history built from these per-epoch contributions, not the raw weight
+vector a validator submitted
+([Glossary: Weight Vector](https://docs.learnbittensor.org/resources/glossary#weight-vector)).
+
+## EMA Smoothing Across Epochs
+
+Yuma does not use instantaneous bonds directly in dividend allocation. Each pair's bond state
+updates with an exponential moving average:
+
+`B_ij^(t) = α · ΔB_ij^(t) + (1 − α) · B_ij^(t−1)`
+
+where `α` is the smoothing factor from the subnet's bond-smoothing path and `t` is the current epoch
+([Yuma Consensus: Bonding mechanics](https://docs.learnbittensor.org/learn/yuma-consensus#bonding-mechanics),
+[Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema)).
+
+[Consensus-based weights](https://docs.learnbittensor.org/concepts/consensus-based-weights) can make
+`α` vary by validator-miner pair from consensus alignment.
+[Bonds moving average](https://docs.learnbittensor.org/subnets/subnet-hyperparameters) and
+liquid-alpha settings configure the baseline smoothing envelope on a subnet
+([Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds)).
+
+## Bonds Feed Validator Dividends
+
+Smoothed bonds pair with miner
+[incentives](https://docs.learnbittensor.org/resources/glossary#incentives) to produce validator
+[dividends](https://docs.learnbittensor.org/resources/glossary#dividends):
+
+`V_i = Σ_j B_ij · M_j`
+
+where `M_j` is miner `j`'s incentive outcome from the same Yuma pass
+([Yuma Consensus: Validator emissions](https://docs.learnbittensor.org/learn/yuma-consensus#validator-emissions),
+[Glossary: Dividends](https://docs.learnbittensor.org/resources/glossary#emission)).
+
+Bond vocabulary names the relationship state on the validator path; dividend vocabulary names the
+credited validator-side outcome that results from multiplying those bonds against miner incentives
+([Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)).
 
 ## Distinction from Weight Setting
 
@@ -68,12 +117,6 @@ those bond values are averaged over time
 - **Bonds moving average** — hyperparameter that sets smoothing across rounds.
 
 ## Distinction from Dividends
-
-Validator-miner bonds record the smoothed relationship Yuma uses during consensus. Dividends name
-the validator-side emission outcome that follows bonded miner evaluation
-([Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds),
-[Glossary: Dividends](https://docs.learnbittensor.org/resources/glossary#emission),
-[Yuma Consensus: Validator emissions](https://docs.learnbittensor.org/learn/yuma-consensus#validator-emissions)).
 
 - **Validator-miner bonds** — smoothed validator-miner relationship state.
 - **Dividends** — validator-side payout that follows bonded evaluation.
@@ -110,19 +153,6 @@ maintain separate bond pools for Yuma Consensus calculations
 - **Multiple incentive mechanisms** — split evaluation with separate bond pools.
 
 ## Distinction from Yuma Consensus
-
-Validator-miner bonds name smoothed relationships updated across Yuma passes. That bonding layer
-sits inside settlement, not outside it
-([Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-Yuma Consensus is the full on-chain tempo process that reads the weight matrix, applies clipping and
-bonding, and credits miner incentives and validator dividends when the epoch closes
-([Emission](https://docs.learnbittensor.org/learn/emissions)).
-
-Bond smoothing explains how validator-miner relationships evolve between passes. Yuma names the
-complete aggregation step that turns submitted weights into credited shares on the netuid
-([Yuma Consensus: Validator emissions](https://docs.learnbittensor.org/learn/yuma-consensus#validator-emissions)).
 
 - **Validator-miner bonds** — smoothed validator-miner relationships updated across Yuma passes.
 - **Yuma Consensus** — on-chain settlement that turns validator weights into emission shares.
