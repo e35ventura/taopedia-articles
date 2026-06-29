@@ -29,7 +29,9 @@ arranged so that doing this on its own does not pay
 
 Self-weighting names a validator inflating grades for entities it controls to steer reward toward
 itself. Consensus is stake-weighted agreement across validators, not any one validator's opinion;
-weights that outlie that agreement are clipped
+weights that outlie that agreement are clipped before they fully count toward miner
+[incentives](https://docs.learnbittensor.org/resources/glossary#incentives) and validator
+[dividends](https://docs.learnbittensor.org/resources/glossary#dividends)
 ([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism),
 [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
@@ -41,15 +43,51 @@ Examples tied to netuid 1 illustrate one subnet's clipping path. They should not
 representing production consensus behavior on another network
 ([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
 
-The reason is structural rather than a rule against any one validator. Consensus takes the
-stake-weighted agreement across validators, so a single validator's inflated grade for its own
-entity is an outlier against that agreement and is trimmed toward the consensus level before it
-affects reward
-([Yuma Consensus: Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping),
-[Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
+## How Outlier Self-Weights Are Clipped
 
-Moving the consensus level instead of being clipped would require a stake-weighted majority of
-validators to share the same view, so self-weighting pays only when enough independent stake already
+Self-weighting is resisted inside the same clipping step Yuma applies to every validator submission.
+For each miner column in the subnet
+[weight matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix), Yuma derives a
+[consensus score](https://docs.learnbittensor.org/resources/glossary#consensus-score) benchmark
+`W̄_j` from stake-weighted validator agreement
+([Yuma Consensus: Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping)).
+
+Each validator's submitted weight is then capped to that benchmark:
+
+`W̄_ij = min(W_ij, W̄_j)`
+
+Documentation states that weights above `W̄_j` are clipped, and neither the miner nor the submitting
+validator receives emissions for the excess portion
+([Yuma Consensus: Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping)).
+
+A lone validator inflating weights for its own miners therefore leaves only the capped `W̄_ij` values
+in the filtered matrix. The exploit signal survives only to the extent it still matches the
+stake-weighted majority benchmark.
+
+## Why a Lone Validator Gains Little
+
+After clipping, miner [rank](https://docs.learnbittensor.org/resources/glossary#rank) aggregates the
+filtered matrix with stake:
+
+`R_j = Σ_i S_i · W̄_ij`
+
+A single validator's inflated grade for a controlled miner is one row in that sum. When other
+validators disagree, the lone outlier row is capped at `W̄_j`, so it cannot by itself move `R_j`
+beyond what the broader agreement already supports
+([Yuma Consensus: Miner emissions](https://docs.learnbittensor.org/learn/yuma-consensus#miner-emissions)).
+
+On the validator side,
+[validator trust](https://docs.learnbittensor.org/resources/glossary#validator-trust) sums each
+validator's clipped contributions:
+
+`T_vi = Σ_j W̄_ij`
+
+The portion trimmed from an outlying self-weight therefore does not count toward the validator's own
+consensus standing, which weakens the dividend path that follows clipped aggregation
+([Yuma Consensus: Validator emissions](https://docs.learnbittensor.org/learn/yuma-consensus#validator-emissions)).
+
+Moving the consensus benchmark instead of being clipped would require a stake-weighted majority of
+validators to share the same view. Self-weighting pays only when enough independent stake already
 agrees, which is the opposite of one validator acting alone
 ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
 [Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)).
@@ -149,19 +187,11 @@ is the on-chain flag recording whether a UID may submit non-self weights that co
 ## Distinction from Yuma Consensus
 
 Self-weighting names the pattern where a validator assigns disproportionate weight to its own hotkey
-or related entities. That submission-risk vocabulary is separate from the tempo pass that filters
-and settles weights into emission shares
+or related entities. Yuma Consensus is the epoch-boundary settlement that clips, bonds, and
+allocates emissions from the filtered weight matrix
 ([Glossary: Self Weighting](https://docs.learnbittensor.org/resources/glossary#self-weighting),
-[Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
-
-Yuma Consensus clips weights that exceed the stake-weighted consensus benchmark, then converts the
-filtered result into miner incentives and validator dividends at the epoch boundary
-([Yuma Consensus: Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping),
+[Yuma Consensus: Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping),
 [Emission](https://docs.learnbittensor.org/learn/emissions)).
-
-Self-weighting describes what a validator attempted in its submission. Yuma describes how those
-signals are filtered and credited on the relevant netuid
-([Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score)).
 
 - **Self-weighting** — validator overweighting its own hotkey or controlled entities.
 - **Yuma Consensus** — epoch-boundary settlement with clipping, bonding, and dividend allocation.
