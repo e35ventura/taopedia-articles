@@ -50,7 +50,7 @@ It is a participation gate, not a performance score: it decides whether a valida
 weights still enter the current Yuma Consensus pass, not how good those weights are or how much the
 validator earns ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
-## Documented Type and Default
+## Documented Type, Default, and Setter
 
 The [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
 reference lists `ActivityCutoffFactor` as a `u32` with a default of 13,889. The default is chosen so
@@ -60,12 +60,27 @@ owner-tunable per subnet, so the live value on one netuid can differ from the de
 another subnet's value
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
+It is changed through the `set_activity_cutoff_factor` extrinsic, exposed in tooling as
+`btcli sudo set --param activity_cutoff_factor`, and the reference marks the permission required to
+set it as subnet owner
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+The value is bounded. The reference documents an allowed range from 1,000 to 50,000 per-mille,
+governed by `MinActivityCutoffFactorMilli` and `MaxActivityCutoffFactorMilli`, so a subnet owner
+cannot set tolerance below one tempo or above fifty
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+`ActivityCutoffFactor` is also one of the rows returned by the canonical `get_subnet_hyperparams_v3`
+runtime API, so the live factor for a subnet can be read from the current hyperparameter table
+rather than inferred from the default
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
 ## Reading the Live Value for netuid 1
 
 Activity cutoff factor is per-subnet chain state, so any live claim is tied to a specific netuid.
-For the documented example netuid 1 on Finney mainnet, the factor and the tempo it scales against
-appear in that subnet's hyperparameter table, which the reference describes under viewing a subnet's
-hyperparameters
+For the documented example netuid 1 on Finney mainnet, readers can verify the live factor and the
+tempo it scales against with `btcli subnet hyperparameters --netuid 1 --network finney`, which
+prints that subnet's hyperparameter table
 ([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
 The infobox uses netuid 1 only as an example label; other subnets expose their own values
 ([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
