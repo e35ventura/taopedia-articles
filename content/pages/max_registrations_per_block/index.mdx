@@ -1,0 +1,100 @@
+---
+title: "Max Registrations Per Block"
+summary:
+  "How MaxRegistrationsPerBlock caps how many neuron registrations can succeed on a subnet in a
+  single block."
+category: "Subnets"
+tags: ["Subnets", "Registration"]
+infoboxTitle: Max Registrations Per Block
+infoboxCaption: Per-block cap on successful subnet registrations.
+infoboxRows:
+  - label: Parameter
+    value: MaxRegistrationsPerBlock
+  - label: Scope
+    value: Per netuid
+  - label: Counter
+    value: RegistrationsThisBlock
+  - label: Example
+    value: netuid 1
+---
+
+# Max Registrations Per Block
+
+Max registrations per block is the per-subnet cap on how many neuron registrations can succeed in a
+single block. Subtensor exposes the value as `MaxRegistrationsPerBlock(netuid)` and tracks current
+block usage with `RegistrationsThisBlock(netuid)`
+([MaxRegistrationsPerBlock Storage](https://subtensor.com/reference/subtensormodule/storage/MaxRegistrationsPerBlock),
+[RegistrationsThisBlock Storage](https://subtensor.com/reference/subtensormodule/storage/RegistrationsThisBlock)).
+
+## What It Represents
+
+The value limits registration throughput for one netuid during the current block. If the counter for
+that netuid reaches the configured maximum, additional registration attempts in the same block fail
+with `TooManyRegistrationsThisBlock` and must wait for a later block
+([TooManyRegistrationsThisBlock](https://subtensor.com/reference/subtensormodule/errors/TooManyRegistrationsThisBlock)).
+
+This is a burst cap, not a registration price. A subnet can still use dynamic burn pricing through
+`BurnHalfLife`, `BurnIncreaseMult`, `MinBurn`, and `MaxBurn`; max registrations per block only
+answers how many successful entries can land in one block before the next block is needed
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+For netuid 1, readers can query `MaxRegistrationsPerBlock(1)` and compare it with
+`RegistrationsThisBlock(1)` to see whether the current block has remaining registration capacity.
+That example is parseable chain state for one subnet, not a claim that every subnet uses the same
+cap.
+
+## Distinction from Register
+
+Register is the action that claims a UID slot by paying the dynamic registration burn. Max
+registrations per block is the per-netuid limit on how many successful register actions can be
+accepted in one block
+([Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register),
+[MaxRegistrationsPerBlock Storage](https://subtensor.com/reference/subtensormodule/storage/MaxRegistrationsPerBlock)).
+
+- **Register** — subnet-entry action that assigns a UID slot.
+- **Max registrations per block** — current-block throughput cap for successful registrations.
+
+## Distinction from Registrations This Block
+
+Max registrations per block is the configured ceiling. Registrations this block is the live counter
+that records how many registrations have already succeeded on that netuid in the current block
+([RegistrationsThisBlock Storage](https://subtensor.com/reference/subtensormodule/storage/RegistrationsThisBlock)).
+
+- **Max registrations per block** — allowed count for the block.
+- **Registrations this block** — current count already used in the block.
+
+## Distinction from Max Allowed UIDs
+
+Max allowed UIDs caps how many neuron slots a subnet can hold overall. Max registrations per block
+caps how many successful entries can be processed in the same block before attempts must wait for
+the next block
+([Subnet Hyperparameters: MaxAllowedUIDs](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#maxalloweduids),
+[MaxRegistrationsPerBlock Storage](https://subtensor.com/reference/subtensormodule/storage/MaxRegistrationsPerBlock)).
+
+- **Max allowed UIDs** — total subnet capacity.
+- **Max registrations per block** — per-block registration throughput.
+
+## Distinction from Burn Increase Mult
+
+Burn increase mult raises the live registration burn after a successful registration. Max
+registrations per block limits how many such successful registrations can occur during the same
+block on one netuid
+([Subnet Hyperparameters: BurnIncreaseMult](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#burnincreasemult),
+[TooManyRegistrationsThisBlock](https://subtensor.com/reference/subtensormodule/errors/TooManyRegistrationsThisBlock)).
+
+- **Burn increase mult** — pricing step after successful registration.
+- **Max registrations per block** — block-level cap on successful registration count.
+
+## Reader Boundary
+
+This article defines the cap and its counter. It does not report the live value on any subnet, quote
+the current registration burn, or predict whether a particular registration transaction will win a
+slot. Those are live chain-state questions for the selected netuid and block.
+
+## Further Reading
+
+- [MaxRegistrationsPerBlock Storage](https://subtensor.com/reference/subtensormodule/storage/MaxRegistrationsPerBlock)
+- [RegistrationsThisBlock Storage](https://subtensor.com/reference/subtensormodule/storage/RegistrationsThisBlock)
+- [TooManyRegistrationsThisBlock](https://subtensor.com/reference/subtensormodule/errors/TooManyRegistrationsThisBlock)
+- [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+- [Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register)
