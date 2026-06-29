@@ -1,0 +1,109 @@
+---
+title: "Bonds Reset Enabled"
+summary:
+  "How the bonds reset enabled subnet hyperparameter gates whether validator-miner bond vectors may
+  be cleared after a ResetBondsFlag metadata commitment."
+category: "Consensus"
+tags: ["Consensus", "Subnets"]
+infoboxTitle: Bonds Reset Enabled
+infoboxCaption: Boolean gate for bond-reset capability.
+infoboxRows:
+  - label: Parameter
+    value: BondsResetEnabled
+  - label: Type
+    value: Bool
+  - label: Default
+    value: "False"
+  - label: Example
+    value: netuid 1
+  - label: Set by
+    value: Subnet owner
+---
+
+# Bonds Reset Enabled
+
+Bonds reset enabled is a per-subnet hyperparameter, listed in the documentation as
+`BondsResetEnabled`, that gates whether
+[validator-miner bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds) on
+a subnet may be cleared through the on-chain reset path. The reference describes it as determining
+whether bonds are reset-enabled, with a default of false so accumulated bond history ordinarily
+persists unless a subnet owner enables the capability
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## What It Controls
+
+The hyperparameter is a boolean capability switch, not a bond strength or smoothing setting. It
+decides whether `do_reset_bonds` may remove a hotkey's UID from stored bond vectors on that netuid;
+when the flag is false, the reset handler returns without changing bond storage
+([`do_reset_bonds`](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/epoch/run_epoch.rs),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+Validator-miner bonds are smoothed relationships that evolve across Yuma Consensus epochs and feed
+into [validator dividends](https://docs.learnbittensor.org/resources/glossary#emission). Bonds reset
+enabled does not change how bonds smooth during ordinary epoch updates; it only permits the separate
+metadata-triggered reset path described below
+([Yuma Consensus: Bonding mechanics](https://docs.learnbittensor.org/learn/yuma-consensus#bonding)).
+
+## How Bond Reset Is Triggered
+
+Bond reset is not automatic on registration changes or other ordinary neuron updates. The chain
+handles reset only after a hotkey submits a metadata commitment that includes the `ResetBondsFlag`
+field. The commitments pallet scans committed fields, records the block in `LastBondsReset`, and
+calls the runtime `OnMetadataCommitment` hook when that flag is present
+([`pallet_commitments`](https://github.com/opentensor/subtensor/blob/main/pallets/commitments/src/lib.rs)).
+
+The runtime wires that hook to `ResetBondsOnCommit`, which calls `do_reset_bonds` for each incentive
+mechanism on the netuid using the committing hotkey's account. `do_reset_bonds` first reads
+`BondsResetEnabled` for the subnet; if reset is disabled, it exits. If reset is enabled and the
+hotkey maps to a UID, it rewrites each validator's bond vector to drop entries targeting that UID
+([`ResetBondsOnCommit`](https://github.com/opentensor/subtensor/blob/main/runtime/src/lib.rs),
+[`do_reset_bonds`](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/epoch/run_epoch.rs)).
+
+Readers should therefore treat `BondsResetEnabled` as the subnet-level permission for that
+commitment-driven cleanup, and `ResetBondsFlag` as the per-hotkey signal that requests it.
+
+## Documented Type and Default
+
+The [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+reference lists `BondsResetEnabled` as a `Bool` with a default of false and marks the permission
+required to change it as subnet owner. The setter extrinsic is `sudo_set_bonds_reset_enabled`,
+exposed in tooling as `btcli sudo set --param bonds_reset_enabled`
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+With the default off, `do_reset_bonds` is a no-op even if a hotkey later commits `ResetBondsFlag`
+metadata on that netuid.
+
+## Reading the Live Value for netuid 1
+
+Bonds reset enabled is per-subnet chain state, so any live claim is tied to a specific netuid. For
+the documented example netuid 1 on Finney mainnet, the flag appears in that subnet's hyperparameter
+table, which the reference describes under viewing a subnet's hyperparameters
+([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
+The infobox uses netuid 1 only as an example label; other subnets expose their own values
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Distinction from Bonds Moving Average
+
+Bonds moving average sets how quickly validator-miner bonds smooth toward new weights during normal
+Yuma Consensus operation. Bonds reset enabled is the separate boolean that gates whether the
+`ResetBondsFlag` commitment path may clear a UID from stored bond vectors on that netuid
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Yuma Consensus: Bonding mechanics](https://docs.learnbittensor.org/learn/yuma-consensus#bonding)).
+
+- **Bonds moving average** — smoothing speed applied to bonds over time.
+- **Bonds reset enabled** — whether the metadata-triggered bond-reset path is active on the subnet.
+
+## Reader Boundary
+
+Bonds reset enabled should not be read as a command that resets bonds by itself, as proof that every
+registration event clears bond history, or as a substitute for reading whether a specific hotkey
+committed `ResetBondsFlag` metadata. It names the subnet hyperparameter that permits
+`do_reset_bonds` to run after that commitment when the flag is true on the relevant netuid
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## Further Reading
+
+- [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+- [Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds)
+- [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
+- [The Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)
