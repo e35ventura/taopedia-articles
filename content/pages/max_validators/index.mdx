@@ -8,8 +8,10 @@ tags: ["Subnets", "Validation"]
 infoboxTitle: Max Validators
 infoboxCaption: Cap on a subnet's validator count.
 infoboxRows:
-  - label: Context
-    value: Bittensor subnets
+  - label: Parameter
+    value: MaxAllowedValidators
+  - label: Type
+    value: u16
   - label: Example
     value: netuid 1
   - label: Setting
@@ -32,12 +34,25 @@ neurons, but only up to this maximum may serve as validators at the same time. I
 which specific neurons validate; it only sets the ceiling on how many can
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
-## Default and Setting
+## Documented Parameter, Type, and Setter
 
-The documentation lists a default of 64 and marks the parameter as set at the root level rather than
-by the subnet owner. The value actually in force is per-subnet chain state and can differ from the
-documented default, so the validator cap on netuid 1 can differ from another subnet's ceiling
+In the hyperparameter reference this cap is listed under the chain parameter name
+`MaxAllowedValidators`, a `u16` with a default of 64. The reader-facing "max validators" label and
+the `max_validators` tooling flag both map to that `MaxAllowedValidators` chain entry
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+The reader-facing name, the tooling flag, and the on-chain setter all differ. The cap is exposed in
+tooling as `btcli sudo set --param max_validators`, but the underlying setter extrinsic is named
+`sudo_set_max_allowed_validators`, and the reference marks the permission required to change it as
+root rather than subnet owner. Unlike most subnet hyperparameters, a subnet owner cannot raise or
+lower this ceiling on their own
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+The value actually in force is per-subnet chain state and can differ from the documented default, so
+the validator cap on netuid 1 can differ from another subnet's ceiling. It can be read for the
+documented example netuid with `btcli subnet hyperparameters --netuid 1 --network finney`, which
+keeps the cap claim reproducible against a parseable netuid
+([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
 
 Validator status on a subnet is granted through validator permits awarded to higher-stake neurons.
 The max-validators cap bounds how many permits can exist at once
