@@ -39,6 +39,33 @@ This also means a tempo claim needs context. A statement about cadence should sa
 explaining the concept or referring to a specific subnet setting
 ([Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo)).
 
+## Documented Type, Default, and Setters
+
+The [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+reference lists `tempo` as a `u16` with a default of `360` blocks, changed in tooling through
+`btcli sudo set --param tempo`.
+
+Unusually, tempo can be updated through one of two distinct setter extrinsics depending on the
+caller's permission, and they behave differently:
+
+- `set_tempo` requires subnet owner permission, is bounded to `[MinTempo, MaxTempo]` (360–50,400
+  blocks), and is rate-limited to one call per 360 blocks regardless of the current tempo.
+- `sudo_set_tempo` requires root permission, accepts any `u16`, and enforces neither those bounds
+  nor the rate limit
+  ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+The practical consequence is that a subnet owner can only move tempo within the documented band and
+no faster than once every 360 blocks, while a root call can set values outside that band. A reader
+who sees a tempo below 360 or above 50,400 on a subnet is therefore looking at a value that must
+have come from the root path rather than the owner setter
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+The value in force is per-subnet chain state and can differ from the default, so it should be read
+for the subnet in question. For the documented example netuid 1 on Finney mainnet it can be read
+with `btcli subnet hyperparameters --netuid 1 --network finney`, keeping the cadence claim
+reproducible against a parseable netuid
+([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
+
 ## Commit Reveal Timing
 
 Commit Reveal uses tempo-based timing for delayed weight visibility. Its reveal period is expressed
