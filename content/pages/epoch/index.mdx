@@ -8,10 +8,10 @@ infoboxCaption: Consensus period inside a Bittensor subnet.
 infoboxRows:
   - label: Context
     value: Subnet consensus
+  - label: Example
+    value: netuid 1
   - label: Cadence
     value: Tempo-defined
-  - label: Uses
-    value: Validator signals
   - label: Related
     value: Yuma Consensus
 ---
@@ -25,6 +25,61 @@ tempo and marks the timing window in which subnet consensus work is executed.
 The term is useful because it separates timing from scoring. An epoch names the period in which
 consensus processing occurs; the subnet's incentive mechanism and validator weights explain what is
 being evaluated inside that period.
+
+## When an Epoch Runs on netuid 1
+
+On each block, coinbase checks whether `should_run_epoch` is true for a subnet. For the documented
+example netuid 1 on Finney mainnet, that decision uses the subnet's stored `tempo` and the blocks
+since `LastEpochBlock`, with additional paths for owner-triggered pending epochs documented in the
+coinbase flow
+([Coinbase Implementation: Epoch execution](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase#7-epoch-execution)).
+
+Two subnets with the same tempo can still settle on different blocks because each netuid counts from
+its own last-epoch anchor rather than from a shared network schedule
+([Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)).
+
+## What Runs at the Epoch Boundary
+
+When the boundary arrives on a subnet such as netuid 1, coinbase drains pending emission and calls
+the Yuma `epoch()` pass for that netuid. That pass collects network state, filters weights, runs
+consensus, updates bonds, and returns miner and validator emission tuples
+([Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)).
+
+## Activity Cutoff Gates Active Validators on netuid 1
+
+Inside `epoch()` on a selected netuid, the implementation builds an inactive mask from each neuron's
+`last_update` against the subnet's activity cutoff. The epoch documentation states a neuron is
+inactive when `last_update + activity_cutoff < current_block`, and inactive stake is masked out
+before active stake is normalized
+([Implementation of the Yuma Consensus Epoch: Network State Collection](https://docs.learnbittensor.org/navigating-subtensor/epoch#1-network-state-collection)).
+
+On subnets with dynamic tempos, the effective cutoff used in that comparison is derived from
+[activity cutoff factor](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutofffactor)
+and tempo rather than from a fixed legacy block count alone
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## Weights Filtered Before Yuma Settlement
+
+Before consensus aggregation on netuid 1, the epoch pass recalculates validator permits from stake,
+masks weights from non-permitted validators, removes disallowed self-weights, and drops weights
+stale relative to target registration blocks, as documented in the epoch implementation flow
+([Implementation of the Yuma Consensus Epoch: Validator Permit Management](https://docs.learnbittensor.org/navigating-subtensor/epoch#3-validator-permit-management),
+[Implementation of the Yuma Consensus Epoch: Weight Processing](https://docs.learnbittensor.org/navigating-subtensor/epoch#5-weight-processing)).
+
+## Chain Reads for netuid 1
+
+Readers can anchor epoch-timing claims to Finney mainnet netuid 1 with
+`btcli subnet hyperparameters --netuid 1 --network finney`, which exposes `tempo` and
+`activity_cutoff_factor` for that subnet
+([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
+
+Per-neuron `last_update` and permit flags for the same netuid are read from the subnet metagraph
+rather than from the epoch label alone
+([Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)).
+
+The infobox uses netuid 1 only as an example label; epoch cadence and participation rules apply per
+netuid and can differ across subnets
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
 
 ## Distinction from Tempo
 
@@ -107,15 +162,14 @@ Period vocabulary names when signals arrive; emission vocabulary names the wider
 
 ## Distinction from Kappa
 
-Kappa sets the stake threshold used during an epoch's Yuma pass. Epoch names the period in which
-that pass runs
+Kappa sets the stake-weighted majority ratio used during an epoch's Yuma clipping pass. Epoch names
+the period in which that pass runs
 ([Subnet Hyperparameters: Kappa](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#kappa),
 [Glossary: Epoch](https://docs.learnbittensor.org/resources/glossary#epoch),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)). Kappa vocabulary belongs to
-clipping support inside the pass; epoch vocabulary names the pass itself.
+[Yuma Consensus: Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping)).
 
 - **Epoch** — concept vocabulary for this article's topic.
-- **Kappa** — related term at a different layer of the same flow.
+- **Kappa** — stake fraction that sets the consensus clipping ceiling inside the pass.
 
 The two labels answer different reader questions on the same path
 ([Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)).
@@ -173,6 +227,8 @@ account of reward outcomes.
 
 - [Glossary: Epoch](https://docs.learnbittensor.org/resources/glossary#epoch)
 - [Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo)
+- [Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)
+- [Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase)
 - [Glossary: Weight Vector](https://docs.learnbittensor.org/resources/glossary#weight-vector)
 - [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
 - [Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)
