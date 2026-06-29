@@ -49,12 +49,22 @@ other, and the live value is chain state rather than a network constant
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
 [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
 
-## Documented Type and Default
+## Documented Type, Default, and Setter
 
 The [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
 reference lists `YumaVersion` as a `Bool` with a default of false and marks the permission required
 to change it as subnet owner. With the default off, a subnet uses the v2 path unless an owner
 enables v3 for that netuid
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+The reader-facing parameter name and its on-chain setter differ. The flag is exposed in tooling as
+`btcli sudo set --param yuma_version`, but the underlying setter extrinsic is named
+`sudo_set_yuma3_enabled`, reflecting that toggling the version on is what enables the v3 path
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+`YumaVersion` is also one of the rows returned by the canonical `get_subnet_hyperparams_v3` runtime
+API, so the live consensus version for a subnet can be read from the current hyperparameter table
+rather than inferred from the default
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
 Because each subnet carries its own hyperparameters, the consensus version on one netuid can differ
@@ -64,8 +74,9 @@ from the documented default and from the version active on another subnet
 ## Reading the Live Value for netuid 1
 
 Yuma version is per-subnet chain state, so any live claim is tied to a specific netuid. For the
-documented example netuid 1 on Finney mainnet, the flag appears in that subnet's hyperparameter
-table, which the reference describes under viewing a subnet's hyperparameters
+documented example netuid 1 on Finney mainnet, readers can verify the live flag with
+`btcli subnet hyperparameters --netuid 1 --network finney`, which prints that subnet's
+hyperparameter table including this Boolean row
 ([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
 The infobox uses netuid 1 only as an example label; other subnets expose their own values
 ([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
