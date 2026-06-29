@@ -35,7 +35,7 @@ current value of 1000, changed through the `sudo_set_stake_threshold` extrinsic 
 The threshold is applied during each subnet's epoch as a filter on validator-permit candidates. The
 epoch reads the global stake threshold and zeroes out any hotkey whose stake weight falls below it,
 so neurons under the threshold are excluded from permit selection before ranking
-([Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch),
+([Yuma Consensus Epoch: Validator Permit Management](https://docs.learnbittensor.org/navigating-subtensor/epoch#3-validator-permit-management),
 [Validating in Bittensor](https://docs.learnbittensor.org/validators)).
 
 Meeting the threshold is necessary but not sufficient. After below-threshold stakes are filtered
@@ -43,7 +43,7 @@ out, the top neurons by stake weight up to
 [MaxAllowedValidators](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#maxallowedvalidators)
 receive the permits; a neuron can clear the threshold and still miss a permit if it does not rank
 highly enough ([Validating in Bittensor](https://docs.learnbittensor.org/validators),
-[Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)).
+[Yuma Consensus Epoch: Validator Permit Management](https://docs.learnbittensor.org/navigating-subtensor/epoch#3-validator-permit-management)).
 
 The value is measured in stake weight, which the validator documentation defines as a hotkey's alpha
 stake plus its TAO stake scaled by the `tao_weight` parameter. The threshold compares against that
@@ -67,17 +67,14 @@ threshold sits at the boundary between merely being registered and being able to
 ## Documented Type, Default, and Setter
 
 The [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
-reference lists `StakeThreshold` under global root state variables with a default of 1000. On chain,
-Subtensor stores the value as `u64` and changes it through the
-`sudo_set_stake_threshold(min_stake: u64)` extrinsic at root permission; the reference currently
-lists `u12`, which does not match the implementation. The reference lists no `btcli` setter for this
-parameter. A change emits the `StakeThresholdSet` on-chain event
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
-[`StakeThreshold` storage](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/lib.rs)).
+reference lists `StakeThreshold` under global root state variables with a default of 1000. The
+setter extrinsic accepts a `u64` minimum stake argument at root permission. The reference lists no
+`btcli` setter for this parameter. A change emits the `StakeThresholdSet` on-chain event
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
-The epoch implementation reads this value with a stake-threshold getter and uses it as the minimum
+The epoch implementation reads this value through `get_stake_threshold()` and uses it as the minimum
 stake comparison when filtering permit candidates on every subnet
-([Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)).
+([Yuma Consensus Epoch: Stake Processing and Validation](https://docs.learnbittensor.org/navigating-subtensor/epoch#2-stake-processing-and-validation)).
 
 ## Reading the Live Value for netuid 1
 
