@@ -71,6 +71,30 @@ After entry, immunity period and deregistration describe later subnet lifecycle 
 slot. Registration starts participation; those terms describe what can happen to the slot afterward
 ([Glossary: Immunity Period](https://docs.learnbittensor.org/resources/glossary#immunity-period)).
 
+Miner registration on netuid 1 still depends on the subnet's `registration_allowed` switch. When
+`NetworkRegistrationAllowed` is off for that netuid, new miner entry is rejected even if the
+participant could pay the live neuron registration burn
+([Subnet Hyperparameters: NetworkRegistrationAllowed](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#networkregistrationallowed),
+[Mining: Miner registration](https://docs.learnbittensor.org/miners#miner-registration)).
+
+The mining guide documents registration with `btcli subnet register --netuid 1` after checking the
+recycled TAO cost with `btcli subnets show --netuid 1`. The burn on that netuid is dynamic: each
+successful registration steps the price up through `BurnIncreaseMult` and decay between claims
+follows `BurnHalfLife`, bounded by `MinBurn` and `MaxBurn`
+([Mining: Miner registration](https://docs.learnbittensor.org/miners#miner-registration),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+When every UID slot on netuid 1 is occupied, a new registration still succeeds by displacing the
+lowest pruning-score neuron outside immunity. Mining documentation states the chain does not treat
+miners and validators differently for that displacement step
+([Mining: Miner deregistration](https://docs.learnbittensor.org/miners#miner-deregistration),
+[Glossary: Pruning Score](https://docs.learnbittensor.org/resources/glossary#pruning-score)).
+
+The subnet owner's hotkey on a netuid carries permanent immunity from deregistration, separate from
+the block-counted immunity period that starts when any new miner registers
+([Mining: Immunity period](https://docs.learnbittensor.org/miners#immunity-period),
+[Glossary: Immunity Period](https://docs.learnbittensor.org/resources/glossary#immunity-period)).
+
 ## Distinction from Recycling
 
 - **Miner registration** — entry process that grants a miner UID slot.
@@ -106,8 +130,10 @@ slot. Registration starts participation; those terms describe what can happen to
 ## Reader Boundary
 
 Miner registration should not be read as a recommendation to join any particular subnet, as a
-command tutorial, or as a guarantee of emissions. It is the concept term for how a miner enters a
-subnet UID slot and begins participating in subnet mining vocabulary.
+complete command tutorial, or as a guarantee of emissions. It does not report whether registration
+is open on a netuid, the live recycled burn quote on netuid 1, or which UID would be displaced on a
+full subnet. Those are live chain reads at registration time
+([Mining: Miner registration](https://docs.learnbittensor.org/miners#miner-registration)).
 
 ## Further Reading
 
