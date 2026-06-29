@@ -95,6 +95,17 @@ all name the same movement
 ([Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets),
 [Emission](https://docs.learnbittensor.org/learn/emissions)).
 
+During a TAO halving, alpha rewards paid to miners, validators, and subnet owners do not halve and
+remain constant; only the reserve-side alpha injection tied to matched TAO pool movement is cut
+([Effect on Alpha Emissions](https://docs.learnbittensor.org/concepts/halving#effect-on-alpha-emissions)).
+An alpha halving on that subnet is different: it reduces the amount of
+[protocol alpha](https://docs.learnbittensor.org/resources/glossary#protocol-alpha) distributed to
+those roles each block by half
+([Alpha Halvings](https://docs.learnbittensor.org/concepts/halving#alpha-halvings)).
+
+Readers comparing halving headlines should ask whether the statement refers to network TAO issuance,
+matched pool injection, or a uniform participant payout cut on one subnet.
+
 ## Dynamic TAO
 
 Dynamic TAO gives subnets alpha-token reserves and outstanding alpha, so halving statements need to
@@ -128,6 +139,20 @@ For readers, the relevant distinction is what the halving measures and when it a
 halvings activate at network-level supply thresholds, while subnet alpha halvings use subnet-level
 alpha issuance thresholds.
 
+## ADR Links TAO and Alpha Halving Indexes
+
+The [Glossary: ADR](https://docs.learnbittensor.org/resources/glossary#adr-alpha-distribution-ratio)
+entry defines Alpha Distribution Ratio as a comparison of alpha distributed outside the pool with
+alpha injected into the pool. Under the current protocol, ADR tracks two raised to the power of (k
+minus n), where k is the global TAO halving index and n is the subnet's alpha halving index
+([Halving Mechanisms](https://docs.learnbittensor.org/concepts/halving),
+[Glossary: Halving](https://docs.learnbittensor.org/resources/glossary#halving)).
+
+That formula connects two halving scopes into one readable ratio on a subnet. Network TAO halving
+progress and a subnet's alpha halving progress can diverge because each mechanism watches its own
+issuance total. ADR names how far those schedules have moved relative to each other; halving
+mechanisms name when each emission rate drops after its own supply threshold.
+
 ## Development Stage Context
 
 The
@@ -154,99 +179,13 @@ not be read as representing production issuance behavior on another network.
 
 ## Distinction from Alpha Halving
 
-Alpha halving is a subnet milestone that cuts that subnet's alpha emission rate after a supply
-threshold ([Alpha Halvings](https://docs.learnbittensor.org/concepts/halving#alpha-halvings)).
-
-Halving mechanisms name the supply-triggered rate-cut rules for TAO and subnet alpha. Alpha halving
-is the subnet-scoped instance of those rules on one subnet's alpha token.
-
-[Halving Mechanisms](https://docs.learnbittensor.org/concepts/halving) documentation states that
-during an alpha halving, the amount of
-[Glossary: Protocol Alpha](https://docs.learnbittensor.org/resources/glossary#protocol-alpha)
-distributed to miners, validators, and subnet owners each block is reduced by half. That reduction
-applies uniformly to all participants within the affected subnet
-([Alpha Halvings](https://docs.learnbittensor.org/concepts/halving#alpha-halvings)).
-
-That outcome differs from what a TAO halving does to the same participant-facing alpha stream. The
-halving source explains that alpha rewards to miners, validators, and subnet owners do not halve
-during a TAO halving and remain constant, while only the reserve-side alpha injection tied to TAO
-pool movement is cut
-([Effect on Alpha Emissions](https://docs.learnbittensor.org/concepts/halving#effect-on-alpha-emissions)).
-
-An alpha halving therefore names a subnet-level slowdown in future alpha paid out to roles, not a
-reserve injection adjustment alone. Readers comparing halving headlines should ask whether the
-statement refers to network TAO issuance, matched pool injection, or this uniform participant payout
-cut on one subnet.
-
-The [Glossary: ADR](https://docs.learnbittensor.org/resources/glossary#adr-alpha-distribution-ratio)
-entry defines Alpha Distribution Ratio as a comparison of alpha distributed outside the pool with
-alpha injected into the pool. Under the current protocol, ADR tracks two raised to the power of (k
-minus n), where k is the global TAO halving index and n is the subnet's alpha halving index.
-
-That formula connects two halving scopes into one readable ratio on a subnet. Network TAO halving
-progress and a subnet's alpha halving progress can diverge because each mechanism watches its own
-issuance total, and ADR gives vocabulary for how far those schedules have moved relative to each
-other ([Halving Mechanisms](https://docs.learnbittensor.org/concepts/halving),
-[Glossary: Halving](https://docs.learnbittensor.org/resources/glossary#halving)).
-
-ADR therefore sits beside halving mechanisms rather than replacing them. Halving mechanisms name
-when emission rates drop after supply thresholds; ADR names how the outside-pool versus
-pool-injection split responds to the gap between those indexes on a subnet using Dynamic TAO alpha
-reserves.
-
-Documentation keeps network-wide TAO halving and per-subnet alpha halving on separate tracks. TAO
-halving responds to network issuance milestones toward the documented supply ceiling, while alpha
-halving responds to each subnet's own alpha issuance threshold
-([Halving Mechanisms](https://docs.learnbittensor.org/concepts/halving),
+Halving mechanisms name the supply-triggered rate-cut rules for both network TAO and subnet alpha.
+Alpha halving is the subnet-scoped instance that cuts that subnet's alpha emission rate after its
+alpha issuance threshold ([Halving Mechanisms](https://docs.learnbittensor.org/concepts/halving),
 [Alpha Halvings](https://docs.learnbittensor.org/concepts/halving#alpha-halvings)).
 
-For readers, this is why halving language always needs a scope attached. A TAO halving event does
-not automatically imply an alpha halving on any particular subnet, and an alpha halving does not
-change the network TAO schedule
-([Glossary: Protocol Alpha](https://docs.learnbittensor.org/resources/glossary#protocol-alpha)).
-
-That separation also explains coinbase's role in both paths. Coinbase advances per-block issuance
-accounting that halving rules monitor, but the thresholds and rate cuts apply to the relevant supply
-total for each token type
-([Coinbase documentation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase)).
-
-When a TAO halving reduces subnet pool injection, the alpha injected alongside that TAO drops as
-well. Halving documentation describes that matched alpha as directly proportional to the subnet's
-TAO injections so the current price ratio can be maintained
-([Effect on Alpha Emissions](https://docs.learnbittensor.org/concepts/halving#effect-on-alpha-emissions)).
-
-[Emission](https://docs.learnbittensor.org/learn/emissions) documentation states the same
-reserve-side rule in plain terms: alpha is injected into a subnet's alpha reserve in proportion to
-TAO injection so pool growth does not by itself move alpha token price
-([Alpha reserve injection](https://docs.learnbittensor.org/learn/emissions#alpha-reserve-injection)).
-
-That proportional link explains why TAO halving language can appear in reserve discussions without
-renaming participant alpha rewards. The halving cuts how much matched alpha enters the pool with
-each TAO injection step; it does not, by itself, halve the separate alpha outstanding path paid to
-miners, validators, and subnet owners until an alpha halving applies on that subnet.
-
-Halving mechanisms name the supply thresholds and emission-rate reductions, while coinbase names the
-per-block process that distributes emissions and updates issuance totals. The
-[Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase)
-documentation covers block emission calculation and block reward amounts that follow a halving
-schedule.
-
-Each block, coinbase runs emission accumulation that advances the TAO and subnet alpha issuance
-totals halving rules monitor, injects liquidity into subnet pools, and accumulates pending emissions
-before epoch execution
-([Coinbase documentation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase)).
-
-Halving documentation explains when rates drop. Coinbase documentation explains the recurring block
-process that applies those rates through subnet emission paths.
-
-The [Glossary: Halving](https://docs.learnbittensor.org/resources/glossary#halving) ties halving
-timing to daily TAO recycling activity. When more TAO is recycled, the measured path toward an
-issuance threshold can slow.
-
-Recycling vocabulary describes tokens returned to the protocol supply path and subtracted from
-issuance accounting. Registration fees, transaction fees, and other recycled flows can change how
-quickly measured issuance approaches a halving threshold
-([Glossary: Recycling and burning](https://docs.learnbittensor.org/resources/glossary#recycling-and-burning)).
+- **Halving mechanisms** — supply-threshold rules that cut TAO or subnet alpha emission rates.
+- **Alpha halving** — one subnet's alpha emission-rate cut after its alpha issuance threshold.
 
 ## Distinction from TAO Halving
 
@@ -264,29 +203,6 @@ supply-triggered rate cuts that slow minting as issuance approaches that ceiling
 ([Halving Mechanisms](https://docs.learnbittensor.org/concepts/halving)).
 
 The cap bounds total supply; halving slows how quickly new tokens are emitted toward it.
-
-Each threshold crossing lowers the issuance rate without changing the ceiling itself, and recycling
-can return deducted TAO toward future emission, which pushes back when the next threshold is reached
-and extends the time until the next halving
-([Halving Mechanisms](https://docs.learnbittensor.org/concepts/halving),
-[Glossary: Recycling and burning](https://docs.learnbittensor.org/resources/glossary#recycling-and-burning)).
-
-Supply-based halving cuts the network issuance rate when cumulative
-[issuance](https://docs.learnbittensor.org/resources/glossary#issuance) crosses documented
-thresholds. The [Glossary: Halving](https://docs.learnbittensor.org/resources/glossary#halving)
-describes each event as cutting Bittensor's daily token emission rate in half, reducing how quickly
-new TAO enters circulation.
-
-That makes the issuance rate a moving figure along a supply-triggered schedule rather than a fixed
-calendar. Emission material documents the first such cut lowering the per-block network reward from
-1 TAO to 0.5 TAO, and later thresholds continue the same halving pattern as issuance climbs
-([Emission](https://docs.learnbittensor.org/learn/emissions),
-[Halving Mechanisms](https://docs.learnbittensor.org/concepts/halving)).
-
-Alpha halving follows the same rate-cut logic at subnet scope. After a subnet's alpha issuance
-reaches its threshold, that subnet's alpha emission rate drops while network TAO halving progress
-remains a separate schedule
-([Alpha Halvings](https://docs.learnbittensor.org/concepts/halving#alpha-halvings)).
 
 ## Distinction from Recycling
 
@@ -340,11 +256,8 @@ that converts validator weight submissions into emission shares each tempo
 ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
 [Emission](https://docs.learnbittensor.org/learn/emissions)).
 
-- **Halving Mechanisms** — bittensor uses supply-based TAO and subnet alpha halvings to reduce
-  emission.
+- **Halving mechanisms** — supply-based rate cuts for TAO and subnet alpha emissions.
 - **Yuma Consensus** — on-chain settlement that turns validator weights into emission shares.
-  Halving mechanisms reduce emission rates; Yuma processes validator weights into rewards
-  ([Yuma Consensus: Validator emissions](https://docs.learnbittensor.org/learn/yuma-consensus#validator-emissions)).
 
 ## Reader Boundary
 
@@ -363,6 +276,9 @@ the reserve side of Dynamic TAO rather than to participant alpha payout lines
 
 - [Halving Mechanisms](https://docs.learnbittensor.org/concepts/halving)
 - [Emission](https://docs.learnbittensor.org/learn/emissions)
+- [Glossary: Halving](https://docs.learnbittensor.org/resources/glossary#halving)
 - [Glossary: Issuance](https://docs.learnbittensor.org/resources/glossary#issuance)
+- [Glossary: ADR](https://docs.learnbittensor.org/resources/glossary#adr-alpha-distribution-ratio)
+- [Effect on Alpha Emissions](https://docs.learnbittensor.org/concepts/halving#effect-on-alpha-emissions)
 - [Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)
 - [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)
