@@ -32,6 +32,18 @@ submits weights, the number of entries it assigns must meet this minimum. It doe
 validator should score miners; it only sets how few weights a valid submission may contain
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
+## How the Floor Is Enforced
+
+The on-chain length check does not apply the configured minimum blindly. It first takes the smaller
+of the configured minimum and the subnet's current neuron count, so a subnet with fewer registered
+UIDs than the configured minimum only requires as many weights as there are neurons. A submission
+passes the check when its number of weights is at least that effective minimum
+([`check_length`](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+One submission is exempt from the floor: on a non-root subnet, a validator setting only its own
+single self-weight is accepted regardless of the configured minimum
+([`check_length`](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
 ## Default and Setting
 
 The documentation lists min allowed weights as a `u16` value with a default of 1, and marks it as
