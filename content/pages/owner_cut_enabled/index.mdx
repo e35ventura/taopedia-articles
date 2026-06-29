@@ -1,0 +1,127 @@
+---
+title: "Owner Cut Enabled"
+summary:
+  "How the owner cut enabled subnet hyperparameter switches whether a subnet owner receives their
+  cut of emissions at all, separate from how large that cut is."
+category: "Subnets"
+tags: ["Subnets", "Emission"]
+infoboxTitle: Owner Cut Enabled
+infoboxCaption: On/off switch for distributing the subnet owner's emission cut.
+infoboxRows:
+  - label: Parameter
+    value: OwnerCutEnabled
+  - label: Type
+    value: Bool
+  - label: Default
+    value: "true"
+  - label: Example
+    value: netuid 1
+  - label: Set by
+    value: Subnet owner
+---
+
+# Owner Cut Enabled
+
+Owner cut enabled is a per-subnet hyperparameter, listed in the documentation as `OwnerCutEnabled`,
+that controls whether the subnet owner receives their cut of emissions at all. The reference
+describes it as a boolean that, when set to `false`, stops the owner cut from being distributed,
+with a default of `true`
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## What It Controls
+
+The hyperparameter is a distribution switch, not a sizing dial. It decides whether the owner's share
+of subnet emissions is paid out, but it does not by itself set how large that share is. When
+enabled, the owner cut is distributed as usual each epoch; when disabled, that cut is simply not
+distributed, leaving the rest of the emission flow to miners and validators unchanged in structure
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Emission](https://docs.learnbittensor.org/learn/emissions)).
+
+Because it is a boolean toggle rather than a magnitude, it offers an owner an all-or-nothing choice
+about receiving their portion. A subnet owner can switch off their own cut entirely without changing
+the underlying take proportion, then switch it back on later
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## Documented Type, Default, and Setter
+
+The [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+reference lists `OwnerCutEnabled` as a `Bool` with a default of `true`. It is changed through the
+`sudo_set_owner_cut_enabled` extrinsic, and the reference marks the permission required to set it as
+subnet owner
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+`OwnerCutEnabled` is one of the parameters added in the v3 hyperparameter set and is exposed in the
+`get_subnet_hyperparams_v3` runtime API, so the live boolean for a subnet can be read from the
+current hyperparameter table rather than assumed from the default
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+Because each subnet carries its own hyperparameters, the owner-cut switch on one netuid can differ
+from the documented default and from the setting on another subnet
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## Distinction from Owner Cut Auto Lock Enabled
+
+Owner cut enabled and owner cut auto lock enabled are two separate booleans that act at different
+stages. Owner cut enabled decides whether the owner receives a cut at all; owner cut auto lock
+enabled decides how a received cut is handled, either added to the owner's conviction lock each
+epoch or received as free stake without auto-locking
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+The auto-lock switch only matters when the cut is actually being distributed. If owner cut enabled
+is `false`, there is no cut to lock or release, so the auto-lock setting has nothing to act on
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+- **Owner cut enabled** — whether the owner cut is distributed at all.
+- **Owner cut auto lock enabled** — whether a distributed cut is auto-locked or received as free
+  stake.
+
+## Distinction from Subnet Owner Take
+
+Subnet owner take describes the proportion of emissions reserved for the subnet owner. Owner cut
+enabled is the boolean that switches the distribution of that reserved portion on or off, so the
+take defines the size while this hyperparameter defines whether it is paid
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Emission](https://docs.learnbittensor.org/learn/emissions)).
+
+- **Subnet owner take** — the proportion of emission set aside for the owner.
+- **Owner cut enabled** — whether that set-aside portion is actually distributed.
+
+## Distinction from Yuma Consensus
+
+Owner cut enabled governs an emission-distribution switch for the owner's share. It does not run the
+epoch-boundary settlement that turns validator weights into miner incentives and validator dividends
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+Yuma Consensus reads the weight matrix, applies clipping and bonding, and allocates the emission
+shares each epoch on the active subnet. Owner cut enabled only decides whether the owner's portion
+is handed out; it does not rerank neurons or change how the consensus split is computed
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
+[Emission](https://docs.learnbittensor.org/learn/emissions)).
+
+- **Owner cut enabled** — on/off switch for distributing the owner's emission cut.
+- **Yuma Consensus** — epoch-boundary settlement from weights to emission shares.
+
+## Reading the Live Value for netuid 1
+
+Owner cut enabled is per-subnet chain state, so any live claim is tied to a specific netuid. For the
+documented example netuid 1 on Finney mainnet, readers can verify the live `OwnerCutEnabled` value
+with `btcli subnet hyperparameters --netuid 1 --network finney`, which prints the subnet's
+hyperparameter table including this boolean row
+([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
+The infobox uses netuid 1 only as an example label; other subnets expose their own values
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Reader Boundary
+
+This page defines the concept at a high level. It does not report whether the owner cut is currently
+enabled on any particular subnet, the size of that cut, or whether a received cut is auto-locked.
+Those are live chain state and related settings that should be checked for the relevant netuid. The
+default of `true` is the documented value, and the parameter is owner-settable per subnet.
+
+## Further Reading
+
+- [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+- [Emission](https://docs.learnbittensor.org/learn/emissions)
+- [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
+- [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)
