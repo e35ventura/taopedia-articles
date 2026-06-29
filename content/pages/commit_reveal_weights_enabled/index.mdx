@@ -53,21 +53,46 @@ commit reveal, and the live value is chain state rather than a network constant
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
 [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
 
-## Documented Type and Default
+## Documented Type, Default, and Setter
 
 The [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
-reference lists `CommitRevealWeightsEnabled` as a `Bool` with a default of false and marks the
-permission required to change it as subnet owner
+reference lists `CommitRevealWeightsEnabled` as a `Bool` with a default of false. It is changed
+through the `sudo_set_commit_reveal_weights_enabled` extrinsic, exposed in tooling as
+`btcli sudo set --param commit_reveal_weights_enabled`, and the reference marks the permission
+required to set it as subnet owner
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+`CommitRevealWeightsEnabled` is also one of the rows returned by the canonical
+`get_subnet_hyperparams_v3` runtime API, so the live flag for a subnet can be read from the current
+hyperparameter table rather than inferred from the default
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
 With the default off, subnets expose validator weights through the ordinary path unless an owner
 explicitly enables commit reveal for that netuid.
 
+## Pairing with the Reveal Period
+
+Enabling the flag activates the scheme but does not set how long weights stay concealed. That window
+is governed by the separate `CommitRevealPeriod` hyperparameter, a `u64` with a default of one, set
+through the `sudo_set_commit_reveal_weights_interval` extrinsic
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+The reveal period is measured in tempos, not blocks. The reference notes that with a period of three
+and a subnet `tempo` of 360 blocks, committed weights are revealed after three tempos, or 1080
+blocks, so the real-time concealment window scales with the subnet's configured tempo
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)).
+
+Reading the enabled flag alone therefore does not reveal the concealment length; both the flag and
+the period must be checked together for the selected netuid
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
 ## Reading the Live Value for netuid 1
 
 Commit reveal weights enabled is per-subnet chain state, so any live claim is tied to a specific
-netuid. For the documented example netuid 1 on Finney mainnet, the flag appears in that subnet's
-hyperparameter table, which the reference describes under viewing a subnet's hyperparameters
+netuid. For the documented example netuid 1 on Finney mainnet, readers can verify the live flag with
+`btcli subnet hyperparameters --netuid 1 --network finney`, which prints that subnet's
+hyperparameter table including this Boolean row
 ([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
 The infobox uses netuid 1 only as an example label; other subnets expose their own values
 ([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
