@@ -1,8 +1,8 @@
 ---
 title: "Kappa"
 summary:
-  "How the kappa subnet hyperparameter sets the consensus majority ratio that Yuma Consensus uses to
-  decide which validator weights count."
+  "How the kappa subnet hyperparameter sets the stake-weighted majority ratio Yuma Consensus uses to
+  derive the consensus clipping threshold for miner weights."
 category: "Consensus"
 tags: ["Consensus", "Subnets"]
 infoboxTitle: Kappa
@@ -20,18 +20,18 @@ infoboxRows:
 
 # Kappa
 
-Kappa is a per-subnet hyperparameter that sets the consensus majority ratio used by Yuma Consensus.
-Documentation describes it as the consensus majority ratio and states that the weights set by
-validators with lower normalized stake than kappa are not used in calculating consensus
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+Kappa is a per-subnet hyperparameter that sets the consensus majority ratio Yuma Consensus uses when
+deriving the stake-weighted clipping threshold for miner weights
+([Subnet Hyperparameters: Kappa](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#kappa),
+[Yuma Consensus: Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping)).
 
 ## What It Controls
 
-Kappa marks the stake-weighted majority point used when validator weights are combined into a
-consensus result. Per the documentation, weights coming from validators whose normalized stake falls
-below kappa do not enter the consensus calculation. In effect, kappa sets how much of the
-stake-weighted agreement forms consensus and where lower-stake input stops counting
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+Kappa sets how much of a subnet's validator stake must support a weight level before that level
+becomes the clipping ceiling during Yuma Consensus. With the default kappa near 0.5, at least half
+of stake-weighted validator support must agree that a miner deserves weight above a given level
+before more generous weights are left unclipped
+([Yuma Consensus: Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping),
 [Subnet Hyperparameters: Kappa](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#kappa)).
 
 ## Default and Representation
@@ -61,15 +61,15 @@ proof that every subnet shares the same live kappa value
 
 ## Distinction from Clipping
 
-Kappa is the stake fraction that sets which validator weights count toward the consensus majority.
-Clipping is the Yuma step that trims individual weights above the stake-weighted agreement benchmark
+Kappa is the stake fraction used to derive the consensus clipping ceiling. Clipping is the Yuma step
+that trims individual validator weights above the stake-weighted agreement benchmark
 ([Subnet Hyperparameters: Kappa](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#kappa),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+[Yuma Consensus: Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping)).
 
-Kappa filters which validator rows participate in the majority calculation. Clipping then punishes
-inflated ratings that still outlie the resulting agreement.
+Kappa sets how much stake-weighted validator support must back a weight level before clipping leaves
+higher weights in place. Clipping then trims individual ratings that still exceed that benchmark.
 
-- **Kappa** — stake fraction that sets which validator weights count toward consensus.
+- **Kappa** — stake fraction that sets the consensus clipping ceiling input.
 - **Clipping** — trimming weights that exceed the stake-weighted agreement benchmark.
 
 ## Distinction from Consensus Score
@@ -106,14 +106,17 @@ weights
 - **Kappa** — stake-weighted majority threshold for consensus clipping.
 - **Validator permit** — subnet-level right to submit weights that can enter aggregation.
 
-A validator can hold a permit yet still fall below the stake-weighted majority kappa defines
-([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
+A low-stake permitted validator has less influence on the stake-weighted clipping threshold kappa
+defines, but kappa is not an individual validator stake cutoff—permit decides who may submit
+weights, while kappa sets how stake-backed agreement defines the clipping ceiling
+([Glossary: Validator Permit](https://docs.learnbittensor.org/resources/glossary#validator-permit),
+[Yuma Consensus: Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping)).
 
 ## Distinction from Yuma Consensus
 
-Kappa is the per-subnet hyperparameter that sets the stake-weighted majority threshold Yuma uses
-when deciding which validator weights count toward clipping. It names one inclusion parameter inside
-settlement, not the full mechanism that credits emission shares
+Kappa is the per-subnet hyperparameter that sets the stake-weighted majority ratio Yuma uses when
+deriving the consensus clipping threshold. It names one clipping parameter inside settlement, not
+the full mechanism that credits emission shares
 ([Subnet Hyperparameters: Kappa](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#kappa),
 [Yuma Consensus: Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping)).
 
@@ -124,14 +127,14 @@ the epoch boundary ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-
 [Emission: Distribution](https://docs.learnbittensor.org/learn/emissions#distribution)).
 
 The validator permit section above covers who may submit counting weights. Kappa vocabulary names
-the stake threshold those submissions must meet; Yuma vocabulary names the full settlement pass
+the stake fraction for that clipping threshold; Yuma vocabulary names the full settlement pass
 ([Glossary: Validator Permit](https://docs.learnbittensor.org/resources/glossary#validator-permit)).
 
 Readers should not read kappa as a payout quote or miner rank label. It configures inclusion inside
 Yuma; outcomes still depend on the weight matrix processed on the relevant netuid
 ([Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score)).
 
-- **Kappa** — consensus majority ratio hyperparameter for weight inclusion.
+- **Kappa** — consensus majority ratio hyperparameter for the clipping threshold.
 - **Yuma Consensus** — on-chain mechanism that uses validator weights to determine emission shares
   ([Yuma Consensus: Validator emissions](https://docs.learnbittensor.org/learn/yuma-consensus#validator-emissions)).
 
