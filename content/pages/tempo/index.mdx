@@ -72,6 +72,57 @@ This anchoring is the reason two subnets that share the same tempo value can set
 blocks: each one counts from its own last-epoch block, not from a shared schedule
 ([Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)).
 
+## Yuma Settlement Runs at the Tempo Boundary
+
+Yuma Consensus is the on-chain mechanism that runs at the epoch boundary. It reads the weight matrix
+recorded inside that window, applies clipping and bonding, and then credits miner incentives and
+validator dividends on the selected netuid
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
+[Glossary: Weight Matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix),
+[Emission: Distribution](https://docs.learnbittensor.org/learn/emissions#distribution)).
+
+Readers should not read tempo as a payout amount or as proof that settlement already occurred.
+Outcomes still depend on the weight matrix captured for that epoch on the relevant netuid
+([Emission](https://docs.learnbittensor.org/learn/emissions)).
+
+## Coinbase Advances Emission Every Block
+
+Tempo and coinbase relate as a cadence and a per-block process. Tempo is the interval, measured in
+blocks, that sets how often a subnet runs an epoch to distribute accumulated emission and run
+consensus, while coinbase is the per-block routine that mints new TAO and advances emission every
+block regardless of tempo
+([Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo),
+[Coinbase documentation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase),
+[Emission](https://docs.learnbittensor.org/learn/emissions)).
+
+Readers watching coinbase activity see per-block injection into subnet emission pools; tempo still
+marks when Yuma turns accumulated weights into miner and validator payouts at the epoch boundary—not
+every coinbase block closes an epoch
+([Emission: Injection and distribution](https://docs.learnbittensor.org/learn/emissions#injection-and-distribution-two-stages-of-the-emissions-process),
+[Coinbase documentation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase)).
+
+## Tempo Names Cadence, Not Evaluation Work
+
+Tempo names a cadence, not a task. A subnet's incentive mechanism defines the work being evaluated;
+tempo defines the block interval over which periodic subnet processes are grouped
+([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
+
+That distinction keeps timing vocabulary separate from evaluation vocabulary. Tempo helps determine
+when subnet work is processed, while the incentive mechanism explains what validators are evaluating
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## Wall-Clock Length Depends on Block Production
+
+Tempo is counted in blocks, so its wall-clock length depends on the network context producing those
+blocks. Bittensor network documentation separates localnet timing modes from testnet and mainnet,
+including fast-block and non-fast-block local settings
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks),
+[Glossary: Fast blocks](https://docs.learnbittensor.org/resources/glossary#fast-blocks)).
+
+For readers, that means a tempo example should keep the block count and the environment label
+together. The tempo value explains how many blocks group the subnet process; the surrounding network
+context explains how quickly those blocks pass in that example.
+
 ## Development Stage Context
 
 The
@@ -117,25 +168,8 @@ A block is one step of chain progression. Tempo counts how many blocks pass befo
 emission step ([Glossary: Block](https://docs.learnbittensor.org/resources/glossary#block),
 [Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo)).
 
-Blocks advance continuously; tempo groups them into the interval used for periodic distribution.
-
-Tempo is counted in blocks, so its wall-clock length depends on the network context producing those
-blocks. Bittensor network documentation separates localnet timing modes from testnet and mainnet,
-including fast-block and non-fast-block local settings
-([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks),
-[Glossary: Fast blocks](https://docs.learnbittensor.org/resources/glossary#fast-blocks)).
-
-For readers, that means a tempo example should keep the block count and the environment label
-together. The tempo value explains how many blocks group the subnet process; the surrounding network
-context explains how quickly those blocks pass in that example.
-
-Tempo names a cadence, not a task. A subnet's incentive mechanism defines the work being evaluated;
-tempo defines the block interval over which periodic subnet processes are grouped
-([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
-
-That distinction keeps timing vocabulary separate from evaluation vocabulary. Tempo helps determine
-when subnet work is processed, while the incentive mechanism explains what validators are evaluating
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+- **Block** — one step of chain progression.
+- **Tempo** — block count that groups periodic subnet distribution.
 
 ## Distinction from Emission
 
@@ -153,22 +187,8 @@ Tempo is the per-subnet hyperparameter that sets how many blocks make up one con
 answers how long validators have to submit weights before settlement, not how Yuma turns those
 submissions into emission shares
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
-[Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo)).
-
-Yuma Consensus is the on-chain mechanism that runs at the epoch boundary. It reads the weight matrix
-recorded inside that window, applies clipping and bonding, and then credits miner incentives and
-validator dividends on the selected netuid
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
-[Glossary: Weight Matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix),
-[Emission: Distribution](https://docs.learnbittensor.org/learn/emissions#distribution)).
-
-The emission section above already separates tempo timing from distribution at the boundary. Tempo
-vocabulary names epoch length in blocks; Yuma vocabulary names settlement when that boundary arrives
-([Glossary: Epoch](https://docs.learnbittensor.org/resources/glossary#epoch)).
-
-Readers should not read tempo as a payout amount or as proof that settlement already occurred.
-Outcomes still depend on the weight matrix captured for that epoch on the relevant netuid
-([Emission](https://docs.learnbittensor.org/learn/emissions)).
+[Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
 - **Tempo** — block count per consensus epoch on a subnet.
 - **Yuma Consensus** — on-chain mechanism that uses validator weights to determine emission shares
@@ -296,19 +316,11 @@ Timing-flow vocabulary spans injection and distribution; tempo vocabulary names 
 
 ## Distinction from Coinbase
 
-Tempo and coinbase relate as a cadence and a per-block process. Tempo is the interval, measured in
-blocks, that sets how often a subnet runs an epoch to distribute accumulated emission and run
-consensus, while coinbase is the per-block routine that mints new TAO and advances emission every
-block regardless of tempo
+Tempo is the block interval between epoch distributions; coinbase is the per-block routine that
+mints and advances emission each block
 ([Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo),
 [Coinbase documentation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase),
 [Emission](https://docs.learnbittensor.org/learn/emissions)).
-
-Readers watching coinbase activity see per-block injection into subnet emission pools; tempo still
-marks when Yuma turns accumulated weights into miner and validator payouts at the epoch boundary—not
-every coinbase block closes an epoch
-([Emission: Injection and distribution](https://docs.learnbittensor.org/learn/emissions#injection-and-distribution-two-stages-of-the-emissions-process),
-[Coinbase documentation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase)).
 
 - **Tempo** — the block interval between a subnet's epoch distributions.
 - **Coinbase** — the per-block routine that mints and advances emission each block.
