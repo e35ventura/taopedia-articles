@@ -1,0 +1,85 @@
+---
+title: "Admin Freeze Window"
+summary:
+  "How the admin freeze window blocks subnet owner operations during the final blocks of each epoch
+  so hyperparameters cannot change just before validators submit weights."
+category: "Subnets"
+tags: ["Subnets", "Security"]
+infoboxTitle: Admin Freeze Window
+infoboxCaption: Owner-action freeze near epoch end.
+infoboxRows:
+  - label: Parameter
+    value: AdminFreezeWindow
+  - label: Duration
+    value: "~10 blocks (~2 minutes)"
+  - label: Measured in
+    value: Blocks
+  - label: Applies to
+    value: Subnet owner operations
+  - label: Timing
+    value: End of each epoch
+---
+
+# Admin Freeze Window
+
+Admin freeze window, named `AdminFreezeWindow` in the chain state, is the span of blocks at the end
+of each epoch during which subnet owner operations are disallowed. The rate-limits reference lists
+the window at about 10 blocks, roughly 2 minutes, and explains it exists so that administrative
+changes cannot land right at an epoch boundary
+([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+
+## What It Freezes
+
+During the window, subnet owners cannot perform administrative actions such as changing subnet
+hyperparameters. The purpose is to keep epochs fair: it prevents an owner from modifying
+hyperparameters in the moments right before validators submit their weights at the epoch boundary,
+when such a change could distort the results being finalized
+([Storage: AdminFreezeWindow](https://subtensor.com/reference/subtensormodule/storage/AdminFreezeWindow),
+[Bittensor SDK](https://docs.learnbittensor.org/python-api/html/autoapi/bittensor/core/subtensor/)).
+
+## When It Matters
+
+A common misconception is that a subnet owner can apply a hyperparameter change at any moment within
+a tempo. The freeze window breaks that assumption: in the last blocks before the tempo ends, owner
+administrative actions are rejected
+([Storage: AdminFreezeWindow](https://subtensor.com/reference/subtensormodule/storage/AdminFreezeWindow)).
+
+Take netuid 1 as a concrete example. Because the window is global, the same `AdminFreezeWindow`
+value applies to netuid 1 as to every other subnet, and the freeze lands in the final
+`AdminFreezeWindow` blocks before each of netuid 1's tempo boundaries. To reproduce the timing,
+query the window length with `SubtensorModule.AdminFreezeWindow` and netuid 1's tempo with
+`SubtensorModule.Tempo(1)`; the freeze is the last few blocks of each tempo-length cycle on netuid 1
+([Subtensor Storage Query Examples](https://docs.learnbittensor.org/subtensor-nodes/subtensor-storage-query-examples)).
+An owner of netuid 1 who tries to push a hyperparameter update inside that window will have the
+transaction fail with `AdminActionProhibitedDuringWeightsWindow`, the error the chain raises for
+admin operations attempted in the protected weights window
+([Errors](https://docs.learnbittensor.org/subtensor-api/errors)). The fix is timing rather than a
+different command: submit the change earlier in the tempo, or wait until the new epoch begins and
+the freeze has lifted.
+
+## Documented Nature
+
+`AdminFreezeWindow` is a single global value, queryable from chain state as a `u16`, that gives the
+window length in blocks at the end of each tempo where admin operations are disallowed. Because it
+is one plain value with no keys, the live setting can be read directly, for example with
+`SubtensorModule.AdminFreezeWindow`, and the Bittensor SDK exposes it through
+`get_admin_freeze_window`
+([Subtensor Storage Query Examples](https://docs.learnbittensor.org/subtensor-nodes/subtensor-storage-query-examples),
+[Bittensor SDK](https://docs.learnbittensor.org/python-api/html/autoapi/bittensor/core/subtensor/)).
+
+## Distinction from Owner Hyperparameter Rate Limit
+
+Both restrict when owners can change hyperparameters, but along different axes. The owner
+hyperparameter rate limit is a per-hyperparameter cooldown measured in tempos, while the admin
+freeze window is a short blackout at the end of every epoch regardless of which parameter is
+involved ([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+
+- **Owner hyperparameter rate limit** — how soon the same hyperparameter can be changed again.
+- **Admin freeze window** — when in the epoch any admin change is blocked.
+
+## Further Reading
+
+- [Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)
+- [Storage: AdminFreezeWindow](https://subtensor.com/reference/subtensormodule/storage/AdminFreezeWindow)
+- [Errors: AdminActionProhibitedDuringWeightsWindow](https://docs.learnbittensor.org/subtensor-api/errors)
+- [Glossary: Epoch](https://docs.learnbittensor.org/resources/glossary#epoch)
