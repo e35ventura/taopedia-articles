@@ -210,6 +210,26 @@ That setting governs a transfer pathway specifically. It does not change staking
 delegation behavior, which are separate actions from moving already-staked balances between
 coldkeys.
 
+## Owner Hyperparameter Changes Are Rate-Limited
+
+Owner-settable hyperparameters cannot be changed on every block. The rate-limit reference documents
+an owner hyperparameter rate limit of 2 tempos, stored on chain as `OwnerHyperparamRateLimit`, that
+paces how frequently a subnet owner can modify a hyperparameter. The limit is enforced independently
+per hyperparameter, so updating one parameter does not block updating a different parameter during
+the same window
+([Chain Rate Limits: Owner hyperparameter rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#owner-hyperparameter-rate-limit)).
+
+A separate administrative freeze window also applies at each epoch boundary. The reference documents
+a 10-block freeze (`AdminFreezeWindow`) at the end of each epoch during which subnet owner
+operations are disallowed, so a hyperparameter change attempted inside that window waits until the
+freeze clears
+([Chain Rate Limits: Administrative freeze window](https://docs.learnbittensor.org/learn/chain-rate-limits#administrative-freeze-window)).
+
+Readers should therefore treat hyperparameter values as adjustable but paced. A change on netuid 1
+is subject to the per-parameter 2-tempo cooldown and the end-of-epoch freeze rather than taking
+effect on any block the owner chooses
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
 ## Distinction from Subtensor Constants
 
 A subnet hyperparameter and a Subtensor constant name a live per-subnet value and a runtime default.
