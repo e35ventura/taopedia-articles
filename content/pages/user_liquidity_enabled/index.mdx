@@ -1,0 +1,116 @@
+---
+title: "User Liquidity Enabled"
+summary:
+  "How the user liquidity enabled subnet hyperparameter gates whether users can provide range-based
+  liquidity positions on a subnet's pool."
+category: "Subnets"
+tags: ["Subnets", "Tokenomics"]
+infoboxTitle: User Liquidity Enabled
+infoboxCaption: On/off gate for user liquidity provision on a subnet.
+infoboxRows:
+  - label: Parameter
+    value: UserLiquidityEnabled
+  - label: Type
+    value: Bool
+  - label: Default
+    value: "false"
+  - label: Example
+    value: netuid 1
+  - label: Set by
+    value: Subnet owner
+---
+
+# User Liquidity Enabled
+
+User liquidity enabled is a per-subnet hyperparameter, listed in the documentation as
+`UserLiquidityEnabled`, that controls whether the user liquidity feature is enabled on a subnet. The
+reference documents it as a boolean with a default of `false`, so user liquidity provision is off
+until a subnet owner turns it on
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## What It Controls
+
+The hyperparameter is an availability gate, not a position or a price. When enabled, users can
+supply range-based [liquidity positions](https://docs.learnbittensor.org/liquidity-positions) to the
+subnet's TAO-and-alpha pool; when disabled, that user-provided liquidity feature is not available on
+the subnet. It does not set pool reserves, fees, or which ranges providers choose; it only decides
+whether the feature is open at all
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Understanding Subnets: Liquidity pools](https://docs.learnbittensor.org/subnets/understanding-subnets#liquidity-pools)).
+
+Because the default is `false`, a subnet does not offer user liquidity provision automatically. The
+owner opts in for their subnet, and the live state can differ from one subnet to the next
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Type, Setter, and Default
+
+The [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+reference lists `UserLiquidityEnabled` as a `Bool` with a default of `false`. It is changed through
+the `toggle_user_liquidity` extrinsic, surfaced in tooling as
+`btcli sudo set --param user_liquidity_enabled`, and the reference marks the permission required to
+set it as subnet owner
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## Reading the Live Value for netuid 1
+
+User liquidity enabled is per-subnet chain state, so any live claim is tied to a specific netuid.
+For the documented example netuid 1 on Finney mainnet, readers can verify the live
+`UserLiquidityEnabled` value with `btcli subnet hyperparameters --netuid 1 --network finney`, which
+prints the subnet's hyperparameter table including this boolean row
+([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
+The infobox uses netuid 1 only as an example label; other subnets expose their own values
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Distinction from Liquidity Positions
+
+Liquidity positions are the range-based commitments providers supply to a subnet's pool. User
+liquidity enabled is the per-subnet switch that determines whether those positions can be created on
+the subnet at all, so the switch gates access while a position is the commitment itself
+([User Liquidity Positions](https://docs.learnbittensor.org/liquidity-positions),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+- **User liquidity enabled** — whether user liquidity provision is open on the subnet.
+- **Liquidity positions** — the range-based depth commitments providers supply when it is open.
+
+## Distinction from Staking
+
+Staking attaches TAO or alpha support behind a validator hotkey through the subnet's delegation
+model. User liquidity enabled does not govern staking; it only gates whether users may add
+range-based liquidity to the subnet pool, a separate participation path from validator support
+([Staking and delegation overview](https://docs.learnbittensor.org/staking-and-delegation/delegation),
+[User Liquidity Positions](https://docs.learnbittensor.org/liquidity-positions)).
+
+- **Staking** — support placed behind a validator hotkey for dividends.
+- **User liquidity enabled** — the gate for adding range-based pool liquidity.
+
+## Distinction from Yuma Consensus
+
+User liquidity enabled gates a pool-side feature. It does not participate in the epoch-boundary
+settlement that converts validator weights into miner incentives and validator dividends
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+Yuma Consensus reads the weight matrix, applies clipping and bonding, and allocates emission shares
+each epoch on the active subnet. Whether user liquidity is enabled changes pool participation, not
+how consensus settles weights into rewards
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
+[Emission](https://docs.learnbittensor.org/learn/emissions)).
+
+- **User liquidity enabled** — on/off gate for user liquidity provision on a subnet.
+- **Yuma Consensus** — epoch-boundary settlement from weights to emission shares.
+
+## Reader Boundary
+
+This page defines the concept at a high level. It does not report whether user liquidity is
+currently enabled on any particular subnet, the depth of its pool, or the returns of any position.
+Those are live chain state and pool outcomes that should be checked for the relevant netuid. The
+default of `false` is the documented value, and the parameter is owner-settable per subnet.
+
+## Further Reading
+
+- [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+- [User Liquidity Positions](https://docs.learnbittensor.org/liquidity-positions)
+- [Understanding Subnets: Liquidity pools](https://docs.learnbittensor.org/subnets/understanding-subnets#liquidity-pools)
+- [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
+- [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)
