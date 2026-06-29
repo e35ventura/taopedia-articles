@@ -39,6 +39,19 @@ and values in between mix the two linearly, so a higher bonds penalty forms bond
 pulled further toward the consensus-clipped benchmark
 ([`get_float_bonds_penalty`](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/epoch/run_epoch.rs)).
 
+The hyperparameter reference lists `BondsPenalty` as a `u16` with a default of `0`, changed by the
+subnet owner through the `sudo_set_bonds_penalty` extrinsic
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+Because that default is zero, bonds penalty is effectively opt-in: until the owner raises it, bond
+formation uses the validator's raw weights and the penalty path stays inactive. Leaving it at zero
+does not remove out-of-consensus protection from emissions, though. Clipping still trims weight
+above the stake-weighted consensus benchmark regardless of the bonds penalty value, so the
+hyperparameter only changes how strongly the bond update is pulled toward consensus, not whether
+excess weight is paid on
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Yuma Consensus: Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping)).
+
 ## Distinction from Clipping
 
 [Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping) removes validator weights
@@ -130,7 +143,8 @@ Settlement-refinement vocabulary and hyperparameter vocabulary answer different 
 
 Bonds penalty should not be read as clipping, liquid alpha, or a live penalty outcome on a miner. It
 names only the subnet hyperparameter that sets how strongly out-of-consensus bond-weight is pulled
-toward the consensus benchmark on the selected netuid
+toward the consensus benchmark on the selected netuid, and it does not report the live
+`BondsPenalty` row for any particular subnet
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
 ## Further Reading
