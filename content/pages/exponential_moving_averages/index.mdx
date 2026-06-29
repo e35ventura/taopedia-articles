@@ -88,17 +88,7 @@ comparison input
 ([Exponential Moving Averages: Protocol Cost EMA](https://docs.learnbittensor.org/learn/ema#protocol-cost-ema),
 [Glossary: Subnet Weights](https://docs.learnbittensor.org/resources/glossary#subnet-weights)).
 
-## Distinction from Yuma Consensus
-
-Yuma Consensus is the subnet process that turns validator weight signals into miner incentives and
-validator dividends at epoch boundaries. Exponential moving averages name the smoothing step that
-can sit inside that pipeline, especially when validator-miner bonds are updated over time rather
-than from one raw weight alone
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
-[Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema)).
-
-Readers comparing reward outcomes should name Yuma for allocation rules and EMA only when the
-question is how a signal is averaged across blocks.
+## Yuma Pipeline Uses EMA for Bond Smoothing
 
 [Validator weights](https://docs.learnbittensor.org/resources/glossary#weight-vector) are the
 evaluation signals validators submit for miners. Inside
@@ -125,20 +115,7 @@ describes smoothing behavior for selected values
 ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
 [Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema)).
 
-Keeping that boundary clear prevents the smoothing method from being treated as the full incentive
-system. EMA changes how a signal responds over time; the surrounding Bittensor concept defines what
-the signal means.
-
-## Distinction from Liquid Alpha
-
-Liquid alpha adjusts how quickly validator-miner bonds respond when a validator's weights diverge
-from consensus. EMA is the broader smoothing family; liquid alpha is one documented way bond
-smoothing can react to consensus alignment
-([Glossary: Liquid Alpha](https://docs.learnbittensor.org/resources/glossary#liquid-alpha),
-[Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema)).
-
-A liquid-alpha discussion is about bond responsiveness; an EMA discussion is about time-averaged
-history in whichever mechanism applies it.
+## EMA Alpha Factor Is Not Alpha Token Vocabulary
 
 [Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema) documentation draws a hard
 line between the smoothing factor used in the EMA formula and the word alpha used elsewhere in
@@ -160,6 +137,8 @@ describes the technique as blending current and prior values through a smoothing
 belongs to the update rule, not to Dynamic TAO asset vocabulary. When a sentence pairs EMA with
 alpha, the useful question is whether the topic is smoothing behavior or subnet tokenomics.
 
+## Liquid Alpha Varies Bond Smoothing by Consensus Alignment
+
 EMAs also appear in validator-miner bond smoothing. A bond can evolve from repeated evaluation
 signals instead of jumping entirely from one measurement
 ([Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds),
@@ -180,6 +159,72 @@ used for
 This prevents liquid alpha from being read as a new kind of bond. It is a rule affecting the
 smoothing factor used in bond updates, while validator-miner bond remains the surrounding consensus
 concept.
+
+## Flow EMA Smooths Net Staking for Subnet Comparison
+
+Subnet flow [emission](https://docs.learnbittensor.org/learn/emissions) smoothing uses an EMA with a
+thirty-day half-life and an effective window of roughly eighty-seven days, according to the
+[subnet flow emission smoothing](https://docs.learnbittensor.org/learn/ema#subnet-flow-emission-smoothing)
+section. Each update keeps almost all of the prior smoothed value and adds only a tiny fraction from
+the current block's net [staking](https://docs.learnbittensor.org/staking-and-delegation/delegation)
+movement.
+
+The long memory is a deliberate guard against brief manipulation. Documented examples include
+short-term staking spikes, wash-trading-style price games, and flash attacks on emissions as
+behaviors the slow EMA is meant to dampen. A
+[subnet](https://docs.learnbittensor.org/resources/glossary#subnet) comparison therefore reacts to
+sustained net [TAO](https://docs.learnbittensor.org/resources/glossary#tao-tau) flow rather than one
+burst of activity
+([Exponential Moving Averages: Subnet Flow Emission Smoothing](https://docs.learnbittensor.org/learn/ema#subnet-flow-emission-smoothing),
+[Emission: Distribution Across Subnets](https://docs.learnbittensor.org/learn/emissions#distribution-across-subnets)).
+
+When smoothed net flow turns negative, guidance also connects sustained negative flow with zero
+emission share for that subnet. The zero outcome follows the smoothed signal, not a single block of
+unstaking.
+
+Bittensor uses EMA-smoothed net TAO flow when comparing subnet-level emission allocation. Smoothing
+helps short movement avoid dominating the flow signal
+([Emission](https://docs.learnbittensor.org/learn/emissions),
+[Glossary: Subnet Weights](https://docs.learnbittensor.org/resources/glossary#subnet-weights)).
+
+Official documentation names the EMA price as one specific input among several, not the sole driver
+of a subnet's emission share. TAO emission to a subnet is described as a three-factor weighted share
+of the fixed block emission: the subnet's EMA price (named `SubnetMovingPrice` in the
+documentation), scaled by its root proportion and reduced by any miner-burn penalty
+([Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema)).
+
+That framing keeps EMA price from being read as the whole emission-share calculation. It supplies
+one smoothed factor that the root-proportion and miner-burn-penalty factors then adjust before the
+combined result becomes a subnet's share of the fixed block emission.
+
+## Distinction from Yuma Consensus
+
+Yuma Consensus is the subnet process that turns validator weight signals into miner incentives and
+validator dividends at epoch boundaries. Exponential moving averages name the smoothing step that
+can sit inside that pipeline, especially when validator-miner bonds are updated over time rather
+than from one raw weight alone
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
+[Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema)).
+
+Readers comparing reward outcomes should name Yuma for allocation rules and EMA only when the
+question is how a signal is averaged across blocks.
+
+- **Yuma Consensus** — aggregation that turns validator signals into subnet incentive outcomes.
+- **Exponential moving averages** — smoothing step that can sit inside bond and flow pipelines.
+
+## Distinction from Liquid Alpha
+
+Liquid alpha adjusts how quickly validator-miner bonds respond when a validator's weights diverge
+from consensus. EMA is the broader smoothing family; liquid alpha is one documented way bond
+smoothing can react to consensus alignment
+([Glossary: Liquid Alpha](https://docs.learnbittensor.org/resources/glossary#liquid-alpha),
+[Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema)).
+
+A liquid-alpha discussion is about bond responsiveness; an EMA discussion is about time-averaged
+history in whichever mechanism applies it.
+
+- **Liquid alpha** — consensus-alignment rule that varies bond smoothing factors.
+- **Exponential moving averages** — the broader smoothing family those factors apply within.
 
 ## Distinction from Validator-Miner Bonds
 
@@ -211,48 +256,8 @@ evaluation
 Flow EMA answers how sustained staking movement is averaged; bond EMA answers how evaluation links
 are averaged inside consensus processing.
 
-Subnet flow [emission](https://docs.learnbittensor.org/learn/emissions) smoothing uses an EMA with a
-thirty-day half-life and an effective window of roughly eighty-seven days, according to the
-[subnet flow emission smoothing](https://docs.learnbittensor.org/learn/ema#subnet-flow-emission-smoothing)
-section. Each update keeps almost all of the prior smoothed value and adds only a tiny fraction from
-the current block's net [staking](https://docs.learnbittensor.org/staking-and-delegation/delegation)
-movement.
-
-The long memory is a deliberate guard against brief manipulation. Documented examples include
-short-term staking spikes, wash-trading-style price games, and flash attacks on emissions as
-behaviors the slow EMA is meant to dampen. A
-[subnet](https://docs.learnbittensor.org/resources/glossary#subnet) comparison therefore reacts to
-sustained net [TAO](https://docs.learnbittensor.org/resources/glossary#tao-tau) flow rather than one
-burst of activity
-([Exponential Moving Averages: Subnet Flow Emission Smoothing](https://docs.learnbittensor.org/learn/ema#subnet-flow-emission-smoothing),
-[Emission: Distribution Across Subnets](https://docs.learnbittensor.org/learn/emissions#distribution-across-subnets)).
-
-When smoothed net flow turns negative, guidance also connects sustained negative flow with zero
-emission share for that subnet. The zero outcome follows the smoothed signal, not a single block of
-unstaking.
-
-Bittensor uses EMA-smoothed net TAO flow when comparing subnet-level emission allocation. Smoothing
-helps short movement avoid dominating the flow signal
-([Emission](https://docs.learnbittensor.org/learn/emissions),
-[Glossary: Subnet Weights](https://docs.learnbittensor.org/resources/glossary#subnet-weights)).
-
-In this context, EMA smooths the net-flow signal used for subnet comparison. It does not describe
-miner or validator outcomes by itself; emission and incentive-mechanism vocabulary explain later
-allocation and evaluation ([Emission](https://docs.learnbittensor.org/learn/emissions),
-[Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema)).
-
-The useful reading is signal preparation. EMA helps shape the flow input that downstream emission
-logic can use, while the emission article explains the reward-allocation context.
-
-Official documentation names the EMA price as one specific input among several, not the sole driver
-of a subnet's emission share. TAO emission to a subnet is described as a three-factor weighted share
-of the fixed block emission: the subnet's EMA price (named `SubnetMovingPrice` in the
-documentation), scaled by its root proportion and reduced by any miner-burn penalty
-([Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema)).
-
-That framing keeps EMA price from being read as the whole emission-share calculation. It supplies
-one smoothed factor that the root-proportion and miner-burn-penalty factors then adjust before the
-combined result becomes a subnet's share of the fixed block emission.
+- **Subnet flow emission smoothing** — EMA applied to net staking movement for cross-subnet share.
+- **Exponential moving averages** — the smoothing method; bond and flow are separate consuming uses.
 
 ## Distinction from Signal
 
