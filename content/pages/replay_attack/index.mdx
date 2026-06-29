@@ -36,6 +36,71 @@ receiving side fails to notice that the very same signed message has already bee
 References:
 [bittensor.core.axon](https://docs.learnbittensor.org/python-api/html/autoapi/bittensor/core/axon/)
 
+## Replay Risk Lives in Signed Synapse Traffic
+
+Bittensor's [Glossary: Dendrite](https://docs.learnbittensor.org/resources/glossary#dendrite) and
+[Glossary: Synapse](https://docs.learnbittensor.org/resources/glossary#synapse) describe the
+off-chain request path: a dendrite sends a signed synapse to an
+[axon](https://docs.learnbittensor.org/resources/glossary#axon), which verifies the signature before
+responding. Replay risk sits in that signed message path, not only in chain
+[Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics).
+
+The axon-side documentation referenced in this article focuses on nonce checking at the receiver.
+The dendrite and synapse vocabulary names the complementary sender side where a valid signed payload
+is first produced and then could be captured for reuse if freshness checks fail.
+
+## Nonces Must Increase and Stay Fresh
+
+Bittensor's defense is the nonce, a value attached to signed messages. The documentation describes
+the network checking for increasing nonce values as a vital step in preventing replay attacks, and
+treating a nonce as valid only when it is fresh, meaning within an acceptable time range. A replayed
+message carries a nonce that has already been seen or is no longer fresh, so the receiver recognizes
+it as a repeat and turns it away instead of acting on it twice
+([bittensor.core.axon](https://docs.learnbittensor.org/python-api/html/autoapi/bittensor/core/axon/)).
+
+A replayed synapse therefore fails not only when its nonce was already consumed, but also when the
+attached nonce is too old to count as current for that signing
+[hotkey](https://docs.learnbittensor.org/resources/glossary#hotkey). That freshness rule limits how
+long a captured signed message remains dangerous: the receiver is expected to treat an expired nonce
+as invalid even if the signature itself still verifies mathematically.
+
+## Axon Nonces Track Dendrite Endpoint Keys
+
+Axon verification in the Bittensor SDK tracks nonce state per dendrite endpoint key, not by hotkey
+alone. Documentation for `bittensor.core.axon` describes checking both freshness and monotonic
+increase for the `dendrite.hotkey:dendrite.uuid` pair associated with a synapse
+([bittensor.core.axon](https://docs.learnbittensor.org/python-api/html/autoapi/bittensor/core/axon/),
+[Glossary: Dendrite](https://docs.learnbittensor.org/resources/glossary#dendrite)).
+
+For readers, that scope differs from Subtensor account nonces. Extrinsic replay defenses protect
+wallet-level chain actions keyed to the submitting account, while axon nonce rules protect off-chain
+synapse traffic for the specific dendrite endpoint that produced the signature
+([Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics)).
+
+## Extrinsic and Axon Nonces Guard Different Layers
+
+Both layers resist message reuse but apply to different parts of Bittensor activity: extrinsic
+nonces guard on-chain actions such as staking or registration, while axon nonce checking guards
+signed off-chain synapse traffic between neurons
+([Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics),
+[bittensor.core.axon](https://docs.learnbittensor.org/python-api/html/autoapi/bittensor/core/axon/)).
+
+## Signed Payload Reuse Is Not Signature Forgery
+
+A replay attack reuses a valid signed message; it does not require breaking the cryptography.
+Documentation therefore emphasizes monotonic and fresh nonces so receivers can reject duplicates
+even when the signature still verifies
+([Glossary: Synapse](https://docs.learnbittensor.org/resources/glossary#synapse),
+[Glossary: Axon](https://docs.learnbittensor.org/resources/glossary#axon)).
+
+Readers should separate replay from impersonation. Impersonation would require signing as another
+hotkey, while replay simply resubmits an already valid payload until nonce state marks it stale or
+already consumed ([Understanding Neurons](https://docs.learnbittensor.org/learn/neurons)).
+
+Nonce rejection therefore marks a message as already seen or no longer fresh for that dendrite
+endpoint key. It does not, by itself, establish that the signer forged a new payload
+([bittensor.core.axon](https://docs.learnbittensor.org/python-api/html/autoapi/bittensor/core/axon/)).
+
 ## Development Stage Context
 
 The
@@ -77,48 +142,6 @@ traffic
 A replay failure on the axon path therefore reflects stale or reused endpoint nonce state rather
 than proof that the hotkey signature was cryptographically invalid
 ([Glossary: Hotkey](https://docs.learnbittensor.org/resources/glossary#hotkey)).
-
-Axon verification in the Bittensor SDK tracks nonce state per dendrite endpoint key, not by hotkey
-alone. Documentation for `bittensor.core.axon` describes checking both freshness and monotonic
-increase for the `dendrite.hotkey:dendrite.uuid` pair associated with a synapse
-([bittensor.core.axon](https://docs.learnbittensor.org/python-api/html/autoapi/bittensor/core/axon/),
-[Glossary: Dendrite](https://docs.learnbittensor.org/resources/glossary#dendrite)).
-
-For readers, that scope differs from Subtensor account nonces. Extrinsic replay defenses protect
-wallet-level chain actions keyed to the submitting account, while axon nonce rules protect off-chain
-synapse traffic for the specific dendrite endpoint that produced the signature
-([Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics)).
-
-Both layers resist message reuse but apply to different parts of Bittensor activity: extrinsic
-nonces guard on-chain actions such as staking or registration, while axon nonce checking guards
-signed off-chain synapse traffic between neurons
-([Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics),
-[bittensor.core.axon](https://docs.learnbittensor.org/python-api/html/autoapi/bittensor/core/axon/)).
-
-Bittensor's defense is the nonce, a value attached to signed messages. The documentation describes
-the network checking for increasing nonce values as a vital step in preventing replay attacks, and
-treating a nonce as valid only when it is fresh, meaning within an acceptable time range. A replayed
-message carries a nonce that has already been seen or is no longer fresh, so the receiver recognizes
-it as a repeat and turns it away instead of acting on it twice.
-
-References:
-[bittensor.core.axon](https://docs.learnbittensor.org/python-api/html/autoapi/bittensor/core/axon/)
-
-## Signed Payload Reuse Is Not Signature Forgery
-
-A replay attack reuses a valid signed message; it does not require breaking the cryptography.
-Documentation therefore emphasizes monotonic and fresh nonces so receivers can reject duplicates
-even when the signature still verifies
-([Glossary: Synapse](https://docs.learnbittensor.org/resources/glossary#synapse),
-[Glossary: Axon](https://docs.learnbittensor.org/resources/glossary#axon)).
-
-Readers should separate replay from impersonation. Impersonation would require signing as another
-hotkey, while replay simply resubmits an already valid payload until nonce state marks it stale or
-already consumed ([Understanding Neurons](https://docs.learnbittensor.org/learn/neurons)).
-
-Nonce rejection therefore marks a message as already seen or no longer fresh for that dendrite
-endpoint key. It does not, by itself, establish that the signer forged a new payload
-([bittensor.core.axon](https://docs.learnbittensor.org/python-api/html/autoapi/bittensor/core/axon/)).
 
 ## Distinction from Mempool
 
@@ -194,12 +217,7 @@ rather than from duplicating a single signed payload
   nonce freshness.
 - **MEV** — value comes from manipulating the position of distinct pending transactions.
 
-## Distinction from Yuma Consensus
-
-A replay attack reuses a previously valid signed message in the hope it will be accepted again. It
-names transaction-security vocabulary, not the on-chain step that turns validator weight submissions
-into emission shares
-([Glossary: Replay Attack](https://docs.learnbittensor.org/resources/glossary#replay-attack)).
+## Yuma Settlement Is Unrelated to Replay Defense
 
 Yuma Consensus is the on-chain process that converts submitted validator weights into emission
 shares after evaluation completes. Nonce and freshness checks defend against replays on signed
@@ -210,6 +228,14 @@ messages; Yuma Consensus settles weight outcomes on a subnet
 Readers should keep replay-defense vocabulary separate from the settlement step. Replay attack
 answers what message reuse exploits; Yuma Consensus answers how validator weights become emission
 shares in a subnet
+([Glossary: Replay Attack](https://docs.learnbittensor.org/resources/glossary#replay-attack),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+## Distinction from Yuma Consensus
+
+A replay attack reuses a previously valid signed message in the hope it will be accepted again. It
+names transaction-security vocabulary, not the on-chain step that turns validator weight submissions
+into emission shares
 ([Glossary: Replay Attack](https://docs.learnbittensor.org/resources/glossary#replay-attack),
 [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
@@ -225,37 +251,6 @@ replay does not quietly succeed.
 
 References:
 [bittensor.core.axon](https://docs.learnbittensor.org/python-api/html/autoapi/bittensor/core/axon/)
-
-## Dendrite Requests and Axon Responses Use Signed Synapses
-
-Bittensor's [Glossary: Dendrite](https://docs.learnbittensor.org/resources/glossary#dendrite) and
-[Glossary: Synapse](https://docs.learnbittensor.org/resources/glossary#synapse) describe the
-off-chain request path: a dendrite sends a signed synapse to an
-[axon](https://docs.learnbittensor.org/resources/glossary#axon), which verifies the signature before
-responding. Replay risk sits in that signed message path, not only in chain
-[Subtensor extrinsics](https://docs.learnbittensor.org/subtensor-api/extrinsics).
-
-The axon-side documentation referenced in this article focuses on nonce checking at the receiver.
-The dendrite and synapse vocabulary names the complementary sender side where a valid signed payload
-is first produced and then could be captured for reuse if freshness checks fail.
-
-References: [Glossary: Dendrite](https://docs.learnbittensor.org/resources/glossary#dendrite),
-[Glossary: Synapse](https://docs.learnbittensor.org/resources/glossary#synapse)
-
-## Freshness Windows Reject Stale Nonces
-
-The axon documentation describes nonce validation as requiring both an increasing value and a fresh
-nonce within an acceptable time range. A replayed synapse therefore fails not only when its nonce
-was already consumed, but also when the attached nonce is too old to count as current for that
-signing [hotkey](https://docs.learnbittensor.org/resources/glossary#hotkey).
-
-That freshness rule limits how long a captured signed message remains dangerous. An adversary who
-records a valid synapse cannot rely on it indefinitely; the receiver is expected to treat an expired
-nonce as invalid even if the signature itself still verifies mathematically.
-
-References:
-[bittensor.core.axon](https://docs.learnbittensor.org/python-api/html/autoapi/bittensor/core/axon/),
-[Glossary: Hotkey](https://docs.learnbittensor.org/resources/glossary#hotkey)
 
 ## Further Reading
 
