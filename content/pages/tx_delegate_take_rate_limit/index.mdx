@@ -1,0 +1,87 @@
+---
+title: "Tx Delegate Take Rate Limit"
+summary:
+  "How the delegate take rate limit sets the roughly 30-day cooldown a delegate must wait between
+  changes to its take percentage."
+category: "Staking"
+tags: ["Staking", "Security"]
+infoboxTitle: Tx Delegate Take Rate Limit
+infoboxCaption: Cooldown between delegate take changes.
+infoboxRows:
+  - label: Parameter
+    value: TxDelegateTakeRateLimit
+  - label: Interval
+    value: "~216,000 blocks (~30 days)"
+  - label: Measured in
+    value: Blocks
+  - label: Error
+    value: DelegateTxRateLimitExceeded
+  - label: Set by
+    value: Root
+---
+
+# Tx Delegate Take Rate Limit
+
+Tx delegate take rate limit is a global chain parameter, named in the documentation as
+`TxDelegateTakeRateLimit`, that sets how often a delegate may change its take. The rate-limits
+reference lists it at roughly 216,000 blocks, about 30 days, and raises the
+`DelegateTxRateLimitExceeded` error when a change is attempted too soon
+([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+
+## What It Controls
+
+A delegate's [take](https://docs.learnbittensor.org/resources/glossary#delegation) is the percentage
+a validator keeps from delegated-stake emissions before the rest flows to its stakers. This rate
+limit is the cooldown between adjustments to that percentage, so it governs how frequently a
+delegate can retune its fee rather than the size of the fee itself
+([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits),
+[Validator Take](https://docs.learnbittensor.org/resources/glossary#validator-take)).
+
+## When It Matters
+
+A common misconception is that a delegate can adjust its take freely to chase stake, lowering it to
+attract delegators and raising it once stake arrives. The rate limit blocks that: after one change,
+the take is locked for roughly 30 days before it can move again
+([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+
+Concretely, a validator that drops its take to draw in delegators cannot quietly raise it back the
+next week. The roughly 216,000-block window must elapse first, so the lowered take stays in place
+for about a month. That waiting cost is the point: it makes take a credible, durable commitment to
+stakers rather than a value that can be flipped around their expectations
+([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits),
+[Validator Take](https://docs.learnbittensor.org/resources/glossary#validator-take)).
+
+## Documented Nature
+
+The [Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits) reference lists
+`TxDelegateTakeRateLimit` as a chain state variable measured in blocks, with the cooldown at about
+216,000 blocks. Because it is live chain state rather than a per-subnet owner setting, the active
+value is read from the chain, and the initial value is exposed among the network constants
+([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits),
+[Constants](https://docs.learnbittensor.org/subtensor-api/constants)).
+
+## Distinction from Child Key Take Rate Limit
+
+Both are roughly 30-day take cooldowns, but they apply to different takes. Tx delegate take rate
+limit gates changes to a delegate's take on delegated stake, while the child key take rate limit
+gates changes to a child hotkey's take
+([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+
+- **Tx delegate take rate limit** — cooldown between delegate take changes.
+- **Child key take rate limit** — cooldown between child hotkey take changes.
+
+## Distinction from Tx Rate Limit
+
+Tx rate limit is the short network-wide general transaction cooldown that currently applies to
+hotkey swaps. Tx delegate take rate limit is a much longer cooldown specific to changing delegate
+take ([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+
+- **Tx rate limit** — short general transaction cooldown.
+- **Tx delegate take rate limit** — long cooldown for delegate take changes.
+
+## Further Reading
+
+- [Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)
+- [Glossary: Validator Take](https://docs.learnbittensor.org/resources/glossary#validator-take)
+- [Glossary: Delegation](https://docs.learnbittensor.org/resources/glossary#delegation)
+- [Glossary: Block](https://docs.learnbittensor.org/resources/glossary#block)
