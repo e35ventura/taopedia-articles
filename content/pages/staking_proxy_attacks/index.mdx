@@ -29,81 +29,61 @@ authority can still matter if the delegate is compromised.
 This makes the topic narrower than full wallet compromise. It is about the risk left inside a
 permission that is intentionally limited to staking-related activity.
 
-## Delegated Staking Authority
+## What It Represents
 
-The [Proxies overview](https://docs.learnbittensor.org/keys/proxies) explains proxy relationships as
-scoped delegation between accounts. In that model, a staking proxy has less authority than a wallet
-with full control, but it still has access to staking-related actions for the protected account.
+A staking proxy has less authority than a wallet with full control, but reduced authority is not the
+same as no authority. A compromised staking proxy can still perform staking-related actions on the
+protected account, including unfavorable staking or unstaking patterns that change how stake is
+positioned rather than sending TAO directly to an unrelated address
+([Proxies overview](https://docs.learnbittensor.org/keys/proxies),
+[Avoid Staking Proxy Attacks](https://docs.learnbittensor.org/learn/avoid-staking-proxy-attacks)).
 
-That distinction is the core of staking proxy attack risk. Reduced authority is not the same thing
-as no authority.
+Readers should separate three "delegate" ideas that sound similar:
 
-## Relation to Nearby Protections
+- **Staking proxy** — an account granted scoped authority to act for a protected coldkey.
+- **Delegation** — committing TAO as stake behind a validator hotkey.
+- **Validator delegate** — the receiving validator role in that staking relationship.
 
-Staking proxy attacks are adjacent to MEV Shield and price protection, but they are not the same
-concept. [MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield/) concerns pre-inclusion
-transaction visibility. [Price Protection](https://docs.learnbittensor.org/learn/price-protection)
-concerns adverse price-movement handling around staking-related actions.
+Staking proxy attacks name misuse of the first pattern, not stake support for a validator
+([Staking and delegation overview](https://docs.learnbittensor.org/staking-and-delegation/delegation),
+[Glossary: Delegate](https://docs.learnbittensor.org/resources/glossary#delegate)).
 
-Staking proxy attacks name the delegated-authority risk. MEV Shield and price protection describe
-other risk controls in nearby transaction and staking contexts.
-
-A compromised staking proxy also creates a risk that MEV Shield does not cover by itself: an
-attacker can repeat the same staking maneuver across many separate transactions, draining value a
-little at a time, rather than relying on a single transaction MEV Shield could otherwise protect
+The threat is also narrower than coldkey compromise or a transfer-capable proxy. A coldkey loss
+threatens balances, ownership, and hotkey management. A transfer-capable proxy can move funds
+according to its permissions. A staking proxy exposes the protected account mainly to staking-path
+manipulation
 ([Avoid Staking Proxy Attacks](https://docs.learnbittensor.org/learn/avoid-staking-proxy-attacks)).
 
-## Practical Risk Reduction
+MEV Shield and price protection address adjacent transaction visibility and adverse price-movement
+handling, but they do not replace careful proxy design. A compromised staking proxy can also repeat
+the same staking maneuver across many separate transactions, draining value a little at a time in a
+way a single-transaction shield may not cover by itself
+([MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield/),
+[Price Protection](https://docs.learnbittensor.org/learn/price-protection),
+[Avoid Staking Proxy Attacks](https://docs.learnbittensor.org/learn/avoid-staking-proxy-attacks)).
 
-The guidance frames staking proxy attacks as preventable through how proxy authority is granted and
-monitored. Proxies are a normal Bittensor pattern when their scope is understood, but a staking
-proxy should be paired with operational habits that match its authority: knowing which account can
-act, what staking actions it can trigger, and whether announcements or delays are in use for
-sensitive proxy types where applicable.
+## Removal Revokes Authority Immediately
 
-The useful reader takeaway is separation of roles. The protected coldkey remains the custody anchor,
-the proxy account performs scoped work, and compromise of the proxy account becomes a
-staking-activity problem rather than an immediate full-wallet transfer problem — but only if the
-proxy type and surrounding controls were chosen with that boundary in mind.
+Once compromise is suspected, the guidance is to rotate or remove the affected staking proxy rather
+than treating limited authority as a reason to wait
+([Avoid Staking Proxy Attacks](https://docs.learnbittensor.org/learn/avoid-staking-proxy-attacks)).
 
-## How This Differs From Transfer Compromise
+Proxy removal is immediate and independent of any configured delay. Removing a proxy revokes the
+delegate's permission to act on the primary account right away, even when the proxy was originally
+set up with a delay before it could act
+([Working with proxies](https://docs.learnbittensor.org/keys/proxies/working-with-proxies)).
 
-Staking proxy attacks are intentionally narrower than coldkey compromise or a proxy with transfer
-authority. A coldkey loss threatens balances, ownership, and hotkey management. A transfer-capable
-proxy can move funds according to its permissions. A staking proxy, by contrast, exposes the
-protected account mainly to staking-path manipulation.
-
-MEV Shield and price protection address adjacent transaction and conversion risks, but they do not
-replace careful proxy design. Staking proxy attacks name delegated-authority misuse; the other tools
-address visibility and price-movement handling in nearby contexts. All three can matter to a wallet
-strategy, but they solve different parts of the problem.
+That matters because a protected account does not have to wait out a proxy's delay window to cut off
+further staking-related misuse. Assume stake-moving activity occurred until verified otherwise.
 
 ## Development Stage Context
 
 The
 [Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from localnet to testnet and then mainnet. For staking proxy
-attacks, that sequence changes how readers should interpret examples of delegated staking authority
-and proxy misuse outcomes.
-
-In localnet, proxy-wallet and delegation setups can be exercised in an isolated environment.
-Localnet examples reflect local chain state and locally configured proxy parameters rather than
-production wallet behavior.
-
-On testnet, proxy-authority examples can be observed in a shared, non-production network. Testnet
-examples show how delegated authority, proxy permissions, and slippage exposure behave under shared
-chain conditions while staying separate from mainnet wallet activity.
-
-On mainnet, staking proxy attacks describe live delegated-authority exposure on the production
-Bittensor network. The
-[Avoid Staking Proxy Attacks](https://docs.learnbittensor.org/learn/avoid-staking-proxy-attacks)
-reference describes the operational guidance that applies on the production network, and the
-[Proxies overview](https://docs.learnbittensor.org/keys/proxies) reference explains the proxy
-authority model those attacks target.
-
-The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
-separates mainnet, testnet, and localnet. A proxy-authority observation from one environment should
-not be read as evidence of production delegated-staking behavior in another environment.
+describes subnet development as moving from localnet to testnet and then mainnet. Staking-proxy
+attack examples should be read against that network boundary rather than as proof of production
+delegated-authority exposure on another network
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
 
 ## Distinction from Phishing
 
@@ -139,36 +119,9 @@ compromised staking proxy misuses that delegated authority to perform unfavorabl
 - **Proxy wallets** — scoped delegation where one account acts for a protected wallet.
 - **Staking proxy attack** — misuse of a compromised staking proxy's delegated authority.
 
-A staking proxy does not receive full wallet authority, but compromise is still meaningful. The
-official
-[Avoid Staking Proxy Attacks](https://docs.learnbittensor.org/learn/avoid-staking-proxy-attacks)
-page explains that an attacker with a compromised staking proxy can perform staking-related actions
-on the protected account. Those actions can include unfavorable staking or unstaking patterns that
-change how the account's stake is positioned, rather than sending TAO directly to an unrelated
-address.
-
-That outcome is why the concept sits next to slippage and pool-conversion topics. Staking and
-unstaking can produce amounts that differ from a static quote, and a malicious actor acting through
-a staking proxy can move the protected account through those operations. The harm is value
-positioning and loss through adverse conversions, not necessarily a clean transfer drain.
-
-Readers should therefore treat limited authority as a reduction in risk, not as proof the protected
-wallet is safe while the proxy is exposed.
-
-The guidance is procedural once compromise is suspected: rotate or remove the affected staking proxy
-rather than treating limited authority as a reason to wait, and assume stake-moving activity
-occurred until verified otherwise
+Limited authority reduces risk; it does not prove the protected wallet is safe while the proxy is
+exposed
 ([Avoid Staking Proxy Attacks](https://docs.learnbittensor.org/learn/avoid-staking-proxy-attacks)).
-
-The working-with-proxies reference describes removal as immediate and independent of any configured
-delay: removing a proxy revokes the delegate's permission to act on the primary account right away,
-even if that proxy was originally set up with a delay before it could act
-([Working with proxies](https://docs.learnbittensor.org/keys/proxies/working-with-proxies)).
-
-That immediacy matters for staking proxy attacks specifically, because it means a protected account
-does not have to wait out a proxy's configured delay window to cut off further staking-related
-misuse — removal takes effect on submission, separate from whatever delay governed the proxy's own
-actions.
 
 ## Distinction from Slippage
 
@@ -180,15 +133,6 @@ the gap between expected and received amounts when a pool conversion executes du
 - **Staking proxy attack** — misuse of delegated authority to perform unfavorable staking
   operations.
 - **Slippage** — conversion gap when pool reserves move during a staking action.
-
-Proxy misuse and pool-movement exposure are separate risks on the same staking path
-([Proxies overview](https://docs.learnbittensor.org/keys/proxies)).
-
-Staking proxy attacks sit where delegated staking authority intersects that conversion variance, but
-slippage vocabulary describes pool-move outcomes during stake paths and does not by itself prove a
-proxy was compromised
-([Avoid Staking Proxy Attacks](https://docs.learnbittensor.org/learn/avoid-staking-proxy-attacks),
-[Understanding Slippage](https://docs.learnbittensor.org/learn/slippage)).
 
 ## Distinction from Nominator
 
@@ -213,21 +157,9 @@ coldkey or hotkey from its mnemonic — a restore path, not a way to revoke a de
 
 ## Distinction from Yuma Consensus
 
-Staking proxy attacks describe threat patterns where compromised or mis-scoped proxy permissions are
-abused against staked positions. They name security-risk vocabulary, not the on-chain step that
-turns validator weight submissions into emission shares
-([Proxies overview](https://docs.learnbittensor.org/keys/proxies),
-[Working with proxies](https://docs.learnbittensor.org/keys/proxies/working-with-proxies)).
-
-Yuma Consensus is the on-chain process that converts submitted validator weights into emission
-shares after evaluation completes. Proxy abuse targets delegated signing permissions; Yuma Consensus
-settles scoring outcomes on a subnet
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
-[Emission](https://docs.learnbittensor.org/learn/emissions)).
-
-Readers should keep proxy-threat vocabulary separate from the settlement step. Staking proxy attacks
-answer what can go wrong with proxy permissions; Yuma Consensus answers how validator weights become
-emission shares in a subnet ([Proxies overview](https://docs.learnbittensor.org/keys/proxies),
+Staking proxy attacks describe threat patterns where compromised proxy permissions are abused
+against staked positions. Yuma Consensus is the on-chain process that converts submitted validator
+weights into emission shares ([Proxies overview](https://docs.learnbittensor.org/keys/proxies),
 [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
 - **Staking proxy attacks** — threat patterns against mis-scoped proxy permissions.
