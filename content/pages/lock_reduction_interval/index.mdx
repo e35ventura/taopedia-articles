@@ -1,0 +1,98 @@
+---
+title: "Lock Reduction Interval"
+summary:
+  "How the lock reduction interval parameter sets the block span over which the dynamic subnet
+  creation cost halves as it decays toward the minimum lock cost."
+category: "Subnets"
+tags: ["Subnets", "Economics"]
+infoboxTitle: Lock Reduction Interval
+infoboxCaption: Block span for the subnet creation cost to halve.
+infoboxRows:
+  - label: Parameter
+    value: LockReductionInterval
+  - label: Type
+    value: u64
+  - label: Default
+    value: "100800 blocks (~14 days)"
+  - label: Measured in
+    value: Blocks
+  - label: Related
+    value: NetworkMinLockCost
+  - label: Set by
+    value: Root
+---
+
+# Lock Reduction Interval
+
+Lock reduction interval is a network-wide parameter, listed in the documentation as
+`LockReductionInterval`, that sets how many blocks must pass for the network lock cost to halve. The
+reference describes it as the number of blocks needed for the network lock cost to fall by half, set
+at root permission
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet)).
+
+## What It Controls
+
+The cost to create a subnet is dynamic. The documentation explains that this cost doubles every time
+a subnet is created and then lowers gradually over time, so the lock reduction interval is what
+paces how quickly that decay happens
+([Create a Subnet: Burn cost](https://docs.learnbittensor.org/subnets/create-a-subnet#burn-cost)).
+
+Specifically, it is the block span over which the elevated cost halves. A shorter interval makes the
+creation cost fall faster after each new subnet, while a longer interval keeps the cost elevated for
+longer before it eases back down
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet)).
+
+Because the span is counted in blocks, the real-time pace depends on block time. The default
+interval is 14 times 7,200 blocks, which is 100,800 blocks or roughly 14 days, so the elevated cost
+halves over about two weeks before easing further toward the floor
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet)).
+
+## How the Decay Bottoms Out
+
+The decay does not continue to zero. As the creation cost falls across the lock reduction interval
+it approaches the minimum lock cost floor rather than dropping away entirely, so the interval
+governs the speed of the descent while the floor governs where it stops
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+- **Lock reduction interval** — how fast the creation cost decays.
+- **Network min lock cost** — the floor the decay approaches.
+
+## Why It Is Network-Wide
+
+Subnet creation is a network-level action, so the lock reduction interval is a single network
+parameter rather than per-subnet chain state. It applies to the cost of registering any new subnet,
+which is why it is not keyed to an existing netuid the way per-subnet hyperparameters are
+([Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+The current creation cost that this interval acts on can be checked through the
+`btcli subnets burn_cost` command, which reports the live TAO required to register a new subnet at
+that moment ([Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet)).
+
+## Documented Type and Setter
+
+The [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+reference lists `LockReductionInterval` as a `u64` measured in blocks, changed through the
+`sudo_set_lock_reduction_interval` extrinsic at root permission. Because it governs network-wide
+subnet creation economics, it is set at the root level rather than by individual subnet owners
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## Distinction from Network Rate Limit
+
+Network rate limit is the minimum block wait between subnet registrations, while lock reduction
+interval is the span over which the creation cost halves. One paces how often subnets can be
+created, the other paces how fast the cost falls
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+- **Lock reduction interval** — how fast the creation cost decays.
+- **Network rate limit** — minimum wait between new subnet registrations.
+
+## Further Reading
+
+- [Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet)
+- [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+- [Glossary: Block](https://docs.learnbittensor.org/resources/glossary#block)
+- [Glossary: Burn Cost](https://docs.learnbittensor.org/resources/glossary#burn-cost)
