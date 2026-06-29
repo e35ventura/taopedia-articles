@@ -33,7 +33,14 @@ server-side endpoint that receives incoming synapse objects
 ([Glossary: Synapse](https://docs.learnbittensor.org/resources/glossary#synapse),
 [Glossary: Axon](https://docs.learnbittensor.org/resources/glossary#axon)).
 
-Message-object vocabulary and endpoint vocabulary answer different questions on the same exchange.
+The axon receives deserialized synapse objects at the server boundary. Validators reach that
+endpoint through dendrite clients; the synapse defines field layout, while axon defines where the
+object is accepted and forwarded to miner logic
+([Validating: Dendrite and axon](https://docs.learnbittensor.org/validators#dendrite-and-axon),
+[Axon reference](https://docs.learnbittensor.org/python-api/html/autoapi/bittensor/core/axon/)).
+
+- **Synapse** — structured message object passed through axon and dendrite calls.
+- **Axon** — server-side endpoint that receives incoming synapse objects.
 
 ## Distinction from Dendrite
 
@@ -43,7 +50,14 @@ that sends and receives those objects during the exchange
 [Glossary: Dendrite](https://docs.learnbittensor.org/resources/glossary#dendrite),
 [Understanding Neurons](https://docs.learnbittensor.org/learn/neurons#neuron-to-neuron-communication)).
 
-Payload vocabulary and client-component vocabulary describe neighboring layers of the same path.
+Dendrite serializes synapse payloads for outbound validator queries and parses responses on return.
+The synapse object therefore travels through dendrite calls; dendrite itself is the client transport
+layer, not the task payload
+([Dendrite reference](https://docs.learnbittensor.org/python-api/html/autoapi/bittensor/core/dendrite/),
+[Synapse reference](https://docs.learnbittensor.org/python-api/html/autoapi/bittensor/core/synapse/)).
+
+- **Synapse** — structured payload with request and response fields.
+- **Dendrite** — client-side component that sends and receives synapse objects.
 
 ## Distinction from Neuron
 
@@ -115,7 +129,34 @@ Readers should treat synapse as off-chain communication vocabulary, and Yuma as 
 mechanism that turns aggregated weights into reward shares on the relevant netuid.
 
 - **Synapse** — structured miner-validator message object.
-- **Yuma Consensus** — epoch-boundary settlement from eligible validator weights to emission shares.
+- **Yuma Consensus** — on-chain mechanism that uses validator weights to determine emission shares
+  ([Yuma Consensus: Validator emissions](https://docs.learnbittensor.org/learn/yuma-consensus#validator-emissions)).
+
+## Distinction from Subnet Miner
+
+A synapse and a subnet miner relate as a per-request message envelope and the registered role that
+fills it. A subnet miner is the neuron registered on a netuid to perform the subnet's task and
+return results through validator-miner exchanges, while a synapse is the structured
+request-and-response object carried over the dendrite-to-axon path for one query
+([Glossary: Synapse](https://docs.learnbittensor.org/resources/glossary#synapse),
+[Glossary: Subnet Miner](https://docs.learnbittensor.org/resources/glossary#subnet-miner),
+[Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
+
+Subnet documentation separates participant roles from communication objects. Validators initiate
+dendrite clients that serialize synapse payloads toward miner axon endpoints; the subnet miner role
+names who must implement those handlers and populate response fields, not the message type itself
+([Validating: Dendrite and axon](https://docs.learnbittensor.org/validators#dendrite-and-axon),
+[Understanding Neurons: Neuron-to-neuron communication](https://docs.learnbittensor.org/learn/neurons#neuron-to-neuron-communication)).
+
+Custom synapse classes belong to subnet incentive design rather than individual miner identity. Two
+miners on the same netuid may share the same synapse schema while answering different query
+instances; holding a subnet miner registration does not by itself specify which synapse fields the
+next validator query will carry
+([Synapse reference](https://docs.learnbittensor.org/python-api/html/autoapi/bittensor/core/synapse/),
+[Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
+
+- **Subnet miner** — the registered role that performs the task and returns results.
+- **Synapse** — the request-and-response object passed between neurons for one exchange.
 
 ## Reader Boundary
 
@@ -127,18 +168,6 @@ operation, or a complete subnet task design
 
 Synapse identifies what is exchanged, while axon, dendrite, subnet task, and incentive mechanism
 references describe neighboring parts of the system.
-
-## Distinction from Subnet Miner
-
-A synapse and a subnet miner relate as a message and a participant that exchanges it. A subnet miner
-is the neuron that performs the subnet's task and returns results, while a synapse is the structured
-request-and-response object passed between validator and miner that carries the query and the
-miner's answer ([Glossary: Synapse](https://docs.learnbittensor.org/resources/glossary#synapse),
-[Glossary: Subnet Miner](https://docs.learnbittensor.org/resources/glossary#subnet-miner),
-[Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
-
-- **Subnet miner** — the neuron performing the task and returning results.
-- **Synapse** — the request-and-response object passed between neurons.
 
 ## Further Reading
 
