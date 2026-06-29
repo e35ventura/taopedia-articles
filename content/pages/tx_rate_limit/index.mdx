@@ -1,0 +1,89 @@
+---
+title: "Tx Rate Limit"
+summary:
+  "How the tx rate limit chain parameter sets the general transaction rate limit in blocks, the
+  cooldown that currently governs hotkey swaps and raises TxRateLimitExceeded when breached."
+category: "Subnets"
+tags: ["Subnets", "Security"]
+infoboxTitle: Tx Rate Limit
+infoboxCaption: General transaction rate limit on the chain.
+infoboxRows:
+  - label: Parameter
+    value: TxRateLimit
+  - label: Measured in
+    value: Blocks
+  - label: Applies to
+    value: Hotkey swaps (currently)
+  - label: Error
+    value: TxRateLimitExceeded
+  - label: Set by
+    value: Root
+---
+
+# Tx Rate Limit
+
+Tx rate limit is a chain parameter, listed in the documentation as `TxRateLimit`, that sets the
+network's general transaction rate limit. The dedicated rate-limits reference describes it as the
+default transaction rate limit, expressed in blocks, with the chain state variable named
+`TxRateLimit` ([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+
+## What It Controls
+
+The parameter is a cooldown measured in blocks between rate-limited transactions from an account.
+Although it is the network's general transaction rate limit, the documentation notes it currently
+applies only to hotkey swaps, while other rate-limited transactions are handled by their own custom
+limits ([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+
+When a transaction would breach the limit, the chain rejects it with the `TxRateLimitExceeded`
+error. That error is the signal that the cooldown window for the general transaction rate limit has
+not yet elapsed ([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor)).
+
+Because the value is counted in blocks, the real-time cooldown depends on block time. The
+rate-limits reference frames the general transaction rate limit at the scale of a single block in
+normal operation, so the spacing it enforces is short relative to longer per-subnet windows
+([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+
+## Hotkey Swaps Carry a Second Limit
+
+For hotkey swaps specifically, the general transaction rate limit is not the only gate. The
+documentation describes hotkey swaps as subject to two separate rate limits that must both be
+satisfied: the general transaction rate limit and a much longer per-subnet interval. The tx rate
+limit is the short, network-wide half of that pair
+([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+
+## Reading and Setting the Value
+
+`TxRateLimit` is root-governed chain state rather than a per-subnet owner setting, changed through
+the `sudo_set_tx_rate_limit` extrinsic. Because it is live chain state, the current value is read
+from the chain rather than assumed; the Bittensor SDK exposes a chain query that returns the active
+transaction rate limit ([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits),
+[SubtensorAPI](https://docs.learnbittensor.org/sdk/subtensor-api)).
+
+## Distinction from Serving Rate Limit
+
+Serving rate limit is a per-subnet limit on how often a miner can update its serving metadata. Tx
+rate limit is the network-wide general transaction rate limit that currently governs hotkey swaps,
+so one is per-subnet and the other applies across the chain
+([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+- **Tx rate limit** — network-wide general transaction cooldown.
+- **Serving rate limit** — per-subnet limit on miner serving-metadata updates.
+
+## Distinction from Network Rate Limit
+
+Network rate limit paces how often new subnets can be registered. Tx rate limit paces general
+transactions from an account, so one governs subnet creation cadence and the other account-level
+transaction spacing ([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+- **Tx rate limit** — cooldown between rate-limited account transactions.
+- **Network rate limit** — wait between new subnet registrations.
+
+## Further Reading
+
+- [Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor)
+- [SubtensorAPI](https://docs.learnbittensor.org/sdk/subtensor-api)
+- [Glossary: Block](https://docs.learnbittensor.org/resources/glossary#block)
