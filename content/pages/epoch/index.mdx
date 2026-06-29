@@ -8,8 +8,8 @@ infoboxCaption: Consensus period inside a Bittensor subnet.
 infoboxRows:
   - label: Context
     value: Subnet consensus
-  - label: Example
-    value: netuid 1
+  - label: Scope
+    value: Per subnet
   - label: Cadence
     value: Tempo-defined
   - label: Related
@@ -26,60 +26,56 @@ The term is useful because it separates timing from scoring. An epoch names the 
 consensus processing occurs; the subnet's incentive mechanism and validator weights explain what is
 being evaluated inside that period.
 
-## When an Epoch Runs on netuid 1
+## When an Epoch Runs
 
-On each block, coinbase checks whether `should_run_epoch` is true for a subnet. For the documented
-example netuid 1 on Finney mainnet, that decision uses the subnet's stored `tempo` and the blocks
-since `LastEpochBlock`, with additional paths for owner-triggered pending epochs documented in the
-coinbase flow
-([Coinbase Implementation: Epoch execution](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase#7-epoch-execution)).
+Each subnet keeps its own epoch schedule. During every block, the coinbase step checks whether that
+subnet's consensus period has elapsed by comparing the current block to the block recorded at the
+previous epoch boundary and the subnet's tempo setting. Subnets can therefore finish epochs on
+different blocks even when they share the same tempo value
+([Coinbase Implementation: Epoch execution](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase#7-epoch-execution),
+[Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)).
 
-Two subnets with the same tempo can still settle on different blocks because each netuid counts from
-its own last-epoch anchor rather than from a shared network schedule
+The coinbase flow also documents owner-triggered pending epochs that can fire before the automatic
+schedule on a selected netuid
+([Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase)).
+
+## What Happens at the Boundary
+
+When a subnet's epoch boundary arrives, accumulated pending emission is settled and Yuma Consensus
+runs once for that subnet. That pass reviews submitted validator weights, applies the participation
+and filtering rules below, and credits miner and validator shares for the closed period
 ([Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)).
 
-## What Runs at the Epoch Boundary
+## Activity Cutoff and Participation
 
-When the boundary arrives on a subnet such as netuid 1, coinbase drains pending emission and calls
-the Yuma `epoch()` pass for that netuid. That pass collects network state, filters weights, runs
-consensus, updates bonds, and returns miner and validator emission tuples
-([Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)).
-
-## Activity Cutoff Gates Active Validators on netuid 1
-
-Inside `epoch()` on a selected netuid, the implementation builds an inactive mask from each neuron's
-`last_update` against the subnet's activity cutoff. The epoch documentation states a neuron is
-inactive when `last_update + activity_cutoff < current_block`, and inactive stake is masked out
-before active stake is normalized
+A validator's weights count only while the validator is treated as active for the epoch. The chain
+marks a neuron inactive when too many blocks have passed since its last weight update relative to
+the subnet's activity cutoff, and inactive validators are excluded from the stake pool that drives
+consensus for that pass
 ([Implementation of the Yuma Consensus Epoch: Network State Collection](https://docs.learnbittensor.org/navigating-subtensor/epoch#1-network-state-collection)).
 
-On subnets with dynamic tempos, the effective cutoff used in that comparison is derived from
+On subnets with dynamic tempos, that cutoff is derived from
 [activity cutoff factor](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutofffactor)
-and tempo rather than from a fixed legacy block count alone
+and tempo rather than from a single fixed block count
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
-## Weights Filtered Before Yuma Settlement
+## Weight Filtering Before Settlement
 
-Before consensus aggregation on netuid 1, the epoch pass recalculates validator permits from stake,
-masks weights from non-permitted validators, removes disallowed self-weights, and drops weights
-stale relative to target registration blocks, as documented in the epoch implementation flow
+Before Yuma aggregates weights, the pass refreshes validator permits from current stake, ignores
+submissions from neurons without permits, removes self-votes except where the rules allow them, and
+discards weights that predate a miner's latest registration. These filters run per subnet on the
+weight matrix stored for that epoch
 ([Implementation of the Yuma Consensus Epoch: Validator Permit Management](https://docs.learnbittensor.org/navigating-subtensor/epoch#3-validator-permit-management),
 [Implementation of the Yuma Consensus Epoch: Weight Processing](https://docs.learnbittensor.org/navigating-subtensor/epoch#5-weight-processing)).
 
-## Chain Reads for netuid 1
+## Per-Subnet Live Values
 
-Readers can anchor epoch-timing claims to Finney mainnet netuid 1 with
-`btcli subnet hyperparameters --netuid 1 --network finney`, which exposes `tempo` and
-`activity_cutoff_factor` for that subnet
-([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
-
-Per-neuron `last_update` and permit flags for the same netuid are read from the subnet metagraph
-rather than from the epoch label alone
-([Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)).
-
-The infobox uses netuid 1 only as an example label; epoch cadence and participation rules apply per
-netuid and can differ across subnets
-([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+Tempo, activity cutoff factor, and other timing inputs are live hyperparameter state on each netuid.
+Neuron fields such as last update time and validator permit status come from that subnet's metagraph
+snapshot rather than from the epoch concept itself
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
 
 ## Distinction from Tempo
 
