@@ -30,6 +30,40 @@ separate staking action
 ([Glossary: Validator Take %](https://docs.learnbittensor.org/resources/glossary#validator-take-),
 [Glossary: Emission](https://docs.learnbittensor.org/resources/glossary#emission)).
 
+## How Validator Dividends Are Computed
+
+Yuma documentation defines each validator's dividend share as the sum of that validator's smoothed
+[validator-miner bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds)
+weighted by each miner's incentive for the epoch:
+
+`V_i = Σ_j B_ij × M_j`
+
+where `B_ij` is validator `i`'s bond with miner `j` and `M_j` is miner `j`'s incentive outcome from
+the same pass
+([Yuma Consensus: Validator emissions](https://docs.learnbittensor.org/learn/yuma-consensus#validator-emissions),
+[Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)).
+
+Dividends therefore pair validator-side bond history with miner-side emission results. A validator
+with stronger smoothed bonds toward high-incentive miners receives a larger validator-side share
+from that pairing, while bond vocabulary names the relationship state and dividend vocabulary names
+the credited validator-side outcome
+([Glossary: Dividends](https://docs.learnbittensor.org/resources/glossary#dividends),
+[Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)).
+
+## Smoothed Bonds Before the Dividend Sum
+
+Bonds are not instantaneous weight copies. Yuma updates each validator-miner bond with an
+exponential moving average that blends a new instant bond contribution with prior bond state across
+epochs
+([Yuma Consensus: Bonding mechanics](https://docs.learnbittensor.org/learn/yuma-consensus#bonding-mechanics),
+[Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds)).
+
+That smoothing sits upstream of the dividend formula. Validator weights and clipping shape how bonds
+evolve; miner [incentives](https://docs.learnbittensor.org/resources/glossary#incentives) are
+credited on the parallel miner branch; the dividend sum multiplies the smoothed bond matrix against
+those miner outcomes to produce each validator's `V_i`
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
 ## Distinction from Delegation Rewards
 
 For netuid 1 examples, dividends and delegation rewards answer different reader questions. Dividends
@@ -48,13 +82,6 @@ miners. That field names validator-side standing in subnet state rather than a n
 - **Delegation rewards** — delegator share after validator take on delegated stake.
 
 ## Distinction from Validator-Miner Bonds
-
-Validator-miner bonds and dividends belong to the same validator-side flow but name different steps.
-Bonds record the smoothed validator-miner relationship Yuma uses during consensus, while dividends
-name the validator-side emission outcome that follows bonded miner evaluation on netuid 1
-([Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
-[Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)).
 
 - **Validator-miner bonds** — smoothed validator-miner relationship used during consensus.
 - **Dividends** — validator-side emission outcome after bonded evaluation.
@@ -182,10 +209,8 @@ mechanism rather than being blended across unrelated evaluations
 
 ## Distinction from Miner Incentive
 
-Dividends also depend on miner-side outcomes. If bonds connect a validator to miners, the miner
-emission side supplies the result that is reflected back through those bonds
-([Yuma Consensus: Validator Emissions](https://docs.learnbittensor.org/learn/yuma-consensus#validator-emissions),
-[Glossary: Incentives](https://docs.learnbittensor.org/resources/glossary#incentives)).
+- **Miner incentives** — miner-side emission outcomes from the same Yuma pass.
+- **Dividends** — validator-side share paired from bonds and those miner outcomes.
 
 ## Distinction from Bond
 
