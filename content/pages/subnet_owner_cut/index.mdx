@@ -1,0 +1,98 @@
+---
+title: "Subnet Owner Cut"
+summary:
+  "How the subnet owner cut parameter sets the fixed 18% of a subnet's alpha emissions taken for the
+  owner before the remainder is split between validators and miners."
+category: "Subnets"
+tags: ["Subnets", "Emission"]
+infoboxTitle: Subnet Owner Cut
+infoboxCaption: Fixed share of alpha emissions taken for the subnet owner.
+infoboxRows:
+  - label: Parameter
+    value: SubnetOwnerCut
+  - label: Value
+    value: "~18% (global)"
+  - label: Paid as
+    value: Staked alpha
+  - label: Pending storage
+    value: PendingOwnerCut
+  - label: Set by
+    value: Root
+---
+
+# Subnet Owner Cut
+
+Subnet owner cut is a network parameter, listed in the documentation as `SubnetOwnerCut`, that sets
+the ratio of a subnet's alpha emissions given to the subnet owner as stake. The reference describes
+it as global and fixed at 18%, set at root permission
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Emission](https://docs.learnbittensor.org/learn/emissions)).
+
+## What It Controls
+
+The owner cut is the slice of each subnet's alpha emission reserved for the subnet owner before the
+rest is distributed. The documentation breaks the per-tempo alpha distribution down as 18% to the
+subnet owner, with the remainder going to validators as dividends and miners as incentives
+([Emission](https://docs.learnbittensor.org/learn/emissions)).
+
+The cut is deducted before the validator and miner distributions, not after. The coinbase computes
+the owner cut first and subtracts it from the alpha to be distributed, so the remaining roughly 82%
+is what flows to validators and miners through Yuma Consensus
+([Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+Owner emissions do not pay out every block. They accumulate in a pending owner cut store across the
+tempo and are released when the epoch completes, alongside the pending validator and miner emissions
+([Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase),
+[Emission](https://docs.learnbittensor.org/learn/emissions)).
+
+## How the Owner Receives It
+
+The cut is paid as staked alpha on the subnet rather than as liquid TAO. Receiving the share as
+alpha ties the owner's payout to the subnet's own token, so its value tracks how the subnet performs
+rather than being a fixed TAO amount ([Emission](https://docs.learnbittensor.org/learn/emissions),
+[Glossary: Alpha Token](https://docs.learnbittensor.org/resources/glossary#alpha-token)).
+
+## Relationship to the Owner Cut Toggles
+
+Subnet owner cut sets the size of the cut; two separate per-subnet flags govern its handling. Owner
+cut enabled determines whether the owner receives the cut at all, and owner cut auto lock enabled
+determines whether the received cut is locked as stake or taken as free stake
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+- **Subnet owner cut** — the fixed ~18% size of the owner's emission share.
+- **Owner cut enabled** — whether that share is distributed at all.
+- **Owner cut auto lock enabled** — whether the received share is auto-locked as stake.
+
+## Documented Value and Setter
+
+The [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+reference describes `SubnetOwnerCut` as global and fixed at 18%, changed through the
+`sudo_set_subnet_owner_cut` extrinsic at root permission. Because it is global rather than
+per-subnet, the same cut applies across subnets rather than being tuned by individual owners
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## Distinction from Owner Cut Enabled
+
+Subnet owner cut is the magnitude of the owner's emission share. Owner cut enabled is the on/off
+switch deciding whether that share is paid out, so one sets how much and the other sets whether
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+- **Subnet owner cut** — how large the owner's share is.
+- **Owner cut enabled** — whether the owner's share is distributed.
+
+## Distinction from TAO Weight
+
+Both are global parameters near 18%, but they govern different things. TAO weight scales how much a
+validator's TAO stake counts toward stake weight; subnet owner cut is the share of alpha emissions
+routed to the subnet owner ([Emission](https://docs.learnbittensor.org/learn/emissions)).
+
+- **Subnet owner cut** — owner's share of alpha emissions.
+- **TAO weight** — scaling of TAO stake in validator stake weight.
+
+## Further Reading
+
+- [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+- [Emission](https://docs.learnbittensor.org/learn/emissions)
+- [Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase)
+- [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
