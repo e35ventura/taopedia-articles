@@ -33,85 +33,44 @@ In Taopedia terms, the important concept is the signing boundary. A Ledger does 
 permissionless, and it does not remove the need to review transactions. It changes where the private
 key lives and where signing occurs.
 
-## Hardware Signing Boundary
+## What It Represents
 
-Bittensor wallet documentation distinguishes a cryptographic wallet, a hardware wallet, and a wallet
-application. The cryptographic wallet is the key-pair identity. The wallet application is software
-that prepares and submits blockchain operations. The hardware wallet is the device that holds the
-private key and signs across a device boundary.
+Bittensor wallet documentation distinguishes the cryptographic wallet, the wallet application, and
+the hardware wallet. The cryptographic wallet is the key-pair identity. The application prepares and
+submits operations. The Ledger holds the private key and signs across a device boundary so the
+coldkey private key does not load directly into the host operating system
+([Wallets, Coldkeys and Hotkeys in Bittensor](https://docs.learnbittensor.org/keys/wallets)).
 
-That boundary is the value of Ledger in a Bittensor setup. The host computer or phone can prepare a
-transaction, but the private key is intended to remain on the Ledger device. The user then reviews
-and approves signing on the device instead of exposing the coldkey private key directly to the host
-operating system.
-
-Reference:
-[Wallets, Coldkeys and Hotkeys in Bittensor](https://docs.learnbittensor.org/keys/wallets)
-
-## Coldkey Custody Role
-
-The primary coldkey is the highest-authority key in a Bittensor wallet. It can affect balances,
-stake, subnet ownership contexts, governance-sensitive actions, and hotkey management. The
-workstation-security guide therefore treats primary coldkey custody as the top security tier and
-recommends hardware-wallet custody for that key.
-
-Ledger belongs in that custody tier. It is most relevant when a user wants the primary coldkey to
-authorize sensitive actions without loading the private key into ordinary software on an
-internet-connected workstation. That makes it a coldkey custody tool, not merely a convenient wallet
-login method.
-
-Reference:
-[Coldkey and Hotkey Workstation Security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security)
-
-## Wallet Application Boundary
-
-A Ledger device needs a compatible wallet application to interact with Bittensor. The official
-Ledger guide names Bittensor-compatible wallet apps that support TAO and Ledger use, and the
-workstation-security guide lists Ledger use with compatible wallet apps for TAO transfers, staking,
-unstaking, and proxy creation.
-
-This split matters because the wallet app and the hardware device have different jobs. The app
-handles the user interface, network context, transaction construction, and submission flow. The
-Ledger holds the key and signs what the user approves. A safe mental model keeps those roles
-separate instead of treating the app itself as the custody boundary.
-
-References:
-[Using Ledger Hardware Wallet](https://docs.learnbittensor.org/staking-and-delegation/using-ledger-hw-wallet),
-[Coldkey and Hotkey Workstation Security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security)
-
-## Bittensor Operation Scope
-
-The official workstation-security guide describes Ledger hardware wallets, used with compatible
-wallet apps, as supporting TAO transfers, staking, unstaking, and proxy creation. Those operations
-are coldkey-sensitive because they can affect balances, stake, or delegated authority.
-
-The scope is narrower than "all Bittensor operations." Some advanced workflows are handled through
-BTCLI, the SDK, or other tooling, and those tools have their own permission model. A Ledger article
-should therefore be read as a custody and signing concept for supported wallet-app operations, not
-as a promise that every Subtensor action can be signed through every Ledger-connected app. Those
-supported staking, unstaking, transfer, and proxy-creation actions are prepared in software but
-authorized from hardware custody, which is why Ledger vocabulary covers coldkey-sensitive balance
-and delegation operations rather than every advanced BTCLI or SDK workflow
+The primary coldkey is the highest-authority key for balances, stake, governance-sensitive actions,
+and hotkey management. Ledger belongs in that custody tier when a user wants sensitive coldkey
+actions authorized without keeping private key material in ordinary internet-connected software
 ([Coldkey and Hotkey Workstation Security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security)).
 
-Reference:
-[Coldkey and Hotkey Workstation Security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security)
+Compatible wallet applications handle the interface, network context, transaction construction, and
+submission flow while the Ledger signs what the user approves on the device. The official guidance
+describes Ledger use for TAO transfers, staking, unstaking, and proxy creation through supported
+wallet apps — not as a promise that every BTCLI, SDK, or Subtensor workflow is available through
+every Ledger-connected interface
+([Using Ledger Hardware Wallet](https://docs.learnbittensor.org/staking-and-delegation/using-ledger-hw-wallet),
+[Coldkey and Hotkey Workstation Security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security)).
 
-## Risk Boundary
+Ledger reduces private-key exposure on the host, but it does not make the surrounding system
+trustworthy. Users still must verify recipient, amount, network context, and transaction meaning
+before approving signatures, including against address-poisoning guidance on copied or abbreviated
+addresses ([Address Poisoning Scams](https://docs.learnbittensor.org/keys/address-poisoning-scams)).
 
-Ledger reduces one major category of risk: private-key exposure on the host device. It does not make
-every surrounding system trustworthy. A compromised computer, misleading website, malicious wallet
-extension, rushed workflow, or poisoned address history can still cause a user to approve an
-unwanted transaction.
+The safer pattern keeps the primary coldkey in hardware custody, uses compatible applications from
+official sources, prefers scoped proxies for routine work, and treats every signature request as a
+high-value decision ([Proxies overview](https://docs.learnbittensor.org/keys/proxies)).
 
-The safer Bittensor pattern is layered. Keep the primary coldkey in hardware custody, use compatible
-wallet applications from official sources, prefer scoped proxies for routine work, and treat every
-signature request as a high-value decision. Ledger is strongest when it is part of that broader
-operational model.
+## Development Stage Context
 
-References:
-[Wallets, Coldkeys and Hotkeys in Bittensor](https://docs.learnbittensor.org/keys/wallets),
-[Coldkey and Hotkey Workstation Security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security)
+The
+[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
+describes subnet development as moving from localnet to testnet and then mainnet. Ledger signing
+examples should be read against that network boundary rather than as proof of production custody
+behavior on another network
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
 
 ## Distinction from External Wallet
 
@@ -193,37 +152,25 @@ custody within that model
 ## Distinction from Yuma Consensus
 
 A Ledger hardware wallet keeps coldkey signing material on a hardware device separate from the host.
-That hardware-custody vocabulary is separate from the tempo pass that converts validator weight
-submissions into emission shares
+Yuma Consensus is the on-chain process that converts submitted validator weights into emission
+shares
 ([Using Ledger Hardware Wallet](https://docs.learnbittensor.org/staking-and-delegation/using-ledger-hw-wallet),
 [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
-Coldkey operations may be signed on the device before inclusion. Yuma still aggregates submitted
-validator weights and credits miner incentives and validator dividends at epoch boundaries
-([Emission](https://docs.learnbittensor.org/learn/emissions)).
-
-Readers should keep custody hardware vocabulary and consensus-settlement vocabulary separate. Ledger
-protects signing material offline; Yuma names how evaluation signals become credited shares on chain
-([Coldkey and Hotkey Workstation Security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security)).
-
 - **Ledger hardware wallet** — hardware device that keeps coldkey material offline.
-- **Yuma Consensus** — on-chain mechanism that turns validator weights into emission shares.
+- **Yuma Consensus** — on-chain weight aggregation that settles emissions.
 
 ## Distinction from Address Verification
 
-Ledger does not remove address-verification risk. The official Ledger guide includes transfer and
-address-copying flows, while the official
-[Address Poisoning Scams](https://docs.learnbittensor.org/keys/address-poisoning-scams) guide
-explains why wallet users should verify addresses carefully instead of relying on transaction
-history or abbreviated address displays.
+Ledger does not remove address-verification risk. Hardware signing can keep the private key off the
+host machine, but the user still must confirm the intended recipient, amount, and transaction
+meaning before approving a signature
+([Using Ledger Hardware Wallet](https://docs.learnbittensor.org/staking-and-delegation/using-ledger-hw-wallet),
+[Address Poisoning Scams](https://docs.learnbittensor.org/keys/address-poisoning-scams)).
 
-For Bittensor users, this means hardware signing should be paired with deliberate review. The device
-can keep the private key off the host machine, but the user still needs to confirm the intended
-recipient, amount, network context, and transaction meaning before approving a signature.
-
-References:
-[Using Ledger Hardware Wallet](https://docs.learnbittensor.org/staking-and-delegation/using-ledger-hw-wallet),
-[Address Poisoning Scams](https://docs.learnbittensor.org/keys/address-poisoning-scams)
+- **Ledger hardware wallet** — hardware custody and signing boundary.
+- **Address verification** — deliberate review of destination and transaction details before
+  signing.
 
 ## Reader Boundary
 
@@ -235,37 +182,6 @@ dedicated hardware while compatible software prepares supported chain interactio
 Specific setup steps, app compatibility details, and interface screens can change over time. Those
 details should be checked against the current official Ledger and Bittensor wallet documentation
 before moving funds or approving signatures.
-
-## Development Stage Context
-
-The
-[Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction#subnet-development)
-describes subnet development as moving from localnet to testnet and then mainnet. For Ledger
-Hardware Wallet, this sequence gives readers a boundary for interpreting hardware-wallet examples
-and signing-environment notes.
-
-Localnet examples are isolated and reflect local chain state, so they are useful for controlled
-experiments rather than evidence of live Bittensor behavior. Testnet examples add shared
-non-production conditions, which can reveal integration behavior without touching mainnet state.
-
-On mainnet, Ledger Hardware Wallet examples should be read as live production wallet-signing
-behavior on the production Bittensor network.
-
-The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks) reference
-separates mainnet, testnet, and localnet, so outcomes from one environment should not be treated as
-proof of behavior in another.
-
-## Compatible Apps Prepare Transactions the Ledger Signs
-
-The
-[Using Ledger Hardware Wallet](https://docs.learnbittensor.org/staking-and-delegation/using-ledger-hw-wallet)
-guide describes Bittensor-compatible wallet applications that support TAO management with Ledger
-devices. The app constructs and submits supported operations while the Ledger holds the private key
-and signs what the user approves on the device
-([Wallets, Coldkeys and Hotkeys](https://docs.learnbittensor.org/keys/wallets)).
-
-Readers should keep those roles separate. Wallet-app compromise or misleading UI can still produce
-bad signature requests even when the coldkey private key never leaves the hardware device.
 
 ## Further Reading
 
