@@ -10,6 +10,8 @@ infoboxCaption: Dynamic bond smoothing based on consensus alignment.
 infoboxRows:
   - label: Also known as
     value: Liquid alpha
+  - label: Example
+    value: netuid 1
   - label: Layer
     value: Yuma Consensus
   - label: Affects
@@ -34,6 +36,54 @@ evaluation signals; consensus-based weights adjust how validator-miner bonds res
 signals are compared with consensus
 ([Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights),
 [Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds)).
+
+## Pair-Specific Response
+
+Consensus alignment is why the bond-smoothing factor can differ across validator-miner pairs. When a
+pair is closer to consensus, the bond response can be more direct; weaker alignment can keep the
+response more conservative
+([Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)).
+
+That pair scope separates consensus-based weights from fixed-alpha bond smoothing. A fixed setting
+gives every bond the same smoothing response, while this mechanism allows the response to vary by
+pair inside one subnet without becoming a separate miner-ranking rule.
+
+## Bounds and Hyperparameters
+
+Consensus-based weights operate inside low and high alpha bounds configured as subnet
+hyperparameters. Those bounds limit how far the per-pair smoothing factor can move, so the response
+stays a bounded EMA parameter rather than an open-ended custom score
+([Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+The bounds constrain how quickly bond history can react. Consensus and submitted weight signals
+still define what is being smoothed; the hyperparameters only cap the smoothing envelope.
+
+## How the Per-Pair Alpha Is Computed
+
+When liquid alpha is enabled, each validator-miner bond gets its own smoothing factor rather than
+one subnet-wide value, interpolated between the low and high alpha bounds by a sigmoid. The sigmoid
+reads one of two gaps depending on the pair: when the validator's weight is at or above its current
+bond for that miner, it uses the gap between the weight and the miner's consensus value; otherwise
+it uses the gap between the bond and the weight. The interpolated factor is then clamped back to the
+low-to-high interval
+([`alpha_sigmoid`](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/epoch/run_epoch.rs)).
+
+When liquid alpha is disabled, the same bond EMA instead uses a single subnet-wide factor derived
+from the bonds moving average, so the per-pair interpolation between the bounds is what
+consensus-based weights add over that baseline
+([`compute_disabled_liquid_alpha`](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/epoch/run_epoch.rs)).
+
+## Reading Bounds on netuid 1
+
+Alpha low, alpha high, and whether liquid alpha is enabled are per-subnet hyperparameter rows. For
+the documented example netuid 1 on Finney mainnet, readers can verify the live bound values with
+`btcli subnet hyperparameters --netuid 1 --network finney`
+([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
+
+That read path keeps bound claims tied to a parseable netuid. Other subnets expose their own
+hyperparameter tables and may use different configured ranges
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
 
 ## Distinction from Exponential Moving Average
 
@@ -89,9 +139,8 @@ are processed ([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-r
 The two mechanisms address different copying risks in the same Yuma pass on netuid 1
 ([Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)).
 
-Delayed visibility through Commit Reveal addresses timing around visible weights, while
-consensus-based weights address bond responsiveness around alignment
-([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)).
+- **Commit reveal** — delays visible weight publication.
+- **Consensus-based weights** — adjusts bond responsiveness around alignment.
 
 ## Distinction from Yuma Consensus
 
@@ -136,6 +185,8 @@ that interpret validator weights
 ## Further Reading
 
 - [Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)
+- [Glossary: Liquid Alpha](https://docs.learnbittensor.org/resources/glossary#liquid-alpha)
+- [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
 - [Glossary: Weight Vector](https://docs.learnbittensor.org/resources/glossary#weight-vector)
 - [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
 - [Yuma Consensus: validator emissions](https://docs.learnbittensor.org/learn/yuma-consensus#validator-emissions)
