@@ -1,0 +1,119 @@
+---
+title: "Staking Precompile"
+summary:
+  "How the staking precompile lets Ethereum-style smart contracts call native Subtensor staking
+  actions such as add stake and remove stake on the Bittensor EVM."
+category: "Smart Contracts"
+tags: ["Smart Contracts", "Staking"]
+infoboxTitle: Staking Precompile
+infoboxCaption: EVM bridge to native Subtensor staking actions.
+infoboxRows:
+  - label: Context
+    value: Bittensor EVM
+  - label: V2 address
+    value: "0x...0805"
+  - label: Reaches
+    value: Native add/remove stake
+  - label: Caller as
+    value: Coldkey is the contract
+---
+
+# Staking Precompile
+
+The staking precompile lets Ethereum-style code interact with the staking feature of Subtensor. By
+calling it, EVM smart contracts can reach native staking methods such as add stake and remove stake
+to delegate stake to a hotkey or undelegate it
+([Staking Precompile](https://docs.learnbittensor.org/evm-tutorials/staking-precompile),
+[Bittensor EVM Smart Contracts](https://docs.learnbittensor.org/evm-tutorials)).
+
+## What It Does
+
+A precompile is a contract exposed at a fixed address on the Bittensor EVM that bridges EVM calls to
+native chain functionality. The staking precompile is the bridge for staking: it exposes operations
+that map to Subtensor staking, including adding stake to a hotkey, removing stake from a hotkey,
+moving stake between hotkeys, and transferring stake between coldkeys, alongside read methods for
+stake balances
+([Bittensor EVM: Examples and Precompiles](https://docs.learnbittensor.org/evm-tutorials/examples),
+[Staking Precompile](https://docs.learnbittensor.org/evm-tutorials/staking-precompile)).
+
+This lets a Solidity contract participate in the same staking actions the native tooling exposes,
+without leaving the EVM layer
+([Bittensor EVM Smart Contracts](https://docs.learnbittensor.org/evm-tutorials)).
+
+## The Contract Acts as the Coldkey
+
+A documented and important behavior is that the precompile takes the calling contract's own address
+as the coldkey, because it cannot see the original caller behind the contract. As a result, the
+contract itself, not an external user's coldkey, must hold sufficient liquid TAO for an add-stake
+call, or the transaction fails
+([Staking Precompile](https://docs.learnbittensor.org/evm-tutorials/staking-precompile)).
+
+This makes the staking precompile a specific case where an EVM-side address feeds into native
+coldkey accounting, in contrast to the general rule that an EVM account does not identify a native
+coldkey ([H160 Address](https://docs.learnbittensor.org/resources/glossary#h160-address),
+[Staking Precompile](https://docs.learnbittensor.org/evm-tutorials/staking-precompile)).
+
+## V1 and V2
+
+The documentation describes two versions. V1 lives at address
+`0x0000000000000000000000000000000000000801` and is deprecated but kept for backward compatibility,
+while V2 lives at `0x0000000000000000000000000000000000000805`. The key difference is how the amount
+is provided: V1 reads the staking amount from the transaction value and then returns the token to
+the caller, which the documentation notes is misleading, whereas V2 takes all amounts as explicit
+function parameters
+([Staking Precompile](https://docs.learnbittensor.org/evm-tutorials/staking-precompile)).
+
+## Amount Units
+
+The documentation cautions that amounts passed to the precompile are expected in RAO, the
+1/1,000,000,000 TAO denomination, while a transaction value transferred to a contract is in the
+1/1e18 denomination. Callers must convert before invoking the precompile so the staking amount is
+interpreted correctly
+([Staking Precompile](https://docs.learnbittensor.org/evm-tutorials/staking-precompile),
+[Glossary: Rao](https://docs.learnbittensor.org/resources/glossary#rao)).
+
+## Distinction from Staking
+
+Staking is the native action of delegating TAO support behind a hotkey through Subtensor. The
+staking precompile is the EVM entry point that reaches those same native actions from Ethereum-style
+code, so staking is the underlying capability while the precompile is the EVM-side bridge to it
+([Staking and Delegation Overview](https://docs.learnbittensor.org/staking-and-delegation/delegation),
+[Staking Precompile](https://docs.learnbittensor.org/evm-tutorials/staking-precompile)).
+
+- **Staking** — the native delegation action behind a hotkey.
+- **Staking precompile** — the EVM bridge that reaches that action from contracts.
+
+## Distinction from H160 Address
+
+An H160 address is the Ethereum-style account identifier used on the Bittensor EVM. The staking
+precompile is a fixed-address contract that bridges EVM calls to native staking; it is a callable
+entry point rather than an account format
+([H160 Address](https://docs.learnbittensor.org/resources/glossary#h160-address),
+[Bittensor EVM Smart Contracts](https://docs.learnbittensor.org/evm-tutorials)).
+
+- **H160 address** — an EVM account identifier.
+- **Staking precompile** — a fixed-address contract reaching native staking.
+
+## Distinction from Coldkey
+
+A coldkey is the native ownership key that authorizes staking. When EVM code calls the staking
+precompile, the calling contract's address stands in as the coldkey for the resulting stake, so the
+contract must hold the funds rather than relying on an external coldkey
+([Wallets, Coldkeys and Hotkeys in Bittensor](https://docs.learnbittensor.org/keys/wallets),
+[Staking Precompile](https://docs.learnbittensor.org/evm-tutorials/staking-precompile)).
+
+- **Coldkey** — native ownership key that authorizes staking.
+- **Staking precompile** — EVM bridge where the calling contract acts as the coldkey.
+
+## Reader Boundary
+
+This page defines the concept at a high level. It is not a deployment walkthrough, an ABI reference,
+or a guarantee that addresses and versions never change. Readers building against the precompile
+should confirm current addresses, function signatures, and unit handling in the EVM documentation.
+
+## Further Reading
+
+- [Staking Precompile](https://docs.learnbittensor.org/evm-tutorials/staking-precompile)
+- [Bittensor EVM: Examples and Precompiles](https://docs.learnbittensor.org/evm-tutorials/examples)
+- [Bittensor EVM Smart Contracts](https://docs.learnbittensor.org/evm-tutorials)
+- [Staking and Delegation Overview](https://docs.learnbittensor.org/staking-and-delegation/delegation)
