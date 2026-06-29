@@ -1,0 +1,81 @@
+---
+title: "Liquid Alpha Enabled"
+summary:
+  "How the liquid alpha enabled toggle decides whether a subnet uses a single fixed bond-smoothing
+  alpha or a consensus-driven alpha that varies between the alpha low and alpha high bounds."
+category: "Consensus"
+tags: ["Consensus", "Subnets"]
+infoboxTitle: Liquid Alpha Enabled
+infoboxCaption: Toggle for consensus-driven bond smoothing.
+infoboxRows:
+  - label: Parameter
+    value: liquid_alpha_enabled
+  - label: Type
+    value: Boolean
+  - label: Default
+    value: "False"
+  - label: Scope
+    value: Per subnet (netuid)
+  - label: Set by
+    value: Subnet owner
+---
+
+# Liquid Alpha Enabled
+
+Liquid alpha enabled is the per-subnet switch that turns on the liquid alpha feature, named
+`LiquidAlphaEnabled` in the
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters) reference.
+It is a boolean, owned by the subnet owner, and defaults to false.
+
+## What It Decides
+
+The alpha value controls how quickly
+[validator-miner bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds)
+smooth over time. This toggle decides which kind of alpha a subnet uses: when it is off, the subnet
+relies on a single fixed alpha for that smoothing; when it is on, the alpha is allowed to vary
+across a range instead of staying constant
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+With the feature on, the [alpha low](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+and [alpha high](https://docs.learnbittensor.org/subnets/subnet-hyperparameters) values become the
+lower and upper bounds of that range, and where a given validator-miner pair lands inside it depends
+on their consensus alignment, shaped by `alpha_sigmoid_steepness`
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## When It Matters
+
+A common misconception is that setting alpha low and alpha high alone changes how a subnet smooths
+bonds. Those bounds describe a range that is only consulted when liquid alpha is enabled. Because
+the toggle defaults to false, a subnet that has tuned its alpha bounds but never enabled the feature
+is still using a single fixed alpha, and the bounds sit inert until the switch is turned on
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+This is why the toggle is worth checking before reasoning about a subnet's bond behavior. On netuid
+1, for instance, the active value lives among the subnet's hyperparameters keyed by that netuid, so
+reading netuid 1's `liquid_alpha_enabled` tells you whether its alpha low and alpha high bounds are
+actually in force or merely configured
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## Why It Is a Toggle
+
+Keeping liquid alpha behind an explicit per-subnet switch lets each subnet opt into consensus-driven
+smoothing only when its owner wants that responsiveness, while subnets that prefer predictable,
+constant smoothing simply leave it off. Since it is owner-settable per netuid, one subnet enabling
+the feature does not change how any other subnet smooths its bonds
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## Distinction from Alpha High and Alpha Low
+
+The toggle and the bounds answer different questions. Liquid alpha enabled decides whether a varying
+alpha is used at all, while alpha high and alpha low only define the range it varies within once the
+feature is on
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+- **Liquid alpha enabled** — whether the alpha varies at all.
+- **Alpha high / alpha low** — the upper and lower bounds it varies between.
+
+## Further Reading
+
+- [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+- [Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds)
+- [Glossary: Yuma Consensus](https://docs.learnbittensor.org/resources/glossary#yuma-consensus)
