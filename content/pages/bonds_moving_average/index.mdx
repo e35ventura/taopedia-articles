@@ -199,6 +199,35 @@ itself. It names only the subnet hyperparameter that configures how validator-mi
 smoothed across epochs on the selected netuid
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
+## How Bond History Accumulates Across Consensus Rounds
+
+Each Yuma Consensus round produces an instant bond contribution from a validator's current weight
+assignments toward each miner. Rather than replacing the prior bond state outright, Yuma Consensus
+blends the new contribution with the accumulated history through an exponential moving average.
+BondsMovingAverage is the per-subnet coefficient that controls how much weight the new instant
+contribution carries versus how much prior history retains
+([Yuma Consensus: Bonding mechanics](https://docs.learnbittensor.org/learn/yuma-consensus#bonding),
+[EMA](https://docs.learnbittensor.org/learn/ema)).
+
+Because the update is an EMA, a single consensus round's bond observations never fully displace
+prior history. Bond state on a subnet with a high BondsMovingAverage value changes slowly; on a
+subnet with a low value the instant contribution carries more weight per round
+([EMA](https://docs.learnbittensor.org/learn/ema)).
+
+## How BondsMovingAverage Tunes the Accumulation Rate
+
+A validator's accumulated bond toward a miner reflects many past consensus rounds, weighted by the
+exponential scheme. Changing BondsMovingAverage shifts how fast that history decays. The
+subnet-hyperparameters reference notes that higher bonds yield higher dividends for validators, so
+the accumulation rate indirectly shapes how responsive validator-side emission outcomes are to
+recent weight-setting behavior on the subnet
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Yuma Consensus: Bonding mechanics](https://docs.learnbittensor.org/learn/yuma-consensus#bonding)).
+
+Each subnet carries its own BondsMovingAverage value. The accumulation rate on netuid 1 is
+independent of the rate on any other subnet
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
 ## Further Reading
 
 - [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
