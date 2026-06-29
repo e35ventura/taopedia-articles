@@ -158,16 +158,7 @@ The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-netw
 separates mainnet, testnet, and localnet. A constant or hyperparameter example from one environment
 should not be read as representing another environment.
 
-## Distinction from Subnet Hyperparameters
-
-A Subtensor constant and a subnet hyperparameter name a runtime default and a live per-subnet value.
-`initial` constants such as `initialTempo` name compile-time startup defaults, while subnet
-hyperparameters show the tempo, UID cap, and immunity values a subnet actually uses after creation
-([Subtensor Constants](https://docs.learnbittensor.org/subtensor-api/constants),
-[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
-
-- **Subtensor constant** — a compile-time runtime default or bound.
-- **Subnet hyperparameter** — the live per-subnet value used after creation.
+## Initial Constants Are Startup Defaults, Not Live Hyperparameters
 
 On a subnet such as netuid 1, `initial` Subtensor-module constants such as `initialTempo`,
 `initialMaxAllowedUids`, and `initialImmunityPeriod` name compile-time startup defaults the runtime
@@ -181,6 +172,8 @@ than from a one-time `initial` constant alone, so an `initial` constant should n
 live subnet state
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
+## Constants Name Bounds; Hyperparameters Govern Live Subnet Behavior
+
 Those timing and participation values sit upstream of the subnet incentive loop. Validators submit
 [validator weights](https://docs.learnbittensor.org/resources/glossary#weight-vector) on the
 subnet's tempo schedule, and [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
@@ -189,17 +182,7 @@ turns those signals into miner incentives and validator dividends
 defaults and bounds, while hyperparameters and consensus documentation explain how those values
 participate in live subnet behavior.
 
-## Distinction from Subtensor Storage
-
-Subtensor constants expose fixed protocol parameter values in the API. Subtensor storage queries
-return the current on-chain value stored at a key
-([Subtensor Constants](https://docs.learnbittensor.org/subtensor-api/constants),
-[Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage),
-[Inspecting the Chain](https://docs.learnbittensor.org/concepts/inspecting-the-chain)). Constants
-answer what the protocol defines; storage answers what the chain currently holds.
-
-- **Subtensor constants** — fixed protocol parameter values in the API.
-- **Subtensor storage** — current on-chain values at queried keys.
+## Constants, Storage, and Events Answer Different Questions
 
 Constants, storage entries, and events answer different questions. Constants expose runtime-defined
 values, storage entries expose state surfaces, and events name runtime records emitted during
@@ -215,6 +198,45 @@ A constant can name a value, storage can show a state surface, and an event can 
 activity ([Subtensor Constants](https://docs.learnbittensor.org/subtensor-api/constants),
 [Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage),
 [Subtensor Events](https://docs.learnbittensor.org/subtensor-api/events)).
+
+## Yuma Settlement Uses Constants But Is Not Constant Vocabulary
+
+Yuma Consensus is the on-chain mechanism that runs at the epoch boundary on each subnet. It reads
+the weight matrix from eligible validators, applies clipping and bonding under those runtime rules,
+and converts the result into miner incentives and validator dividend shares
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
+[Emission](https://docs.learnbittensor.org/learn/emissions)).
+
+Constants constrain how Yuma executes; Yuma settles evaluation signals from eligible validators on
+that netuid—not the constant definition table itself
+([Glossary: Hyperparameters](https://docs.learnbittensor.org/resources/glossary#hyperparameters)).
+
+Readers should treat subtensor constants as runtime configuration vocabulary, and Yuma as the
+epoch-boundary mechanism that allocates subnet rewards from consensus while validators remain
+active.
+
+## Distinction from Subnet Hyperparameters
+
+A Subtensor constant and a subnet hyperparameter name a runtime default and a live per-subnet value.
+`initial` constants such as `initialTempo` name compile-time startup defaults, while subnet
+hyperparameters show the tempo, UID cap, and immunity values a subnet actually uses after creation
+([Subtensor Constants](https://docs.learnbittensor.org/subtensor-api/constants),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+- **Subtensor constant** — a compile-time runtime default or bound.
+- **Subnet hyperparameter** — the live per-subnet value used after creation.
+
+## Distinction from Subtensor Storage
+
+Subtensor constants expose fixed protocol parameter values in the API. Subtensor storage queries
+return the current on-chain value stored at a key
+([Subtensor Constants](https://docs.learnbittensor.org/subtensor-api/constants),
+[Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage),
+[Inspecting the Chain](https://docs.learnbittensor.org/concepts/inspecting-the-chain)). Constants
+answer what the protocol defines; storage answers what the chain currently holds.
+
+- **Subtensor constants** — fixed protocol parameter values in the API.
+- **Subtensor storage** — current on-chain values at queried keys.
 
 ## Distinction from Subtensor Events
 
@@ -232,26 +254,11 @@ Subtensor constants are fixed protocol values defined in the Subtensor runtime c
 name hard-coded limits and parameters the chain enforces, not the recurring settlement step that
 converts validator weight submissions into emission shares on one netuid
 ([Navigating Subtensor](https://docs.learnbittensor.org/navigating-subtensor),
-[Subtensor Constants](https://docs.learnbittensor.org/subtensor-api/constants)).
-
-Yuma Consensus is the on-chain mechanism that runs at the epoch boundary on each subnet. It reads
-the weight matrix from eligible validators, applies clipping and bonding under those runtime rules,
-and converts the result into miner incentives and validator dividend shares
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
-[Emission](https://docs.learnbittensor.org/learn/emissions)).
-
-Earlier sections separate subtensor constants from hyperparameters and from runtime storage keys.
-Constants constrain how Yuma executes; Yuma settles evaluation signals from eligible validators on
-that netuid—not the constant definition table itself
-([Glossary: Hyperparameters](https://docs.learnbittensor.org/resources/glossary#hyperparameters)).
-
-Readers should treat subtensor constants as runtime configuration vocabulary, and Yuma as the
-epoch-boundary mechanism that allocates subnet rewards from consensus while validators remain
-active.
+[Subtensor Constants](https://docs.learnbittensor.org/subtensor-api/constants),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
 - **Subtensor constants** — fixed protocol values in the runtime.
-- **Yuma Consensus** — epoch-boundary settlement from eligible validator weights to emission shares.
-  Subtensor constants name fixed runtime values; Yuma processes validator weights into rewards
+- **Yuma Consensus** — epoch-boundary settlement from eligible validator weights to emission shares
   ([Yuma Consensus: Validator emissions](https://docs.learnbittensor.org/learn/yuma-consensus#validator-emissions)).
 
 ## Distinction from Inspection
