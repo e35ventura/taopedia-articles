@@ -41,10 +41,28 @@ owner stays the same
 ([Coldkey and Hotkey Workstation Security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security),
 [Working with Keys](https://docs.learnbittensor.org/keys/working-with-keys)).
 
+Because the owning coldkey authorizes the swap, a leaked hotkey cannot rotate itself away. The
+defense depends on the coldkey staying uncompromised, since the coldkey owner is the one who moves
+participation to a fresh hotkey, which is why hotkey swap answers a hotkey leak but not a coldkey
+compromise
+([Coldkey and Hotkey Workstation Security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security)).
+
 Subtensor supports all-subnet and per-subnet swap paths. The chosen scope determines which subnet
 roles rehome to the replacement hotkey. Swaps are subject to transaction rate limits, a per-subnet
 swap interval, and a recycling fee documented in rate-limit guidance
 ([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+
+The rate-limit reference documents two block-based limits that must both be satisfied on a
+per-subnet swap: a 1-block general transaction limit and a 36,000-block per-subnet interval (about
+five days) tracked per coldkey on each netuid
+([Chain Rate Limits: Hotkey swap rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#hotkey-swap-rate-limit),
+[LastHotkeySwapOnNetuid Storage](https://subtensor.com/reference/subtensormodule/storage/LastHotkeySwapOnNetuid)).
+
+The security guide also documents a 1 TAO recycling fee for the swap operation and lists
+`btcli wallet swap-hotkey` as the recovery command. A per-subnet example uses
+`btcli wallet swap-hotkey --netuid 1` to move registration on one subnet to a replacement hotkey
+([Coldkey and Hotkey Workstation Security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security),
+[Bittensor CLI: swap-hotkey](https://docs.learnbittensor.org/btcli#btcli-wallet-swap-hotkey)).
 
 Hotkey swap examples from one network environment should not be read as representing production
 registration state on another
@@ -94,8 +112,11 @@ registration state on another
 ## Reader Boundary
 
 Hotkey swap should not be read as coldkey swap, a transfer of ownership, or a reset of subnet
-performance history. It names operational hotkey rotation under the same coldkey
-([Coldkey and Hotkey Workstation Security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security)).
+performance history. It names operational hotkey rotation under the same coldkey. It also does not
+report whether a coldkey is currently inside the per-netuid swap interval or the live recycling fee
+on chain; those should be read from rate-limit and fee documentation before scheduling another swap
+([Coldkey and Hotkey Workstation Security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security),
+[Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
 
 ## Further Reading
 

@@ -52,16 +52,34 @@ The interval therefore shapes the responsiveness of the registration cost mechan
 the cost band itself. The burn floor and ceiling are separate parameters that define the range
 inside which each adjustment operates.
 
+## Removed From Hyperparameters V3
+
+The canonical hyperparameter API `get_subnet_hyperparams_v3` no longer returns `AdjustmentInterval`.
+Official documentation lists `adjustment_interval` among parameters removed from V3, alongside
+`adjustment_alpha`, `difficulty`, `min_difficulty`, `max_difficulty`, and `rho`. Neuron registration
+is now governed by continuous burn pricing through `BurnHalfLife` and `BurnIncreaseMult` rather than
+interval-based demand comparison against a target registration rate
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+Readers encountering adjustment interval in older material should treat it as legacy
+registration-pricing vocabulary. Live subnet registration economics on ordinary subnets are set
+through the burn band and per-registration step-up parameters in the current hyperparameter table.
+
 ## Documented Type and Setter
 
 The [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
-reference lists `AdjustmentInterval` among the registration-related hyperparameters that subnet
-owners can set. Each subnet carries its own hyperparameter state, so the adjustment interval for
-netuid 1 can differ from the interval configured on another subnet.
+reference no longer exposes `AdjustmentInterval` through the canonical `get_subnet_hyperparams_v3`
+API. It is listed among parameters removed from V3, so readers should not expect to read or set an
+adjustment interval row on current hyperparameter tables.
 
-The active value is the per-subnet chain state for that subnet. A reading from one subnet should not
-be treated as evidence for the adjustment behavior on any other subnet. Subnet-specific examples
-should identify the subnet and its current hyperparameter values.
+Neuron registration pricing on ordinary subnets is instead governed by the continuous burn
+parameters `BurnHalfLife` and `BurnIncreaseMult`, which step and decay the live burn between
+registrations rather than recalibrating it on a fixed interval window
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+The sections above describe the interval-based vocabulary for readers encountering legacy material;
+live registration economics should be verified through the current burn hyperparameters on the
+relevant netuid.
 
 ## Distinction from Target Registrations Per Interval
 
@@ -176,8 +194,8 @@ the mechanism that allocates rewards from consensus.
 ## Reader Boundary
 
 Adjustment interval should not be read as a burn cost value, a registration count, or a miner's
-registration status. It names only the subnet hyperparameter that sets the block window between
-demand-comparison recalibrations on the selected netuid
+registration status. It names legacy interval-based registration-pricing vocabulary; live burn
+economics on current subnets are set through `BurnHalfLife` and `BurnIncreaseMult` instead
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
 ## Further Reading
