@@ -38,6 +38,50 @@ On netuid 1, trust examples illustrate one subnet's clipping outcome. They shoul
 representing production behavior on another network
 ([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
 
+## Pre-Rank Before Clipping
+
+Trust compares two miner-side standings inside the same Yuma pass. **Pre-rank** is the
+stake-weighted sum of validator weights for a miner before consensus clipping removes outlier
+values. Documentation describes it as summing each validator's submitted weight scaled by that
+validator's stake ([Glossary: Trust](https://docs.learnbittensor.org/resources/glossary#trust),
+[Yuma Consensus: Miner emissions](https://docs.learnbittensor.org/learn/yuma-consensus#miner-emissions)).
+
+**Final rank** is the miner-side standing after clipping and aggregation. Rank vocabulary names that
+post-filter result; pre-rank names the support level that existed before the consensus benchmark
+trimmed excess weight ([Glossary: Rank](https://docs.learnbittensor.org/resources/glossary#rank),
+[Yuma Consensus: Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping)).
+
+## Trust as a Clipping Survival Ratio
+
+For each miner `j`, trust is the ratio of final rank to pre-rank: `T_j = R_j / P_j`. The glossary
+describes this as the proportion of original validator support that survived consensus filtering
+([Glossary: Trust](https://docs.learnbittensor.org/resources/glossary#trust)).
+
+A value near `1.0` means clipping barely changed the miner's standing relative to pre-rank support.
+Lower values mean more of that pre-rank support was removed when weights were compared against the
+[consensus score](https://docs.learnbittensor.org/resources/glossary#consensus-score) benchmark. A
+value of `0.0` means no consensus-aligned support remained after clipping
+([Glossary: Trust](https://docs.learnbittensor.org/resources/glossary#trust)).
+
+Trust therefore reports clipping impact on one miner, not total emission share. Miner
+[incentives](https://docs.learnbittensor.org/resources/glossary#incentives) are credited later from
+normalized rank inside the same pass
+([Yuma Consensus: Miner emissions](https://docs.learnbittensor.org/learn/yuma-consensus#miner-emissions)).
+
+## Miner Trust Versus Validator Trust
+
+Trust and [validator trust](https://docs.learnbittensor.org/resources/glossary#validator-trust) are
+read from the same clipping pass but on opposite sides of evaluation. Trust is a per-miner ratio
+showing how much pre-rank support survived filtering. Validator trust sums each validator's clipped
+weights across miners, measuring how much influence that validator contributed after consensus
+([Glossary: Validator Trust](https://docs.learnbittensor.org/resources/glossary#validator-trust),
+[Glossary: Trust](https://docs.learnbittensor.org/resources/glossary#trust)).
+
+A miner can read low trust when validators disagreed sharply about its work, while a validator can
+read high validator trust when its clipped weights still align with the consensus outcome. The two
+metrics answer different reader questions inside one Yuma settlement
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
 ## Distinction from Rank
 
 Rank is the miner-side aggregate standing after Yuma Consensus filters and combines validator
@@ -117,31 +161,10 @@ clips and aggregates validator weights into rank
 
 ## Distinction from Yuma Consensus
 
-Trust is the miner-side ratio of final rank to pre-rank after Yuma clips validator weights. That
-clipping-outcome metric is separate from the tempo pass that reads the weight matrix and credits
-emission shares ([Glossary: Trust](https://docs.learnbittensor.org/resources/glossary#trust),
-[Glossary: Rank](https://docs.learnbittensor.org/resources/glossary#rank)).
-
-Yuma Consensus aggregates submitted weights, applies clipping and bonding, and credits miner
-incentives and validator dividends when the epoch boundary arrives
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
-[Emission: Distribution](https://docs.learnbittensor.org/learn/emissions#distribution)).
-
-Validator trust measures alignment with consensus after clipping on the validator side. Trust names
-how much miner pre-rank support survived that same clipping pass
-([Glossary: Validator Trust](https://docs.learnbittensor.org/resources/glossary#validator-trust),
-[Yuma Consensus: Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping)).
-
-Weight copying and self-weighting describe risky submission patterns validators may use before
-aggregation. Trust measures whether miner pre-rank support still appears in credited outcomes once
-those patterns pass through clipping
-([Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor),
-[Glossary: Self-Weighting](https://docs.learnbittensor.org/resources/glossary#self-weighting)).
-
-Readers should keep miner-side trust vocabulary and full settlement vocabulary separate. Trust
-reports clipping impact on one participant; Yuma names the complete pass that applies the consensus
-score benchmark and credits incentives on the relevant netuid
-([Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score)).
+Trust is the miner-side clipping-survival ratio `T_j = R_j / P_j`. Yuma Consensus is the full
+on-chain pass that clips the weight matrix, computes rank and trust, and credits emission shares at
+the epoch boundary ([Glossary: Trust](https://docs.learnbittensor.org/resources/glossary#trust),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
 - **Trust** — miner-side support preserved through Yuma clipping.
 - **Yuma Consensus** — tempo step that turns submitted weights into emission shares.
