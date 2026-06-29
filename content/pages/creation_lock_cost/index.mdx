@@ -1,0 +1,93 @@
+---
+title: "Creation Lock Cost"
+summary:
+  "How creation lock cost names the last subnet-creation lock value that Bittensor doubles and then
+  decays when pricing a new subnet."
+category: "Tokenomics"
+tags: ["Tokenomics", "Subnets"]
+infoboxTitle: Creation Lock Cost
+infoboxCaption: Lock baseline used in subnet-creation pricing.
+infoboxRows:
+  - label: Scope
+    value: Subnet creation
+  - label: Asset
+    value: TAO
+  - label: Used in
+    value: Burn cost pricing
+  - label: Source of truth
+    value: Subtensor coinbase logic
+---
+
+# Creation Lock Cost
+
+Creation lock cost is the lock value Bittensor uses as the baseline when pricing the next subnet
+creation. In the current implementation, the network reads the last creation lock, doubles it, and
+then reduces that amount linearly as blocks pass without another subnet creation
+([Create a Subnet: Burn cost](https://docs.learnbittensor.org/subnets/create-a-subnet#burn-cost),
+[`get_network_lock_cost`](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/root.rs)).
+
+This makes creation lock cost narrower than the user-facing phrase burn cost. Burn cost is the price
+a creator sees when opening a subnet. Creation lock cost is the internal baseline that helps
+determine that price after the previous subnet-creation event.
+
+## Pricing Role
+
+The subnet-creation docs describe burn cost as dynamic: rapid subnet creation pushes the price up,
+while idle periods let it fall again
+([Create a Subnet: Burn cost](https://docs.learnbittensor.org/subnets/create-a-subnet#burn-cost)).
+Creation lock cost is the implementation-side quantity that carries that history forward from one
+creation event to the next.
+
+In code terms, the last lock is doubled after a creation and then decays block by block until it
+approaches the network minimum lock
+([`get_network_lock_cost`](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/root.rs)).
+That is why back-to-back creations can sharply raise the observed subnet-creation price even though
+the amount later eases if no new subnet is opened.
+
+## Distinction from Burn Cost
+
+Creation lock cost and burn cost are related but not identical. Creation lock cost is the pricing
+baseline carried from the last subnet-creation event. Burn cost is the dynamic recycled-TAO amount a
+creator must actually pay to open a new subnet
+([Glossary: Burn Cost](https://docs.learnbittensor.org/resources/glossary#burn-cost),
+[Create a Subnet: Burn cost](https://docs.learnbittensor.org/subnets/create-a-subnet#burn-cost)).
+
+- **Creation lock cost** — last-lock baseline used in pricing logic.
+- **Burn cost** — creator-facing dynamic TAO amount required to open a subnet.
+
+## Distinction from Min Burn
+
+Creation lock cost belongs to subnet creation. Min burn is a neuron-registration hyperparameter on
+an existing subnet. The two affect different lifecycle stages and should not be conflated
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#minburn),
+[Create a Subnet: Burn cost](https://docs.learnbittensor.org/subnets/create-a-subnet#burn-cost)).
+
+- **Creation lock cost** — subnet-creation pricing baseline.
+- **Min burn** — lower bound for neuron registration burn on an existing netuid.
+
+## Distinction from Yuma Consensus
+
+Creation lock cost belongs to subnet-registration pricing. Yuma Consensus is the separate epoch
+process that converts validator weight submissions into emission shares on subnets that already
+exist ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
+[Emission](https://docs.learnbittensor.org/learn/emissions)).
+
+- **Creation lock cost** — pricing input for opening a new subnet.
+- **Yuma Consensus** — settlement mechanism for validator weights on an active subnet.
+
+## Reader Boundary
+
+Creation lock cost is a pricing and implementation term, not a price forecast or a generic
+transaction fee. It helps explain why subnet-creation cost can spike after recent creations and then
+decay during idle periods, but the live creator-facing amount should still be checked through the
+current subnet-creation sources and tools at the time of observation
+([Create a Subnet: Burn cost](https://docs.learnbittensor.org/subnets/create-a-subnet#burn-cost),
+[BTCLI: subnets burn-cost](https://docs.learnbittensor.org/btcli/#btcli-subnets-burn-cost)).
+
+## Further Reading
+
+- [Create a Subnet: Burn cost](https://docs.learnbittensor.org/subnets/create-a-subnet#burn-cost)
+- [Glossary: Burn Cost](https://docs.learnbittensor.org/resources/glossary#burn-cost)
+- [BTCLI: subnets burn-cost](https://docs.learnbittensor.org/btcli/#btcli-subnets-burn-cost)
+- [Coinbase implementation](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/root.rs)
+- [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
