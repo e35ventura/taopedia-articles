@@ -53,6 +53,41 @@ boundary. How much new TAO it introduces steps down over time as cumulative issu
 thresholds ([Glossary: Halving](https://docs.learnbittensor.org/resources/glossary#halving),
 [Halving Mechanisms](https://docs.learnbittensor.org/concepts/halving)).
 
+## The Documented Per-Block Sequence
+
+The Coinbase Implementation reference describes `run_coinbase` as a fixed sequence the chain runs
+each block. The steps below summarize that documented protocol flow; they are not a claim about any
+one subnet's live balances
+([Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase)).
+
+The reference says coinbase first filters which subnets receive emission, excluding the root subnet
+and any subnet that has not yet recorded a first emission block. It then allocates the block's
+emission across the remaining subnets in proportion to each subnet's EMA-smoothed price, adjusted by
+its root proportion and reduced by any miner-burn penalty, rather than splitting it evenly
+([Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase),
+[Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema)).
+
+Each subnet's share is injected into that subnet's pool as a chain-state accounting update, so the
+per-block step records emission rather than paying it out. The reference then describes the protocol
+reserving the subnet owner's share from alpha emissions before the rest is split, accumulating it as
+a pending owner cut, while the remainder is held as pending emission for miners and validators; both
+pending balances build up block after block
+([Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase)).
+
+That owner-cut share is the per-subnet `subnet_owner_cut` hyperparameter, documented at 0.18 (18%).
+For the example netuid 1 on Finney mainnet it can be read with
+`btcli subnet hyperparameters --netuid 1 --network finney`, keeping the per-subnet figure
+reproducible against a parseable netuid rather than asserted in the abstract
+([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+Those pending balances are released only when a subnet's epoch is due. The reference gives that
+condition as `(block_number + netuid + 1) % (tempo + 1) == 0`, at which point the accumulated alpha
+is handed to `drain_pending_emission` and settled through Yuma Consensus. The netuid term staggers
+subnets so they do not all settle on the same block
+([Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
 ## Accumulate Each Block, Settle at Tempo
 
 Coinbase and tempo work on two cadences. Coinbase accumulates pending emissions every block, while a
