@@ -1,0 +1,97 @@
+---
+title: "Delegate Take Too High"
+summary:
+  "How the DelegateTakeTooHigh error blocks an increase_take call when the requested delegate
+  commission exceeds the chain's maximum allowed take."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Delegate Take Too High
+infoboxCaption: Error raised when a delegate-take increase exceeds the configured maximum.
+infoboxRows:
+  - label: Error
+    value: DelegateTakeTooHigh
+  - label: Trigger
+    value: Requested take is above MaxDelegateTake
+  - label: Checked in
+    value: do_increase_take
+  - label: Related concept
+    value: Validator take
+---
+
+# Delegate Take Too High
+
+`DelegateTakeTooHigh` is a documented Subtensor standard error raised by delegate-take increase
+calls. The standard-errors reference describes it as "Delegate take is too high"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#delegatetakehigh)).
+
+## What It Means
+
+Validator take is the commission percentage a delegate keeps from delegated returns before the
+remainder is shared with delegators. `do_increase_take` lets a coldkey raise take for an owned
+hotkey, but only within the chain's configured bounds. `DelegateTakeTooHigh` means the requested
+take value is above the maximum the runtime allows, so the increase is rejected before rate-limit
+checks or storage updates run
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#delegatetakehigh),
+[Staking and Delegation Overview](https://docs.learnbittensor.org/staking-and-delegation/delegation),
+[Subtensor source: increase_take.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/increase_take.rs)).
+
+In `increase_take.rs`, `do_increase_take` reads `MaxDelegateTake` and returns `DelegateTakeTooHigh`
+when the submitted take is greater than that ceiling
+([Subtensor source: increase_take.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/increase_take.rs)).
+
+## Why It Appears
+
+This error appears on the take-increase path when a caller submits a commission value above the
+allowed maximum. The delegation reference describes `increase_take` as the extrinsic that raises
+delegate commission; `DelegateTakeTooHigh` is the bound check that rejects values outside the
+permitted range ([Delegation Mechanism](https://subtensor.com/reference/mechanisms/delegation),
+[Subtensor source: increase_take.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/increase_take.rs)).
+
+For a reader, the practical meaning is narrow: the requested take is too large for the chain's
+configured ceiling. The problem is not that the take failed to increase relative to the current
+setting, that the change was attempted too soon, or that delegation itself is unavailable
+([Subtensor Standard Errors: DelegateTakeTooLow](https://docs.learnbittensor.org/errors/subtensor#delegatetoolow),
+[Subtensor Standard Errors: DelegateTxRateLimitExceeded](https://docs.learnbittensor.org/errors/subtensor#delegatetxratelimitexceeded)).
+
+## Distinction from Delegate Take Too Low
+
+`DelegateTakeTooHigh` and `DelegateTakeTooLow` are paired bound checks on delegate-take changes. On
+the increase path, `DelegateTakeTooHigh` means the submitted value exceeds the maximum allowed take.
+`DelegateTakeTooLow` on the same path means the submitted value is not strictly greater than the
+hotkey's current take, so the call is not a valid increase
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#delegatetakehigh),
+[Subtensor Standard Errors: DelegateTakeTooLow](https://docs.learnbittensor.org/errors/subtensor#delegatetoolow),
+[Subtensor source: increase_take.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/increase_take.rs)).
+
+- **DelegateTakeTooHigh** — the requested take exceeds the configured maximum.
+- **DelegateTakeTooLow** — the requested take is not a strict increase over the current value.
+
+## Distinction from Delegate Tx Rate Limit Exceeded
+
+`DelegateTakeTooHigh` and `DelegateTxRateLimitExceeded` both appear when a delegate tries to raise
+take, but they reject different problems. `DelegateTakeTooHigh` is a value bound: the requested
+commission is above the allowed maximum. `DelegateTxRateLimitExceeded` is a timing bound: a prior
+take increase has not cleared the delegate-take cooldown yet
+([Delegate Tx Rate Limit Exceeded](https://docs.learnbittensor.org/errors/subtensor#delegatetxratelimitexceeded),
+[Chain Rate Limits: Delegate take rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#delegate-take-rate-limit),
+[Subtensor source: increase_take.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/increase_take.rs)).
+
+- **DelegateTakeTooHigh** — the requested take is above the allowed maximum.
+- **DelegateTxRateLimitExceeded** — the increase was attempted before the cooldown expired.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the maximum-take bound on the increase path. It
+does not explain delegation rewards, how delegators choose validators, or the cooldown rule for
+repeated take increases; those are documented separately
+([Staking and Delegation Overview](https://docs.learnbittensor.org/staking-and-delegation/delegation),
+[Chain Rate Limits: Delegate take rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#delegate-take-rate-limit)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#delegatetakehigh)
+- [Subtensor Standard Errors: DelegateTakeTooLow](https://docs.learnbittensor.org/errors/subtensor#delegatetoolow)
+- [Subtensor Standard Errors: DelegateTxRateLimitExceeded](https://docs.learnbittensor.org/errors/subtensor#delegatetxratelimitexceeded)
+- [Staking and Delegation Overview](https://docs.learnbittensor.org/staking-and-delegation/delegation)
+- [Delegation Mechanism](https://subtensor.com/reference/mechanisms/delegation)
+- [Subtensor source: increase_take.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/increase_take.rs)
