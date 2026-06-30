@@ -20,57 +20,74 @@ infoboxRows:
 
 # Too Many Children
 
-`TooManyChildren` is a documented Subtensor standard error raised when a parent hotkey's child list
-for a subnet would exceed the allowed limit. The standard-errors reference describes it as "Too many
-children"
+`TooManyChildren` means a parent hotkey tried to schedule more than five child hotkeys on one
+netuid. The standard-errors reference describes it as "Too many children"
 ([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#toomanychildren)).
+
+The five-child cap applies per parent on each subnet separately, so the same parent can hold a
+different child set on another netuid
+([Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys)).
 
 ## What It Means
 
 A [child hotkey](https://docs.learnbittensor.org/validators/child-hotkeys) lets a parent delegate
-re-route a share of its stake to a separate validating key on a given subnet, and a parent may have
-at most five children on any one netuid. `TooManyChildren` is the rejection when a requested child
-list for a parent on a subnet would push that count past five
-([Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys),
-[Subtensor source: set_children.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/set_children.rs)).
+re-route a share of its stake to a separate validating key on a given subnet. `TooManyChildren` is
+the rejection when the submitted child list for that parent on one netuid would push the count past
+five ([Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#toomanychildren)).
 
-The check counts the full requested child list as a whole rather than counting one addition at a
-time, so a single call that names six or more children at once fails the same way a call that pushes
-an existing five-child list over the limit would
-([Subtensor source: set_children.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/set_children.rs)).
+The check counts the full requested child list as a whole rather than one addition at a time, so a
+single call that names six or more children fails the same way a call that expands an existing
+five-child list would ([Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys)).
 
 ## Why It Appears
 
-Scheduling new child relations for a parent hotkey on a subnet is the main place this limit applies.
-The same consistency check also runs when a hotkey swap re-validates a parent's existing child
-relations under its new identity, so the five-child cap is enforced consistently rather than only at
-the moment children are first scheduled
-([Subtensor source: set_children.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/set_children.rs)).
+Child-hotkey scheduling through `set_children` submits the full list a parent wants on a netuid. The
+chain validates that whole list at once, so naming six children in one call fails even when the
+parent currently has none. That is separate from the 150-block cooldown between successful child-set
+calls on the same subnet ([Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys),
+[Chain Rate Limits: Child hotkey operations rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#child-hotkey-operations-rate-limit)).
+
+When debugging, compare the child count against `DuplicateChild` and `ProportionOverflow` before
+assuming a rate-limit or take-setting failure. A repeated hotkey in the same list raises
+`DuplicateChild`, while a valid count with proportions that do not fit raises `ProportionOverflow`
+([Subtensor Standard Errors: DuplicateChild](https://docs.learnbittensor.org/errors/subtensor#duplicatechild),
+[Subtensor Standard Errors: ProportionOverflow](https://docs.learnbittensor.org/errors/subtensor#proportionoverflow)).
 
 ## Distinction from Proportion Overflow
 
-`TooManyChildren` and `ProportionOverflow` are both raised from the same child-relation consistency
-check, but they guard different properties of the requested child list. `TooManyChildren` counts how
-many children are listed. `ProportionOverflow` instead sums the stake proportions assigned across
-those children and fails if that sum cannot fit in the chain's proportion accounting, independent of
-how many children were listed
+`TooManyChildren` and `ProportionOverflow` are both raised from child-relation consistency checks,
+but they guard different properties of the requested child list. `TooManyChildren` counts how many
+children are listed. `ProportionOverflow` instead sums the stake proportions assigned across those
+children and fails if that sum cannot fit in the chain's proportion accounting, independent of how
+many children were listed
 ([Subtensor Standard Errors: ProportionOverflow](https://docs.learnbittensor.org/errors/subtensor#proportionoverflow),
-[Subtensor source: set_children.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/set_children.rs)).
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#toomanychildren)).
 
 - **TooManyChildren** — the child list has more than five entries.
 - **ProportionOverflow** — the listed children's combined stake proportion doesn't fit.
 
+## Distinction from Duplicate Child
+
+`TooManyChildren` counts how many children are listed in one submitted call, while `DuplicateChild`
+fires when the same child hotkey appears twice in that list. A list with six unique children can
+raise `TooManyChildren` without ever triggering `DuplicateChild`
+([Subtensor Standard Errors: DuplicateChild](https://docs.learnbittensor.org/errors/subtensor#duplicatechild),
+[Subtensor Standard Errors: TooManyChildren](https://docs.learnbittensor.org/errors/subtensor#toomanychildren)).
+
+- **DuplicateChild** — the same child hotkey is listed more than once in one call.
+- **TooManyChildren** — the child list still has more than five entries.
+
 ## Reader Boundary
 
-This page defines the meaning of the error label and the count limit that raises it. It does not
-describe how child hotkeys are scheduled, how child take is calculated, or the other checks in the
-same consistency step; those are documented separately
-([Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys),
-[Subtensor source: set_children.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/set_children.rs)).
+This page defines the meaning of the error label and the five-child count limit. It does not
+describe childkey take, minimum parent stake thresholds, or the live child list on a netuid; those
+are separate reads ([Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys),
+[Chain Rate Limits: Child hotkey operations rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#child-hotkey-operations-rate-limit)).
 
 ## Further Reading
 
 - [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#toomanychildren)
 - [Subtensor Standard Errors: ProportionOverflow](https://docs.learnbittensor.org/errors/subtensor#proportionoverflow)
+- [Subtensor Standard Errors: DuplicateChild](https://docs.learnbittensor.org/errors/subtensor#duplicatechild)
 - [Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys)
-- [Subtensor source: set_children.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/set_children.rs)
