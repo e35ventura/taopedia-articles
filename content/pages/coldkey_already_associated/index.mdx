@@ -1,0 +1,82 @@
+---
+title: "Cold Key Already Associated"
+summary:
+  "How the ColdKeyAlreadyAssociated error blocks a coldkey swap when the destination address already
+  has hotkeys linked to it from a prior coldkey identity."
+category: "Wallets"
+tags: ["Wallets", "Errors"]
+infoboxTitle: Cold Key Already Associated
+infoboxCaption: Error raised when a swap destination already carries a coldkey association.
+infoboxRows:
+  - label: Error
+    value: ColdKeyAlreadyAssociated
+  - label: Trigger
+    value: Destination already has staking hotkeys on record
+  - label: Checked in
+    value: do_swap_coldkey, first check
+  - label: Check type
+    value: Staking-hotkey association lookup
+---
+
+# Cold Key Already Associated
+
+`ColdKeyAlreadyAssociated` is a documented Subtensor standard error raised by
+[coldkey swap](https://docs.learnbittensor.org/keys/coldkey-swap). The standard-errors reference
+describes it as "The coldkey has already been swapped"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#coldkeyalreadyassociated)).
+
+## What It Means
+
+`do_swap_coldkey` migrates a wallet's on-chain identity from an old coldkey to a new one. Before
+moving balances, stake, subnet ownership, or hotkey associations, it checks whether the proposed
+destination already has staking hotkeys linked to it. `ColdKeyAlreadyAssociated` is the rejection
+when that lookup finds existing associations, meaning the destination address is already in use as a
+coldkey rather than as a fresh unused account
+([Subtensor source: swap_coldkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_coldkey.rs)).
+
+This is the first of two early existence checks `do_swap_coldkey` runs on the destination address.
+The later check covers a different case: whether the destination already exists as a hotkey account
+somewhere on chain. A caller only reaches that second check if the destination passes this
+association lookup first
+([Subtensor source: swap_coldkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_coldkey.rs)).
+
+## Why It Appears
+
+The most direct cause is attempting to swap onto an address that already received a prior coldkey
+migration and therefore already carries hotkey associations on record. The coldkey swap
+documentation states that the destination coldkey must be unused on chain; an address that already
+has linked hotkeys fails that requirement even if the caller is trying to reuse it as a new swap
+destination ([Coldkey Swap](https://docs.learnbittensor.org/keys/coldkey-swap),
+[Subtensor source: swap_coldkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_coldkey.rs)).
+
+Because the check runs at the start of `do_swap_coldkey`, none of the migration steps proceed when
+it fails: balances, stake, ownership records, and hotkey links are not partially moved to an address
+the chain treats as already associated
+([Subtensor source: swap_coldkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_coldkey.rs)).
+
+## Distinction from New Coldkey Is Hotkey
+
+`ColdKeyAlreadyAssociated` and `NewColdKeyIsHotkey` are both early existence checks on the
+destination address in `do_swap_coldkey`, but they inspect different roles. The associated check
+looks for staking hotkeys already linked to the destination as a coldkey, which indicates prior swap
+reuse. `NewColdKeyIsHotkey` is the separate later check for whether the destination already exists
+as a hotkey account anywhere on chain
+([New Coldkey Is Hotkey](https://docs.learnbittensor.org/errors/subtensor#newcoldkeyishotkey),
+[Subtensor source: swap_coldkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_coldkey.rs)).
+
+- **ColdKeyAlreadyAssociated** — the destination already has coldkey-side hotkey associations.
+- **NewColdKeyIsHotkey** — the destination already exists as a hotkey account.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the association lookup that raises it. It does
+not describe the announcement, pending window, dispute path, or finalization step of a coldkey swap;
+those are documented separately ([Coldkey Swap](https://docs.learnbittensor.org/keys/coldkey-swap),
+[Subtensor source: swap_coldkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_coldkey.rs)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#coldkeyalreadyassociated)
+- [Subtensor Standard Errors: NewColdKeyIsHotkey](https://docs.learnbittensor.org/errors/subtensor#newcoldkeyishotkey)
+- [Coldkey Swap](https://docs.learnbittensor.org/keys/coldkey-swap)
+- [Subtensor source: swap_coldkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_coldkey.rs)
