@@ -1,0 +1,75 @@
+---
+title: "New Coldkey Is Hotkey"
+summary:
+  "How the NewColdKeyIsHotkey error blocks a coldkey swap when the destination address is already in
+  use as a hotkey somewhere on chain."
+category: "Wallets"
+tags: ["Wallets", "Errors"]
+infoboxTitle: New Coldkey Is Hotkey
+infoboxCaption: Error raised when a coldkey swap's destination address is already a hotkey.
+infoboxRows:
+  - label: Error
+    value: NewColdKeyIsHotkey
+  - label: Trigger
+    value: Destination address already exists as a hotkey account
+  - label: Checked in
+    value: do_swap_coldkey
+  - label: Check type
+    value: Account-existence comparison
+---
+
+# New Coldkey Is Hotkey
+
+`NewColdKeyIsHotkey` is a documented Subtensor standard error raised by
+[coldkey swap](https://docs.learnbittensor.org/keys/coldkey-swap). The standard-errors reference
+describes it as "New coldkey is hotkey"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#newcoldkeyishotkey)).
+
+## What It Means
+
+Coldkeys and hotkeys share the same account address space, so the chain has to confirm a swap
+destination is not already serving a different role. `do_swap_coldkey` checks whether the proposed
+new coldkey address already exists as a hotkey account anywhere on chain, and rejects the swap with
+`NewColdKeyIsHotkey` if it does
+([Subtensor source: swap_coldkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_coldkey.rs)).
+
+The check exists to keep one account from carrying both roles at once. Letting a swap proceed onto
+an address that is already someone's hotkey would blur the coldkey/hotkey distinction that the rest
+of the chain's ownership and signing logic depends on
+([Subtensor source: swap_coldkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_coldkey.rs)).
+
+## Why It Appears
+
+This is one of two existence checks `do_swap_coldkey` runs on the destination address before
+anything else proceeds. The other, separate check confirms the destination is not already associated
+with an existing coldkey swap; `NewColdKeyIsHotkey` is specifically the hotkey-side version of that
+same kind of guard
+([Subtensor source: swap_coldkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_coldkey.rs)).
+
+## Distinction from Cold Key Already Associated
+
+`NewColdKeyIsHotkey` and `ColdKeyAlreadyAssociated` are both early existence checks on the
+destination address in `do_swap_coldkey`, but they check it against different roles. The associated
+check covers the case where the destination has already been used as a coldkey in a prior swap.
+`NewColdKeyIsHotkey` covers the separate case where the destination already exists as a hotkey
+account
+([Cold Key Already Associated](https://docs.learnbittensor.org/errors/subtensor#coldkeyalreadyassociated),
+[Subtensor source: swap_coldkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_coldkey.rs)).
+
+- **ColdKeyAlreadyAssociated** — the destination has already been swapped to as a coldkey.
+- **NewColdKeyIsHotkey** — the destination already exists as a hotkey account.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the existence check that raises it. It does not
+describe the rest of the coldkey swap process, such as the announcement, pending window, or dispute
+path; those are documented separately
+([Coldkey Swap](https://docs.learnbittensor.org/keys/coldkey-swap),
+[Subtensor source: swap_coldkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_coldkey.rs)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#newcoldkeyishotkey)
+- [Subtensor Standard Errors: ColdKeyAlreadyAssociated](https://docs.learnbittensor.org/errors/subtensor#coldkeyalreadyassociated)
+- [Coldkey Swap](https://docs.learnbittensor.org/keys/coldkey-swap)
+- [Subtensor source: swap_coldkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_coldkey.rs)
