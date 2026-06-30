@@ -51,18 +51,25 @@ raises it only at registration boundaries
 [Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register),
 [Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo)).
 
-## On-Chain Application
+## Documented Application
 
-On chain, the step-up is applied as a direct multiply of the live burn immediately after each
-successful registration. The effective multiplier is floored at one, so a configured value below one
-cannot lower the burn; the multiplied result is then clamped back inside the `MinBurn` and `MaxBurn`
-band before it takes effect
-([`bump_registration_price_after_registration`](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)).
+The subnet hyperparameters reference describes `BurnIncreaseMult` as the factor by which the current
+neuron registration burn cost is multiplied when a registration succeeds, before `MinBurn` and
+`MaxBurn` clamping. Higher values make rapid successive registrations more expensive
+([Subnet Hyperparameters: BurnIncreaseMult](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#burnincreasemult),
+[Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register)).
 
-This per-registration bump is skipped for the root subnet, which keeps interval-based admission
-rather than the per-block decay and per-registration step-up used by other subnets. So burn increase
-mult shapes registration price on ordinary subnets, not on root
-([`update_registration_prices_for_networks`](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)).
+The hyperparameters overview applies that burn-half-life and burn-increase-mult pricing model to
+non-root neuron registration, so the step-up governs ordinary subnet UIDs rather than root's
+separate registration economics
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+A configured multiplier below one therefore cannot undercut the floor on its own; the post-multiply
+burn is clamped back inside the documented min-burn and max-burn band before it becomes the next
+live quote
+([Subnet Hyperparameters: MinBurn](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#minburn),
+[Subnet Hyperparameters: MaxBurn](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#maxburn),
+[Miner registration](https://docs.learnbittensor.org/miners#miner-registration)).
 
 ## Documented Description and Setter
 
@@ -191,8 +198,11 @@ validator weight submissions into emission shares each epoch
 ## Reader Boundary
 
 Burn increase mult should not be read as a fixed registration price or as the min or max burn
-bounds. It names only the per-registration step-up applied to the live burn on a selected netuid
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+bounds. It names only the per-registration step-up applied to the live burn on a selected netuid. It
+does not report the live multiplier, the current registration-burn quote, or the min-burn and
+max-burn band on that netuid; those are separate hyperparameter reads
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
 
 ## Further Reading
 
