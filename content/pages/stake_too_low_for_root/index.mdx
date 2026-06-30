@@ -1,0 +1,104 @@
+---
+title: "Stake Too Low For Root"
+summary:
+  "How the StakeTooLowForRoot error signals that a root_register call failed to displace the
+  lowest-staked root validator because the registering hotkey's root stake was not higher."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Stake Too Low For Root
+infoboxCaption: Error raised when a root registration fails to outbid the weakest root validator.
+infoboxRows:
+  - label: Error
+    value: StakeTooLowForRoot
+  - label: Trigger
+    value: Root network full and registering stake not above the lowest root stake
+  - label: Extrinsic
+    value: root_register
+  - label: Scope
+    value: Root Subnet (Subnet Zero) only
+---
+
+# Stake Too Low For Root
+
+`StakeTooLowForRoot` is a documented Subtensor standard error raised by the `root_register`
+extrinsic. The standard-errors reference describes it as "Hotkey with too little stake attempting to
+join root subnet"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#staketoolowforroot),
+[Glossary: Root Subnet/Subnet Zero](https://docs.learnbittensor.org/resources/glossary#root-subnetsubnet-zero)).
+
+## What It Means
+
+The error only matters once the Root Subnet, also called Subnet Zero, is full. The `root_register`
+handler first checks whether the current number of root validators is below the root network's
+allowed capacity; if there is an open slot, the new hotkey is simply appended and no stake
+comparison happens at all
+([Subtensor source: root.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/root.rs),
+[Root Subnet](https://docs.learnbittensor.org/resources/glossary#root-subnetsubnet-zero)).
+
+When the root network is at capacity, registering becomes a displacement: the chain scans every
+existing root neuron's stake on the Root Subnet to find the lowest one, then only admits the new
+hotkey if its own root stake is strictly greater than that lowest stake. `StakeTooLowForRoot` is the
+rejection when the new hotkey's stake does not clear that bar
+([Subtensor source: root.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/root.rs)).
+
+## Why It Appears
+
+`root_register` runs several checks before this one: the Root Subnet must exist, the per-block and
+per-interval root registration limits must not be exceeded, and the hotkey must not already be
+registered on the Root Subnet. Only after those checks pass, and only when the root network has no
+open slot, does the handler compare stake and potentially raise `StakeTooLowForRoot`
+([Subtensor source: root.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/root.rs)).
+
+The comparison is strict: a tie does not displace the incumbent. The new hotkey's root stake must be
+greater than, not equal to, the lowest existing root stake for the replacement to proceed
+([Subtensor source: root.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/root.rs)).
+
+The root network's capacity for this check is its own `MaxAllowedUids` value, the same
+hyperparameter ordinary subnets use to cap registered neurons, applied to the Root Subnet rather
+than to a mining subnet. Because that value is live chain state, whether the network is full at any
+moment depends on the current root `MaxAllowedUids` and the current number of registered root
+validators, not on a fixed constant
+([Subtensor source: root.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/root.rs)).
+
+## What It Does Not Mean
+
+This error does not mean the caller's hotkey lacks any stake at all, or that the coldkey-hotkey
+ownership is invalid; those conditions are covered by separate checks and separate errors earlier in
+the registration path, such as `HotKeyAlreadyRegisteredInSubNet` for a redundant registration
+attempt. `StakeTooLowForRoot` is specifically the outcome of losing a stake comparison against the
+weakest current root validator when the network is already full
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#hotkeyalreadyregisteredinsubnet),
+[Subtensor source: root.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/root.rs)).
+
+It also does not describe ordinary subnet deregistration. The displacement check here runs inside
+`root_register` and compares root-subnet stake directly; it is a different code path from the
+emission-based pruning that removes neurons from ordinary mining subnets
+([Subtensor source: root.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/root.rs)).
+
+## Distinction from Too Many Registrations This Block
+
+`StakeTooLowForRoot` and `TooManyRegistrationsThisBlock` are both checked inside `root_register`,
+but they gate different things. `TooManyRegistrationsThisBlock` is a rate check on how many root
+registrations can land in one block, evaluated before any stake comparison happens.
+`StakeTooLowForRoot` is a capacity-and-stake check that only applies once the network is full
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#toomanyregistrationsthisblock),
+[Subtensor source: root.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/root.rs)).
+
+- **TooManyRegistrationsThisBlock** — too many root registrations landed in the same block.
+- **StakeTooLowForRoot** — the network is full and the new hotkey's root stake lost the displacement
+  comparison.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the displacement rule that raises it. It does
+not state the current root network size or the current lowest root stake; both are live chain state
+read from the Root Subnet rather than fixed values
+([Subtensor source: root.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/root.rs),
+[Glossary: Netuid](https://docs.learnbittensor.org/resources/glossary#netuid)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#staketoolowforroot)
+- [Subtensor source: root.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/root.rs)
+- [Glossary: Root Subnet/Subnet Zero](https://docs.learnbittensor.org/resources/glossary#root-subnetsubnet-zero)
+- [Glossary: Netuid](https://docs.learnbittensor.org/resources/glossary#netuid)
