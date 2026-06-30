@@ -32,11 +32,14 @@ must free one position to admit the entrant
 [Mining: Miner registration](https://docs.learnbittensor.org/miners#miner-registration),
 [Glossary: UID Slot](https://docs.learnbittensor.org/resources/glossary#uid-slot)).
 
-The participant removed is the weakest eligible incumbent, chosen by pruning score, which ranks
-miners by earnings standing. A recently registered miner can be shielded from displacement during
-its immunity period, so the lowest-ranked miner outside that window is the one vacated
-([Glossary: Pruning Score](https://docs.learnbittensor.org/resources/glossary#pruning-score),
-[Glossary: Immunity Period](https://docs.learnbittensor.org/resources/glossary#immunity-period)).
+Official docs still describe the displaced participant as the one with the lowest pruning score,
+using pruning score as shorthand for emissions-based replacement order. In the current runtime, the
+selection path applies that rule by comparing current emissions, immunity status, and
+registration-block order on ties rather than by reading a maintained pruning-score table, so a
+recently registered miner can still be shielded from ordinary displacement during its immunity
+period ([Glossary: Pruning Score](https://docs.learnbittensor.org/resources/glossary#pruning-score),
+[Glossary: Immunity Period](https://docs.learnbittensor.org/resources/glossary#immunity-period),
+[`get_neuron_to_prune`](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)).
 
 Once a miner is deregistered, its UID slot is freed for the new registration and that row no longer
 participates in the coinbase rounds that credit emissions. The subnet itself continues
@@ -97,15 +100,18 @@ independent steps
 
 ## Distinction from Pruning Score
 
-Pruning score ranks which incumbent is weakest when a full subnet must displace one participant.
-Miner deregistration names the miner-specific removal event that follows that ranking
+Pruning score names the emissions-based ordering used in docs to explain who is weakest when a full
+subnet must displace one participant. Miner deregistration names the miner-specific removal event
+that follows from that replacement logic
 ([Glossary: Pruning Score](https://docs.learnbittensor.org/resources/glossary#pruning-score),
 [Mining: Miner deregistration](https://docs.learnbittensor.org/miners#miner-deregistration)).
 
-- **Pruning score** — earnings ranking for displacement candidates.
+- **Pruning score** — shorthand for the emissions-based ordering used to choose a displacement
+  candidate.
 - **Miner deregistration** — miner-specific slot removal after eligibility rules apply.
 
-Ranking vocabulary names who is weakest; deregistration vocabulary names the removal event
+Ordering vocabulary names which participant is weakest; deregistration vocabulary names the removal
+event
 ([Glossary: Immunity Period](https://docs.learnbittensor.org/resources/glossary#immunity-period)).
 
 ## Distinction from Coinbase
@@ -155,9 +161,11 @@ Removal-event vocabulary and position vocabulary answer different slot-lifecycle
 ## Reader Boundary
 
 This article defines the term at a high level. It does not list current miners, count available
-slots, rank subnet participants, or describe registration steps. Current displacement eligibility
-belongs in mining references and live subnet state at the time of observation
-([Mining: Miner deregistration](https://docs.learnbittensor.org/miners#miner-deregistration)).
+slots, or expose a live ranked pruning-score table for a subnet. Current displacement eligibility is
+determined from live emissions, immunity status, and registration order on the relevant netuid at
+the time of observation
+([Mining: Miner deregistration](https://docs.learnbittensor.org/miners#miner-deregistration),
+[`get_neuron_to_prune`](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)).
 
 Miner deregistration should be read as removal from a subnet miner slot, not as proof that the
 account has been removed from every Bittensor role or network context.
