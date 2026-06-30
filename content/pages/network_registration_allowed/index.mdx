@@ -1,0 +1,91 @@
+---
+title: "Network Registration Allowed"
+summary:
+  "How the network registration allowed global setting determines whether new neurons can register
+  on a subnet, gating subnet admission at the network layer separate from subnet owner controls."
+category: "Subnets"
+tags: ["Subnets", "Registration"]
+infoboxTitle: Network Registration Allowed
+infoboxCaption: Network-wide toggle for neuron registration on a subnet.
+infoboxRows:
+  - label: Parameter
+    value: NetworkRegistrationAllowed
+  - label: Scope
+    value: Network-global
+  - label: Type
+    value: Boolean
+  - label: Default
+    value: "true"
+  - label: Set by
+    value: Root
+---
+
+# Network Registration Allowed
+
+Network registration allowed is a network-global setting, listed in the documentation as
+`NetworkRegistrationAllowed`, that determines whether neuron registration is enabled on a subnet.
+The reference describes it as the toggle that decides whether the subnet will receive new neurons
+when set, with a documented default of `true`
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Understanding Neurons](https://docs.learnbittensor.org/learn/neurons)).
+
+## What It Controls
+
+The setting gates subnet admission at the network layer. When `NetworkRegistrationAllowed` is `true`
+on a subnet, new neurons can register on that subnet through the standard neuron registration path,
+which pays the current dynamic registration burn to obtain a UID slot. When the setting is `false`,
+the subnet does not accept new neuron registrations and no new UID slots are issued on it
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Miner Registration](https://docs.learnbittensor.org/miners#miner-registration)).
+
+The toggle is independent of the dynamic registration burn and the subnet's UID capacity. A subnet
+can keep its registration window open with `NetworkRegistrationAllowed` set to `true` while the live
+registration burn varies with recent activity and while `MaxAllowedUids` caps the total neuron
+count. Disabling the toggle closes the registration window without affecting the burn schedule or
+the UID cap
+([Subnet Hyperparameters: MaxAllowedUids](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#maxalloweduids),
+[Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register)).
+
+## Documented Type, Default, and Setter
+
+The reference lists `NetworkRegistrationAllowed` as a `Boolean` with a documented default of `true`.
+It is changed through the `sudo_set_network_registration_allowed` extrinsic, exposed in tooling as
+`btcli sudo set --param registration_allowed`. The reference marks the permission required to set it
+as root, so a subnet owner cannot toggle this setting directly
+([Subnet Hyperparameters: NetworkRegistrationAllowed](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#networkregistrationallowed),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+The live value on a subnet can differ from the documented default after a root-level update has
+changed it on chain. A reader verifying whether a specific subnet is open to new neuron
+registrations should read the current storage value rather than rely on the default alone
+([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
+
+## Distinction from Network Pow Registration Allowed
+
+Network pow registration allowed is a legacy proof-of-work registration flag that the reference
+marks as not used for neuron registration, because registration on a subnet is burn-based and always
+open along that path. The two toggles are independent: `NetworkPowRegistrationAllowed` exposes a PoW
+flag the reference notes is unused, while `NetworkRegistrationAllowed` is the live gate that decides
+whether new neurons can register at all on a subnet
+([Network Pow Registration Allowed](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#networkpowregistrationallowed),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## Reader Boundary
+
+Network registration allowed should not be read as a per-subnet setting controlled by the subnet
+owner, as a toggle on the dynamic registration burn, or as a guarantee that registration will
+succeed when the toggle is open. It names only the global gate that the root permission uses to open
+or close neuron registration on a subnet
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Understanding Neurons](https://docs.learnbittensor.org/learn/neurons)).
+
+## Further Reading
+
+- [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+- [Subnet Hyperparameters: NetworkRegistrationAllowed](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#networkregistrationallowed)
+- [Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)
+- [Understanding Neurons](https://docs.learnbittensor.org/learn/neurons)
+- [Miner Registration](https://docs.learnbittensor.org/miners#miner-registration)
+- [Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register)
+- [Network Pow Registration Allowed](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#networkpowregistrationallowed)
+- [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)
