@@ -1,0 +1,110 @@
+---
+title: "Not Enough Stake To Set Weights"
+summary:
+  "How the NotEnoughStakeToSetWeights error signals that a hotkey's stake weight fell below the
+  global stake threshold checked before any weight-setting or commit-reveal call is dispatched."
+category: "Validation"
+tags: ["Validation", "Errors"]
+infoboxTitle: Not Enough Stake To Set Weights
+infoboxCaption: Error raised when a hotkey's stake weight is below the global stake threshold.
+infoboxRows:
+  - label: Error
+    value: NotEnoughStakeToSetWeights
+  - label: Trigger
+    value: Stake weight below StakeThreshold, hotkey is not the subnet owner
+  - label: Checked by
+    value: CheckWeights dispatch extension
+  - label: Scope
+    value: Global threshold, evaluated per subnet
+---
+
+# Not Enough Stake To Set Weights
+
+`NotEnoughStakeToSetWeights` is a documented Subtensor standard error raised before a weight-setting
+or commit-reveal call is dispatched. The standard-errors reference describes it as "Less than
+minimum stake required to set weights"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketosetweights)).
+
+## What It Means
+
+The check runs inside `CheckWeights`, a dispatch extension that applies to the full family of
+weight-related calls: `set_weights`, `set_mechanism_weights`, `commit_weights`,
+`commit_mechanism_weights`, `reveal_weights`, `reveal_mechanism_weights`, the batch variants, and
+the timelocked and CRV3 commit calls. It runs before any of those calls reach their own extrinsic
+body
+([Subtensor source: check_weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/guards/check_weights.rs)).
+
+For each call, the extension resolves the relevant `netuid` and checks the calling hotkey's stake
+weight on that subnet through `check_weights_min_stake`. One exception is built in: if the hotkey is
+registered as the subnet owner's own UID on that netuid, the check passes automatically regardless
+of stake. Otherwise the hotkey's stake weight on the subnet must meet or exceed the global
+`StakeThreshold` value, read through `get_stake_threshold`
+([Subtensor source: lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/lib.rs)).
+
+The two batch calls, `batch_commit_weights` and `batch_set_weights`, carry a list of netuids rather
+than one, and the extension checks stake weight against every netuid in that list individually; a
+shortfall on any single netuid in the batch is enough to raise `NotEnoughStakeToSetWeights` for the
+whole call
+([Subtensor source: check_weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/guards/check_weights.rs)).
+
+`StakeThreshold` is the same global, root-set parameter documented separately as the floor the epoch
+uses to filter validator-permit candidates. `NotEnoughStakeToSetWeights` is a different consumer of
+that same value: a pre-dispatch gate on submitting a weight-related call at all, rather than the
+epoch's later permit-assignment filter
+([Stake Threshold](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#stakethreshold),
+[Subtensor source: misc.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/misc.rs)).
+
+## Why It Appears
+
+The check exists to keep negligible-stake hotkeys from submitting weight-related transactions at
+all, independent of whether the network later grants them a validator permit
+([Subtensor source: check_weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/guards/check_weights.rs)).
+
+Because the comparison happens in a dispatch extension rather than inside each extrinsic's own body,
+it is evaluated the same way across the whole weight-call family: commit, reveal, batch, timelocked,
+and CRV3 mechanism variants all route through the same `check_min_stake` logic before the underlying
+call executes
+([Subtensor source: check_weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/guards/check_weights.rs)).
+
+## What It Does Not Mean
+
+This error does not mean the hotkey lacks a validator permit on the subnet. A separate, later check
+inside `do_set_weights` itself, `check_validator_permit`, enforces that a hotkey setting non-self
+weights actually holds a validator permit, and raises the unrelated `NeuronNoValidatorPermit` error
+when that fails
+([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#neuronnovalidatorpermit)).
+
+It also does not mean the subnet owner is exempt from every weight-related precondition. The owner
+exemption inside `check_weights_min_stake` only bypasses the stake-weight comparison; other checks
+in the weight-call family, such as rate limiting and input-length validation, are unaffected by that
+exemption
+([Subtensor source: check_weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/guards/check_weights.rs)).
+
+## Distinction from Neuron No Validator Permit
+
+`NotEnoughStakeToSetWeights` and `NeuronNoValidatorPermit` gate the same family of calls at
+different stages with different sources of truth. The former is a pre-dispatch comparison of live
+stake weight against the global `StakeThreshold`. The latter is an in-body check of the
+`ValidatorPermit` flag a subnet already assigned to that UID
+([Subtensor source: check_weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/guards/check_weights.rs),
+[Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+- **NotEnoughStakeToSetWeights** — pre-dispatch: live stake weight is below the global threshold.
+- **NeuronNoValidatorPermit** — in-body: the UID does not currently hold a validator permit on the
+  subnet.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the check that raises it. It does not state the
+current `StakeThreshold` value or a hotkey's current stake weight; both are live chain state, and
+the threshold value itself is documented on the Stake Threshold page
+([Stake Threshold](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#stakethreshold),
+[Glossary: Netuid](https://docs.learnbittensor.org/resources/glossary#netuid)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketosetweights)
+- [Subtensor source: check_weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/guards/check_weights.rs)
+- [Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)
+- [Stake Threshold](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#stakethreshold)
