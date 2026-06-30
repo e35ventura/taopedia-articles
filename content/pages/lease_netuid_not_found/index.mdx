@@ -1,0 +1,80 @@
+---
+title: "Lease Netuid Not Found"
+summary:
+  "How the LeaseNetuidNotFound error blocks leased-network registration when the chain cannot map
+  the lease coldkey to a stored lease subnet ID."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Lease Netuid Not Found
+infoboxCaption:
+  Error raised when leased-network registration cannot find a subnet ID for the lease coldkey.
+infoboxRows:
+  - label: Error
+    value: LeaseNetuidNotFound
+  - label: Trigger
+    value: find_lease_netuid returns no subnet ID for the supplied lease coldkey
+  - label: Checked in
+    value: do_register_leased_network
+  - label: Check type
+    value: Lease-netuid mapping lookup
+---
+
+# Lease Netuid Not Found
+
+`LeaseNetuidNotFound` is a documented Subtensor standard error raised during leased-network
+registration. The standard-errors reference describes it as "Couldn't find the lease netuid"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#leasenetuidnotfound)).
+
+## What It Means
+
+`do_register_leased_network` needs to determine which subnet ID is associated with the lease coldkey
+before it can complete the leased-network setup. `LeaseNetuidNotFound` means that lookup did not
+return any subnet ID, so the registration stops before the proxy and ownership updates can proceed
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#leasenetuidnotfound),
+[Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+In `leasing.rs`, the function calls `Self::find_lease_netuid(&lease_coldkey)` and returns
+`LeaseNetuidNotFound` when that helper returns `None`
+([Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+## Why It Appears
+
+This error appears after the caller has already passed the creator check and any optional end-block
+validation. The failure is not about the beneficiary identity or the lease end block. It is about
+missing lease-to-subnet mapping data for the coldkey the call is trying to register
+([Subtensor Standard Errors: InvalidLeaseBeneficiary](https://docs.learnbittensor.org/errors/subtensor#invalidleasebeneficiary),
+[Subtensor Standard Errors: LeaseCannotEndInThePast](https://docs.learnbittensor.org/errors/subtensor#leasecannotendinthepast),
+[Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+For a reader, the practical meaning is narrow: the chain could not identify which leased subnet this
+coldkey should control, so it could not continue the leased-network registration path
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#leasenetuidnotfound),
+[Subnet Lease](https://docs.learnbittensor.org/subnets/crowdloans)).
+
+## Distinction from Invalid Lease Beneficiary
+
+`LeaseNetuidNotFound` and `InvalidLeaseBeneficiary` are both checks in `do_register_leased_network`,
+but they reject different problems. `InvalidLeaseBeneficiary` means the caller is not the
+crowdloan's creator. `LeaseNetuidNotFound` means the caller passed that check, but the lease coldkey
+still does not resolve to a stored subnet ID
+([Subtensor Standard Errors: InvalidLeaseBeneficiary](https://docs.learnbittensor.org/errors/subtensor#invalidleasebeneficiary),
+[Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+- **InvalidLeaseBeneficiary** — the caller is not the crowdloan's creator.
+- **LeaseNetuidNotFound** — the lease coldkey has no stored subnet ID mapping.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the missing lease-netuid lookup that raises it.
+It does not describe the rest of the leased-network registration flow or the later proxy/ownership
+updates; those are separate parts of the same path
+([Subnet Lease](https://docs.learnbittensor.org/subnets/crowdloans),
+[Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#leasenetuidnotfound)
+- [Subtensor Standard Errors: InvalidLeaseBeneficiary](https://docs.learnbittensor.org/errors/subtensor#invalidleasebeneficiary)
+- [Subtensor Standard Errors: LeaseCannotEndInThePast](https://docs.learnbittensor.org/errors/subtensor#leasecannotendinthepast)
+- [Subnet Lease](https://docs.learnbittensor.org/subnets/crowdloans)
+- [Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)
