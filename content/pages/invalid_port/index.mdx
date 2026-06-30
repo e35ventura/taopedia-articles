@@ -1,0 +1,86 @@
+---
+title: "Invalid Port"
+summary:
+  "How the InvalidPort error signals that a serve_axon or serve_prometheus call submitted a port
+  value the runtime rejects as not a usable network port."
+category: "Validation"
+tags: ["Validation", "Errors"]
+infoboxTitle: Invalid Port
+infoboxCaption: Error raised when the port field on a served axon or prometheus endpoint is zero.
+infoboxRows:
+  - label: Error
+    value: InvalidPort
+  - label: Trigger
+    value: Port field equals zero on a serve_axon or serve_prometheus submission
+  - label: Checked in
+    value: validate_axon_data and validate_prometheus_data
+  - label: Check type
+    value: Numeric zero test on the port field
+---
+
+# Invalid Port
+
+`InvalidPort` is a documented Subtensor standard error. The standard-errors reference describes it
+as "An invalid port is passed to the serve function"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#invalidport)).
+
+## What It Means
+
+A miner or validator publishes its serving endpoint by calling `serve_axon`, and may publish a
+metrics endpoint by calling `serve_prometheus`. Both extrinsics take a `port: u16` argument naming
+the TCP or UDP port the endpoint listens on
+([Subtensor source: serving.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/serving.rs)).
+
+`InvalidPort` means the `port` value the caller submitted did not name a usable network port, so the
+runtime refuses to record the endpoint and the dispatch fails
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#invalidport),
+[Subtensor source: serving.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/serving.rs)).
+
+## Why It Appears
+
+The runtime check is a single zero test on the `port` field, run after the IP-type and IP-address
+checks have already passed. `validate_axon_data` returns `Err(Error::<T>::InvalidPort)` when
+`axon_info.port.clamp(0, u16::MAX) == 0`, and `validate_prometheus_data` performs the same zero test
+on the prometheus port
+([Subtensor source: serving.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/serving.rs)).
+
+Both `do_serve_axon` and `do_serve_prometheus` call into these validators, so the same zero-port
+condition raises `InvalidPort` for either endpoint. The transaction-extension layer surfaces the
+same pallet error as a typed extension variant that wallets and clients see before the dispatch runs
+([Subtensor source: extensions/subtensor.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/extensions/subtensor.rs)).
+
+For a reader, the practical meaning is simple: the caller passed `port = 0` as the endpoint port. A
+zero port is not a valid listening port, so the runtime rejects the submission instead of recording
+an endpoint that would never receive traffic
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#invalidport),
+[Glossary: Axon](https://docs.learnbittensor.org/resources/glossary#axon)).
+
+## Distinction from Serving Rate Limit
+
+`InvalidPort` and `ServingRateLimitExceeded` both fire from inside `serve_axon` and
+`serve_prometheus`, but they reject different defects. `InvalidPort` rejects the submitted
+endpoint's port value itself. `ServingRateLimitExceeded` rejects the call because it arrived too
+soon after the caller's previous serve on the same subnet
+([Subtensor source: serving.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/serving.rs)).
+
+- **InvalidPort** — the submitted `port` field equals zero.
+- **ServingRateLimitExceeded** — the call arrived before the subnet's serving rate limit had
+  elapsed.
+
+## Reader Boundary
+
+This page defines the meaning of the `InvalidPort` error label and the zero-port check that raises
+it. It does not describe the IP-type or IP-address checks, the serving rate-limit check, or how a
+miner constructs the numeric IP value passed to `serve_axon`; those are separate checks with their
+own error labels and their own articles
+([Subtensor source: serving.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/serving.rs),
+[Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#invalidport)
+- [Subtensor source: serving.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/serving.rs)
+- [Subtensor source: errors.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/errors.rs)
+- [Subtensor source: extensions/subtensor.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/extensions/subtensor.rs)
+- [Glossary: Axon](https://docs.learnbittensor.org/resources/glossary#axon)
+- [Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)
