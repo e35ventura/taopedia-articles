@@ -1,0 +1,126 @@
+---
+title: "Not Enough Balance To Pay Swap Hot Key"
+summary:
+  "How the NotEnoughBalanceToPaySwapHotKey error signals that a hotkey swap was rejected because the
+  coldkey account does not hold enough balance to pay for the swap."
+category: "Wallets"
+tags: ["Wallets", "Errors"]
+infoboxTitle: Not Enough Balance To Pay Swap Hot Key
+infoboxCaption: Error raised when the coldkey cannot cover the cost of a hotkey swap.
+infoboxRows:
+  - label: Error
+    value: NotEnoughBalanceToPaySwapHotKey
+  - label: Trigger
+    value: Coldkey balance is too low to pay for a hotkey swap
+  - label: Check
+    value: Coldkey balance against the hotkey swap cost
+  - label: Scope
+    value: Account-level coldkey balance
+---
+
+# Not Enough Balance To Pay Swap Hot Key
+
+`NotEnoughBalanceToPaySwapHotKey` is a documented Subtensor standard error that means a hotkey swap
+was rejected because the coldkey account does not hold enough balance to pay for swapping the
+hotkey. The standard-errors reference describes it as "Not enough balance to pay swapping hotkey,"
+and the Subtensor source defines the variant with the same meaning
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetopayswaphotkey),
+[Subtensor source: errors.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/errors.rs)).
+
+## What It Means
+
+This error is about funds for a specific operation: paying to swap a hotkey. A hotkey swap replaces
+one hotkey with another for an account, and that operation carries a cost that the coldkey must be
+able to cover. When the coldkey account does not hold enough balance to pay that cost, the runtime
+rejects the swap with `NotEnoughBalanceToPaySwapHotKey`
+([Hotkey Swap](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetopayswaphotkey),
+[Subtensor source: errors.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/errors.rs)).
+
+So when this error appears, the meaning is narrow: the coldkey balance is insufficient to pay for
+the hotkey swap. It names a balance shortfall tied to the swap cost, not a problem with the keys
+themselves or with how they are associated
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetopayswaphotkey),
+[Glossary: Coldkey](https://docs.learnbittensor.org/resources/glossary#coldkey)).
+
+## Why It Appears
+
+Hotkey swapping is a paid wallet operation, and the coldkey that owns the account is the account
+that pays for it. The Subtensor source documents this error as the case where there is not enough
+balance to pay for swapping the hotkey, so it surfaces when a swap is attempted while the coldkey
+balance is below the amount the swap requires
+([Subtensor source: errors.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/errors.rs),
+[Hotkey and Coldkey](https://docs.learnbittensor.org/getting-started/wallets)).
+
+In practice this typically surfaces when the coldkey funding the swap has been drawn down by other
+transactions or simply was never funded enough to cover the swap cost. The chain checks the
+available balance against what the swap requires and refuses the operation when the balance falls
+short
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetopayswaphotkey),
+[Glossary: Coldkey](https://docs.learnbittensor.org/resources/glossary#coldkey)).
+
+## What It Does Not Mean
+
+This error should not be read as a key-ownership or key-existence failure. Bittensor documents
+separate errors for those conditions, and `NotEnoughBalanceToPaySwapHotKey` names only a balance
+shortfall for the swap, raised regardless of how the keys are associated
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetopayswaphotkey),
+[Subtensor source: errors.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/errors.rs)).
+
+It also should not be read as a per-subnet condition. The coldkey balance is account-level state
+that the chain tracks for the key, so the meaning of this error is about the account's funds rather
+than about any particular netuid
+([Subtensor source: errors.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/errors.rs),
+[Glossary: Coldkey](https://docs.learnbittensor.org/resources/glossary#coldkey)).
+
+## Distinction from Not Enough Balance To Pay Swap Cold Key
+
+`NotEnoughBalanceToPaySwapHotKey` and `NotEnoughBalanceToPaySwapColdKey` are different documented
+balance checks named for different swap operations. The standard-errors reference describes
+`NotEnoughBalanceToPaySwapColdKey` as not enough balance to pay for the swap, naming the coldkey
+swap, while `NotEnoughBalanceToPaySwapHotKey` names the hotkey swap
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetopayswapcoldkey),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetopayswaphotkey)).
+
+- **NotEnoughBalanceToPaySwapHotKey** — insufficient balance to pay for a hotkey swap.
+- **NotEnoughBalanceToPaySwapColdKey** — insufficient balance to pay for a coldkey swap.
+
+## Distinction from Not Enough Balance To Stake
+
+`NotEnoughBalanceToPaySwapHotKey` is a balance check for paying a hotkey swap, while
+`NotEnoughBalanceToStake` is a balance check for a staking request. The standard-errors reference
+describes `NotEnoughBalanceToStake` as not enough balance in the coldkey account, and the Subtensor
+source defines it as requesting more stake than exists in the coldkey account, so it names a
+shortfall for staking rather than for a swap cost
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake),
+[Subtensor source: errors.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/errors.rs)).
+
+- **NotEnoughBalanceToPaySwapHotKey** — balance short for the hotkey swap cost.
+- **NotEnoughBalanceToStake** — balance short for the amount being staked.
+
+## Distinction from Insufficient Balance
+
+`NotEnoughBalanceToPaySwapHotKey` names the hotkey-swap cost specifically, while
+`InsufficientBalance` is a general balance error. The standard-errors reference describes
+`InsufficientBalance` as the caller not having enough balance for the operation, so it is a broad
+funds error rather than one tied to the hotkey swap cost
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#insufficientbalance),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetopayswaphotkey)).
+
+- **NotEnoughBalanceToPaySwapHotKey** — balance short for a hotkey swap specifically.
+- **InsufficientBalance** — caller lacks enough balance for the operation generally.
+
+## Reader Boundary
+
+This page defines the meaning of the error label. It does not tell a reader the current cost of a
+hotkey swap or the balance held by a given coldkey on a live network; those depend on current
+on-chain state and configuration. The documented place to read the error itself is the
+standard-errors reference, and the coldkey balance is part of the chain's account state for the key
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetopayswaphotkey),
+[Hotkey and Coldkey](https://docs.learnbittensor.org/getting-started/wallets)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetopayswaphotkey)
+- [Subtensor source: errors.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/errors.rs)
+- [Hotkey and Coldkey](https://docs.learnbittensor.org/getting-started/wallets)
+- [Glossary: Coldkey](https://docs.learnbittensor.org/resources/glossary#coldkey)
