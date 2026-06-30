@@ -32,12 +32,20 @@ Consensus documentation
 
 ## How It Is Applied
 
-On chain, the stored value is scaled to a fraction between zero and one by dividing by the type
-maximum, and that fraction interpolates the weights used to form bonds between two endpoints. At
-zero the bonds use the validator's raw weights, at one they use the fully consensus-clipped weights,
-and values in between mix the two linearly, so a higher bonds penalty forms bonds from weights
-pulled further toward the consensus-clipped benchmark
-([`get_float_bonds_penalty`](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/epoch/run_epoch.rs)).
+Yuma Consensus documentation describes the stored bonds penalty value scaled to a fraction between
+zero and one by dividing by the type maximum. That fraction interpolates the weights used to form
+bonds between two endpoints. At zero the bonds use the validator's raw weights, at one they use the
+fully consensus-clipped weights, and values in between mix the two linearly, so a higher bonds
+penalty forms bonds from weights pulled further toward the consensus-clipped benchmark
+([Yuma Consensus: Penalizing out-of-consensus bonds](https://docs.learnbittensor.org/learn/yuma-consensus#penalizing-out-of-consensus-bonds),
+[Subnet Hyperparameters: BondsPenalty](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#bondspenalty),
+[Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score)).
+
+That interpolation sits on the bond path after clipping derives each miner's consensus benchmark.
+Bonds penalty does not replace clipping itself; it adjusts how strongly out-of-consensus weights
+pull bond formation toward the clipped benchmark before smoothed validator-miner bonds update
+([Yuma Consensus: Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping),
+[Yuma Consensus: Bonding mechanics](https://docs.learnbittensor.org/learn/yuma-consensus#bonding)).
 
 ## Documented Setter
 
@@ -46,6 +54,31 @@ setter alias for this parameter and names `sudo_set_bonds_penalty` as the setter
 subnet-owner permission required. That makes the setting an owner-controlled tuning value even
 though it is not exposed through a simple `btcli sudo set --param` alias
 ([Subnet Hyperparameters: BondsPenalty](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#bondspenalty)).
+
+Because each subnet carries its own hyperparameters, the bonds penalty magnitude on netuid 1 can
+differ from another subnet's setting
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## Chain Reads for netuid 1
+
+Readers can verify live hyperparameter values for the documented example netuid with
+`btcli subnet hyperparameters --netuid 1 --network finney`
+([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
+
+That read path keeps live hyperparameter claims tied to a parseable netuid.
+
+## Per-Subnet Live Value Boundary
+
+Bonds penalty is per-subnet chain state. The out-of-consensus bond penalty magnitude configured on
+one netuid applies only inside that subnet's Yuma bonding path and can differ from the documented
+default of zero and from the value on another netuid
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Yuma Consensus: Penalizing out-of-consensus bonds](https://docs.learnbittensor.org/learn/yuma-consensus#penalizing-out-of-consensus-bonds)).
+
+This article's infobox uses netuid 1 as an example label when reading one subnet's hyperparameter
+table on Finney mainnet. That example helps readers verify one row; it is not proof that every
+subnet exposes the same live penalty magnitude
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
 
 ## Distinction from Clipping
 
@@ -136,10 +169,12 @@ Settlement-refinement vocabulary and hyperparameter vocabulary answer different 
 
 ## Reader Boundary
 
-Bonds penalty should not be read as clipping, liquid alpha, or a live penalty outcome on a miner. It
-names only the subnet hyperparameter that sets how strongly out-of-consensus bond-weight is pulled
-toward the consensus benchmark on the selected netuid
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+Bonds penalty should not be read as clipping, liquid alpha, consensus score, or a live penalty
+outcome on a miner. It names only the subnet hyperparameter that sets how strongly out-of-consensus
+bond-weight is pulled toward the consensus benchmark on the selected netuid
+([Subnet Hyperparameters: BondsPenalty](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#bondspenalty),
+[Yuma Consensus: Penalizing out-of-consensus bonds](https://docs.learnbittensor.org/learn/yuma-consensus#penalizing-out-of-consensus-bonds),
+[Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score)).
 
 ## Further Reading
 
