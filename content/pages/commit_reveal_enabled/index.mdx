@@ -1,0 +1,72 @@
+---
+title: "Commit Reveal Enabled"
+summary:
+  "How the CommitRevealEnabled error blocks the immediate set_weights family when the target subnet
+  has switched to commit-reveal weight submission."
+category: "Validation"
+tags: ["Validation", "Errors"]
+infoboxTitle: Commit Reveal Enabled
+infoboxCaption: Error raised when set_weights is called on a subnet requiring commit-reveal.
+infoboxRows:
+  - label: Error
+    value: CommitRevealEnabled
+  - label: Trigger
+    value: Immediate set_weights call on a subnet with commit-reveal enabled
+  - label: Affected extrinsics
+    value: set_weights, set_mechanism_weights, batch_set_weights
+  - label: Check type
+    value: Feature-toggle lookup per subnet
+---
+
+# Commit Reveal Enabled
+
+`CommitRevealEnabled` is a documented Subtensor standard error raised when a validator uses the
+immediate weight-setting path on a subnet that has switched to commit-reveal. The standard-errors
+reference describes it as "Attempting to call set_weights when commit/reveal is enabled"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#commitrevealenabled)).
+
+## What It Means
+
+Bittensor subnets can require validators to submit weights in two steps: a hash commitment first,
+then the actual weights and salt later, rather than submitting weights directly. When a subnet has
+this feature enabled, the immediate weight-setting extrinsics, `set_weights` and
+`set_mechanism_weights`, check the feature flag and return `CommitRevealEnabled` immediately instead
+of processing the call at all. For `batch_set_weights`, the same check runs per subnet in the batch,
+and any individual subnet with commit-reveal enabled returns this error for that subnet's entry in
+the result
+([Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs),
+[Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs),
+[Commit-Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)).
+
+## Why It Appears
+
+The check exists to enforce a clean split between the two weight-submission modes. A validator that
+submits directly via `set_weights` after a subnet owner has enabled commit-reveal receives this
+error rather than having the submission silently ignored or partially processed. The intended
+resolution is to switch to the commit path for that subnet
+([Commit-Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)).
+
+## Distinction from Commit Reveal Disabled
+
+`CommitRevealEnabled` and `CommitRevealDisabled` are mirror-image guards for the same feature
+toggle. `CommitRevealEnabled` applies when the immediate weight-setting path is used on a subnet
+that has commit-reveal on. `CommitRevealDisabled` is the opposite, raised when the commit path is
+attempted on a subnet that has commit-reveal off
+([Subtensor Standard Errors: CommitRevealDisabled](https://docs.learnbittensor.org/errors/subtensor#commitrevealdisabled)).
+
+- **CommitRevealEnabled** — used the direct path on a commit-reveal subnet.
+- **CommitRevealDisabled** — used the commit path on a non-commit-reveal subnet.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the toggle check that raises it. It does not
+describe how commit-reveal weight submission works, how to enable or disable the feature, or the
+commit and reveal extrinsics themselves; those are documented separately
+([Commit-Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#commitrevealenabled)
+- [Subtensor Standard Errors: CommitRevealDisabled](https://docs.learnbittensor.org/errors/subtensor#commitrevealdisabled)
+- [Commit-Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)
+- [Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)
