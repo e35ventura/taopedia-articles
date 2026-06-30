@@ -37,6 +37,30 @@ compressing the remaining UIDs to keep consecutive indexing
 action: excess neurons are deregistered, so it is meant to be used deliberately rather than
 routinely.
 
+## How a Trim Selects and Preserves UIDs
+
+The documented trim is not a blind cut. When it runs, the chain works through UIDs starting from the
+lowest emitters and moving upward, deregistering the poorest performers first and stopping once the
+subnet has been reduced to the owner's target count
+([UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming)).
+
+Two categories of UID are skipped rather than removed. Temporally immune UIDs — those still inside
+the subnet's post-registration immunity window — are preserved, as are owner-immune UIDs controlled
+by the subnet creator. The documentation also caps total immunity so a trim cannot leave a subnet
+made up almost entirely of protected slots: the number of immune UIDs may not exceed 80% of the
+maximum UID count, the same ceiling the `maxImmuneUidsPercentage` constant fixes at `80`
+([UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming),
+[Subtensor Constants: maxImmuneUidsPercentage](https://docs.learnbittensor.org/subtensor-api/constants#maximmuneuidspercentage),
+[Glossary: Immunity Period](https://docs.learnbittensor.org/resources/glossary#immunity-period)).
+
+After the low emitters are removed, the surviving UIDs are compressed to the left to keep
+consecutive indexing. The documentation gives a worked example: if UIDs 5, 7, and 9 are what remain
+once trimming finishes, they are reindexed to 0, 1, and 2. The trim also cannot cross the documented
+floor, since the minimum count an owner can trim to is 64, so the action removes the weakest
+non-protected neurons down to that floor rather than emptying the subnet
+([UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming),
+[Glossary: Immunity Period](https://docs.learnbittensor.org/resources/glossary#immunity-period)).
+
 ## What the Rate Limit Controls
 
 This parameter is the cooldown between those trims, not a limit on how far a single trim can go. The
