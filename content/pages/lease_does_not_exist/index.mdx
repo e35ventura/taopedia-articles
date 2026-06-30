@@ -1,0 +1,76 @@
+---
+title: "Lease Does Not Exist"
+summary:
+  "How the LeaseDoesNotExist error blocks terminating a subnet lease when the supplied lease ID
+  doesn't resolve to any stored lease."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Lease Does Not Exist
+infoboxCaption: Error raised when a lease termination call's lease ID has no stored lease.
+infoboxRows:
+  - label: Error
+    value: LeaseDoesNotExist
+  - label: Trigger
+    value: Supplied lease_id has no entry in SubnetLeases storage
+  - label: Checked in
+    value: do_terminate_lease, first check
+  - label: Check type
+    value: Storage-lookup existence check
+---
+
+# Lease Does Not Exist
+
+`LeaseDoesNotExist` is a documented Subtensor standard error raised by `do_terminate_lease`, the
+extrinsic a [subnet lease](https://docs.learnbittensor.org/subnets/crowdloans)'s beneficiary calls
+to claim ownership once the lease has run its course. The standard-errors reference describes it as
+"Lease does not exist"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#leasedoesnotexist)).
+
+## What It Means
+
+`do_terminate_lease` looks up the lease record for the supplied lease ID in `SubnetLeases` storage
+before doing anything else. `LeaseDoesNotExist` is raised when that lookup finds nothing: there is
+no stored lease for the ID the caller supplied
+([Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+This is the first of the function's checks. Every later step, confirming the caller is the
+beneficiary, confirming the lease's end block, and transferring ownership, depends on having already
+resolved a real lease record, so none of those checks run unless this lookup succeeds
+([Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+## Why It Appears
+
+A lease ID that was never registered, one that was mistyped or copied incorrectly, or one for a
+lease that has already been terminated and removed from storage will all fail this lookup
+([Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+Lease termination removes the lease record from storage as part of completing the transfer, so a
+second termination attempt using the same lease ID after a successful one also fails here, since
+there is no longer a record to find
+([Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+## Distinction from Expected Beneficiary Origin
+
+`LeaseDoesNotExist` and `ExpectedBeneficiaryOrigin` are both early checks in `do_terminate_lease`,
+but they apply at different stages. `LeaseDoesNotExist` is the first check, on the existence of the
+lease record itself. `ExpectedBeneficiaryOrigin` is the next, separate check, confirming the caller
+is the specific beneficiary recorded on that lease, reached only once the lease has already been
+found
+([Subtensor Standard Errors: ExpectedBeneficiaryOrigin](https://docs.learnbittensor.org/errors/subtensor#expectedbeneficiaryorigin),
+[Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+- **LeaseDoesNotExist** — no lease record exists for the supplied lease ID.
+- **ExpectedBeneficiaryOrigin** — a lease was found, but the caller isn't its beneficiary.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the lookup that raises it. It does not describe
+how lease IDs are assigned or the rest of the termination flow; those are documented separately
+([Subnet Lease](https://docs.learnbittensor.org/subnets/crowdloans)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#leasedoesnotexist)
+- [Subtensor Standard Errors: ExpectedBeneficiaryOrigin](https://docs.learnbittensor.org/errors/subtensor#expectedbeneficiaryorigin)
+- [Subnet Lease](https://docs.learnbittensor.org/subnets/crowdloans)
+- [Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)
