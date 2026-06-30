@@ -56,6 +56,30 @@ For readers, the important behavior is that subnet registration converts a TAO b
 subnet identity. The new subnet receives a unique netuid, begins participating in the network's
 incentive structure, and becomes a destination for staking and emission activity.
 
+## Documented Costs and Bounds
+
+Subnet registration is governed by a few documented quantities. The creation burn is dynamic—it
+steps up after each new subnet and decays over the following blocks—but it is floored at the network
+minimum lock cost, a startup constant of `1000000000000` (1000 TAO) exposed as
+`api.consts.subtensorModule.initialNetworkMinLockCost`. The live cost settles to that floor only
+after an idle stretch and is otherwise higher
+([Subtensor Constants: initialNetworkMinLockCost](https://docs.learnbittensor.org/subtensor-api/constants#initialnetworkminlockcost),
+[Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet)).
+
+The network also bounds how many subnets can exist at once. When the documented 128-slot cap is
+full, a new registration succeeds only by triggering deregistration of the eligible subnet with the
+lowest alpha-price EMA, rather than by adding an unlimited slot
+([Subnet deregistration](https://docs.learnbittensor.org/subnets/subnet-deregistration)).
+
+A freshly registered subnet then receives an immunity period that keeps it out of that removal
+comparison while it establishes price history. The constants reference gives that window's startup
+length as `api.consts.subtensorModule.initialNetworkImmunityPeriod`, listed as `1296000`
+blocks—about 180 days at 12-second blocks
+([Subtensor Constants: initialNetworkImmunityPeriod](https://docs.learnbittensor.org/subtensor-api/constants#initialnetworkimmunityperiod),
+[Glossary: Immunity Period](https://docs.learnbittensor.org/resources/glossary#immunity-period)).
+These are documented startup and structural values; the live registration burn in force is separate
+chain state, as the reader boundary below notes.
+
 ## Development Stage Context
 
 The
