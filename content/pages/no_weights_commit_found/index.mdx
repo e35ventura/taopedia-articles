@@ -1,0 +1,82 @@
+---
+title: "No Weights Commit Found"
+summary:
+  "How the NoWeightsCommitFound error signals that a commit-reveal weight reveal was submitted
+  without a matching stored commit for that hotkey and subnet."
+category: "Validation"
+tags: ["Validation", "Errors"]
+infoboxTitle: No Weights Commit Found
+infoboxCaption: Error raised when a reveal arrives without a matching stored commit.
+infoboxRows:
+  - label: Error
+    value: NoWeightsCommitFound
+  - label: Trigger
+    value: No matching stored commit exists for the reveal on that hotkey and subnet
+  - label: Checked in
+    value: reveal and batch_reveal weight extrinsics
+  - label: Related concept
+    value: Commit-reveal
+---
+
+# No Weights Commit Found
+
+`NoWeightsCommitFound` is a documented Subtensor standard error raised by commit-reveal weight
+reveal extrinsics. The standard-errors reference describes it as "No commit found for hotkey+netuid
+combination"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#noweightscommitfound)).
+
+## What It Means
+
+[Commit-reveal](https://docs.learnbittensor.org/concepts/commit-reveal) weight submission happens in
+two steps: a commitment first, then a later reveal that must match a stored pending commit for the
+same hotkey and subnet. `NoWeightsCommitFound` means the reveal step did not find such a stored
+commit, so the chain rejected the reveal instead of applying weights
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#noweightscommitfound),
+[Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+In `weights.rs`, both `do_reveal_weights` and `do_batch_reveal_weights` read the pending commit list
+for the caller and return `NoWeightsCommitFound` when that list is absent or when the requested hash
+cannot be matched to a stored non-expired commit in the active queue
+([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+## Why It Appears
+
+This error appears on the reveal side, not the commit side. The reveal call reached the point where
+the chain looked for a prior stored commit, but there was nothing usable to reveal for that hotkey,
+subnet, and provided commitment hash
+([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+For a reader, the practical meaning is narrow: the chain is not saying the reveal arrived too early
+or that commit-reveal is disabled. It is saying there is no matching active commit available for
+this reveal to consume
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#noweightscommitfound),
+[Subtensor Standard Errors: RevealTooEarly](https://docs.learnbittensor.org/errors/subtensor#revealtooearly),
+[Subtensor Standard Errors: CommitRevealDisabled](https://docs.learnbittensor.org/errors/subtensor#commitrevealdisabled)).
+
+## Distinction from Expired Weight Commit
+
+`NoWeightsCommitFound` and `ExpiredWeightCommit` are both reveal-side failures, but they reject
+different states of the commit queue. `ExpiredWeightCommit` means a matching commit existed but had
+already aged out into the expired set before the reveal was processed. `NoWeightsCommitFound` means
+the reveal does not have a matching active stored commit to use
+([Subtensor Standard Errors: ExpiredWeightCommit](https://docs.learnbittensor.org/errors/subtensor#expiredweightcommit),
+[Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+- **ExpiredWeightCommit** — the matching commit existed, but it had already expired.
+- **NoWeightsCommitFound** — there is no matching active stored commit for the reveal.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the missing-commit condition that raises it. It
+does not describe the full commit-reveal lifecycle, how reveal timing windows are computed, or how
+expired commits are pruned; those are separate checks and separate topics
+([Commit-Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
+[Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#noweightscommitfound)
+- [Subtensor Standard Errors: ExpiredWeightCommit](https://docs.learnbittensor.org/errors/subtensor#expiredweightcommit)
+- [Subtensor Standard Errors: RevealTooEarly](https://docs.learnbittensor.org/errors/subtensor#revealtooearly)
+- [Commit-Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)
+- [Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)
