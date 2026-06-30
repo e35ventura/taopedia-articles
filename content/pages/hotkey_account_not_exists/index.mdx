@@ -13,7 +13,7 @@ infoboxRows:
   - label: Trigger
     value: Targeted hotkey has no on-chain owner association
   - label: Checked in
-    value: add-stake and unstake validation paths
+    value: Staking-related extrinsics such as add_stake and remove_stake
   - label: Scope
     value: Global hotkey account existence
 ---
@@ -26,35 +26,33 @@ The standard-errors reference describes it as "Hotkey account does not exist"
 
 In Subtensor, hotkey existence is tied to the chain's recorded coldkey-to-hotkey ownership
 association rather than to a wallet file on disk
-([Hotkey and Coldkey](https://docs.learnbittensor.org/getting-started/wallets),
-[Subtensor source: helpers.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/helpers.rs)).
+([Hotkey and Coldkey](https://docs.learnbittensor.org/getting-started/wallets)).
 
 ## What It Means
 
-This error is an account-existence check. Before staking helpers continue with balance, stake, or
-swap validation, the runtime verifies that the targeted hotkey already exists in chain state. If no
-owner association is recorded for that hotkey, the call stops with `HotKeyAccountNotExists`
+This error is a global account-existence check. The chain does not recognize the targeted hotkey as
+an existing owned account, so the call stops with `HotKeyAccountNotExists`
 ([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#hotkeyaccountnotexists),
-[Subtensor source: stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs),
-[Subtensor source: helpers.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/helpers.rs)).
+[Hotkey and Coldkey](https://docs.learnbittensor.org/getting-started/wallets)).
 
-For a reader, the practical meaning is narrow: the chain does not know that hotkey as an existing
-owned account. The label does not, by itself, say anything about subnet membership, stake size, or
-coldkey funding.
+For debugging, treat this as a missing hotkey account, not as proof that the hotkey lacks a UID on a
+subnet or that the signing coldkey lacks free TAO. Subnet membership and coldkey funding are
+separate questions
+([Subtensor Standard Errors: HotKeyNotRegisteredInSubNet](https://docs.learnbittensor.org/errors/subtensor#hotkeynotregisteredinsubnet),
+[Subtensor Standard Errors: NotEnoughBalanceToStake](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake)).
 
 ## Why It Appears
 
 This error appears when a call references a hotkey that has not yet been associated on chain, names
-the wrong hotkey account, or uses a stale target that no longer matches the intended hotkey. On
-staking paths, the chain checks account existence before later balance and swap rules, so a missing
-hotkey account is rejected before a reader reaches stake-size or liquidity questions
-([Hotkey and Coldkey](https://docs.learnbittensor.org/getting-started/wallets),
-[Subtensor source: stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs),
-[Subtensor source: remove_stake.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/remove_stake.rs)).
+the wrong hotkey account, or uses a stale target that no longer matches the intended hotkey.
 
-That makes `HotKeyAccountNotExists` different from a wallet-balance problem. The hotkey itself is
-missing from the chain's ownership records, so funding or unstake details are not the first thing
-the label is telling the reader.
+When debugging, compare existence failures at different scopes. `NonAssociatedColdKey` means the
+hotkey exists, but the signing coldkey is not its recorded owner. `HotKeyNotRegisteredInSubNet`
+means the hotkey exists on chain but does not hold a UID on the selected netuid
+([Subtensor Standard Errors: NonAssociatedColdKey](https://docs.learnbittensor.org/errors/subtensor#nonassociatedcoldkey),
+[Subtensor Standard Errors: HotKeyNotRegisteredInSubNet](https://docs.learnbittensor.org/errors/subtensor#hotkeynotregisteredinsubnet)).
+
+The practical meaning is narrow: the chain does not know that hotkey as an existing owned account.
 
 ## Distinction from Non Associated Cold Key
 
@@ -73,17 +71,16 @@ the label is telling the reader.
 `HotKeyAccountNotExists` is the global account-existence check for the hotkey itself.
 `HotKeyNotRegisteredInSubNet` is the subnet-membership check for a hotkey that may already exist on
 chain but does not have a UID on the selected netuid
-([Subtensor Standard Errors: HotKeyNotRegisteredInSubNet](https://docs.learnbittensor.org/errors/subtensor#hotkeynotregisteredinsubnet),
-[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#hotkeyaccountnotexists)).
+([Subtensor Standard Errors: HotKeyNotRegisteredInSubNet](https://docs.learnbittensor.org/errors/subtensor#hotkeynotregisteredinsubnet)).
 
 - **HotKeyAccountNotExists** — no chain-level hotkey account is recorded.
 - **HotKeyNotRegisteredInSubNet** — the hotkey exists, but not on that subnet.
 
 ## Reader Boundary
 
-This page defines the meaning of the error label and the global hotkey-account existence check. It
-does not tell a reader whether a hotkey has a validator permit, enough stake, or a UID on a specific
-subnet; those are separate conditions checked elsewhere
+This page defines the meaning of the error label and the global hotkey-account existence condition.
+It does not tell a reader whether a hotkey has a validator permit, enough stake, or a UID on a
+specific subnet; those are separate topics
 ([Subtensor Standard Errors: HotKeyNotRegisteredInSubNet](https://docs.learnbittensor.org/errors/subtensor#hotkeynotregisteredinsubnet),
 [Subtensor Standard Errors: NonAssociatedColdKey](https://docs.learnbittensor.org/errors/subtensor#nonassociatedcoldkey),
 [Subtensor Standard Errors: NotEnoughBalanceToStake](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake)).
@@ -94,4 +91,3 @@ subnet; those are separate conditions checked elsewhere
 - [Hotkey and Coldkey](https://docs.learnbittensor.org/getting-started/wallets)
 - [Subtensor Standard Errors: NonAssociatedColdKey](https://docs.learnbittensor.org/errors/subtensor#nonassociatedcoldkey)
 - [Subtensor Standard Errors: HotKeyNotRegisteredInSubNet](https://docs.learnbittensor.org/errors/subtensor#hotkeynotregisteredinsubnet)
-- [Subtensor source: helpers.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/helpers.rs)
