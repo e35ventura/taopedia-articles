@@ -1,0 +1,103 @@
+---
+title: "Committing Weights Too Fast"
+summary:
+  "How the CommittingWeightsTooFast error signals that a validator retried a weight commit before
+  the required commit-reveal pacing interval had elapsed."
+category: "Consensus"
+tags: ["Consensus", "Errors"]
+infoboxTitle: Committing Weights Too Fast
+infoboxCaption: Error raised when a validator retries weight commit too soon.
+infoboxRows:
+  - label: Error
+    value: CommittingWeightsTooFast
+  - label: Trigger
+    value: Repeated weight commit before the required pacing interval clears
+  - label: Related mechanism
+    value: Commit reveal weight-submission path
+  - label: Scope
+    value: Commit-step pacing
+---
+
+# Committing Weights Too Fast
+
+`CommittingWeightsTooFast` is a documented Subtensor standard error. The standard-errors reference
+defines it as "Exceeded rate limit for setting weights"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#committingweightstoofast)).
+
+## What It Means
+
+This error means a validator attempted to commit weights again before the required wait on the
+commit path had elapsed. The standard-errors page lists it separately from `SettingWeightsTooFast`,
+which shows that Bittensor treats repeated weight commits as a distinct runtime rejection path
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#committingweightstoofast),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#settingweightstoofast)).
+
+So the rejection is about pacing repeated commits on the commit-reveal submission path, not about
+whether the validator's revealed weights were acceptable or whether the reveal window itself was
+configured correctly ([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#committingweightstoofast)).
+
+## Why It Appears
+
+Commit reveal separates weight submission into a commit step and a later reveal step. The commit
+step hides the actual weights until the reveal period passes
+([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
+[Commit Reveal Period](https://docs.learnbittensor.org/concepts/commit-reveal)).
+
+That separation matters because `CommittingWeightsTooFast` is about retrying the commit side too
+soon. It does not describe the later reveal becoming visible too early or too late. The error is the
+narrow runtime signal that the commit action itself was attempted again before the required pacing
+condition cleared
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#committingweightstoofast),
+[Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)).
+
+## What It Does Not Mean
+
+This error should not be read as the ordinary repeated `set_weights` pacing error.
+`SettingWeightsTooFast` is documented separately for retried weight submissions on the direct
+weight-setting path
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#committingweightstoofast),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#settingweightstoofast)).
+
+It also should not be read as the reveal-period setting itself. Commit reveal period is the subnet
+hyperparameter that sets how many tempos pass before committed weights are revealed, while
+`CommittingWeightsTooFast` is the runtime error on committing again too soon
+([Commit Reveal Period](https://docs.learnbittensor.org/concepts/commit-reveal),
+[Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)).
+
+## Distinction from Setting Weights Too Fast
+
+`CommittingWeightsTooFast` belongs to the commit side of the commit-reveal flow.
+`SettingWeightsTooFast` belongs to repeated weight submission on the direct setting path
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#committingweightstoofast),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#settingweightstoofast),
+[Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)).
+
+- **CommittingWeightsTooFast** — commit step retried too soon.
+- **SettingWeightsTooFast** — direct weight submission retried too soon.
+
+## Distinction from Commit Reveal Period
+
+Commit reveal period is the subnet setting that determines how many tempos pass before committed
+weights become revealable. `CommittingWeightsTooFast` is the error returned when the commit action
+itself is repeated too soon
+([Commit Reveal Period](https://docs.learnbittensor.org/concepts/commit-reveal),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#committingweightstoofast)).
+
+- **Commit reveal period** — delay before committed weights are revealed.
+- **CommittingWeightsTooFast** — error on repeating the commit action too soon.
+
+## Reader Boundary
+
+This page defines the meaning of the error label. It does not tell a reader the live pacing value
+used on any particular subnet or exactly when another commit will succeed there. The stable point
+here is narrower: on the commit-reveal path, retrying the commit action too soon returns
+`CommittingWeightsTooFast`
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#committingweightstoofast)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#committingweightstoofast)
+- [Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)
+- [Commit Reveal Period](https://docs.learnbittensor.org/concepts/commit-reveal)
+- [Subtensor Standard Errors: SettingWeightsTooFast](https://docs.learnbittensor.org/errors/subtensor#settingweightstoofast)
