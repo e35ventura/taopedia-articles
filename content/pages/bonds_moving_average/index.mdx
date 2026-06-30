@@ -48,17 +48,24 @@ parameter to validator-side emission outcomes rather than to miner incentive ran
 
 ## Smoothing Factor and Scaling
 
-In the default path, where liquid alpha is not enabled, the chain reads the stored
-`BondsMovingAverage` and scales it down by 1,000,000, then derives the EMA smoothing factor as alpha
-equal to one minus that scaled value. Each new bond is alpha times the instant bond plus one minus
-alpha times the prior bond
-([`compute_ema_bonds_normal`](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/epoch/run_epoch.rs)).
+In the default path, where liquid alpha is not enabled, documentation describes the stored
+`BondsMovingAverage` value scaled down by 1,000,000 to derive an EMA smoothing factor alpha equal to
+one minus that scaled value. Each new bond is alpha times the instant bond plus one minus alpha
+times the prior bond
+([Yuma Consensus: Bonding mechanics](https://docs.learnbittensor.org/learn/yuma-consensus#bonding),
+[Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema),
+[Subnet Hyperparameters: BondsMovingAverage](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#bondsmovingaverage)).
 
 The relationship is inverse. A higher `BondsMovingAverage` produces a smaller alpha, which puts more
 weight on prior bonds and makes bond state change more slowly, while a lower value raises alpha and
 lets bonds track recent weights faster. Because of the 1,000,000 scaling, a stored value such as
 900,000 corresponds to an alpha of 0.1
 ([Yuma Consensus: Bonding mechanics](https://docs.learnbittensor.org/learn/yuma-consensus#bonding)).
+
+That default smoothing path is distinct from bonds penalty, which pulls out-of-consensus bond
+weights toward the consensus benchmark rather than controlling how quickly prior bond state decays
+([Yuma Consensus: Penalizing out-of-consensus bonds](https://docs.learnbittensor.org/learn/yuma-consensus#penalizing-out-of-consensus-bonds),
+[Subnet Hyperparameters: BondsPenalty](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#bondspenalty)).
 
 When liquid alpha is enabled on a subnet, per-pair alignment-responsive coefficients replace this
 subnet-wide smoothing factor during bond updates. Bond smoothing on that path then follows
@@ -201,10 +208,13 @@ mechanism that settles submitted weights into payouts.
 
 ## Reader Boundary
 
-Bonds moving average should not be read as a live bond value, a validator weight, or liquid alpha
-itself. It names only the subnet hyperparameter that configures how validator-miner bonds are
-smoothed across epochs on the selected netuid
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+Bonds moving average should not be read as a live bond value, a validator weight, liquid alpha
+itself, or the bonds penalty magnitude. It names only the subnet hyperparameter that configures how
+validator-miner bonds are smoothed across epochs on the selected netuid when liquid alpha is not
+replacing that smoothing path
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights),
+[Yuma Consensus: Bonding mechanics](https://docs.learnbittensor.org/learn/yuma-consensus#bonding)).
 
 ## Further Reading
 
