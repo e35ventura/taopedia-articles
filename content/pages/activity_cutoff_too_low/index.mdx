@@ -1,0 +1,105 @@
+---
+title: "Activity Cutoff Too Low"
+summary:
+  "How the ActivityCutoffTooLow error blocks setting the legacy activity cutoff hyperparameter when
+  the submitted block count falls below the chain's MinActivityCutoff floor."
+category: "Consensus"
+tags: ["Consensus", "Errors"]
+infoboxTitle: Activity Cutoff Too Low
+infoboxCaption: Error raised when an activity cutoff value is below MinActivityCutoff.
+infoboxRows:
+  - label: Error
+    value: ActivityCutoffTooLow
+  - label: Trigger
+    value: activity_cutoff is below MinActivityCutoff
+  - label: Checked in
+    value: sudo_set_activity_cutoff
+  - label: Related hyperparameter
+    value: ActivityCutoff (deprecated)
+---
+
+# Activity Cutoff Too Low
+
+`ActivityCutoffTooLow` is a documented Subtensor standard error raised when setting the legacy
+`ActivityCutoff` hyperparameter. The standard-errors reference describes it as "Activity cutoff is
+too low"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#activitycutofftoolow)).
+
+## What It Means
+
+Activity cutoff names how long a validator may remain without an on-chain update before its stake is
+masked inactive for Yuma Consensus
+([Activity Cutoff](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutoff),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+`sudo_set_activity_cutoff` writes a fixed block-count value to the deprecated `ActivityCutoff`
+storage map. Before that write, the runtime compares the submitted value to `MinActivityCutoff`, a
+chain-wide floor stored in pallet configuration, and returns `ActivityCutoffTooLow` when the
+submitted count is strictly below that minimum
+([Subtensor source: admin-utils lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs),
+[Subtensor source: lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/lib.rs)).
+
+On dynamic-tempo subnets, the live inactivity window is derived from
+[activity cutoff factor](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutofffactor)
+and tempo instead of this legacy block-count map
+([Activity Cutoff Factor](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutofffactor)).
+
+## Why It Appears
+
+This error appears when a `sudo_set_activity_cutoff` call names an `activity_cutoff` value below
+`MinActivityCutoff`. Mis-scaled units, copied extrinsics with outdated values, or automation that
+does not read the current floor can hit this error even when the caller is otherwise authorized to
+change the hyperparameter
+([Subtensor source: admin-utils lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+When debugging, rule out earlier gates on the same extrinsic first. `SubnetDoesNotExist` means the
+targeted subnet is not present. `AdminActionProhibitedDuringWeightsWindow` means the call arrived
+during the protected admin freeze window at the end of an epoch
+([Subtensor Standard Errors: AdminActionProhibitedDuringWeightsWindow](https://docs.learnbittensor.org/errors/subtensor#adminactionprohibitedduringweightswindow),
+[Admin Freeze Window](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+
+The practical meaning is narrow: the submitted activity cutoff block count is below the chain's
+configured minimum.
+
+## Distinction from Activity Cutoff Factor
+
+`ActivityCutoffTooLow` applies only to the legacy `ActivityCutoff` block-count setter. The live
+inactivity tolerance on dynamic-tempo subnets is configured through `ActivityCutoffFactor`, measured
+in per-mille epochs, not through this deprecated map
+([Activity Cutoff Factor](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutofffactor)).
+
+- **ActivityCutoffTooLow** — the legacy block-count value is below `MinActivityCutoff`.
+- **Activity cutoff factor** — the per-mille epoch setting that scales the inactivity window with
+  tempo on current subnets.
+
+## Distinction from Admin Action Prohibited During Weights Window
+
+`ActivityCutoffTooLow` and `AdminActionProhibitedDuringWeightsWindow` can both appear on
+hyperparameter changes near epoch boundaries, but they reject different problems.
+`AdminActionProhibitedDuringWeightsWindow` is a timing gate: the admin freeze window is open and
+owner-style changes are blocked until it closes. `ActivityCutoffTooLow` is a value floor: the
+submitted cutoff count is below `MinActivityCutoff` after authorization and timing checks have
+already passed
+([Subtensor Standard Errors: AdminActionProhibitedDuringWeightsWindow](https://docs.learnbittensor.org/errors/subtensor#adminactionprohibitedduringweightswindow),
+[Subtensor source: admin-utils lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+- **AdminActionProhibitedDuringWeightsWindow** — the call arrived during the epoch-end admin freeze.
+- **ActivityCutoffTooLow** — the submitted cutoff value is below the configured minimum.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the `MinActivityCutoff` floor check in
+`sudo_set_activity_cutoff`. It does not describe the live `MinActivityCutoff` value on a network,
+how activity cutoff factor is set, or how inactive validators are masked during consensus; those are
+documented separately
+([Activity Cutoff](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutoff),
+[Activity Cutoff Factor](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutofffactor),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#activitycutofftoolow)
+- [Subnet Hyperparameters: ActivityCutoff](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutoff)
+- [Subnet Hyperparameters: ActivityCutoffFactor](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutofffactor)
+- [Subtensor source: admin-utils lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)
+- [Subtensor source: lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/lib.rs)
