@@ -1,0 +1,119 @@
+---
+title: "Hotkey Set Tx Rate Limit Exceeded"
+summary:
+  "How the HotKeySetTxRateLimitExceeded error signals that a hotkey swap breached the general
+  transaction rate limit, separate from the longer per-subnet swap cooldown."
+category: "Wallets"
+tags: ["Wallets", "Errors"]
+infoboxTitle: Hotkey Set Tx Rate Limit Exceeded
+infoboxCaption: Error raised when a hotkey swap breaches the general transaction rate limit.
+infoboxRows:
+  - label: Error
+    value: HotKeySetTxRateLimitExceeded
+  - label: Trigger
+    value: A hotkey swap before the coldkey's general tx rate limit cleared
+  - label: Related limit
+    value: TxRateLimit
+  - label: Scope
+    value: Coldkey-level, network-wide
+---
+
+# Hotkey Set Tx Rate Limit Exceeded
+
+`HotKeySetTxRateLimitExceeded` is a documented Subtensor standard error that fires when a hotkey
+swap is submitted before the general transaction rate limit has cleared for the signing coldkey. The
+Subtensor source comments the variant as "A transactor exceeded the rate limit for setting or
+swapping hotkey," and the standard-errors reference describes it as "Rate limit exceeded for
+setting/swapping hotkey"
+([Subtensor source: errors.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/errors.rs),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#hotkeysettxratelimitexceeded)).
+
+## What It Means
+
+The error is raised inside `do_swap_hotkey`, the extrinsic handler for swapping a coldkey's hotkey,
+whether the swap targets one subnet or all subnets the hotkey participates in. Before any
+subnet-specific logic runs, the handler checks the coldkey's general transaction rate limit through
+`exceeds_tx_rate_limit` and returns `HotKeySetTxRateLimitExceeded` when the gap since that coldkey's
+last rate-limited transaction has not reached the limit
+([Subtensor source: swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs)).
+
+That check is the same general transaction rate limit used elsewhere on the chain, keyed to the
+coldkey rather than to any particular subnet. The rate limit it enforces, `TxRateLimit`, is read
+live from chain storage, with `exceeds_tx_rate_limit` treating a limit of zero or a coldkey with no
+prior rate-limited transaction as never exceeding the limit
+([Subtensor source: rate_limiting.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/rate_limiting.rs),
+[Tx Rate Limit](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+
+## Why It Appears
+
+The genesis runtime sets the starting `TxRateLimit` to 1,000 blocks through the
+`SubtensorInitialTxRateLimit` constant, and the live storage value can change after launch under
+root permission. Because `exceeds_tx_rate_limit` rejects the call whenever the elapsed-block gap is
+less than or equal to that limit, a coldkey that already triggered the general rate limit elsewhere,
+such as a recent delegate-take change, can also see `HotKeySetTxRateLimitExceeded` on a swap, since
+both checks read the same `TxRateLimit` window for that coldkey
+([Subtensor source: runtime/src/lib.rs](https://github.com/opentensor/subtensor/blob/main/runtime/src/lib.rs),
+[Subtensor source: rate_limiting.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/rate_limiting.rs)).
+
+## What It Does Not Mean
+
+This error is not the per-subnet hotkey-swap cooldown. The source code defines a separate error,
+`HotKeySwapOnSubnetIntervalNotPassed`, commented as "Too frequent hotkey swap on subnet," for a
+distinct check that runs after the general rate-limit check clears
+([Subtensor source: errors.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/errors.rs)).
+
+That per-subnet check compares the current block against the coldkey's last recorded swap on each
+affected netuid, stored in `LastHotkeySwapOnNetuid`, plus the `HotkeySwapOnSubnetInterval` constant.
+The runtime sets that constant to a full day's worth of blocks in production, 7,200 blocks at the
+chain's twelve-second block interval, which is far longer than the 1,000-block general limit that
+gates `HotKeySetTxRateLimitExceeded`
+([Subtensor source: swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs),
+[Subtensor source: runtime/src/lib.rs](https://github.com/opentensor/subtensor/blob/main/runtime/src/lib.rs)).
+
+A swap that targets a specific subnet must clear both checks in sequence: the general
+`HotKeySetTxRateLimitExceeded` gate first, then the per-subnet `HotKeySwapOnSubnetIntervalNotPassed`
+gate for that netuid. Clearing the shorter general limit does not mean the longer per-subnet
+cooldown has also elapsed
+([Subtensor source: swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs)).
+
+## Distinction from Hotkey Swap On Subnet Interval Not Passed
+
+`HotKeySetTxRateLimitExceeded` and `HotKeySwapOnSubnetIntervalNotPassed` gate the same operation at
+two different scopes. The former is the short, coldkey-level, network-wide check; the latter is the
+longer, per-netuid check tied to the coldkey's last swap on that specific subnet
+([Subtensor source: swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs)).
+
+- **HotKeySetTxRateLimitExceeded** — coldkey breached the general transaction rate limit before any
+  subnet-specific swap logic ran.
+- **HotKeySwapOnSubnetIntervalNotPassed** — coldkey breached the longer per-subnet swap cooldown for
+  the netuid the swap targets.
+
+## Distinction from Tx Rate Limit Exceeded
+
+`HotKeySetTxRateLimitExceeded` and `TxRateLimitExceeded` both stem from the same `TxRateLimit`
+chain-state value and the same `exceeds_tx_rate_limit` check, but the source defines them as
+separate error variants raised by different extrinsics. `HotKeySetTxRateLimitExceeded` is raised
+specifically inside `do_swap_hotkey`, while `TxRateLimitExceeded` is the standard-errors reference's
+label for the general rate limit raised elsewhere on the chain
+([Subtensor source: errors.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/errors.rs),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#txratelimitexceeded)).
+
+- **HotKeySetTxRateLimitExceeded** — the `TxRateLimit` check failing specifically inside the hotkey
+  swap extrinsic.
+- **TxRateLimitExceeded** — the same general rate limit failing on other rate-limited extrinsics.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the check that raises it. It does not predict
+the exact block at which a coldkey's next swap will be accepted; that depends on the live
+`TxRateLimit` value and the block at which the coldkey's last rate-limited transaction landed. The
+documented place to read the underlying rule is the chain rate-limits reference
+([Tx Rate Limit](https://docs.learnbittensor.org/learn/chain-rate-limits),
+[Glossary: Block](https://docs.learnbittensor.org/resources/glossary#block)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#hotkeysettxratelimitexceeded)
+- [Subtensor source: swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs)
+- [Subtensor source: rate_limiting.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/rate_limiting.rs)
+- [Tx Rate Limit](https://docs.learnbittensor.org/learn/chain-rate-limits)
