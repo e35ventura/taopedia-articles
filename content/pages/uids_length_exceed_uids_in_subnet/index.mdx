@@ -1,0 +1,91 @@
+---
+title: "Uids Length Exceed Uids In Subnet"
+summary:
+  "How the UidsLengthExceedUidsInSubNet error signals that a set_weights call listed more UIDs than
+  the target subnet currently has registered neurons."
+category: "Validation"
+tags: ["Validation", "Errors"]
+infoboxTitle: Uids Length Exceed Uids In Subnet
+infoboxCaption: Error raised when a weight vector names more UIDs than exist on the subnet.
+infoboxRows:
+  - label: Error
+    value: UidsLengthExceedUidsInSubNet
+  - label: Trigger
+    value: Submitted UID count exceeds the subnet's current neuron count
+  - label: Checked in
+    value: do_set_weights
+  - label: Check type
+    value: UID-list length comparison
+---
+
+# Uids Length Exceed Uids In Subnet
+
+`UidsLengthExceedUidsInSubNet` is a documented Subtensor standard error raised by the `set_weights`
+extrinsic. The standard-errors reference describes it as "More UIDs than allowed"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#uidslengthexceeduidsinsubnet)).
+
+## What It Means
+
+A `set_weights` call names the UIDs it is scoring in a parallel list. The runtime compares how many
+UIDs were submitted against how many neurons are currently registered on that subnet.
+`UidsLengthExceedUidsInSubNet` means the submitted list is longer than the subnet's current neuron
+count, so the extrinsic is rejected before later UID-validity checks run
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#uidslengthexceeduidsinsubnet),
+[Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+The comparison is a simple count check. It does not inspect whether each listed UID exists, whether
+any UID repeats, or what weight values were paired with the entries
+([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+## Why It Appears
+
+This error fires when the caller built a weight vector with more entries than the subnet currently
+has neurons. That can happen when a submission reuses a template from a larger metagraph, when UID
+trimming or deregistration reduced the live neuron count after the vector was prepared, or when the
+lists were assembled from mismatched sources
+([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+For a reader, the practical meaning is narrow: the weight vector is too long for the subnet's
+current size. The problem is not a repeated UID, an invalid UID entry, or a UID/value length
+mismatch
+([Subtensor Standard Errors: DuplicateUids](https://docs.learnbittensor.org/errors/subtensor#duplicateuids),
+[Subtensor Standard Errors: UidVecContainInvalidOne](https://docs.learnbittensor.org/errors/subtensor#uidveccontaininvalidone),
+[Subtensor Standard Errors: WeightVecNotEqualSize](https://docs.learnbittensor.org/errors/subtensor#weightvecnotequalsize)).
+
+## Distinction from Uid Vec Contain Invalid One
+
+`UidsLengthExceedUidsInSubNet` and `UidVecContainInvalidOne` both concern the submitted UID list,
+but they check different properties. `UidsLengthExceedUidsInSubNet` compares the list length against
+the subnet's current neuron count. `UidVecContainInvalidOne` applies when the list length is
+acceptable but at least one listed UID is not valid on that subnet
+([Subtensor Standard Errors: UidVecContainInvalidOne](https://docs.learnbittensor.org/errors/subtensor#uidveccontaininvalidone),
+[Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+- **UidsLengthExceedUidsInSubNet** — the UID list is longer than the subnet's neuron count.
+- **UidVecContainInvalidOne** — the list length is acceptable, but a listed UID is invalid.
+
+## Distinction from Weight Vec Length Is Low
+
+`UidsLengthExceedUidsInSubNet` and `WeightVecLengthIsLow` both concern how many UIDs a weight vector
+includes, but they reject opposite problems. `UidsLengthExceedUidsInSubNet` means the vector is
+longer than the subnet's current neuron count. `WeightVecLengthIsLow` means the vector is shorter
+than the minimum number of scored UIDs the subnet requires
+([Subtensor Standard Errors: WeightVecLengthIsLow](https://docs.learnbittensor.org/errors/subtensor#weightveclengthislow),
+[Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+- **UidsLengthExceedUidsInSubNet** — too many UIDs for the subnet's current size.
+- **WeightVecLengthIsLow** — too few UIDs for the subnet's required minimum.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the UID-count comparison that raises it. It
+does not describe duplicate detection, per-UID validity checks, or the minimum-length rule that
+applies elsewhere in the same extrinsic
+([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#uidslengthexceeduidsinsubnet)
+- [Subtensor Standard Errors: UidVecContainInvalidOne](https://docs.learnbittensor.org/errors/subtensor#uidveccontaininvalidone)
+- [Subtensor Standard Errors: WeightVecLengthIsLow](https://docs.learnbittensor.org/errors/subtensor#weightveclengthislow)
+- [Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)
