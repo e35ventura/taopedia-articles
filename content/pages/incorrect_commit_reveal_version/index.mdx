@@ -1,0 +1,78 @@
+---
+title: "Incorrect Commit Reveal Version"
+summary:
+  "How the IncorrectCommitRevealVersion error blocks a timelocked weight commit when the submitted
+  version tag does not match the runtime's current commit-reveal version."
+category: "Validation"
+tags: ["Validation", "Errors"]
+infoboxTitle: Incorrect Commit Reveal Version
+infoboxCaption: Error raised when a timelocked commit's version tag doesn't match the runtime.
+infoboxRows:
+  - label: Error
+    value: IncorrectCommitRevealVersion
+  - label: Trigger
+    value: commit_reveal_version in the call doesn't match CommitRevealWeightsVersion
+  - label: Checked in
+    value: timelocked commit extrinsic
+  - label: Check type
+    value: Exact version-tag equality
+---
+
+# Incorrect Commit Reveal Version
+
+`IncorrectCommitRevealVersion` is a documented Subtensor standard error raised during timelocked
+weight commits. The standard-errors reference describes it as "Incorrect commit-reveal version"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#incorrectcommitrevealversion)).
+
+## What It Means
+
+Timelocked commit-reveal weight calls carry a `commit_reveal_version` field that the caller must set
+to match the runtime's current commit-reveal version, stored globally as
+`CommitRevealWeightsVersion`. The check is an exact equality: if the submitted version does not
+match the runtime value, `IncorrectCommitRevealVersion` is raised and the commit is rejected before
+anything else in the call is processed
+([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+The version tag exists to gate the commit-reveal flow across runtime upgrades. When the protocol
+advances to a new version, the runtime version value is incremented, and clients that haven't
+updated their version field will fail this check until they send the updated tag
+([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+## Why It Appears
+
+This is the third check in the timelocked commit flow, after verifying the subnet and mechanism
+exist and confirming commit-reveal is enabled on the subnet. An outdated client that still sends the
+old version tag, or a call built with a hardcoded version number that differs from the current
+runtime value, will fail here before the registration or rate-limit checks run
+([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+The version value is a network-global runtime setting, not a per-subnet hyperparameter, so the same
+version check applies regardless of which subnet the caller is targeting
+([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+## Distinction from Commit Reveal Disabled
+
+`IncorrectCommitRevealVersion` and `CommitRevealDisabled` are both early checks in the same
+timelocked commit flow, but they check different things. `CommitRevealDisabled` confirms that
+commit-reveal is enabled on the target subnet at all, and fires before the version check.
+`IncorrectCommitRevealVersion` is the separate, later check that the caller's version tag matches
+the current runtime version, assuming the feature is enabled
+([Subtensor Standard Errors: CommitRevealDisabled](https://docs.learnbittensor.org/errors/subtensor#commitrevealdisabled),
+[Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+- **CommitRevealDisabled** — commit-reveal is not enabled on the target subnet.
+- **IncorrectCommitRevealVersion** — commit-reveal is enabled, but the version tag is wrong.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the version check that raises it. It does not
+describe how to read or update the current runtime version, or how timelocked commits differ from
+standard commit-reveal; those are documented separately
+([Commit-Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#incorrectcommitrevealversion)
+- [Subtensor Standard Errors: CommitRevealDisabled](https://docs.learnbittensor.org/errors/subtensor#commitrevealdisabled)
+- [Commit-Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)
+- [Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)
