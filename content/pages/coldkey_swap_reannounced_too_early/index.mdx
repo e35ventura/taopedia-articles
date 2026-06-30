@@ -1,0 +1,84 @@
+---
+title: "Coldkey Swap Reannounced Too Early"
+summary:
+  "How the ColdkeySwapReannouncedTooEarly error blocks reannouncing a pending coldkey swap before
+  the required delay since the prior announcement has elapsed."
+category: "Wallets"
+tags: ["Wallets", "Errors"]
+infoboxTitle: Coldkey Swap Reannounced Too Early
+infoboxCaption: Error raised when a pending coldkey swap is reannounced too soon.
+infoboxRows:
+  - label: Error
+    value: ColdkeySwapReannouncedTooEarly
+  - label: Trigger
+    value: Reannouncement before the reannouncement delay elapses
+  - label: Checked in
+    value: announce_coldkey_swap (existing announcement path)
+  - label: Check type
+    value: Block-number comparison
+---
+
+# Coldkey Swap Reannounced Too Early
+
+`ColdkeySwapReannouncedTooEarly` is a documented Subtensor standard error raised by
+`announce_coldkey_swap`, the extrinsic that starts or updates a pending
+[coldkey swap](https://docs.learnbittensor.org/keys/coldkey-swap). The standard-errors reference
+describes it as "Coldkey swap reannounced too early"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#coldkeyswapreannouncedtooearly)).
+
+## What It Means
+
+When a coldkey already has a pending swap announcement on record, a new call to
+`announce_coldkey_swap` is treated as a reannouncement rather than a first announcement. The
+extrinsic compares the current block against the eligibility block recorded for the existing
+announcement plus the network's reannouncement delay, and rejects the call with
+`ColdkeySwapReannouncedTooEarly` if that delay has not yet elapsed
+([Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs),
+[Coldkey Swap](https://docs.learnbittensor.org/keys/coldkey-swap)).
+
+The reannouncement path does not charge the swap announcement fee again. Only a coldkey's first
+announcement runs through the shared fee-charging helper; reannouncements skip that branch entirely
+([Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)).
+
+## Why It Appears
+
+This error appears when a wallet owner tries to update or replace a pending swap announcement before
+the chain allows it. The coldkey swap concept article describes a separate reannouncement delay that
+must pass before a pending swap can be reannounced or cleared; this error is the on-chain rejection
+when that timing requirement is not met
+([Coldkey Swap](https://docs.learnbittensor.org/keys/coldkey-swap),
+[Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)).
+
+A successful reannouncement overwrites the stored announcement hash and resets the finalization
+eligibility block from the current block plus the main announcement delay, so the timing gate exists
+to prevent rapid churn of pending swap commitments
+([Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)).
+
+## Distinction from Not Enough Balance To Pay Swap Coldkey
+
+`ColdkeySwapReannouncedTooEarly` and `NotEnoughBalanceToPaySwapColdKey` both relate to
+`announce_coldkey_swap`, but they apply on different branches of the same call. The balance error
+only runs when no announcement exists yet and the extrinsic attempts to charge the
+first-announcement fee. The reannouncement error only runs when an announcement already exists and
+the caller arrives before the reannouncement delay has elapsed
+([Not Enough Balance To Pay Swap Coldkey](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetopayswapcoldkey),
+[Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)).
+
+- **NotEnoughBalanceToPaySwapColdKey** — the first announcement's fee charge failed.
+- **ColdkeySwapReannouncedTooEarly** — a reannouncement arrived before the required delay.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the reannouncement timing check that raises it.
+It does not state the current reannouncement delay in blocks, since that is root-settable chain
+configuration rather than something this page should restate; readers should treat the applicable
+delay as something to confirm at the time of the call
+([Coldkey Swap](https://docs.learnbittensor.org/keys/coldkey-swap),
+[Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#coldkeyswapreannouncedtooearly)
+- [Subtensor Standard Errors: NotEnoughBalanceToPaySwapColdKey](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetopayswapcoldkey)
+- [Coldkey Swap](https://docs.learnbittensor.org/keys/coldkey-swap)
+- [Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)
