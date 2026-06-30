@@ -1,0 +1,73 @@
+---
+title: "Duplicate Uids"
+summary:
+  "How the DuplicateUids error signals that a set_weights call repeated the same UID more than once
+  in its uid list."
+category: "Validation"
+tags: ["Validation", "Errors"]
+infoboxTitle: Duplicate Uids
+infoboxCaption: Error raised when a set_weights call repeats a UID in its uid list.
+infoboxRows:
+  - label: Error
+    value: DuplicateUids
+  - label: Trigger
+    value: The same UID appears more than once in a set_weights uid list
+  - label: Checked in
+    value: do_set_weights
+  - label: Check type
+    value: Pure list-membership scan
+---
+
+# Duplicate Uids
+
+`DuplicateUids` is a documented Subtensor standard error raised by the `set_weights` extrinsic. The
+standard-errors reference describes it as "Attempting to set weights with duplicate UIDs"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#duplicateuids)).
+
+## What It Means
+
+`do_set_weights` checks the submitted UID list for repeats through `has_duplicate_uids`, which scans
+the list and returns true as soon as it finds a UID that already appeared earlier in the same list.
+`DuplicateUids` is raised when that scan finds a repeat
+([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+The check looks only at the UID list itself. It does not compare UIDs against the subnet's
+registered neurons, check the corresponding weight values, or depend on any chain state; a UID
+appearing twice in the submitted list is enough to fail the check regardless of what else is true
+about the call
+([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+## Why It Appears
+
+`do_set_weights` runs this scan after the earlier registration, stake, rate-limit, and
+validator-permit checks have already passed, and immediately before the separate check that
+validates each UID against the target subnet. A weight submission built by merging or deduplicating
+UID-and-weight data incorrectly, so that one UID ends up listed twice, fails here even if every
+other part of the submission is otherwise well-formed
+([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+## Distinction from Uid Vec Contain Invalid One
+
+`DuplicateUids` and `UidVecContainInvalidOne` both inspect the submitted UID list, but they check
+different properties of it. `DuplicateUids` is a self-contained scan for repeated entries within the
+list and needs no subnet context to evaluate. `UidVecContainInvalidOne` is a separate, later check
+that compares each listed UID against the target subnet's own state to determine whether the UID is
+valid there
+([Subtensor Standard Errors: UidVecContainInvalidOne](https://docs.learnbittensor.org/errors/subtensor#uidveccontaininvalidone),
+[Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+- **DuplicateUids** — a UID appears more than once in the submitted list.
+- **UidVecContainInvalidOne** — a listed UID is not valid for the target subnet.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the duplicate scan that raises it. It does not
+describe UID validity on a subnet or any other check in the `set_weights` validation sequence; those
+are separate checks with their own error labels
+([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#duplicateuids)
+- [Subtensor Standard Errors: UidVecContainInvalidOne](https://docs.learnbittensor.org/errors/subtensor#uidveccontaininvalidone)
+- [Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)
