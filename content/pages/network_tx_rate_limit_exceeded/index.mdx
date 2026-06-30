@@ -1,0 +1,129 @@
+---
+title: "Network Tx Rate Limit Exceeded"
+summary:
+  "How the NetworkTxRateLimitExceeded error signals that subnet creation was attempted before the
+  network-wide subnet-registration cooldown had elapsed."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Network Tx Rate Limit Exceeded
+infoboxCaption: Error raised when subnet creation is attempted too soon.
+infoboxRows:
+  - label: Error
+    value: NetworkTxRateLimitExceeded
+  - label: Trigger
+    value: Add-network transaction attempted before cooldown expiry
+  - label: Related limit
+    value: NetworkRateLimit
+  - label: Scope
+    value: Network-wide subnet creation pacing
+---
+
+# Network Tx Rate Limit Exceeded
+
+`NetworkTxRateLimitExceeded` is a documented Subtensor standard error that means an add-network
+transaction hit the subnet-registration rate limit. The standard-errors reference describes it as
+"Rate limit exceeded for add network transaction," and the rate-limits reference ties that error to
+the network registration rate limit
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#networktxratelimitexceeded),
+[Chain Rate Limits: Network registration rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#network-registration-rate-limit)).
+
+## What It Means
+
+This error is about pacing new subnet creation, not about neuron registration on an existing subnet.
+The rate-limits reference says the network registration rate limit prevents frequent creation of new
+subnets, and the create-a-subnet guide states subnet creations are limited to one successful
+creation per 14,400 blocks, approximately one every two days
+([Chain Rate Limits: Network registration rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#network-registration-rate-limit),
+[Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet)).
+
+So when this error appears, the immediate meaning is narrow: another add-network attempt was made
+before that network-wide cooldown had expired. It does not, by itself, say anything about whether
+the caller had enough TAO for the current subnet-creation cost
+([Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet)).
+
+## Why It Appears
+
+The create-a-subnet guide explains that new subnet creation is both competitive and rate-limited.
+Even if a caller is otherwise prepared to create a subnet, the chain still enforces the spacing
+window between successful creations. The error is the rejection signal for violating that timing
+gate ([Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet),
+[Chain Rate Limits: Network registration rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#network-registration-rate-limit)).
+
+The rate-limits reference also points readers to the live `subtensorModule.networkRateLimit()`
+chain-state query. That matters because the cooldown is live chain state, even though the current
+documentation describes it as 14,400 blocks
+([Chain Rate Limits: Network registration rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#network-registration-rate-limit)).
+
+## What It Does Not Mean
+
+This error should not be read as a generic transaction cooldown. Bittensor documents a separate
+`TxRateLimit` parameter and separate `TxRateLimitExceeded` error for the chain's general
+transaction-rate-limit path. `NetworkTxRateLimitExceeded` is narrower: it is the subnet-creation
+cooldown error for add-network transactions
+([Chain Rate Limits: General transaction rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#general-transaction-rate-limit),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#txratelimitexceeded),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#networktxratelimitexceeded)).
+
+It also should not be read as a cost or balance failure. The create-a-subnet guide separately
+describes subnet-creation cost as dynamic, while this error names the timing gate on creation
+frequency ([Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet)).
+
+## Reading the Related Limit
+
+The related network-wide limit is documented under "Network registration rate limit." The same
+reference says readers can inspect the current chain value through Polkadot.js by querying
+`subtensorModule.networkRateLimit()`
+([Chain Rate Limits: Network registration rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#network-registration-rate-limit)).
+
+That query answers the pacing question directly: how long the chain currently requires between
+successful new-subnet registrations. The error names the failure condition; the storage query gives
+the live cooldown behind it.
+
+## Distinction from Network Rate Limit
+
+`NetworkTxRateLimitExceeded` is the error signal. `NetworkRateLimit` is the rule being enforced. One
+names the rejection returned by the runtime, while the other names the underlying cooldown on new
+subnet creation
+([Chain Rate Limits: Network registration rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#network-registration-rate-limit),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#networktxratelimitexceeded)).
+
+- **NetworkTxRateLimitExceeded** — error returned when the cooldown is breached.
+- **NetworkRateLimit** — network-wide cooldown on successful subnet creation.
+
+## Distinction from Tx Rate Limit Exceeded
+
+`NetworkTxRateLimitExceeded` and `TxRateLimitExceeded` are different documented error paths.
+`TxRateLimitExceeded` belongs to the general transaction rate limit, while
+`NetworkTxRateLimitExceeded` belongs to the network registration rate limit for add-network
+transactions
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#txratelimitexceeded),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#networktxratelimitexceeded),
+[Chain Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+
+- **NetworkTxRateLimitExceeded** — subnet-creation cooldown breach.
+- **TxRateLimitExceeded** — general transaction-rate-limit breach.
+
+## Distinction from Network Min Lock Cost
+
+Network min lock cost is the documented floor on the TAO lock cost required to create a subnet.
+`NetworkTxRateLimitExceeded` is instead a timing rejection for creating a subnet too soon. One is a
+cost-floor concept, and the other is a cooldown error
+([Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet),
+[Chain Rate Limits: Network registration rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#network-registration-rate-limit)).
+
+- **Network min lock cost** — lower bound on subnet-creation lock cost.
+- **NetworkTxRateLimitExceeded** — error for breaching subnet-creation timing rules.
+
+## Reader Boundary
+
+This page defines the meaning of the error label. It does not tell a reader exactly when the next
+subnet creation will succeed on a live network; that depends on the current chain value and the time
+since the last successful subnet creation. The documented way to answer that live question is to
+inspect the current network-registration limit on chain
+([Chain Rate Limits: Network registration rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#network-registration-rate-limit)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#networktxratelimitexceeded)
+- [Chain Rate Limits: Network registration rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#network-registration-rate-limit)
+- [Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet)
