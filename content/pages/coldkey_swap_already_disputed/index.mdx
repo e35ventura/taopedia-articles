@@ -1,0 +1,82 @@
+---
+title: "Coldkey Swap Already Disputed"
+summary:
+  "How the ColdkeySwapAlreadyDisputed error blocks a second dispute_coldkey_swap call when a dispute
+  record is already on chain for the calling coldkey."
+category: "Wallets"
+tags: ["Wallets", "Errors"]
+infoboxTitle: Coldkey Swap Already Disputed
+infoboxCaption: Error raised when a coldkey swap dispute is attempted twice.
+infoboxRows:
+  - label: Error
+    value: ColdkeySwapAlreadyDisputed
+  - label: Trigger
+    value: dispute_coldkey_swap called while a dispute record already exists
+  - label: Checked in
+    value: dispute_coldkey_swap, second check
+  - label: Check type
+    value: Dispute-record existence check
+---
+
+# Coldkey Swap Already Disputed
+
+`ColdkeySwapAlreadyDisputed` is a documented Subtensor standard error raised by
+`dispute_coldkey_swap`, the extrinsic that marks a pending
+[coldkey swap](https://docs.learnbittensor.org/keys/coldkey-swap) as disputed. The standard-errors
+reference describes it as "Coldkey swap already disputed"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#coldkeyswapalreadydisputed)).
+
+## What It Means
+
+`dispute_coldkey_swap` lets the coldkey owner challenge a pending swap announcement. Before
+recording a new dispute, the extrinsic confirms that no dispute record already exists for the
+caller. `ColdkeySwapAlreadyDisputed` is the rejection when that lookup finds an existing dispute
+entry
+([Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs),
+[Coldkey Swap](https://docs.learnbittensor.org/keys/coldkey-swap)).
+
+This is the second of two checks the extrinsic runs in sequence. The first confirms that a pending
+announcement actually exists for the caller; only after that passes does the extrinsic test whether
+a dispute was already opened
+([Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)).
+
+## Why It Appears
+
+The most direct cause is calling `dispute_coldkey_swap` again for a coldkey whose swap is already
+under dispute. Once the first successful dispute call inserts a record, later dispute attempts fail
+with this error rather than creating a second dispute entry
+([Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)).
+
+After a dispute is recorded, the account is subject to the broader dispatch guard that blocks signed
+calls with `ColdkeySwapDisputed`. This error is specific to the dispute extrinsic itself when
+someone tries to open dispute state that is already open
+([Coldkey Swap Disputed](https://docs.learnbittensor.org/errors/subtensor#coldkeyswapdisputed),
+[Subtensor source: check_coldkey_swap.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/guards/check_coldkey_swap.rs)).
+
+## Distinction from Coldkey Swap Disputed
+
+`ColdkeySwapAlreadyDisputed` and `ColdkeySwapDisputed` both involve an active swap dispute, but they
+are checked at different points. `ColdkeySwapAlreadyDisputed` is raised inside
+`dispute_coldkey_swap` when a second dispute attempt is made while a dispute record already exists.
+`ColdkeySwapDisputed` is the dispatch-guard rejection that blocks ordinary and swap-related signed
+calls once that dispute record is already on chain
+([Coldkey Swap Disputed](https://docs.learnbittensor.org/errors/subtensor#coldkeyswapdisputed),
+[Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs),
+[Subtensor source: check_coldkey_swap.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/guards/check_coldkey_swap.rs)).
+
+- **ColdkeySwapAlreadyDisputed** — a repeat `dispute_coldkey_swap` call while dispute is recorded.
+- **ColdkeySwapDisputed** — any signed call blocked because a dispute is already active.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the duplicate-dispute check that raises it. It
+does not describe how disputes are resolved, what the Triumvirate does, or the root reset path;
+those are documented separately ([Coldkey Swap](https://docs.learnbittensor.org/keys/coldkey-swap),
+[Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#coldkeyswapalreadydisputed)
+- [Subtensor Standard Errors: ColdkeySwapDisputed](https://docs.learnbittensor.org/errors/subtensor#coldkeyswapdisputed)
+- [Coldkey Swap](https://docs.learnbittensor.org/keys/coldkey-swap)
+- [Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)
