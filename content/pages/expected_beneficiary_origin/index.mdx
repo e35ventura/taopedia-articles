@@ -1,0 +1,83 @@
+---
+title: "Expected Beneficiary Origin"
+summary:
+  "How the ExpectedBeneficiaryOrigin error blocks terminating a subnet lease when the caller's
+  account does not match the beneficiary recorded on the lease."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Expected Beneficiary Origin
+infoboxCaption:
+  Error raised when a lease-termination call comes from an account other than the lease's
+  beneficiary.
+infoboxRows:
+  - label: Error
+    value: ExpectedBeneficiaryOrigin
+  - label: Trigger
+    value: Caller account differs from the lease record's beneficiary
+  - label: Checked in
+    value: do_terminate_lease, after the lease lookup
+  - label: Check type
+    value: Storage field equality against the signed caller
+---
+
+# Expected Beneficiary Origin
+
+`ExpectedBeneficiaryOrigin` is a documented Subtensor standard error. The standard-errors reference
+describes it as "Expected beneficiary origin"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#expectedbeneficiaryorigin)).
+
+## What It Means
+
+A leased subnet names a beneficiary who is allowed to take ownership of the subnet after the lease
+ends. Terminating a lease moves ownership to that beneficiary
+([Subnet Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans)).
+
+`ExpectedBeneficiaryOrigin` means the runtime looked up a lease by its ID, found it, and then
+discovered that the signed caller is not the account recorded as that lease's beneficiary. The
+termination is refused and the lease state does not change
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#expectedbeneficiaryorigin),
+[Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+## Why It Appears
+
+The check is the second precondition inside `do_terminate_lease`, called by the `terminate_lease`
+extrinsic. The function has already confirmed that the supplied lease ID resolves to a stored lease;
+the next step is to verify that the caller is the beneficiary recorded on that lease. The runtime
+rejects the call when the caller's account does not match the lease's stored beneficiary field,
+before any later step runs
+([Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+For a reader, the practical meaning is narrow: the caller knew a valid lease ID, but the lease
+itself names a different beneficiary. The runtime refuses the transfer rather than write a subnet
+ownership relationship the recorded beneficiary did not initiate
+([Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+## Distinction from Lease Does Not Exist
+
+`ExpectedBeneficiaryOrigin` and `LeaseDoesNotExist` are both early checks inside
+`do_terminate_lease`, but they reject different defects. `LeaseDoesNotExist` is the first check, on
+whether the supplied lease ID resolves to any stored lease at all. `ExpectedBeneficiaryOrigin` is
+the next, separate check, reached only once the lease lookup has already succeeded; it rejects when
+the caller is not the beneficiary recorded on that lease
+([Subtensor Standard Errors: LeaseDoesNotExist](https://docs.learnbittensor.org/errors/subtensor#leasedoesnotexist),
+[Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+- **LeaseDoesNotExist** — no lease record exists for the supplied lease ID.
+- **ExpectedBeneficiaryOrigin** — a lease was found, but the caller is not its beneficiary.
+
+## Reader Boundary
+
+This page defines the meaning of the `ExpectedBeneficiaryOrigin` error label and the caller-
+versus-beneficiary check inside `do_terminate_lease`. It does not describe lease creation, the
+crowdloan that backs a lease, the conditions that make a lease eligible for termination, or the
+broader subnet-ownership transfer flow; those are separate conditions with their own error labels
+and their own articles ([Subnet Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans),
+[Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#expectedbeneficiaryorigin)
+- [Subtensor Standard Errors: LeaseDoesNotExist](https://docs.learnbittensor.org/errors/subtensor#leasedoesnotexist)
+- [Subtensor source: errors.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/errors.rs)
+- [Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)
+- [Subnet Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans)
