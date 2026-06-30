@@ -1,0 +1,86 @@
+---
+title: "Unable To Recover Public Key"
+summary:
+  "How the UnableToRecoverPublicKey error signals that associating an EVM address with a hotkey
+  failed because the chain could not recover a valid public key from the submitted signature."
+category: "Wallets"
+tags: ["Wallets", "Errors"]
+infoboxTitle: Unable To Recover Public Key
+infoboxCaption: Error raised when EVM key association can't recover a public key from a signature.
+infoboxRows:
+  - label: Error
+    value: UnableToRecoverPublicKey
+  - label: Trigger
+    value: Signature recovery fails during EVM key association
+  - label: Extrinsic
+    value: associate_evm_key
+  - label: Check type
+    value: Cryptographic signature recovery
+---
+
+# Unable To Recover Public Key
+
+`UnableToRecoverPublicKey` is a documented Subtensor standard error raised by the
+`associate_evm_key` extrinsic. The standard-errors reference describes it as "Public key cannot be
+recovered"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#unabletorecoverpublickey)).
+
+## What It Means
+
+Associating an EVM address with a hotkey is a proof-of-control step: the caller submits a signature
+that is supposed to have been produced by the private key behind the claimed EVM address, signed
+over a message built from the hotkey and a recent block number. The chain does not trust the claimed
+address directly; it works the proof backward from the signature instead
+([Subtensor source: evm.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/evm.rs)).
+
+That backward path has two stages, and `UnableToRecoverPublicKey` belongs to the second one. The
+chain first recovers raw key bytes from the signature; if the signature is malformed and yields
+nothing at all, that earlier failure is reported as a different error, `InvalidIdentity`.
+`UnableToRecoverPublicKey` covers the next stage: the chain already has bytes back from that first
+step, but those bytes do not parse into a structurally valid public key, so there is still no usable
+key to compare against the claimed address
+([Subtensor source: evm.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/evm.rs)).
+
+## Why It Appears
+
+A signature produced incorrectly by client tooling, or one signed over the wrong message, is the
+most likely source of either recovery failure. Whether that failure surfaces as `InvalidIdentity` or
+`UnableToRecoverPublicKey` depends on exactly where the malformed data breaks down: total recovery
+failure versus a recovered value that still isn't a well-formed key
+([Subtensor source: evm.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/evm.rs)).
+
+Both of these are checked after the chain confirms the calling hotkey actually has an owning coldkey
+and after the per-subnet association rate limit clears, so a healthy, well-formed association
+attempt reaches the signature-recovery stage only once those earlier conditions are already
+satisfied
+([Subtensor source: evm.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/evm.rs)).
+
+## Distinction from Invalid Identity and Invalid Recovered Public Key
+
+A single failed association attempt raises exactly one of three errors, depending on how far the
+proof gets. `InvalidIdentity` means the signature could not be recovered into anything at all.
+`UnableToRecoverPublicKey` means something was recovered, but it isn't a valid public key.
+`InvalidRecoveredPublicKey` is reached only once a genuinely valid public key comes out the other
+end, and means that key's address does not match what the caller claimed
+([Subtensor Standard Errors: InvalidIdentity](https://docs.learnbittensor.org/errors/subtensor#invalididentity),
+[Subtensor Standard Errors: InvalidRecoveredPublicKey](https://docs.learnbittensor.org/errors/subtensor#invalidrecoveredpublickey),
+[Subtensor source: evm.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/evm.rs)).
+
+- **InvalidIdentity** — the signature does not recover into anything usable.
+- **UnableToRecoverPublicKey** — something recovered, but it isn't a valid public key.
+- **InvalidRecoveredPublicKey** — a valid key was recovered, but its address doesn't match the
+  claim.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the recovery step that raises it. It does not
+describe the full EVM key association flow, the message format being signed, or the rate limit on
+association attempts; those are separate parts of the same extrinsic
+([Subtensor source: evm.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/evm.rs)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#unabletorecoverpublickey)
+- [Subtensor Standard Errors: InvalidIdentity](https://docs.learnbittensor.org/errors/subtensor#invalididentity)
+- [Subtensor Standard Errors: InvalidRecoveredPublicKey](https://docs.learnbittensor.org/errors/subtensor#invalidrecoveredpublickey)
+- [Subtensor source: evm.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/evm.rs)
