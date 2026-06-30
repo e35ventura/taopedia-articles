@@ -1,0 +1,93 @@
+---
+title: "Network Rate Limit"
+summary:
+  "How the network rate limit global setting paces how often a new subnet can be registered on
+  Bittensor, expressed as the minimum block interval between successful subnet creations."
+category: "Subnets"
+tags: ["Subnets", "Rate Limits"]
+infoboxTitle: Network Rate Limit
+infoboxCaption: Block interval between successful subnet registrations.
+infoboxRows:
+  - label: Parameter
+    value: NetworkRateLimit
+  - label: Scope
+    value: Network-global
+  - label: Applies to
+    value: Subnet registration
+  - label: Set by
+    value: Root
+---
+
+# Network Rate Limit
+
+Network rate limit is a network-global setting, listed in the documentation as `NetworkRateLimit`,
+that paces how often a new subnet can be registered on Bittensor. The reference describes it as the
+rate limit for network registrations expressed in blocks, with the chain state variable named
+`NetworkRateLimit`
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Chain Rate Limits: Network registration rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#network-registration-rate-limit)).
+
+## What It Controls
+
+The setting sets the minimum block interval between successful subnet registrations. A second
+attempt to register a subnet within that interval returns the chain error
+`NetworkTxRateLimitExceeded`, while a registration after the interval elapses is accepted. The
+interval is counted in blocks rather than clock time, so its practical pacing depends on how quickly
+the chain produces blocks in the relevant network context
+([Chain Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+The rate limit is independent of the lock cost charged for creating a subnet. Network min lock cost
+sets the TAO floor that registration must pay; network rate limit sets the block wait between
+accepted registrations. A submission can clear the lock-cost floor and still be rejected by the rate
+limit when a registration has succeeded too recently on the same network
+([Network Min Lock Cost](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#networkminlockcost),
+[Chain Rate Limits: Network registration rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#network-registration-rate-limit)).
+
+## Documented Type, Default, and Setter
+
+The reference lists `NetworkRateLimit` as a `u64` with a documented default of `14,400` blocks,
+roughly two days at the standard twelve-second block interval. The reference marks the permission
+required to change it as root, and the value is changed through the `sudo_set_network_rate_limit`
+extrinsic. No `btcli` setter is exposed for this global, so updates happen through the sudo
+extrinsic rather than through the subnet-owner tooling
+([Subnet Hyperparameters: NetworkRateLimit](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#networkratelimit),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+The startup constant for the genesis block interval is exposed as
+`api.consts.subtensorModule.initialNetworkRateLimit`, listed as `14400`. The live `NetworkRateLimit`
+storage value can still differ from that startup constant after root has updated it on chain
+([Subtensor Constants: initialNetworkRateLimit](https://docs.learnbittensor.org/subtensor-api/constants#initialnetworkratelimit),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## Reading the Live Interval
+
+Readers can verify the current pacing on the connected network by reading the storage value
+directly. The create-a-subnet guide states the same value and notes that the live interval can be
+queried from `subtensorModule.networkRateLimit()`
+([Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet),
+[Chain Rate Limits: Network registration rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#network-registration-rate-limit)).
+
+That read path keeps the block-interval claim tied to a reproducible chain query rather than to the
+documented default alone, so a reader can confirm the pacing that applies on mainnet, testnet, or a
+local development chain
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Reader Boundary
+
+Network rate limit should not be read as the lock-cost floor for subnet registration, as a
+per-subnet hyperparameter, or as a guarantee that a too-soon repeat will succeed after the
+documented default interval. It names only the global block interval between accepted subnet
+registrations on the connected network
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Chain Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+
+## Further Reading
+
+- [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+- [Subnet Hyperparameters: NetworkRateLimit](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#networkratelimit)
+- [Chain Rate Limits: Network registration rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#network-registration-rate-limit)
+- [Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet)
+- [Subtensor Constants: initialNetworkRateLimit](https://docs.learnbittensor.org/subtensor-api/constants#initialnetworkratelimit)
+- [Network Min Lock Cost](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#networkminlockcost)
+- [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)
