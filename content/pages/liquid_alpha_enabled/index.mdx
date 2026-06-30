@@ -42,12 +42,13 @@ lower and upper bounds of that range, and where a given validator-miner pair lan
 on their consensus alignment, shaped by `alpha_sigmoid_steepness`
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
-When the feature is off, that single fixed alpha is not a separate setting: the chain derives it
-from the [bonds moving average](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
-hyperparameter, as one minus the scaled bonds-moving-average value. So a subnet with liquid alpha
-disabled still takes its bond-smoothing alpha from bonds moving average, and the alpha low and alpha
-high bounds are not consulted at all
-([`compute_disabled_liquid_alpha`](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/epoch/run_epoch.rs)).
+When the feature is off, that single fixed alpha is not a separate setting: documentation describes
+it as one minus the scaled bonds-moving-average value derived from the subnet's `BondsMovingAverage`
+hyperparameter. So a subnet with liquid alpha disabled still takes its bond-smoothing alpha from
+bonds moving average, and the alpha low and alpha high bounds are not consulted at all
+([Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights),
+[Subnet Hyperparameters: BondsMovingAverage](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#bondsmovingaverage),
+[Yuma Consensus: Bonding mechanics](https://docs.learnbittensor.org/learn/yuma-consensus#bonding)).
 
 ## When It Matters
 
@@ -101,6 +102,46 @@ replacement for enabling Yuma v3
 
 - **Liquid alpha enabled** — toggles variable bond-smoothing alpha.
 - **Yuma version** — selects whether the subnet runs Yuma Consensus v2 or v3.
+
+## Distinction from Liquid Alpha
+
+Liquid alpha enabled is the per-subnet toggle that turns the feature on or off. Liquid alpha names
+the consensus-aligned bond-smoothing behavior that varies per validator-miner pair between alpha low
+and alpha high when the toggle is true
+([Subnet Hyperparameters: LiquidAlphaEnabled](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#liquidalphaenabled),
+[Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)).
+
+- **Liquid alpha enabled** — whether variable bond-smoothing alpha is active on the subnet.
+- **Liquid alpha** — the per-pair bounded smoothing behavior when the toggle is on.
+
+## Distinction from Bonds Moving Average
+
+When liquid alpha is disabled, bond smoothing follows the subnet-wide alpha derived from bonds
+moving average rather than the alpha low and alpha high bounds. Liquid alpha enabled decides whether
+that alternate per-pair path is active at all
+([Subnet Hyperparameters: BondsMovingAverage](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#bondsmovingaverage),
+[Yuma Consensus: Bonding mechanics](https://docs.learnbittensor.org/learn/yuma-consensus#bonding)).
+
+- **Liquid alpha enabled** — whether consensus-driven per-pair smoothing is active.
+- **Bonds moving average** — hyperparameter that sets the fixed smoothing path when the toggle is
+  off.
+
+## Chain Reads for netuid 1
+
+Readers can verify live hyperparameter values for the documented example netuid with
+`btcli subnet hyperparameters --netuid 1 --network finney`
+([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
+
+That read path keeps toggle and bound claims tied to a parseable netuid on the selected subnet
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Reader Boundary
+
+Liquid alpha enabled should not be read as liquid alpha itself, as alpha low or alpha high, or as
+proof that a subnet's bonds are currently smoothing in a particular way. It names only whether the
+subnet uses variable per-pair bond smoothing or the fixed bonds-moving-average path
+([Subnet Hyperparameters: LiquidAlphaEnabled](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#liquidalphaenabled),
+[Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)).
 
 ## Further Reading
 
