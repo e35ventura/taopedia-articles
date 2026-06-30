@@ -1,0 +1,101 @@
+---
+title: "Lease Netuid Not Found"
+summary:
+  "How the LeaseNetuidNotFound error blocks finalizing a crowdloan into a subnet lease when the
+  chain cannot resolve which subnet was registered for the lease coldkey."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Lease Netuid Not Found
+infoboxCaption:
+  Error raised when leased-network registration cannot map the lease coldkey to a subnet owner
+  record.
+infoboxRows:
+  - label: Error
+    value: LeaseNetuidNotFound
+  - label: Trigger
+    value: No subnet owner entry matches the lease coldkey after registration
+  - label: Checked in
+    value: do_register_leased_network, post-registration lookup
+  - label: Check type
+    value: Subnet-owner lookup by lease coldkey
+---
+
+# Lease Netuid Not Found
+
+`LeaseNetuidNotFound` is a documented Subtensor standard error raised by
+`do_register_leased_network`, the extrinsic that finalizes a
+[crowdloan](https://docs.learnbittensor.org/subnets/crowdloans) into a registered
+[subnet lease](https://docs.learnbittensor.org/subnets/crowdloans). The standard-errors reference
+describes it as "Couldn't find the lease netuid"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#leasenetuidnotfound)).
+
+## What It Means
+
+Leased-network registration creates a dedicated lease coldkey and hotkey, registers a new subnet
+under that coldkey, and then must record which subnet ID was created. After the registration step
+completes, `do_register_leased_network` looks up the subnet whose owner matches the lease coldkey.
+`LeaseNetuidNotFound` is the rejection when that lookup returns nothing
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#leasenetuidnotfound),
+[Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+This check runs only after earlier registration-path validations have already passed, including the
+crowdloan-creator identity match and any optional end-block freshness check. It is the step that
+confirms the newly registered subnet can be tied back to the lease coldkey before lease storage,
+beneficiary proxy setup, and contributor refunds proceed
+([Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+## Why It Appears
+
+The error means the registration call reached the post-registration lookup but could not find a
+subnet owner record for the lease coldkey that was just used to register the network. Without that
+mapping, the chain cannot attach the lease record to a specific subnet ID, so the extrinsic stops
+before writing lease storage or distributing refunds
+([Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+For a reader, the practical meaning is narrow: the leased-network registration failed at the
+subnet-ID resolution step, not at beneficiary identity or end-block validation. The problem is not
+that the caller is the wrong crowdloan creator, that the end block is in the past, or that a lease
+record is missing during termination
+([Invalid Lease Beneficiary](https://docs.learnbittensor.org/errors/subtensor#invalidleasebeneficiary),
+[Lease Cannot End In The Past](https://docs.learnbittensor.org/errors/subtensor#leasecannotendinthepast),
+[Lease Does Not Exist](https://docs.learnbittensor.org/errors/subtensor#leasedoesnotexist)).
+
+## Distinction from Invalid Lease Beneficiary
+
+`LeaseNetuidNotFound` and `InvalidLeaseBeneficiary` both appear in leased-network registration, but
+at different stages. `InvalidLeaseBeneficiary` is the first check and rejects callers who are not
+the crowdloan creator. `LeaseNetuidNotFound` is a later post-registration lookup reached only after
+creator validation and subnet registration have already succeeded
+([Invalid Lease Beneficiary](https://docs.learnbittensor.org/errors/subtensor#invalidleasebeneficiary),
+[Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+- **InvalidLeaseBeneficiary** — the caller is not the crowdloan creator.
+- **LeaseNetuidNotFound** — the lease coldkey cannot be mapped to a registered subnet ID.
+
+## Distinction from Lease Does Not Exist
+
+`LeaseNetuidNotFound` and `LeaseDoesNotExist` both involve a missing lease-related record, but on
+different extrinsics. `LeaseNetuidNotFound` blocks registration when the chain cannot resolve the
+new subnet ID for a lease coldkey. `LeaseDoesNotExist` blocks termination when the supplied lease ID
+has no stored lease record
+([Lease Does Not Exist](https://docs.learnbittensor.org/errors/subtensor#leasedoesnotexist),
+[Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+- **LeaseNetuidNotFound** — registration cannot map the lease coldkey to a subnet ID.
+- **LeaseDoesNotExist** — termination cannot find a lease record for the supplied lease ID.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the post-registration subnet lookup that raises
+it. It does not describe crowdloan contribution rules, lease dividend distribution, or lease
+termination after creation; those are documented separately
+([Subnet Lease](https://docs.learnbittensor.org/subnets/crowdloans),
+[Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#leasenetuidnotfound)
+- [Subtensor Standard Errors: InvalidLeaseBeneficiary](https://docs.learnbittensor.org/errors/subtensor#invalidleasebeneficiary)
+- [Subtensor Standard Errors: LeaseDoesNotExist](https://docs.learnbittensor.org/errors/subtensor#leasedoesnotexist)
+- [Subnet Lease](https://docs.learnbittensor.org/subnets/crowdloans)
+- [Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)
