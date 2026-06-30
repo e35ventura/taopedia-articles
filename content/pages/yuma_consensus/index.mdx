@@ -150,21 +150,26 @@ designed to punish inaccurate miner evaluation, especially patterns that could m
 to favor certain miners
 ([Yuma Consensus: Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping)).
 
-The consensus score is the stake-weighted median benchmark used in that step. That median creates a
-threshold that filters outlier
-[validator weights](https://docs.learnbittensor.org/resources/glossary#weight-vector) before they
-reach final [rank](https://docs.learnbittensor.org/resources/glossary#rank) calculations
-([Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score)).
+For each miner column, Yuma derives a per-miner clipping benchmark from validator-submitted weights
+using the subnet's [kappa](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#kappa)
+stake fraction. Documentation describes that
+[consensus score](https://docs.learnbittensor.org/resources/glossary#consensus-score) benchmark as
+the maximum weight level that still has at least that fraction of stake-weighted validator support
+([Yuma Consensus: Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping),
+[Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score)).
+
+Each validator's submitted weight toward a miner is then capped to that benchmark before it
+contributes to final [rank](https://docs.learnbittensor.org/resources/glossary#rank) and downstream
+incentive allocation
+([Yuma Consensus: Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping)).
 
 When a submitted weight exceeds the clipped benchmark for a miner, neither the miner nor the
 submitting validator receives emissions for the excess portion. Clipping therefore turns raw
 validator submissions into a post-filter signal that later drives incentive allocation rather than
 passing every submitted value through unchanged.
 
-Before rank and trust are computed, the hyperparameter kappa sets how much of the subnet's validator
-stake must support a weight level before that level becomes the clipping ceiling for a miner. With
-the default kappa of 0.5, at least half of stake-weighted validator support must agree that a miner
-deserves weight above a given level before more generous weights are left unclipped
+With the default kappa near 0.5, at least half of stake-weighted validator support must agree that a
+miner deserves weight above a given level before more generous weights are left unclipped
 ([Yuma Consensus: Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping),
 [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
@@ -231,16 +236,16 @@ consensus flow that uses that parameter.
 
 ## Distinction from Consensus Score
 
-Consensus score is the stake-weighted benchmark used to clip outlier validator weights. Yuma
-Consensus is the full process that uses that benchmark when producing miner rank and validator-side
-outcomes
+Consensus score is the per-miner clipping benchmark derived from stake-weighted agreement at the
+subnet's kappa threshold. Yuma Consensus is the full process that uses that benchmark when producing
+miner rank and validator-side outcomes
 ([Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score),
 [Yuma Consensus: Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping)).
 
-Consensus-score vocabulary names the agreement benchmark. Yuma vocabulary names the aggregation
-process that applies it on the selected subnet.
+Consensus-score vocabulary names the per-miner agreement benchmark inside clipping. Yuma vocabulary
+names the aggregation process that applies it on the selected subnet.
 
-- **Consensus score** — stake-weighted clipping benchmark derived from grouped validator input.
+- **Consensus score** — per-miner agreement benchmark inside the clipping step.
 - **Yuma Consensus** — full aggregation process that applies that benchmark on the selected subnet.
 
 ## Distinction from Governance
