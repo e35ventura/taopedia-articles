@@ -1,0 +1,78 @@
+---
+title: "UID Vec Contain Invalid One"
+summary:
+  "How the UidVecContainInvalidOne error signals that a set_weights submission named at least one
+  UID that does not exist on the target subnet."
+category: "Validation"
+tags: ["Validation", "Errors"]
+infoboxTitle: UID Vec Contain Invalid One
+infoboxCaption: Error raised when a weight submission includes a non-existent target UID.
+infoboxRows:
+  - label: Error
+    value: UidVecContainInvalidOne
+  - label: Trigger
+    value: Submitted UID list includes at least one UID absent from the target subnet
+  - label: Checked in
+    value: contains_invalid_uids
+  - label: Check type
+    value: Existence check against the target network
+---
+
+# UID Vec Contain Invalid One
+
+`UidVecContainInvalidOne` is a documented Subtensor standard error. The standard-errors reference
+describes it as "Attempting to set weight to non-existent UID"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#uidveccontaininvalidone)).
+
+## What It Means
+
+A weight submission names target UIDs that the validator wants to score. `UidVecContainInvalidOne`
+means at least one UID in that submitted list does not exist on the target subnet, so the chain
+rejects the submission instead of recording weights for a missing neuron
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#uidveccontaininvalidone),
+[Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+The runtime check is narrow. `contains_invalid_uids` walks the submitted UID list and returns true
+when any UID fails `is_uid_exist_on_network(netuid, uid)`, which is the condition that raises
+`UidVecContainInvalidOne`
+([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+## Why It Appears
+
+This error appears after the submission has already passed the duplicate-UID check and before the
+minimum-length check on the weight vector. So the page is about target existence, not about whether
+the UID list repeats entries or whether it is long enough for the subnet's minimum rule
+([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+For a reader, the practical meaning is simple: the validator tried to point part of its weight
+vector at a neuron UID that the subnet does not currently have. The chain refuses that submission
+instead of silently dropping the missing target
+([Glossary: Weight Vector](https://docs.learnbittensor.org/resources/glossary#weight-vector),
+[Glossary: Weight Setting](https://docs.learnbittensor.org/resources/glossary#weight-setting)).
+
+## Distinction from Duplicate Uids
+
+`UidVecContainInvalidOne` and `DuplicateUids` both inspect the submitted UID list, but they reject
+different defects. `DuplicateUids` means the same target UID appears more than once.
+`UidVecContainInvalidOne` means at least one target UID is not present on the subnet at all
+([Subtensor Standard Errors: DuplicateUids](https://docs.learnbittensor.org/errors/subtensor#duplicateuids),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#uidveccontaininvalidone)).
+
+- **DuplicateUids** — the UID list repeats one or more targets.
+- **UidVecContainInvalidOne** — the UID list includes at least one target that does not exist on the
+  subnet.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the specific existence check that raises it. It
+does not explain subnet registration, validator permits, or the full weight-setting sequence beyond
+this one rejection condition
+([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#uidveccontaininvalidone)
+- [Subtensor Standard Errors: DuplicateUids](https://docs.learnbittensor.org/errors/subtensor#duplicateuids)
+- [Glossary: Weight Vector](https://docs.learnbittensor.org/resources/glossary#weight-vector)
+- [Glossary: Weight Setting](https://docs.learnbittensor.org/resources/glossary#weight-setting)
+- [Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)
