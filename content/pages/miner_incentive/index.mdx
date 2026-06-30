@@ -30,19 +30,66 @@ the emission-side term for what miners receive when validators evaluate their wo
 ## How Miner Incentive Is Determined
 
 Miner incentive is an outcome of consensus, not a value a miner sets. Validators evaluate miner work
-and submit scored weight vectors through `set_weights`; each tempo Yuma Consensus clips outlier
-weights, merges the surviving signals into rank, and credits each miner an emission share in
-proportion to that rank
-([Glossary: Weight Setting](https://docs.learnbittensor.org/resources/glossary#weight-setting),
-[Glossary: Rank](https://docs.learnbittensor.org/resources/glossary#rank),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+and submit scored weight vectors through
+[weight setting](https://docs.learnbittensor.org/resources/glossary#weight-setting); each tempo
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) clips outlier weights, merges
+the surviving signals into [rank](https://docs.learnbittensor.org/resources/glossary#rank), and
+credits each miner an emission share from that standing
+([Glossary: Incentives](https://docs.learnbittensor.org/resources/glossary#incentives)).
 
 That share is drawn from the miner-emission branch of the tempo's distribution. Yuma resolves
-validator submissions into two parallel branches—miner incentives and validator dividends—so miner
-incentive names the miner-bucket portion divided by rank, separate from the validator-side share
+validator submissions into two parallel branches—miner incentives and validator
+[dividends](https://docs.learnbittensor.org/resources/glossary#emission)—so miner incentive names
+the miner-bucket portion divided by rank, separate from the validator-side share
 ([Yuma Consensus: Miner emissions](https://docs.learnbittensor.org/learn/yuma-consensus#miner-emissions),
 [Yuma Consensus: Validator emissions](https://docs.learnbittensor.org/learn/yuma-consensus#validator-emissions),
 [Emission: Distribution](https://docs.learnbittensor.org/learn/emissions#distribution)).
+
+## Rank Aggregation Before Credit
+
+Miner incentive is credited only after Yuma builds each miner's aggregate rank from clipped
+validator weights. Documentation gives:
+
+`R_j = Σ_i S_i · W̄_ij`
+
+where `S_i` is validator `i`'s stake and `W̄_ij` is that validator's clipped weight toward miner `j`
+([Yuma Consensus: Miner emissions](https://docs.learnbittensor.org/learn/yuma-consensus#miner-emissions),
+[Glossary: Rank](https://docs.learnbittensor.org/resources/glossary#rank)).
+
+The [consensus score](https://docs.learnbittensor.org/resources/glossary#consensus-score) benchmark
+caps outlier weights before they enter that sum, so `R_j` reflects stake-weighted support that
+survived filtering rather than raw submitted scores alone
+([Yuma Consensus: Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping)).
+
+## Normalized Miner Incentive Share
+
+Each miner's credited incentive is its proportion of total aggregate rank across miners on the
+subnet:
+
+`M_j = R_j / Σ_k R_k`
+
+Documentation treats this normalized share as the miner-side incentive outcome inside the same Yuma
+pass
+([Yuma Consensus: Miner emissions](https://docs.learnbittensor.org/learn/yuma-consensus#miner-emissions),
+[Glossary: Incentives](https://docs.learnbittensor.org/resources/glossary#incentives)).
+
+[Rank](https://docs.learnbittensor.org/resources/glossary#rank) orders miners by aggregated
+standing; `M_j` turns that standing into each miner's portion of the miner-facing branch before
+wider [emission](https://docs.learnbittensor.org/learn/emissions) distribution applies
+([Emission: Distribution](https://docs.learnbittensor.org/learn/emissions#distribution)).
+
+## Parallel Validator Dividends
+
+The same Yuma pass credits validator dividends in parallel. Validator
+[dividends](https://docs.learnbittensor.org/resources/glossary#emission) pair smoothed
+[validator-miner bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds)
+with these miner incentives:
+
+`V_i = Σ_j B_ij × M_j`
+
+Miner incentive vocabulary stays on the miner branch; dividend vocabulary names the validator branch
+that multiplies bonds against those miner results
+([Yuma Consensus: Validator emissions](https://docs.learnbittensor.org/learn/yuma-consensus#validator-emissions)).
 
 ## Distinction from Incentives
 
@@ -129,8 +176,7 @@ tempo ([Glossary: Incentives](https://docs.learnbittensor.org/resources/glossary
 [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
 - **Miner incentive** — miner-side emission share after the pass.
-- **Yuma Consensus** — on-chain mechanism that uses validator weights to determine emission shares
-  ([Yuma Consensus: Validator emissions](https://docs.learnbittensor.org/learn/yuma-consensus#validator-emissions)).
+- **Yuma Consensus** — on-chain mechanism that uses validator weights to determine emission shares.
 
 ## Distinction from Validator Trust
 
