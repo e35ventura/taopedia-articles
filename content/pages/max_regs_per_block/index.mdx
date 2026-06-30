@@ -1,0 +1,112 @@
+---
+title: "Max Registrations Per Block"
+summary:
+  "How the max registrations per block per-subnet hyperparameter sets a legacy per-block ceiling on
+  neuron registrations, noting that current neuron admission is governed by continuous burn pricing
+  rather than by this cap."
+category: "Subnets"
+tags: ["Subnets", "Registration"]
+infoboxTitle: Max Registrations Per Block
+infoboxCaption: Legacy per-subnet per-block ceiling on neuron registrations.
+infoboxRows:
+  - label: Parameter
+    value: MaxRegistrationsPerBlock
+  - label: Scope
+    value: Per-subnet
+  - label: Type
+    value: u16
+  - label: Default
+    value: "1"
+  - label: Set by
+    value: Root
+---
+
+# Max Registrations Per Block
+
+Max registrations per block is a per-subnet hyperparameter, listed in the documentation as
+`MaxRegistrationsPerBlock`, that sets a legacy ceiling on how many neurons may register in a single
+block on a subnet. The reference describes it as a maximum number of registrations allowed per
+block, with a documented default of `1`
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Subnet Hyperparameters: MaxRegistrationsPerBlock](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#maxregistrationsperblock)).
+
+## What It Controls
+
+The setting places a per-block count ceiling on neuron registrations on a subnet. When a
+registration transaction lands in a block, the chain checks the count against the subnet's
+`MaxRegistrationsPerBlock` and rejects excess registrations for that block. With the documented
+default of `1`, the subnet admits at most one new neuron registration per block under the per-block
+path
+([Subnet Hyperparameters: MaxRegistrationsPerBlock](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#maxregistrationsperblock),
+[Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register)).
+
+The setting is a legacy throughput vocabulary that the reference marks as not used for current
+neuron registration. Neuron admission on ordinary subnets is governed by continuous burn pricing
+through `BurnHalfLife` and `BurnIncreaseMult` rather than by this per-block cap, so the live
+admission path does not reject a registrant because of `MaxRegistrationsPerBlock` on the production
+networks
+([Subnet Hyperparameters: MaxRegistrationsPerBlock](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#maxregistrationsperblock),
+[Subnet Hyperparameters: BurnHalfLife](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#burnhalflife),
+[Subnet Hyperparameters: BurnIncreaseMult](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#burnincreasemult)).
+
+## Documented Type, Default, and Setter
+
+The reference lists `MaxRegistrationsPerBlock` as a `u16` with a documented default of `1`. It is
+changed through the `sudo_set_max_registrations_per_block` extrinsic and the reference marks the
+permission required to set it as root, so a subnet owner cannot toggle this cap directly
+([Subnet Hyperparameters: MaxRegistrationsPerBlock](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#maxregistrationsperblock),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+The live value on a subnet can differ from the documented default after a root-level update has
+changed it on chain. A reader verifying the current per-block cap on a specific subnet should read
+the storage value rather than rely on the default alone
+([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
+
+## Reading the Live Value for netuid 1
+
+For a specific parseable netuid such as netuid 1 on Finney mainnet, the live cap can be read
+directly with the standard hyperparameter query:
+`btcli subnet hyperparameters --netuid 1 --network finney`. The returned row for
+`MaxRegistrationsPerBlock` reflects the root-configured per-block ceiling for that subnet
+([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters),
+[Subnet Hyperparameters: MaxRegistrationsPerBlock](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#maxregistrationsperblock)).
+
+That per-netuid query keeps the per-block claim tied to a reproducible live value on a named subnet
+rather than to the documented default alone. A reader checking the live ceiling on the documented
+example subnet netuid 1 should run the hyperparameter query for that netuid and read the value
+rather than assume the default holds on mainnet
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## Distinction from Burn Half Life and Burn Increase Mult
+
+Burn half life and burn increase mult together govern the continuous-burn pricing path that actually
+drives neuron admission on ordinary subnets. Burn half life sets the decay horizon in blocks for the
+registration burn cost, and burn increase mult steps the burn up after each successful registration.
+The per-block `MaxRegistrationsPerBlock` ceiling is a separate legacy throughput vocabulary; the
+three settings describe different admission mechanics, and only the burn pair is in the live
+admission path on current production networks
+([Subnet Hyperparameters: BurnHalfLife](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#burnhalflife),
+[Subnet Hyperparameters: BurnIncreaseMult](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#burnincreasemult),
+[Subnet Hyperparameters: MaxRegistrationsPerBlock](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#maxregistrationsperblock)).
+
+## Reader Boundary
+
+Max registrations per block should not be read as the live gate that decides whether a registration
+succeeds on an ordinary subnet, as a subnet-owner-settable parameter, or as a guarantee that a
+registration within the per-block cap will be accepted. It names only the legacy per-block ceiling
+vocabulary that the reference marks as not used for current neuron admission
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Miner Registration](https://docs.learnbittensor.org/miners#miner-registration)).
+
+## Further Reading
+
+- [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+- [Subnet Hyperparameters: MaxRegistrationsPerBlock](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#maxregistrationsperblock)
+- [Subnet Hyperparameters: BurnHalfLife](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#burnhalflife)
+- [Subnet Hyperparameters: BurnIncreaseMult](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#burnincreasemult)
+- [Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)
+- [Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)
+- [Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register)
+- [Miner Registration](https://docs.learnbittensor.org/miners#miner-registration)
+- [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)
