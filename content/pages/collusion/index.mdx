@@ -29,15 +29,63 @@ particular miners so that consensus rewards those targets beyond what honest eva
 
 Collusion names coordinated validator inflation toward shared miner targets. Yuma Consensus resists
 this through stake-weighted agreement and clipping: weights that outlie the consensus benchmark are
-trimmed rather than fully rewarded, and a coalition can move outcomes only in proportion to its
-combined stake weight
+trimmed before they fully count toward miner
+[incentives](https://docs.learnbittensor.org/resources/glossary#incentives) and validator
+[dividends](https://docs.learnbittensor.org/resources/glossary#dividends). A coalition can move
+outcomes only in proportion to its combined
+[stake weight](https://docs.learnbittensor.org/resources/glossary#stake-weight), not without limit
 ([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
-[Glossary: Stake Weight](https://docs.learnbittensor.org/resources/glossary#stake-weight)).
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
 Examples tied to netuid 1 illustrate one subnet's clipping path. They should not be read as
 representing production consensus behavior on another network
 ([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## How Coordinated Weights Shift the Benchmark
+
+Colluding validators submit inflated weights toward the same miner targets. Yuma still derives a
+per-miner [consensus score](https://docs.learnbittensor.org/resources/glossary#consensus-score)
+benchmark `W̄_j` from stake-weighted validator agreement across the
+[weight matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix). Documentation
+describes `W̄_j` as the maximum weight level that still has at least a configured fraction `κ` of
+total validator stake supporting it
+([Yuma Consensus: Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping),
+[Subnet Hyperparameters: Kappa](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#kappa)).
+
+When a coalition's combined stake is large enough to satisfy that `κ` threshold at an inflated
+level, `W̄_j` can move toward the coordinated view. That is different from
+[self-weighting](https://docs.learnbittensor.org/resources/glossary#self-weighting), where one lone
+validator cannot by itself set the benchmark the same way
+([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
+
+Each validator's weight is still capped to the resulting benchmark:
+
+`W̄_ij = min(W_ij, W̄_j)`
+
+Weights above `W̄_j` are clipped, and neither the miner nor the submitting validator receives
+emissions for the excess portion
+([Yuma Consensus: Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping)).
+
+## Why Resistance Scales With Honest Stake
+
+After clipping, miner [rank](https://docs.learnbittensor.org/resources/glossary#rank) aggregates the
+filtered matrix with stake:
+
+`R_j = Σ_i S_i · W̄_ij`
+
+Each colluder's inflated row enters that sum scaled by its own `S_i`. Coordinated inflation can
+therefore raise a target miner's standing only in proportion to the coalition's combined stake
+weight, not as if every validator agreed
+([Yuma Consensus: Miner emissions](https://docs.learnbittensor.org/learn/yuma-consensus#miner-emissions)).
+
+Validators outside the coalition remain capped at `W̄_j` when they disagree, and any coalition member
+who submits above the benchmark still loses credit for the excess through
+[validator trust](https://docs.learnbittensor.org/resources/glossary#validator-trust) aggregation
+([Yuma Consensus: Validator emissions](https://docs.learnbittensor.org/learn/yuma-consensus#validator-emissions)).
+
+Resistance is therefore stake-proportional rather than absolute. Extreme stake concentration can
+weaken the practical barrier, but clipping still limits how much excess weight survives aggregation
+on any subnet ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
 ## Distinction from Sybil Attack
 
@@ -58,12 +106,6 @@ copying is validators reusing visible weight signals instead of independently ev
 
 - **Collusion** — coordinated inflation of weights toward shared targets.
 - **Weight copying** — reusing another validator's visible weights without independent evaluation.
-
-The two differ in how many actors are involved: collusion is multi-party coordination to bias
-rewards, while weight copying is a single validator free-riding by replicating others' published
-weights instead of evaluating miners itself
-([Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor),
-[Glossary: Weight Copying](https://docs.learnbittensor.org/resources/glossary#weight-copying)).
 
 ## Distinction from Validator Permit
 
@@ -128,24 +170,10 @@ Collusion is validators coordinating to inflate weights so rewards flow beyond h
 ## Distinction from Yuma Consensus
 
 Collusion names coordinated validator behavior intended to skew subnet consensus toward favored
-miners. It describes a manipulation risk pattern on the submission side, not the settlement
-mechanism that allocates emissions from aggregated weights
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
-[Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score)).
-
-Yuma Consensus is the on-chain mechanism that runs at the epoch boundary. It reads the weight matrix
-from eligible validators, clips weights that depart too far from the stake-weighted consensus
-benchmark, applies bonding, and converts the filtered result into incentive and dividend shares
+miners. Yuma Consensus is the epoch-boundary settlement that clips, bonds, and allocates emissions
+from the filtered weight matrix
 ([Yuma Consensus: Clipping excess weights](https://docs.learnbittensor.org/learn/yuma-consensus#clipping-excess-weights),
 [Emission](https://docs.learnbittensor.org/learn/emissions)).
-
-Earlier sections tie collusion to consensus score and incentive compatibility. Coordinated inflation
-may appear in submitted vectors; Yuma's clipping step is what limits how much excess weight can
-survive aggregation—not the label "collusion" by itself.
-
-Readers should treat collusion as a coordinated-behavior risk, and Yuma as the mechanism that
-enforces consensus alignment before payouts. Resistance depends on live stake distribution and is
-not unlimited when stake concentration is extreme.
 
 - **Collusion** — coordinated validator manipulation of weight signals toward favored miners.
 - **Yuma Consensus** — epoch-boundary settlement with clipping, bonding, and dividend allocation.
