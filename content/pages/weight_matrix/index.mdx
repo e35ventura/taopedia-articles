@@ -35,66 +35,153 @@ vectors available for Yuma processing
 
 ## Input Collection
 
-Each validator weight vector represents one validator's relative evaluation of miner work. The
-weight matrix arranges those vectors together so Yuma Consensus can compare and aggregate validator
-signals as a group
+Each validator [weight vector](https://docs.learnbittensor.org/resources/glossary#weight-vector) is
+one evaluator's relative scores for miner work. The weight matrix arranges those vectors together so
+Yuma Consensus can compare and aggregate validator signals as a group
+([Glossary: Weight Matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix)).
+
+The matrix is an input structure, not a separate scoring rule. Reading across a row recovers one
+validator's full vector; reading down a column gathers every validator's weight for a single miner.
+That per-miner column is the direction consensus reduces when it forms a result for each miner
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+The practical reading is collection-first: a matrix belongs with the subnet and
+[incentive mechanism](https://docs.learnbittensor.org/resources/glossary#incentive-mechanism) whose
+validators produced the vectors. The same matrix shape can appear across subnets, but the miner work
+and scoring rules give the entries their meaning
+([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism),
+[Consensus-Based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)).
+
+When a subnet runs
+[multiple incentive mechanisms](https://docs.learnbittensor.org/resources/glossary#multiple-incentive-mechanisms),
+each mechanism can keep its own matrix for independent consensus calculations
+([Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets)).
+
+## Reading Order Through Yuma
+
+A useful way to read weight-matrix vocabulary is as the first step in a fixed processing order, not
+as the final reward result.
+
+The matrix stacks independently submitted validator rows into subnet-wide input. Pre-consensus
+filtering then removes ineligible rows, such as self-weights and submissions from validators without
+a [validator permit](https://docs.learnbittensor.org/resources/glossary#validator-permit)
+([Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)).
+
+Clipping compares surviving matrix values against the per-miner
+[consensus score](https://docs.learnbittensor.org/resources/glossary#consensus-score) benchmark.
+Outlier weights are trimmed before they count toward later miner-side
+[rank](https://docs.learnbittensor.org/resources/glossary#rank) and
+[trust](https://docs.learnbittensor.org/resources/glossary#trust) readings, and before bond
+adjustment feeds validator-side outcomes
+([Yuma Consensus: Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping)).
+
+That order keeps vocabulary straight: the matrix names grouped validator input; consensus score,
+rank, trust, and validator trust name later results produced from that input
+([Glossary: Validator Trust](https://docs.learnbittensor.org/resources/glossary#validator-trust)).
+
+## Miner Trust Versus Validator Trust
+
+Readers often conflate [trust](https://docs.learnbittensor.org/resources/glossary#trust) and
+[validator trust](https://docs.learnbittensor.org/resources/glossary#validator-trust) because both
+are read after Yuma processes the matrix. They answer different sides of the same clipping pass.
+
+Trust is miner-side vocabulary. It describes how much validator support a miner retained after
+outlier weights were trimmed away. Lower trust means more of the miner's pre-filter support was
+removed when validator signals disagreed
+([Glossary: Trust](https://docs.learnbittensor.org/resources/glossary#trust),
+[Yuma Consensus: Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping)).
+
+Validator trust is validator-side vocabulary. It summarizes how much of a validator's submitted
+weights survived clipping and still counted toward the consensus outcome
+([Glossary: Validator Trust](https://docs.learnbittensor.org/resources/glossary#validator-trust)).
+
+The matrix names neither trust term. It is only the stacked validator input before those post-filter
+readings exist.
+
+## How One Row Joins the Matrix
+
+Each validator shapes one matrix row through
+[weight setting](https://docs.learnbittensor.org/resources/glossary#weight-setting). The
+subnet-level matrix is formed by collecting those rows for the current consensus pass, not by any
+single participant publishing the full table
 ([Glossary: Weight Vector](https://docs.learnbittensor.org/resources/glossary#weight-vector),
-[Glossary: Weight Matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix)).
-
-The structure preserves the difference between one validator's signal and the subnet-level
-collection. A weight vector carries one evaluator's miner weights; the matrix is the organized set
-of those vectors available to the subnet consensus process
-([Glossary: Weight Vector](https://docs.learnbittensor.org/resources/glossary#weight-vector),
-[Glossary: Weight Matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix)).
-
-This makes the matrix an input structure, not a separate scoring rule. It gives the consensus
-process a common shape for reading many validator weight vectors together.
-
-The shape has two natural directions. Reading across a row recovers one validator's full weight
-vector, while reading down a column gathers every validator's weight for a single miner, and that
-per-miner column is the direction consensus reduces when it forms a result for each miner
-([Glossary: Weight Matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix),
 [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
-The practical reading is collection-first: a matrix belongs with the subnet and mechanism whose
-validators produced the vectors.
+Whether a row enters the pass also depends on eligibility rules. Documentation describes removing
+self-assigned weights, dropping weights tied to neurons before their latest registration, and
+requiring a [validator permit](https://docs.learnbittensor.org/resources/glossary#validator-permit)
+for counting submissions
+([Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)).
 
-Consensus-based weights documentation uses the broader weight language for validator-submitted
-signals. The matrix term names the subnet-level collection of those validator inputs
-([Consensus-Based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)).
+Subnet [hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters) also set an
+activity cutoff in blocks within each epoch. A validator that misses that early submission window
+sits out the current pass rather than joining that round of aggregation
+([Subnet Hyperparameters: Activity Cutoff](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutoff)).
 
-That collection still belongs to a selected subnet and mechanism. The same matrix shape can appear
-across subnets, but the miner work and validator scoring rules give the entries their meaning
-([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
+For readers, that means the matrix is both a data shape and a participation outcome. A row can be
+absent because the validator never submitted, submitted too late, or submitted weights that
+pre-consensus filtering removed before aggregation began.
+
+## What Changes Between Raw Matrix and Final Outcomes
+
+The matrix is only the starting collection. Several documented steps sit between stacked validator
+rows and the miner and validator outcomes readers see in metagraph or emission vocabulary.
+
+Pre-consensus filtering removes rows or cells that should not count, such as self-weights and
+submissions from validators without permits. Clipping then compares surviving values against the
+per-miner consensus benchmark and trims weights that exceed what stake-weighted agreement supports.
+
+After clipping, miner-side vocabulary reads aggregated standing from the filtered columns. Validator
+bonds update from clipped matrix values, and validator-side dividends later pair those bonds with
+miner incentive outcomes from the same pass
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
+[Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)).
+
+That progression is why matrix documentation should not be read as rank, trust, dividend, or
+incentive vocabulary. Those labels describe credited results produced after Yuma processes the
+matrix, while the matrix itself names the grouped validator input at the start of the pass
+([Glossary: Rank](https://docs.learnbittensor.org/resources/glossary#rank),
+[Glossary: Incentives](https://docs.learnbittensor.org/resources/glossary#incentives),
+[Glossary: Emission](https://docs.learnbittensor.org/resources/glossary#emission)).
+
+When a subnet runs multiple incentive mechanisms, each mechanism can keep its own matrix through
+that full path. Two matrices on the same netuid can therefore represent different evaluation
+settings even if they share the same tempo cadence
+([Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets),
+[Glossary: Multiple Incentive Mechanisms](https://docs.learnbittensor.org/resources/glossary#multiple-incentive-mechanisms)).
+
+Readers comparing environments should also keep network context attached. A matrix example from
+localnet, testnet, or mainnet shows grouped validator input for that environment only and should not
+be treated as proof of production matrix state elsewhere
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+[Tempo](https://docs.learnbittensor.org/resources/glossary#tempo) provides the recurring interval
+when accumulated emissions are distributed and Yuma runs on the matrix assembled for that window.
+[Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal) can delay when freshly set
+weights become visible to other validators, but it does not change what the matrix collection names
+at a consensus step: grouped validator input for the selected pass
+([Glossary: Weight Matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix)).
+
+A matrix example also needs mechanism context on multi-mechanism subnets. Without naming which
+evaluation setting produced the rows, readers can mistake one mechanism's input for the whole subnet
+consensus picture
+([Glossary: Multiple Incentive Mechanisms](https://docs.learnbittensor.org/resources/glossary#multiple-incentive-mechanisms),
+[Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets)).
 
 ## Filtering and Output Terms
 
-The weight matrix and consensus score describe different parts of the same Yuma process. The matrix
-collects validator weight vectors, while consensus score is the stake-weighted benchmark used to
-filter outlier weights before final rank calculations
-([Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score),
-[Glossary: Weight Matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix)).
+The weight matrix and
+[consensus score](https://docs.learnbittensor.org/resources/glossary#consensus-score) describe
+different parts of the same Yuma process. The matrix collects validator weight vectors; consensus
+score is the stake-weighted benchmark derived from that grouped input when clipping outlier weights
+([Glossary: Weight Matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix),
+[Yuma Consensus: Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping)).
 
-That distinction prevents the input collection from being confused with the filtering benchmark. The
-matrix supplies the set of signals; the consensus score is derived during filtering.
-
-Rank and trust are later consensus terms. Rank names the miner-side result after aggregation, and
-trust describes how much miner-side support remains after clipping
-([Glossary: Rank](https://docs.learnbittensor.org/resources/glossary#rank),
-[Glossary: Trust](https://docs.learnbittensor.org/resources/glossary#trust)).
-
-Validator trust is also later than the matrix. It measures validator-side influence after consensus
-filtering, while the matrix names the collection of validator weight vectors before those effects
-are read
-([Glossary: Validator Trust](https://docs.learnbittensor.org/resources/glossary#validator-trust),
-[Glossary: Weight Matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-This order keeps input and output language plain. The matrix gathers submitted validator vectors;
-consensus score, rank, trust, and validator trust describe processing results.
-
-That order also explains why matrix examples need the selected subnet. Without the task and
-mechanism, the matrix only shows the input shape, not what the validator signals evaluated.
+[Rank](https://docs.learnbittensor.org/resources/glossary#rank),
+[trust](https://docs.learnbittensor.org/resources/glossary#trust), and
+[validator trust](https://docs.learnbittensor.org/resources/glossary#validator-trust) are later
+consensus terms read after that filter step, not synonyms for the matrix itself
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
 ## Timing and Mechanism Scope
 
@@ -105,15 +192,6 @@ cadence for subnet epochs, while Commit Reveal can delay visibility of newly set
 
 Those timing concepts do not replace the matrix. They explain when related validator-weight signals
 are processed or revealed, while the weight matrix names the structured collection itself.
-
-When a subnet uses multiple incentive mechanisms, each mechanism can have its own weight matrix for
-independent consensus calculations. The mechanism identifies which evaluation setting the matrix
-belongs to
-([Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets),
-[Glossary: Multiple Incentive Mechanisms](https://docs.learnbittensor.org/resources/glossary#multiple-incentive-mechanisms)).
-
-Mechanism scope is therefore part of the term. A matrix for one mechanism is still a
-validator-weight collection, but another mechanism in the same subnet can have a different matrix.
 
 ## Development Stage Context
 
@@ -149,21 +227,18 @@ the grouped validator inputs; those inputs feed the on-chain step that allocates
 That keeps input and payout vocabulary separate. The matrix is structured consensus input; miner and
 validator emission shares are among the outputs Yuma produces from that input.
 
-## Pre-Consensus Filtering Shapes Matrix Rows
+On the miner branch, filtered matrix columns are aggregated into miner-side standing and then into
+credited [incentives](https://docs.learnbittensor.org/resources/glossary#incentives) for the epoch.
+On the validator branch, smoothed bonds built from matrix history are paired with those miner
+outcomes to credit validator-side
+[dividends](https://docs.learnbittensor.org/resources/glossary#emission)
+([Yuma Consensus: Miner emissions](https://docs.learnbittensor.org/learn/yuma-consensus#miner-emissions),
+[Yuma Consensus: Validator emissions](https://docs.learnbittensor.org/learn/yuma-consensus#validator-emissions)).
 
-Not every validator row in a submitted matrix survives into Yuma Consensus unchanged. Epoch
-documentation lists pre-consensus filtering steps that remove certain weights before stake-weighted
-aggregation begins
-([Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)).
-
-Self-assigned weights are removed so validators cannot vote for themselves, with an exception for
-the subnet creator when that role exists on the subnet. Weights tied to a neuron before that
-neuron's latest [registration](https://docs.learnbittensor.org/resources/glossary#register) are also
-dropped so stale assignments do not follow re-registered identities.
-
-Only rows from validators holding a
-[validator permit](https://docs.learnbittensor.org/resources/glossary#validator-permit) influence
-consensus. Those checks limit which submitted vectors can enter the matrix Yuma actually processes.
+Readers should keep those branches separate from the matrix label itself. The matrix names validator
+input at the start of the pass; incentive and dividend vocabulary names credited role outcomes after
+Yuma finishes processing that input
+([Emission: Distribution](https://docs.learnbittensor.org/learn/emissions#distribution)).
 
 ## Kappa Clips Matrix Values Before Rank
 
@@ -179,16 +254,6 @@ validator receives emissions for the excess portion. The matrix therefore suppli
 clipping turns that input into the post-filter signal that later drives rank and incentive
 allocation.
 
-## Each Mechanism Can Keep Its Own Matrix
-
-When a subnet runs
-[multiple incentive mechanisms](https://docs.learnbittensor.org/resources/glossary#multiple-incentive-mechanisms),
-each mechanism can maintain a separate weight matrix for independent consensus calculations
-([Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets)).
-
-Matrix reading therefore needs mechanism context. Two matrices on the same subnet can share a
-cadence but still represent different evaluation settings rather than one combined input set.
-
 ## Bond Weights Adjust From Clipped Matrix Values
 
 [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus) documentation describes bond
@@ -200,35 +265,6 @@ into validator dividend allocation.
 That step sits between raw matrix input and validator-side payout. The matrix gathers submitted
 weights; clipping and bond adjustment translate those inputs into the bond terms used in validator
 emissions.
-
-## Activity Cutoff Limits Which Rows Enter
-
-Subnet [hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters) include an
-activity cutoff measured in blocks within each epoch. A validator that does not submit weights
-within the first activity-cutoff blocks of an epoch cannot participate until the next epoch
-([Subnet Hyperparameters: Activity Cutoff](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutoff)).
-
-That timing rule affects which validator rows can enter the matrix for the current consensus pass.
-Validators who miss the early window sit out the epoch rather than joining that round of aggregation
-([Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)).
-
-## The Matrix Is Assembled From Rows, Not Set by One Party
-
-A useful way to read the weight matrix is as a stack of independently submitted rows rather than a
-single object any one participant controls. Documentation describes each validator submitting its
-own weight vector, with the subnet-level matrix formed by collecting those vectors as consensus
-input ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
-[Glossary: Weight Vector](https://docs.learnbittensor.org/resources/glossary#weight-vector)).
-
-For readers, this is why one validator's submission is only one row. A validator shapes its own row
-through weight setting, but the matrix as a whole reflects every participating validator's input for
-that epoch
-([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
-
-That row-based assembly also explains why timing rules apply per validator. The activity-cutoff
-window governs whether a given validator's row enters the current pass, so the matrix can include
-some validators' rows while excluding late ones
-([Subnet Hyperparameters: Activity Cutoff](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutoff)).
 
 ## Distinction from Weight Vector
 
@@ -245,19 +281,10 @@ subnet-level collection that stacks those vectors into the structured input Yuma
 A weight matrix and weight setting describe consensus input as collection and source action. Weight
 setting is the per-validator `set_weights` action that submits one validator's weight vector, while
 the weight matrix is the subnet-level collection that stacks those submitted vectors into the
-structured input Yuma Consensus processes, so each weight-setting call contributes one row to the
-matrix ([Glossary: Weight Matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix),
+structured input Yuma Consensus processes
+([Glossary: Weight Matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix),
 [Glossary: Weight Vector](https://docs.learnbittensor.org/resources/glossary#weight-vector),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
-[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
-
-Each weight-setting call contributes one row; the matrix vocabulary describes the full input shape
-before clipping and aggregation run
-([Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)).
-
-When a subnet runs multiple incentive mechanisms, each mechanism can maintain its own matrix for
-independent consensus calculations, so matrix vocabulary should always name the mechanism context
-([Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets)).
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
 - **Weight setting** — the action each validator uses to submit its weight vector.
 - **Weight matrix** — the subnet-level stack of those vectors used as consensus input.
@@ -297,14 +324,6 @@ resulting consensus benchmark
 [Glossary: Validator Trust](https://docs.learnbittensor.org/resources/glossary#validator-trust),
 [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
-Readers searching matrix documentation often conflate those two trust terms because both are read
-after Yuma processes the matrix. Matrix vocabulary still names only the pre-filter input collection;
-trust vocabulary names miner-side clipping preservation, and validator-trust vocabulary names
-validator-side alignment with consensus
-([Glossary: Weight Matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix),
-[Glossary: Trust](https://docs.learnbittensor.org/resources/glossary#trust),
-[Glossary: Validator Trust](https://docs.learnbittensor.org/resources/glossary#validator-trust)).
-
 - **Weight matrix** — all validators' weight vectors stacked as consensus input.
 - **Trust** — miner-side support preservation after clipping.
 - **Validator trust** — per-validator alignment with consensus after clipping.
@@ -312,38 +331,13 @@ validator-side alignment with consensus
 ## Distinction from Yuma Consensus
 
 A weight matrix is the subnet-level collection of validator weight vectors available at one
-consensus step. Each row is one validator's miner evaluations; the matrix is the organized input
-Yuma reads before filtering and aggregation
+consensus step. Yuma Consensus is the process that turns that matrix into miner incentives and
+validator dividends through filtering, bonding, and emission allocation
 ([Glossary: Weight Matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix),
-[Glossary: Weight Vector](https://docs.learnbittensor.org/resources/glossary#weight-vector)).
-
-Yuma Consensus is the process that turns that matrix into miner incentives and validator dividends.
-It compares submitted vectors, derives a consensus score for clipping, and credits emission shares
-at the tempo boundary ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
-[Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score)).
-
-The matrix is therefore input vocabulary, not outcome vocabulary. Rank, trust, and validator trust
-name later consensus results; the matrix names the combined validator signals before those outputs
-are produced ([Glossary: Rank](https://docs.learnbittensor.org/resources/glossary#rank),
-[Glossary: Validator Trust](https://docs.learnbittensor.org/resources/glossary#validator-trust)).
-
-When a subnet runs multiple incentive mechanisms, each mechanism can keep its own matrix for
-independent consensus calculations on the same netuid
-([Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets),
-[Glossary: Multiple Incentive Mechanisms](https://docs.learnbittensor.org/resources/glossary#multiple-incentive-mechanisms)).
-
-Commit reveal can delay when newly set weights become visible without changing what the matrix
-collection names at a consensus step
-([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
-[Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo)).
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
 - **Weight matrix** — combined validator weight vectors at one consensus step.
 - **Yuma Consensus** — aggregation that turns those vectors into emission shares.
-
-That keeps matrix language separate from result language: the matrix is the structured input Yuma
-reads before rank, dividend, and incentive terms become meaningful
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
-[Glossary: Rank](https://docs.learnbittensor.org/resources/glossary#rank)).
 
 ## Reader Boundary
 
@@ -354,6 +348,13 @@ collection before Yuma Consensus filtering and aggregation
 
 The central point is that the matrix organizes validator weight vectors for consensus. Later results
 depend on how Yuma Consensus filters and aggregates that organized input.
+
+Readers should not treat the matrix as a profitability estimate, a miner ranking, or proof that any
+one validator's raw scores will survive clipping unchanged. It is input vocabulary for one pass on a
+selected subnet and mechanism, and live outcomes still depend on stake weight, eligibility rules,
+and the clipping and bonding steps that follow
+([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism),
+[Yuma Consensus: Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping)).
 
 ## Further Reading
 
