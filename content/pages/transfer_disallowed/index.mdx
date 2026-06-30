@@ -1,0 +1,95 @@
+---
+title: "Transfer Disallowed"
+summary:
+  "How the TransferDisallowed error blocks a move-stake or transfer-stake call when the subnet's
+  ToggleTransfer setting has turned off stake transfers on the origin or destination subnet."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Transfer Disallowed
+infoboxCaption: Error raised when stake transfers are disabled on a subnet.
+infoboxRows:
+  - label: Error
+    value: TransferDisallowed
+  - label: Trigger
+    value: ToggleTransfer is false for a subnet in the path
+  - label: Checked in
+    value: move_stake and transfer_stake paths
+  - label: Related hyperparameter
+    value: ToggleTransfer
+---
+
+# Transfer Disallowed
+
+`TransferDisallowed` is a documented Subtensor standard error raised when stake transfers are turned
+off on a subnet. The standard-errors reference describes it as "Transfers are disallowed on this
+subnet"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#transferdisallowed)).
+
+## What It Means
+
+Each subnet can allow or block stake transfers through the `ToggleTransfer` hyperparameter. When
+that setting is false on a subnet involved in a move-stake or transfer-stake call, the extrinsic is
+rejected with `TransferDisallowed` instead of proceeding to amount and balance checks
+([Subnet Hyperparameters: ToggleTransfer](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Transferring Stake](https://docs.learnbittensor.org/staking-and-delegation/delegation),
+[Subtensor source: stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)).
+
+On same-subnet transfers, the check applies to that subnet alone. On cross-subnet moves, both the
+origin and destination subnets must have transfers enabled, because either side can block the call
+([Subtensor source: stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)).
+
+## Why It Appears
+
+This error appears when a wallet tries to move or transfer staked alpha through a subnet whose
+`ToggleTransfer` setting is false. That can happen after a subnet owner disables transfers, when a
+client targets a subnet that no longer permits ownership changes, or when a cross-subnet move
+crosses into a subnet with transfers turned off
+([Subnet Hyperparameters: ToggleTransfer](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Managing Your Stakes](https://docs.learnbittensor.org/staking-and-delegation/managing-stake-sdk)).
+
+For a reader, the practical meaning is narrow: stake transfers are disallowed on that subnet. The
+problem is not that subtoken trading is disabled altogether, that the pair lacks enough staked alpha
+to move, or that the subnets do not exist
+([Subtoken Disabled](https://docs.learnbittensor.org/errors/subtensor#subtokendisabled),
+[Subtensor Standard Errors: NotEnoughStakeToWithdraw](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketowithdraw),
+[Subtensor Standard Errors: SubnetNotExists](https://docs.learnbittensor.org/errors/subtensor#subnetnotexists)).
+
+## Distinction from Subtoken Disabled
+
+`TransferDisallowed` and `SubtokenDisabled` both gate stake movement on a subnet, but they test
+different switches. `TransferDisallowed` means the subnet's `ToggleTransfer` setting has blocked
+stake transfers. `SubtokenDisabled` means the subnet's `SubtokenEnabled` setting has turned off
+subtoken trading altogether
+([Subtoken Disabled](https://docs.learnbittensor.org/errors/subtensor#subtokendisabled),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+- **TransferDisallowed** — stake transfers are disallowed on the subnet.
+- **SubtokenDisabled** — subtoken trading is disabled on the subnet.
+
+## Distinction from Not Enough Stake To Withdraw
+
+`TransferDisallowed` and `NotEnoughStakeToWithdraw` both appear around stake rearrangement, but they
+reject different problems. `TransferDisallowed` is the subnet-toggle rejection when transfers are
+turned off. `NotEnoughStakeToWithdraw` means the requested removal exceeds the staked alpha held by
+the hotkey-coldkey pair on that subnet
+([Not Enough Stake To Withdraw](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketowithdraw),
+[Subtensor source: stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)).
+
+- **TransferDisallowed** — stake transfers are disallowed on the subnet.
+- **NotEnoughStakeToWithdraw** — unstake amount exceeds available staked alpha.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the `ToggleTransfer` gate that raises it. It
+does not describe why a subnet owner disabled transfers, how to query the live setting for a
+specific netuid, or every extrinsic that touches `ToggleTransfer`; those are documented separately
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#transferdisallowed)
+- [Subnet Hyperparameters: ToggleTransfer](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+- [Subtoken Disabled](https://docs.learnbittensor.org/errors/subtensor#subtokendisabled)
+- [Subtensor source: stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)
+- [Subtensor source: move_stake.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/move_stake.rs)
