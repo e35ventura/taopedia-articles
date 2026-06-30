@@ -1,0 +1,100 @@
+---
+title: "Serving Rate Limit Exceeded"
+summary:
+  "How the ServingRateLimitExceeded error signals that a serve_axon or serve_prometheus call arrived
+  before the subnet's serving rate limit had elapsed since the caller's last endpoint update."
+category: "Validation"
+tags: ["Validation", "Errors"]
+infoboxTitle: Serving Rate Limit Exceeded
+infoboxCaption: Error raised when endpoint updates arrive too soon after the last serve.
+infoboxRows:
+  - label: Error
+    value: ServingRateLimitExceeded
+  - label: Trigger
+    value: Serve call before the subnet ServingRateLimit window clears
+  - label: Checked in
+    value: validate_serve_axon and validate_serve_prometheus
+  - label: Related hyperparameter
+    value: ServingRateLimit
+---
+
+# Serving Rate Limit Exceeded
+
+`ServingRateLimitExceeded` is a documented Subtensor standard error raised by `serve_axon` and
+`serve_prometheus`. The standard-errors reference describes it as "Rate limit exceeded for axon
+serve/publish"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#servingratelimitexceeded)).
+
+## What It Means
+
+A miner or validator can publish an axon endpoint with `serve_axon` and a metrics endpoint with
+`serve_prometheus`. Each subnet applies a `ServingRateLimit` hyperparameter that sets how many
+blocks must pass between one endpoint update and the next for the same caller on that subnet.
+`ServingRateLimitExceeded` means the new serve call arrived before that wait had cleared, so the
+endpoint update is rejected
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#servingratelimitexceeded),
+[Subnet Hyperparameters: ServingRateLimit](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#servingratelimit),
+[Subtensor source: serving.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/serving.rs)).
+
+In `serving.rs`, both validation paths read the caller's previous axon or prometheus record, compare
+the current block against the stored serve block plus the subnet limit, and return
+`ServingRateLimitExceeded` when the wait has not elapsed
+([Subtensor source: serving.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/serving.rs)).
+
+## Why It Appears
+
+This error is a pacing check, not an endpoint-shape check. It fires after the IP version and address
+checks have already passed and before the port validation completes, when the caller retries an
+endpoint update too quickly on the same subnet
+([Subtensor source: serving.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/serving.rs)).
+
+If the subnet's serving rate limit is zero, or if the caller has never served an endpoint before on
+that subnet, the pacing check does not block the call. Otherwise the rejection means only that the
+required block wait has not cleared yet
+([Subtensor source: serving.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/serving.rs)).
+
+For a reader, the practical meaning is narrow: the endpoint update was too soon. The problem is not
+an invalid IP version, an invalid encoded address, or a zero port
+([Subtensor Standard Errors: InvalidIpType](https://docs.learnbittensor.org/errors/subtensor#invalidiptype),
+[Subtensor Standard Errors: InvalidIpAddress](https://docs.learnbittensor.org/errors/subtensor#invalidipaddress),
+[Subtensor Standard Errors: InvalidPort](https://docs.learnbittensor.org/errors/subtensor#invalidport)).
+
+## Distinction from Invalid Port
+
+`ServingRateLimitExceeded` and `InvalidPort` both appear in `serve_axon` and `serve_prometheus`
+failures, but they reject different defects. `InvalidPort` rejects a zero port value in the
+submitted endpoint. `ServingRateLimitExceeded` rejects the timing of the call relative to the
+caller's previous serve on that subnet
+([Invalid Port](https://docs.learnbittensor.org/errors/subtensor#invalidport),
+[Subtensor source: serving.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/serving.rs)).
+
+- **InvalidPort** — the submitted port equals zero.
+- **ServingRateLimitExceeded** — the call arrived before the serving wait cleared.
+
+## Distinction from Invalid IP Address
+
+`ServingRateLimitExceeded` and `InvalidIpAddress` are checked at different points in the serving
+path. `InvalidIpAddress` applies to the encoded IP value once the IP version is accepted.
+`ServingRateLimitExceeded` applies later, after those address checks pass, and measures only how
+soon the caller is retrying an endpoint update
+([Invalid IP Address](https://docs.learnbittensor.org/errors/subtensor#invalidipaddress),
+[Subtensor source: serving.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/serving.rs)).
+
+- **InvalidIpAddress** — the encoded IP value fails address validation.
+- **ServingRateLimitExceeded** — the endpoint payload is acceptable, but the retry is too soon.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the serving pacing check that raises it. It
+does not describe IP validation, the zero-port rule, or how `ServingRateLimit` is configured on a
+subnet; those are separate topics
+([Subnet Hyperparameters: ServingRateLimit](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#servingratelimit),
+[Subtensor source: serving.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/serving.rs)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#servingratelimitexceeded)
+- [Subtensor Standard Errors: InvalidPort](https://docs.learnbittensor.org/errors/subtensor#invalidport)
+- [Subtensor Standard Errors: InvalidIpAddress](https://docs.learnbittensor.org/errors/subtensor#invalidipaddress)
+- [Subnet Hyperparameters: ServingRateLimit](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#servingratelimit)
+- [Subtensor source: serving.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/serving.rs)
