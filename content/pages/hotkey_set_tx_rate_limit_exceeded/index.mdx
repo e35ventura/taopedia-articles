@@ -1,0 +1,125 @@
+---
+title: "Hotkey Set Tx Rate Limit Exceeded"
+summary:
+  "How the HotKeySetTxRateLimitExceeded error signals that a hotkey set or swap was attempted before
+  one of the two rate limits that gate hotkey swaps had cleared."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Hotkey Set Tx Rate Limit Exceeded
+infoboxCaption: Error raised when a hotkey set or swap is attempted too soon.
+infoboxRows:
+  - label: Error
+    value: HotKeySetTxRateLimitExceeded
+  - label: Trigger
+    value: Hotkey set or swap attempted before its rate limit cleared
+  - label: Related limits
+    value: TxRateLimit and HotkeySwapOnSubnetInterval
+  - label: Scope
+    value: Hotkey set and swap pacing
+---
+
+# Hotkey Set Tx Rate Limit Exceeded
+
+`HotKeySetTxRateLimitExceeded` is a documented Subtensor standard error that means a hotkey set or
+swap was attempted too soon. The standard-errors reference describes it as "Rate limit exceeded for
+setting/swapping hotkey," and the rate-limits reference ties the hotkey swap path to a rate limit
+that prevents swapping a hotkey too frequently
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#hotkeysettxratelimitexceeded),
+[Chain Rate Limits: Hotkey swap rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#hotkey-swap-rate-limit)).
+
+## What It Means
+
+This error is about pacing how often a hotkey is set or swapped, not about whether the caller owned
+the hotkey or held the balance for the swap. The rate-limits reference says hotkey swaps are subject
+to two separate rate limits that must both be satisfied: a short network-wide transaction limit and
+a much longer per-subnet interval
+([Chain Rate Limits: Hotkey swap rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#hotkey-swap-rate-limit)).
+
+So when this error appears, the immediate meaning is narrow: a hotkey set or swap was submitted
+before one of those two rate limits had cleared. It does not, by itself, say anything about whether
+the caller had enough balance to pay for the swap, which Bittensor documents through separate errors
+such as `NotEnoughBalanceToPaySwapHotKey`
+([Chain Rate Limits: Hotkey swap rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#hotkey-swap-rate-limit),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor)).
+
+## Why It Appears
+
+The rate-limits reference explains that the hotkey swap rate limit prevents a user from swapping a
+hotkey too frequently. It lists the two limits a swap must satisfy: the general transaction rate
+limit, currently one block, and the per-subnet hotkey swap interval, listed at roughly 36,000 blocks
+or about five days
+([Chain Rate Limits: Hotkey swap rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#hotkey-swap-rate-limit),
+[Chain Rate Limits: General transaction rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#general-transaction-rate-limit)).
+
+The same reference names the chain-state variables behind those limits, `TxRateLimit` for the
+network-wide half and `HotkeySwapOnSubnetInterval` for the per-subnet half. The error is the
+rejection signal returned when a hotkey set or swap arrives before one of those windows has elapsed
+([Chain Rate Limits: Hotkey swap rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#hotkey-swap-rate-limit)).
+
+## What It Does Not Mean
+
+This error should not be read as a balance or ownership failure. Bittensor documents separate errors
+for those conditions, such as `NotEnoughBalanceToPaySwapHotKey` for an insufficient balance to pay
+for swapping a hotkey, and `NonAssociatedColdKey` for a request made by a coldkey not associated
+with the hotkey account. `HotKeySetTxRateLimitExceeded` is narrower: it names the timing gate on how
+often a hotkey is set or swapped, not the funds or ownership behind the call
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#hotkeysettxratelimitexceeded),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor)).
+
+It also should not be read as naming which of the two limits was breached. The rate-limits reference
+describes a swap as needing to satisfy both the network-wide limit and the per-subnet interval, so
+this single error can stand in for a breach of either window
+([Chain Rate Limits: Hotkey swap rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#hotkey-swap-rate-limit)).
+
+## Distinction from Tx Rate Limit Exceeded
+
+`HotKeySetTxRateLimitExceeded` and `TxRateLimitExceeded` are different documented error paths.
+`TxRateLimitExceeded` belongs to the general transaction rate limit, which the rate-limits reference
+notes currently applies to hotkey swaps, while `HotKeySetTxRateLimitExceeded` is the error named for
+the hotkey set and swap path itself
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#txratelimitexceeded),
+[Chain Rate Limits: Hotkey swap rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#hotkey-swap-rate-limit)).
+
+- **HotKeySetTxRateLimitExceeded** — hotkey set or swap attempted too soon.
+- **TxRateLimitExceeded** — general transaction-rate-limit breach.
+
+## Distinction from Hotkey Swap On Subnet Interval Not Passed
+
+`HotKeySetTxRateLimitExceeded` names a breach in the hotkey set and swap path, while
+`HotKeySwapOnSubnetIntervalNotPassed` is a separate documented error described as attempting a
+hotkey swap on subnet too frequently. One is the broader hotkey set or swap rate-limit error, while
+the other names the per-subnet swap interval specifically
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#hotkeysettxratelimitexceeded),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#hotkeyswaponsubnetintervalnotpassed)).
+
+- **HotKeySetTxRateLimitExceeded** — hotkey set or swap rate-limit breach.
+- **HotKeySwapOnSubnetIntervalNotPassed** — per-subnet swap interval not yet elapsed.
+
+## Distinction from Network Tx Rate Limit Exceeded
+
+`HotKeySetTxRateLimitExceeded` gates how often a hotkey is set or swapped, while
+`NetworkTxRateLimitExceeded` is the rate-limit error for add-network transactions, tied to the
+network registration rate limit that prevents frequent creation of new subnets. One paces hotkey
+swaps and the other paces new subnet creation
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#networktxratelimitexceeded),
+[Chain Rate Limits: Network registration rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#network-registration-rate-limit)).
+
+- **HotKeySetTxRateLimitExceeded** — hotkey set or swap too soon.
+- **NetworkTxRateLimitExceeded** — subnet-creation cooldown breach.
+
+## Reader Boundary
+
+This page defines the meaning of the error label. It does not tell a reader exactly when their next
+hotkey set or swap will be accepted; the rate-limits reference describes the swap path as gated by
+two limits, the network-wide one currently at one block and the per-subnet interval at roughly five
+days, so the next acceptable moment depends on the live chain state and the block at which the
+previous hotkey change landed. The documented place to read those rules is the hotkey swap
+rate-limit reference
+([Chain Rate Limits: Hotkey swap rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#hotkey-swap-rate-limit),
+[Glossary: Block](https://docs.learnbittensor.org/resources/glossary#block)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#hotkeysettxratelimitexceeded)
+- [Chain Rate Limits: Hotkey swap rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#hotkey-swap-rate-limit)
+- [Glossary: Block](https://docs.learnbittensor.org/resources/glossary#block)
