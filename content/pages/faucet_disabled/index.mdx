@@ -1,0 +1,90 @@
+---
+title: "Faucet Disabled"
+summary:
+  "How the FaucetDisabled error signals that the proof-of-work faucet extrinsic is not available on
+  the chain build the caller is using."
+category: "Validation"
+tags: ["Validation", "Errors"]
+infoboxTitle: Faucet Disabled
+infoboxCaption: Error raised when the faucet extrinsic is not active on the current chain build.
+infoboxRows:
+  - label: Error
+    value: FaucetDisabled
+  - label: Trigger
+    value: Faucet call on a chain build without an active faucet path
+  - label: Checked in
+    value: faucet extrinsic entry
+  - label: Related concept
+    value: Faucet proof-of-work
+---
+
+# Faucet Disabled
+
+`FaucetDisabled` is a documented Subtensor standard error. The standard-errors reference describes
+it as "Faucet is disabled"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#faucetdisabled)).
+
+## What It Means
+
+This error means the caller reached the faucet extrinsic, but the chain build they are using does
+not expose an active faucet path, so the request is rejected before any proof-of-work validation
+runs ([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#faucetdisabled),
+[Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)).
+
+The faucet extrinsic is documented as a facility for obtaining test balance through proof-of-work
+and is intended for testnet and devnet builds where that path is enabled. On builds where it is not
+active, the extrinsic returns `FaucetDisabled` instead of forwarding the call into the faucet
+handler
+([Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs),
+[Subtensor source: registration.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)).
+
+## Why It Appears
+
+`FaucetDisabled` is an availability gate, not a proof-of-work quality failure. It appears when a
+wallet or script submits a faucet transaction on a network whose runtime does not keep the faucet
+path open. The rejection happens at the extrinsic boundary, so block-number freshness, difficulty,
+and seal checks never run
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#faucetdisabled),
+[Subtensor Standard Errors: InvalidWorkBlock](https://docs.learnbittensor.org/errors/subtensor#invalidworkblock),
+[Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)).
+
+For a reader, the practical meaning is narrow: the faucet is not offered on this chain build. The
+problem is not that the submitted work was too weak, that the cited block was stale, or that the
+seal did not match the inputs. Those are separate errors on builds where the faucet path is active
+([Invalid Difficulty](https://docs.learnbittensor.org/errors/subtensor#invaliddifficulty),
+[Invalid Seal](https://docs.learnbittensor.org/errors/subtensor#invalidseal)).
+
+## Distinction from Invalid Work Block, Invalid Difficulty, and Invalid Seal
+
+`FaucetDisabled` and the faucet proof-of-work errors reject different stages of a faucet request.
+`FaucetDisabled` means the faucet extrinsic itself is unavailable on the current build.
+`InvalidWorkBlock`, `InvalidDifficulty`, and `InvalidSeal` mean the faucet path did run and the
+submitted proof-of-work failed one of its validation checks
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#faucetdisabled),
+[Subtensor Standard Errors: InvalidWorkBlock](https://docs.learnbittensor.org/errors/subtensor#invalidworkblock),
+[Subtensor Standard Errors: InvalidDifficulty](https://docs.learnbittensor.org/errors/subtensor#invaliddifficulty),
+[Subtensor Standard Errors: InvalidSeal](https://docs.learnbittensor.org/errors/subtensor#invalidseal),
+[Subtensor source: registration.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)).
+
+- **FaucetDisabled** — the faucet extrinsic is not active on this chain build.
+- **InvalidWorkBlock** — the cited block number is outside the allowed window.
+- **InvalidDifficulty** — the submitted work is below the required difficulty.
+- **InvalidSeal** — the submitted work does not match the reconstructed seal.
+
+## Reader Boundary
+
+This page defines the meaning of the `FaucetDisabled` label and the extrinsic-level availability
+gate that raises it. It does not explain how to mine faucet proof-of-work, how difficulty is
+computed, or how to obtain test balance on networks that do expose the faucet path
+([Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs),
+[Subtensor source: registration.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#faucetdisabled)
+- [Subtensor Standard Errors: InvalidWorkBlock](https://docs.learnbittensor.org/errors/subtensor#invalidworkblock)
+- [Subtensor Standard Errors: InvalidDifficulty](https://docs.learnbittensor.org/errors/subtensor#invaliddifficulty)
+- [Subtensor Standard Errors: InvalidSeal](https://docs.learnbittensor.org/errors/subtensor#invalidseal)
+- [Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)
+- [Subtensor source: registration.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)
+- [Subtensor source: errors.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/errors.rs)
