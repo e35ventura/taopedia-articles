@@ -61,6 +61,17 @@ That timing model keeps the concept distinct from consensus scoring. Commit Reve
 weight information can be seen; available validator signals are aggregated into subnet outcomes
 through Yuma Consensus ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
+That commit window is separate from activity cutoff vocabulary. Activity cutoff names how long a
+validator may remain without an on-chain update before its stake is masked inactive for consensus,
+measured from [last update](https://docs.learnbittensor.org/subnets/metagraph) rather than from an
+early-epoch submission deadline
+([Subnet Hyperparameters: Activity Cutoff](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutoff),
+[Implementation of the Yuma Consensus Epoch: Network State Collection](https://docs.learnbittensor.org/navigating-subtensor/epoch#1-network-state-collection)).
+
+A validator can commit inside the last ten tempo blocks while remaining eligible for the epoch pass
+only if it is still treated as active under that last-update inactivity rule
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
 ## How Concealment Limits Weight Copying
 
 The weight-copying problem comes from visible weight information being useful to validators that did
@@ -166,13 +177,45 @@ read as representing production weight-disclosure behavior in another environmen
 
 Commit reveal and activity cutoff are different weight-timing rules. Commit reveal delays when
 submitted validator weights become visible, concealing fresh weights for a reveal window, while
-activity cutoff is the early-epoch block window within which a validator must submit weights to
-count in the current Yuma Consensus pass
+activity cutoff vocabulary names how long a validator may remain without an on-chain update before
+its stake is masked inactive for consensus
 ([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
-[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+[Subnet Hyperparameters: Activity Cutoff](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutoff),
+[Subnet Hyperparameters: Activity Cutoff Factor](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutofffactor),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
-- **Commit reveal** — delays visibility of submitted weights until the reveal window.
-- **Activity cutoff** — bounds how early in the epoch weights must arrive to count.
+On dynamic-tempo subnets the fixed block hyperparameter is deprecated; the live inactivity span
+comes from activity cutoff factor and tempo instead
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+Visibility-delay vocabulary and inactivity-mask vocabulary answer different participation questions
+on the same weight path. Commit reveal governs when ciphertext becomes readable; activity cutoff
+governs whether a validator's stake still counts once last update exceeds the effective inactivity
+span ([Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+- **Commit reveal** — delays when submitted weights become visible.
+- **Activity cutoff** — inactivity span before a stale validator is masked out of consensus.
+
+## Distinction from Immunity Period
+
+Commit reveal and immunity period are both hyperparameter timing comparisons on the same netuid, but
+they protect different lifecycle risks. Commit reveal conceals fresh validator weights for a reveal
+interval; immunity period shields a newly registered neuron from deregistration for a block-counted
+window ([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
+[Glossary: Immunity Period](https://docs.learnbittensor.org/resources/glossary#immunity-period)).
+
+Official guidance recommends keeping immunity period longer than the concealed-weight interval
+measured in blocks so newcomers are not displaced before their scores can count under hidden weights
+([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
+[Subnet Hyperparameters: ImmunityPeriod](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#immunityperiod)).
+
+Visibility-delay vocabulary and post-registration displacement vocabulary should be cited together
+from the same netuid's settings rather than collapsed into one timing rule
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+- **Commit reveal** — delayed visibility for validator weight signals.
+- **Immunity period** — post-registration window that can block early displacement.
 
 ## Distinction from MEV Shield
 
@@ -195,7 +238,16 @@ Commit reveal changes when committed weights become visible, while the weights r
 how frequently a validator can submit new commits. Commit reveal is a visibility-timing mechanism;
 the weights rate limit is a submission-pacing hyperparameter
 ([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
-[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+[Subnet Hyperparameters: Weights Rate Limit](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#weightsratelimit)).
+
+Neither setting defines validator inactivity tolerance. Activity cutoff names the allowed silence
+span measured from last update before stake is masked inactive for consensus—a separate
+participation input on the same weight path
+([Subnet Hyperparameters: Activity Cutoff](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutoff),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+- **Commit reveal** — concealment interval before weights become readable.
+- **Weights rate limit** — minimum block wait between weight commits from the same validator.
 
 ## Distinction from Weight Copying
 
@@ -282,15 +334,19 @@ round ([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
 ## Reader Boundary
 
 Commit Reveal should not be read as a replacement for Yuma Consensus, a guarantee against all weight
-copying, or proof that independent evaluation occurred. It names delayed visibility for validator
-weight signals before those signals become readable to observers
+copying, proof that independent evaluation occurred, or the activity cutoff rule that masks stale
+validator stake. It names delayed visibility for validator weight signals before those signals
+become readable to observers
 ([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
-[Glossary: Commit Reveal](https://docs.learnbittensor.org/resources/glossary#commit-reveal)).
+[Glossary: Commit Reveal](https://docs.learnbittensor.org/resources/glossary#commit-reveal),
+[Subnet Hyperparameters: Activity Cutoff](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutoff)).
 
 ## Further Reading
 
 - [Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)
 - [Glossary: Commit Reveal](https://docs.learnbittensor.org/resources/glossary#commit-reveal)
+- [Glossary: Immunity Period](https://docs.learnbittensor.org/resources/glossary#immunity-period)
+- [Subnet Hyperparameters: Activity Cutoff Factor](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutofffactor)
 - [Weight Copying Problem](https://docs.learnbittensor.org/concepts/weight-copying-in-bittensor)
 - [Glossary: Weight Copying](https://docs.learnbittensor.org/resources/glossary#weight-copying)
 - [Glossary: Drand/time-lock encryption](https://docs.learnbittensor.org/resources/glossary#drandtime-lock-encryption)
