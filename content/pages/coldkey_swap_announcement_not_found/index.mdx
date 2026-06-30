@@ -1,0 +1,76 @@
+---
+title: "Coldkey Swap Announcement Not Found"
+summary:
+  "How the ColdkeySwapAnnouncementNotFound error blocks finalizing a coldkey swap when no
+  announcement is on record for the calling coldkey."
+category: "Wallets"
+tags: ["Wallets", "Errors"]
+infoboxTitle: Coldkey Swap Announcement Not Found
+infoboxCaption: Error raised when a coldkey swap is finalized with no announcement on record.
+infoboxRows:
+  - label: Error
+    value: ColdkeySwapAnnouncementNotFound
+  - label: Trigger
+    value: No pending announcement exists for the calling coldkey
+  - label: Checked in
+    value: swap_coldkey_announced, first check
+  - label: Check type
+    value: Storage-lookup existence check
+---
+
+# Coldkey Swap Announcement Not Found
+
+`ColdkeySwapAnnouncementNotFound` is a documented Subtensor standard error raised by
+`swap_coldkey_announced`, the extrinsic that finalizes a previously announced
+[coldkey swap](https://docs.learnbittensor.org/keys/coldkey-swap). The standard-errors reference
+describes it as "Coldkey swap announcement not found"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#coldkeyswapannouncementnotfound)).
+
+## What It Means
+
+`swap_coldkey_announced` looks up a pending announcement record for the calling coldkey before doing
+anything else. `ColdkeySwapAnnouncementNotFound` is the rejection when that lookup finds nothing:
+the coldkey has no announcement on record to finalize
+([Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs),
+[Coldkey Swap](https://docs.learnbittensor.org/keys/coldkey-swap)).
+
+This is the first of three checks the extrinsic runs in sequence, ahead of the checks that compare
+the supplied new coldkey against the announced hash and confirm the pending window has elapsed. A
+caller cannot reach either of those later checks without an announcement record to read in the first
+place
+([Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)).
+
+## Why It Appears
+
+The most direct cause is calling `swap_coldkey_announced` for a coldkey that never called
+`announce_coldkey_swap`. It can also happen for a coldkey whose announcement already finalized
+successfully, since a completed swap consumes the announcement record rather than leaving it in
+place for a repeat finalize call ([Coldkey Swap](https://docs.learnbittensor.org/keys/coldkey-swap),
+[Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)).
+
+## Distinction from Coldkey Swap Too Early
+
+`ColdkeySwapAnnouncementNotFound` and `ColdkeySwapTooEarly` are both raised by
+`swap_coldkey_announced`, but they sit at opposite ends of the same check sequence.
+`ColdkeySwapAnnouncementNotFound` means there is no announcement record to work with at all.
+`ColdkeySwapTooEarly` is the later, separate rejection for a call that does have a valid
+announcement, but arrives before that announcement's pending window has elapsed
+([Coldkey Swap Too Early](https://docs.learnbittensor.org/errors/subtensor#coldkeyswaptooearly),
+[Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)).
+
+- **ColdkeySwapAnnouncementNotFound** — no announcement record exists for the caller.
+- **ColdkeySwapTooEarly** — an announcement exists, but its pending window hasn't elapsed.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the lookup that raises it. It does not describe
+how an announcement is created or disputed; those are documented separately
+([Coldkey Swap](https://docs.learnbittensor.org/keys/coldkey-swap),
+[Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#coldkeyswapannouncementnotfound)
+- [Subtensor Standard Errors: ColdkeySwapTooEarly](https://docs.learnbittensor.org/errors/subtensor#coldkeyswaptooearly)
+- [Coldkey Swap](https://docs.learnbittensor.org/keys/coldkey-swap)
+- [Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)
