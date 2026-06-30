@@ -1,0 +1,81 @@
+---
+title: "Invalid Difficulty"
+summary:
+  "How the InvalidDifficulty error signals that submitted faucet proof-of-work did not meet the
+  required difficulty threshold."
+category: "Validation"
+tags: ["Validation", "Errors"]
+infoboxTitle: Invalid Difficulty
+infoboxCaption: Error raised when submitted faucet proof-of-work is below the required difficulty.
+infoboxRows:
+  - label: Error
+    value: InvalidDifficulty
+  - label: Trigger
+    value: Submitted faucet work does not satisfy the required difficulty
+  - label: Checked in
+    value: do_faucet
+  - label: Related concept
+    value: Faucet proof-of-work
+---
+
+# Invalid Difficulty
+
+`InvalidDifficulty` is a documented Subtensor standard error. The standard-errors reference
+describes it as "PoW hash block does not meet network difficulty"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#invaliddifficulty)).
+
+## What It Means
+
+This error means the proof-of-work submitted to the faucet was not strong enough to satisfy the
+required difficulty threshold, so the chain rejects the request instead of minting faucet balance
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#invaliddifficulty),
+[Subtensor source: registration.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)).
+
+In `registration.rs`, `do_faucet` converts the submitted `work` bytes into a hash, sets a base
+faucet difficulty of `1_000_000`, and returns `InvalidDifficulty` when
+`hash_meets_difficulty(&work_hash, difficulty)` is false
+([Subtensor source: registration.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)).
+
+## Why It Appears
+
+The faucet path checks three different things in sequence: whether the submitted block number is
+recent enough, whether the work meets the required difficulty, and whether the seal matches the
+submitted inputs. `InvalidDifficulty` is the middle failure: the submitted work hash exists, but it
+does not satisfy the minimum difficulty test
+([Subtensor Standard Errors: InvalidWorkBlock](https://docs.learnbittensor.org/errors/subtensor#invalidworkblock),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#invaliddifficulty),
+[Subtensor source: registration.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)).
+
+For a reader, the practical meaning is narrow: the faucet did receive a work value, but that work
+was too weak for the required threshold. The problem is not the freshness of the block number and
+not a mismatch between the computed seal and the submitted work; it is the difficulty test itself
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#invaliddifficulty),
+[Subtensor Standard Errors: InvalidSeal](https://docs.learnbittensor.org/errors/subtensor#invalidseal)).
+
+## Distinction from Invalid Seal
+
+`InvalidDifficulty` and `InvalidSeal` reject different faucet proof-of-work defects.
+`InvalidDifficulty` means the submitted work hash fails the required threshold. `InvalidSeal` means
+the seal reconstructed from the submitted block number, nonce, and coldkey does not match the work
+value that was supplied
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#invaliddifficulty),
+[Subtensor Standard Errors: InvalidSeal](https://docs.learnbittensor.org/errors/subtensor#invalidseal),
+[Subtensor source: registration.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)).
+
+- **InvalidDifficulty** — the work is below the required difficulty.
+- **InvalidSeal** — the submitted work does not match the seal implied by the accompanying inputs.
+
+## Reader Boundary
+
+This page defines the meaning of the `InvalidDifficulty` label in the faucet proof-of-work path. It
+does not explain the stale-block check behind `InvalidWorkBlock`, the separate seal-matching check
+behind `InvalidSeal`, or the broader faucet policy beyond this one rejection condition
+([Subtensor source: registration.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#invaliddifficulty)
+- [Subtensor Standard Errors: InvalidSeal](https://docs.learnbittensor.org/errors/subtensor#invalidseal)
+- [Subtensor Standard Errors: InvalidWorkBlock](https://docs.learnbittensor.org/errors/subtensor#invalidworkblock)
+- [Subtensor source: registration.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)
+- [Subtensor source: errors.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/errors.rs)
