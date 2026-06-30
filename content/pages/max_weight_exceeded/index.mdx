@@ -1,0 +1,98 @@
+---
+title: "Max Weight Exceeded"
+summary:
+  "How the MaxWeightExceeded error signals that a set_weights call's largest upscaled weight value
+  exceeds the subnet's MaxWeightLimit cap."
+category: "Validation"
+tags: ["Validation", "Errors"]
+infoboxTitle: Max Weight Exceeded
+infoboxCaption: Error raised when an upscaled weight value exceeds the subnet max-weight cap.
+infoboxRows:
+  - label: Error
+    value: MaxWeightExceeded
+  - label: Trigger
+    value: Largest upscaled weight value exceeds MaxWeightLimit
+  - label: Checked in
+    value: do_set_weights
+  - label: Related hyperparameter
+    value: MaxWeightLimit
+---
+
+# Max Weight Exceeded
+
+`MaxWeightExceeded` is a documented Subtensor standard error raised by the `set_weights` extrinsic.
+The standard-errors reference describes it as "Weight value exceeds MaxWeightLimit"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#maxweightexceeded)).
+
+## What It Means
+
+A `set_weights` call submits parallel UID and value lists that the runtime upscales before storage.
+After that upscale step, the chain compares the largest value in the upscaled list against the
+subnet's `MaxWeightLimit` hyperparameter. `MaxWeightExceeded` means at least one upscaled weight
+value is above that cap, so the extrinsic is rejected instead of being stored
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#maxweightexceeded),
+[Subnet Hyperparameters: MaxWeightLimit](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#maxweightlimit),
+[Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+In `weights.rs`, `do_set_weights` calls `max_weight_limited` after `vec_u16_max_upscale_to_u16` and
+returns `MaxWeightExceeded` when that check fails
+([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+## Why It Appears
+
+This error is a value-cap check, not a list-shape check. It fires after the UID and value lists
+already match in length and after the minimum element-count rule has passed, when the upscaled
+weight vector still contains a value above the configured cap
+([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+The check is skipped for a pure self-weight submission: when the vector contains only the caller's
+own UID, `max_weight_limited` returns true without comparing against the cap. It is also skipped
+when the subnet's `MaxWeightLimit` is set to `u16::MAX`, which disables the cap for ordinary
+non-self submissions on that subnet
+([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+For a reader, the practical meaning is narrow: one submitted weight value is too large after
+upscale. The problem is not mismatched list lengths, too few scored UIDs, or a rate-limit violation
+([Subtensor Standard Errors: WeightVecNotEqualSize](https://docs.learnbittensor.org/errors/subtensor#weightvecnotequalsize),
+[Subtensor Standard Errors: WeightVecLengthIsLow](https://docs.learnbittensor.org/errors/subtensor#weightveclengthislow),
+[Subtensor Standard Errors: SettingWeightsTooFast](https://docs.learnbittensor.org/errors/subtensor#settingweightstoofast)).
+
+## Distinction from Weight Vec Length Is Low
+
+`MaxWeightExceeded` and `WeightVecLengthIsLow` both concern the shape of a submitted weight vector,
+but they check different properties. `WeightVecLengthIsLow` compares how many UIDs were scored
+against the subnet minimum. `MaxWeightExceeded` applies only after that count check passes and tests
+whether any upscaled value exceeds `MaxWeightLimit`
+([Subtensor Standard Errors: WeightVecLengthIsLow](https://docs.learnbittensor.org/errors/subtensor#weightveclengthislow),
+[Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+- **WeightVecLengthIsLow** — too few UIDs were included in the weight vector.
+- **MaxWeightExceeded** — the vector is long enough, but an upscaled value exceeds the cap.
+
+## Distinction from Weight Vec Not Equal Size
+
+`MaxWeightExceeded` and `WeightVecNotEqualSize` are checked at different points in the `set_weights`
+path. `WeightVecNotEqualSize` is an early length comparison between the UID list and the value list.
+`MaxWeightExceeded` is a later value-cap comparison on the upscaled weights after the lists have
+already been accepted as matching in length
+([Weight Vec Not Equal Size](https://docs.learnbittensor.org/errors/subtensor#weightvecnotequalsize),
+[Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+- **WeightVecNotEqualSize** — the UID list and value list differ in length.
+- **MaxWeightExceeded** — the lists match, but an upscaled value is above the cap.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the max-weight cap check that raises it. It
+does not describe how weights are upscaled, how `MaxWeightLimit` is configured, or the
+validator-permit and rate-limit checks that surround this step in the same extrinsic
+([Subnet Hyperparameters: MaxWeightLimit](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#maxweightlimit),
+[Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#maxweightexceeded)
+- [Subtensor Standard Errors: WeightVecLengthIsLow](https://docs.learnbittensor.org/errors/subtensor#weightveclengthislow)
+- [Subtensor Standard Errors: WeightVecNotEqualSize](https://docs.learnbittensor.org/errors/subtensor#weightvecnotequalsize)
+- [Subnet Hyperparameters: MaxWeightLimit](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#maxweightlimit)
+- [Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)
