@@ -201,16 +201,26 @@ That step sits between raw matrix input and validator-side payout. The matrix ga
 weights; clipping and bond adjustment translate those inputs into the bond terms used in validator
 emissions.
 
-## Activity Cutoff Limits Which Rows Enter
+## Activity Cutoff Masks Inactive Validator Rows
 
-Subnet [hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters) include an
-activity cutoff measured in blocks within each epoch. A validator that does not submit weights
-within the first activity-cutoff blocks of an epoch cannot participate until the next epoch
-([Subnet Hyperparameters: Activity Cutoff](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutoff)).
+Subnet [hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters) include
+activity cutoff vocabulary for validator inactivity tolerance. When too many blocks have passed
+since a validator's [last update](https://docs.learnbittensor.org/subnets/metagraph) relative to the
+effective inactivity span, that validator is treated as inactive for the epoch pass and its stake is
+masked out before stake-weighted consensus runs
+([Implementation of the Yuma Consensus Epoch: Network State Collection](https://docs.learnbittensor.org/navigating-subtensor/epoch#1-network-state-collection),
+[Subnet Hyperparameters: Activity Cutoff](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutoff)).
 
-That timing rule affects which validator rows can enter the matrix for the current consensus pass.
-Validators who miss the early window sit out the epoch rather than joining that round of aggregation
-([Implementation of the Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)).
+That inactivity rule affects which validator rows carry stake-weighted influence in the matrix for
+the current consensus pass. Inactive validators may still appear in stored weight data, but their
+stake does not drive aggregation until they update again and re-enter the active set
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+On dynamic-tempo subnets the fixed block hyperparameter is deprecated; the live inactivity span
+comes from
+[activity cutoff factor](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutofffactor)
+and tempo instead
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
 ## The Matrix Is Assembled From Rows, Not Set by One Party
 
@@ -225,10 +235,30 @@ through weight setting, but the matrix as a whole reflects every participating v
 that epoch
 ([Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
 
-That row-based assembly also explains why timing rules apply per validator. The activity-cutoff
-window governs whether a given validator's row enters the current pass, so the matrix can include
-some validators' rows while excluding late ones
-([Subnet Hyperparameters: Activity Cutoff](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutoff)).
+That row-based assembly also explains why eligibility rules apply per validator. Activity cutoff
+governs whether a validator's stake still counts once last update exceeds the effective inactivity
+span, so the matrix can reflect every permitted submission while only active validators drive
+stake-weighted aggregation
+([Subnet Hyperparameters: Activity Cutoff](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutoff),
+[Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)).
+
+## Distinction from Activity Cutoff
+
+A weight matrix stacks validator weight vectors as structured consensus input. Activity cutoff
+vocabulary names how long a validator may remain without an on-chain update before its stake is
+masked inactive for the pass—not an early-epoch submission deadline that excludes late rows
+([Glossary: Weight Matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix),
+[Subnet Hyperparameters: Activity Cutoff](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutoff),
+[Subnet Hyperparameters: Activity Cutoff Factor](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutofffactor),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+Input-collection vocabulary and inactivity-mask vocabulary answer different matrix questions. The
+matrix names the grouped validator signals Yuma reads; activity cutoff governs whether each
+validator's stake still counts once last update exceeds the allowed span
+([Implementation of the Yuma Consensus Epoch: Network State Collection](https://docs.learnbittensor.org/navigating-subtensor/epoch#1-network-state-collection)).
+
+- **Weight matrix** — assembled validator weight vectors at one consensus step.
+- **Activity cutoff** — inactivity span before a stale validator is masked out of consensus.
 
 ## Distinction from Weight Vector
 
@@ -348,17 +378,20 @@ reads before rank, dividend, and incentive terms become meaningful
 ## Reader Boundary
 
 Weight matrix names consensus input terminology. It describes the organized validator-vector
-collection before Yuma Consensus filtering and aggregation
+collection before Yuma Consensus filtering and aggregation. It should not be read as activity cutoff
+timing, proof that every stored row influenced stake-weighted consensus, or a guarantee of emission
+outcomes
 ([Glossary: Weight Matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-The central point is that the matrix organizes validator weight vectors for consensus. Later results
-depend on how Yuma Consensus filters and aggregates that organized input.
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
+[Subnet Hyperparameters: Activity Cutoff](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutoff)).
 
 ## Further Reading
 
 - [Glossary: Weight Matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix)
 - [Glossary: Weight Vector](https://docs.learnbittensor.org/resources/glossary#weight-vector)
+- [Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)
+- [Subnet Hyperparameters: Activity Cutoff Factor](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutofffactor)
+- [Implementation of the Yuma Consensus Epoch: Network State Collection](https://docs.learnbittensor.org/navigating-subtensor/epoch#1-network-state-collection)
 - [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
 - [Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score)
 - [Glossary: Rank](https://docs.learnbittensor.org/resources/glossary#rank)
