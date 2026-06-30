@@ -1,0 +1,77 @@
+---
+title: "Coldkey Swap Too Early"
+summary:
+  "How the ColdkeySwapTooEarly error blocks finalizing a coldkey swap before the pending window from
+  the original announcement has elapsed."
+category: "Wallets"
+tags: ["Wallets", "Errors"]
+infoboxTitle: Coldkey Swap Too Early
+infoboxCaption: Error raised when a coldkey swap is finalized before its pending window ends.
+infoboxRows:
+  - label: Error
+    value: ColdkeySwapTooEarly
+  - label: Trigger
+    value: Finalization attempted before the announcement's pending window elapses
+  - label: Checked in
+    value: swap_coldkey_announced
+  - label: Check type
+    value: Block-number comparison
+---
+
+# Coldkey Swap Too Early
+
+`ColdkeySwapTooEarly` is a documented Subtensor standard error raised by `swap_coldkey_announced`,
+the extrinsic that finalizes a previously announced
+[coldkey swap](https://docs.learnbittensor.org/keys/coldkey-swap). The standard-errors reference
+describes it as "Coldkey swap too early"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#coldkeyswaptooearly)).
+
+## What It Means
+
+When a coldkey swap is announced, the chain records the block at which the swap becomes eligible to
+finalize, set to the announcement block plus the documented pending delay. `ColdkeySwapTooEarly` is
+the rejection when `swap_coldkey_announced` is called before the current block reaches that recorded
+block
+([Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs),
+[Coldkey Swap](https://docs.learnbittensor.org/keys/coldkey-swap)).
+
+This is the same pending window the coldkey swap concept article describes as the dispute period:
+the same delay that keeps the swap from finalizing early is what gives observers time to notice and
+dispute an unauthorized announcement
+([Coldkey Swap](https://docs.learnbittensor.org/keys/coldkey-swap)).
+
+## Why It Appears
+
+`swap_coldkey_announced` checks this timing only after confirming an announcement actually exists
+for the caller and that the supplied new coldkey matches the hash committed at announcement time.
+The timing check is the last of the three, so a too-early finalization attempt only surfaces this
+specific error once the earlier announcement and hash checks have already passed
+([Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)).
+
+## Distinction from Announced Coldkey Hash Does Not Match
+
+`ColdkeySwapTooEarly` and `AnnouncedColdkeyHashDoesNotMatch` are both checked inside
+`swap_coldkey_announced`, but the hash check runs first and catches a different problem: a finalize
+call whose proposed new coldkey does not hash to the value committed at announcement time. Passing
+that hash check does not mean the timing check will also pass; the pending window can still not have
+elapsed yet
+([Announced Coldkey Hash Does Not Match](https://docs.learnbittensor.org/errors/subtensor#announcedcoldkeyhashdoesnotmatch),
+[Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)).
+
+- **AnnouncedColdkeyHashDoesNotMatch** — the finalize call's coldkey doesn't match the committed
+  hash.
+- **ColdkeySwapTooEarly** — the finalize call arrived before the pending window elapsed.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the timing check that raises it. It does not
+describe the announcement step, the dispute path, or the exact length of the pending delay; those
+are documented separately ([Coldkey Swap](https://docs.learnbittensor.org/keys/coldkey-swap),
+[Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#coldkeyswaptooearly)
+- [Subtensor Standard Errors: AnnouncedColdkeyHashDoesNotMatch](https://docs.learnbittensor.org/errors/subtensor#announcedcoldkeyhashdoesnotmatch)
+- [Coldkey Swap](https://docs.learnbittensor.org/keys/coldkey-swap)
+- [Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)
