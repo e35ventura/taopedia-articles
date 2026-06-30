@@ -1,0 +1,91 @@
+---
+title: "Invalid Reveal Commit Hash Not Match"
+summary:
+  "How the InvalidRevealCommitHashNotMatch error signals that a reveal_weights call submitted a hash
+  the runtime could not pair with any non-expired committed hash for the caller."
+category: "Validation"
+tags: ["Validation", "Errors"]
+infoboxTitle: Invalid Reveal Commit Hash Not Match
+infoboxCaption:
+  Error raised when a reveal's derived hash does not match any stored, non-expired commit.
+infoboxRows:
+  - label: Error
+    value: InvalidRevealCommitHashNotMatch
+  - label: Trigger
+    value: Reveal-derived hash matches no non-expired committed hash for the calling hotkey
+  - label: Checked in
+    value: internal_reveal_weights
+  - label: Check type
+    value: Hash lookup against the caller's committed-hash queue
+---
+
+# Invalid Reveal Commit Hash Not Match
+
+`InvalidRevealCommitHashNotMatch` is a documented Subtensor standard error. The standard-errors
+reference describes it as "Committed hash does not equal the hashed reveal data"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#invalidrevealcommithashnotmatch)).
+
+## What It Means
+
+A validator that has opted into the commit-reveal scheme first submits a hash commitment over its
+planned weight vector, then later submits the actual weights together with the salt it used to
+produce the commitment
+([Concepts: Commit-Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)).
+
+`InvalidRevealCommitHashNotMatch` means the runtime recomputed the hash from the reveal's
+`(uids, values, salt, version_key)` and could not find a matching entry in the caller's stored queue
+of committed hashes. The reveal is therefore rejected, and the stored commits remain unchanged
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#invalidrevealcommithashnotmatch),
+[Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+## Why It Appears
+
+The reveal path is implemented as `internal_reveal_weights`, which is reached from both
+`do_reveal_weights` and `do_batch_reveal_weights`. After verifying the caller and that commit-reveal
+is enabled for the subnet, it pulls the caller's stored commit queue, prunes any commits whose
+commit block has already expired, and recomputes the hash from the reveal inputs
+([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+The check that raises this error comes at the end of that flow. If the recomputed hash matches a
+stored commit, the reveal proceeds. If it instead matches one of the just-pruned expired commits,
+the runtime raises `ExpiredWeightCommit`. Otherwise, when the recomputed hash matches no non-expired
+stored commit, the runtime raises `InvalidRevealCommitHashNotMatch`
+([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+For a reader, the practical meaning is simple: the validator produced a hash from its reveal inputs
+that the chain cannot pair with any commitment it still holds for that hotkey on that subnet. The
+chain refuses the reveal instead of accepting weights that were never properly committed
+([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+## Distinction from No Weights Commit Found
+
+`InvalidRevealCommitHashNotMatch` and `NoWeightsCommitFound` both reject a `reveal_weights` call,
+but they detect different defects. `NoWeightsCommitFound` fires before the hash is even computed,
+when the caller's commit queue on the subnet is empty or absent. `InvalidRevealCommitHashNotMatch`
+fires only after the runtime has confirmed the caller has at least one stored commit, recomputed the
+hash from the reveal's inputs, and failed to find a non-expired match
+([Subtensor Standard Errors: NoWeightsCommitFound](https://docs.learnbittensor.org/errors/subtensor#noweightscommitfound),
+[Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+- **NoWeightsCommitFound** — the caller has no stored commits to reveal against.
+- **InvalidRevealCommitHashNotMatch** — the caller has stored commits, but none of them hash to the
+  reveal's `(uids, values, salt, version_key)`.
+
+## Reader Boundary
+
+This page defines the meaning of the `InvalidRevealCommitHashNotMatch` error label and the
+hash-lookup step that raises it inside `internal_reveal_weights`. It does not describe the broader
+commit-reveal scheme, the rules that determine when commit-reveal is enabled on a subnet, or the
+rate-limit and version-key checks that surround the reveal call; those are separate conditions with
+their own articles
+([Concepts: Commit-Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
+[Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#invalidrevealcommithashnotmatch)
+- [Subtensor Standard Errors: NoWeightsCommitFound](https://docs.learnbittensor.org/errors/subtensor#noweightscommitfound)
+- [Subtensor source: errors.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/errors.rs)
+- [Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)
+- [Concepts: Commit-Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)
+- [Glossary: Weight Vector](https://docs.learnbittensor.org/resources/glossary#weight-vector)
