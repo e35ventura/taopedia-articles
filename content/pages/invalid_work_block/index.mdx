@@ -1,0 +1,91 @@
+---
+title: "Invalid Work Block"
+summary:
+  "How the InvalidWorkBlock error signals that faucet proof-of-work references a block number that
+  is in the future or more than two blocks behind the current chain head."
+category: "Validation"
+tags: ["Validation", "Errors"]
+infoboxTitle: Invalid Work Block
+infoboxCaption:
+  Error raised when faucet proof-of-work cites a block number outside the allowed window.
+infoboxRows:
+  - label: Error
+    value: InvalidWorkBlock
+  - label: Trigger
+    value: Submitted block number is in the future or older than two blocks
+  - label: Checked in
+    value: do_faucet
+  - label: Allowed window
+    value: Current block or up to two blocks in the past
+---
+
+# Invalid Work Block
+
+`InvalidWorkBlock` is a documented Subtensor standard error. The standard-errors reference describes
+it as "Invalid PoW hash block"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#invalidworkblock)).
+
+## What It Means
+
+This error means the faucet request cited a block number that the chain does not accept for
+proof-of-work validation. The cited block must not be in the future, and it must not be more than
+two blocks behind the current head, so the request is rejected before difficulty or seal checks run
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#invalidworkblock),
+[Subtensor source: registration.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)).
+
+In `registration.rs`, `do_faucet` reads the current block number and returns `InvalidWorkBlock` when
+the submitted `block_number` is greater than the current head or when
+`current_block_number.saturating_sub(block_number)` is not less than `3`
+([Subtensor source: registration.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)).
+
+The inline comment in that function states that work must have been done within three blocks to stop
+long-range attacks. In practice, that means the submitted block number may be the current block or
+either of the two immediately preceding blocks; anything older fails this check
+([Subtensor source: registration.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)).
+
+## Why It Appears
+
+Faucet proof-of-work binds the submitted seal to a specific chain block through
+`create_seal_hash(block_number, nonce, &coldkey)`. If the cited block is too stale, an attacker
+could reuse or precompute work against old state; if it is in the future, the chain cannot verify
+the seal against a block that does not exist yet. `InvalidWorkBlock` is the freshness gate that
+rejects both cases before the difficulty and seal comparisons run
+([Subtensor source: registration.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)).
+
+For a reader, the practical meaning is narrow: the problem is the block number's age or placement,
+not the strength of the work hash and not a mismatch between the reconstructed seal and the
+submitted work value
+([Subtensor Standard Errors: InvalidDifficulty](https://docs.learnbittensor.org/errors/subtensor#invaliddifficulty),
+[Subtensor Standard Errors: InvalidSeal](https://docs.learnbittensor.org/errors/subtensor#invalidseal)).
+
+## Distinction from Invalid Difficulty and Invalid Seal
+
+`InvalidWorkBlock`, `InvalidDifficulty`, and `InvalidSeal` are checked in sequence during faucet
+proof-of-work validation, but they reject different defects
+([Subtensor source: registration.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)).
+
+- **InvalidWorkBlock** — the cited block number is in the future or more than two blocks old.
+- **InvalidDifficulty** — the submitted work hash does not meet the required difficulty threshold.
+- **InvalidSeal** — the submitted work does not match the seal reconstructed from the accompanying
+  inputs.
+
+A request that fails `InvalidWorkBlock` never reaches the difficulty or seal checks. A request that
+passes the block window but fails later steps will surface one of the other two errors instead
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#invalidworkblock),
+[Subtensor Standard Errors: InvalidDifficulty](https://docs.learnbittensor.org/errors/subtensor#invaliddifficulty),
+[Subtensor Standard Errors: InvalidSeal](https://docs.learnbittensor.org/errors/subtensor#invalidseal)).
+
+## Reader Boundary
+
+This page defines the meaning of the `InvalidWorkBlock` label and the block-number window that
+raises it. It does not explain the difficulty threshold behind `InvalidDifficulty`, the seal
+comparison behind `InvalidSeal`, or the broader faucet policy beyond this one rejection condition
+([Subtensor source: registration.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#invalidworkblock)
+- [Subtensor Standard Errors: InvalidDifficulty](https://docs.learnbittensor.org/errors/subtensor#invaliddifficulty)
+- [Subtensor Standard Errors: InvalidSeal](https://docs.learnbittensor.org/errors/subtensor#invalidseal)
+- [Subtensor source: registration.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)
+- [Subtensor source: errors.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/errors.rs)
