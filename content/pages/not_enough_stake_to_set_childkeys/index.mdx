@@ -1,0 +1,99 @@
+---
+title: "Not Enough Stake To Set Childkeys"
+summary:
+  "How the NotEnoughStakeToSetChildkeys error blocks child-hotkey scheduling when the parent hotkey
+  lacks the minimum own stake required to assign children on a subnet."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Not Enough Stake To Set Childkeys
+infoboxCaption:
+  Error raised when a parent hotkey lacks the stake threshold needed to assign child hotkeys.
+infoboxRows:
+  - label: Error
+    value: NotEnoughStakeToSetChildkeys
+  - label: Trigger
+    value: Parent hotkey is below the own-stake threshold for a non-empty child list
+  - label: Checked in
+    value: do_schedule_children
+  - label: Check type
+    value: Own-stake threshold with subnet-owner exception
+---
+
+# Not Enough Stake To Set Childkeys
+
+`NotEnoughStakeToSetChildkeys` is a documented Subtensor standard error raised on the child-hotkey
+scheduling path. The standard-errors reference describes it as "The parent hotkey doesn't have
+enough own stake to set childkeys"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketosetchildkeys)).
+
+## What It Means
+
+[Child hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys) let one parent hotkey
+route validator work on a subnet through separate child hotkeys. `NotEnoughStakeToSetChildkeys`
+means the submitted child list was non-empty, but the parent hotkey did not meet the runtime's
+minimum own-stake threshold for assigning children there, so the call stops before the pending child
+list is recorded ([Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketosetchildkeys),
+[Subtensor source: set_children.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/set_children.rs)).
+
+In `do_schedule_children`, the runtime applies this gate only after the child list has already
+passed duplicate, self-loop, count, and proportion-consistency checks. The same guard also permits
+the subnet owner hotkey even when the ordinary own-stake threshold would not be met
+([Subtensor source: set_children.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/set_children.rs)).
+
+## Why It Appears
+
+This error is specifically about the parent hotkey's own stake on the child-setting path. A
+non-empty child assignment can therefore fail here even when the coldkey owns the hotkey, the subnet
+exists, and the proposed child list is otherwise structurally valid
+([Subtensor source: set_children.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/set_children.rs)).
+
+The threshold check is also skipped when the submitted child list is empty, which lets the same path
+clear existing children without requiring the stake floor. For a reader, that means the error names
+the stake gate for assigning children, not a blanket rule that every child-related update must
+always satisfy
+([Subtensor source: set_children.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/set_children.rs)).
+
+## Distinction from Too Many Children
+
+`NotEnoughStakeToSetChildkeys` and `TooManyChildren` can both reject one `set_children` attempt, but
+they guard different properties of the same request. `TooManyChildren` counts how many child hotkeys
+were listed. `NotEnoughStakeToSetChildkeys` instead checks whether the parent hotkey has enough own
+stake to submit a non-empty child list after the structural checks have passed
+([Subtensor Standard Errors: TooManyChildren](https://docs.learnbittensor.org/errors/subtensor#toomanychildren),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketosetchildkeys),
+[Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys)).
+
+- **TooManyChildren** — the submitted child list exceeds the five-child cap.
+- **NotEnoughStakeToSetChildkeys** — the parent hotkey is below the own-stake threshold for that
+  non-empty list.
+
+## Distinction from Not Enough Balance To Stake
+
+`NotEnoughStakeToSetChildkeys` is not a free-balance funding error. `NotEnoughBalanceToStake`
+rejects add-stake paths when a coldkey cannot fund a new stake amount, while
+`NotEnoughStakeToSetChildkeys` rejects child scheduling because the parent hotkey does not already
+have enough own stake to assign children on that subnet
+([Subtensor Standard Errors: NotEnoughBalanceToStake](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketosetchildkeys),
+[Subtensor source: set_children.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/set_children.rs)).
+
+- **NotEnoughBalanceToStake** — the coldkey cannot pay the TAO needed to add stake.
+- **NotEnoughStakeToSetChildkeys** — the parent hotkey does not already satisfy the own-stake gate
+  for assigning children.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the own-stake threshold gate for non-empty
+child assignments. It does not describe childkey-take percentages, the separate child-set cooldown,
+or the live child topology on a subnet; those are different reads and rules
+([Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys),
+[Chain Rate Limits: Child hotkey operations rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#child-hotkey-operations-rate-limit)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketosetchildkeys)
+- [Subtensor Standard Errors: TooManyChildren](https://docs.learnbittensor.org/errors/subtensor#toomanychildren)
+- [Subtensor Standard Errors: NotEnoughBalanceToStake](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake)
+- [Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys)
+- [Subtensor source: set_children.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/set_children.rs)
