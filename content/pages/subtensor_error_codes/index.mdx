@@ -61,25 +61,48 @@ Subtensor rule was involved
 
 ## Registration Block-Cap Errors
 
-`TooManyRegistrationsThisBlock` is a Subtensor-module error for a registration attempt that arrives
-after the selected subnet has already accepted its configured number of registrations in the current
-block. The error is tied to the live `RegistrationsThisBlock(netuid)` counter and the
-`MaxRegistrationsPerBlock(netuid)` cap, not to the registration burn price itself
-([TooManyRegistrationsThisBlock](https://subtensor.com/reference/subtensormodule/errors/TooManyRegistrationsThisBlock),
-[RegistrationsThisBlock Storage](https://subtensor.com/reference/subtensormodule/storage/RegistrationsThisBlock),
-[MaxRegistrationsPerBlock Storage](https://subtensor.com/reference/subtensormodule/storage/MaxRegistrationsPerBlock)).
+`TooManyRegistrationsThisBlock` is a Subtensor-module error name for registration attempts rejected
+by a per-block registration cap under older admission models. It is tied to legacy
+`RegistrationsThisBlock(netuid)` and `MaxRegistrationsPerBlock(netuid)` vocabulary rather than to
+the registration burn price itself
+([Subnet Hyperparameters: MaxRegistrationsPerBlock](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#maxregistrationsperblock),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
-For readers, that makes the error a timing and throughput signal. If netuid 1 has already reached
-its per-block registration cap, another registration attempt can fail even when the caller can pay
-the current burn. The next block starts a new counter, while dynamic burn parameters continue to
-govern entry price separately
+The current hyperparameter reference marks `MaxRegistrationsPerBlock` as not used for neuron
+registration on ordinary subnets. Live admission is continuous burn pricing through burn half life
+and burn increase mult instead, so readers should not treat this error as the primary explanation
+for registration failure on current ordinary subnets
+([Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register),
+[Miner registration](https://docs.learnbittensor.org/miners#miner-registration)).
+
+For readers, the error still names a timing and throughput signal in legacy material or runtime
+catalogs where the per-block cap applied. A full per-block counter could reject another attempt even
+when the caller could pay the current burn. On current ordinary subnets, registration economics from
+dynamic burn parameters are the usual live admission gate
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
-That separation keeps the diagnosis narrow. A high burn quote points to registration economics, a
-full `RegistrationsThisBlock` counter points to current-block capacity, and a missing subnet or
-unregistered hotkey points to a different standard-error family. The error name should therefore be
-read with the attempted extrinsic and the selected netuid rather than as a generic registration
-failure.
+That separation keeps diagnosis narrow. A high burn quote points to registration economics, legacy
+per-block cap errors point to obsolete throughput vocabulary rather than live admission on ordinary
+subnets today, and a missing subnet or unregistered hotkey points to a different standard-error
+family. The error name should therefore be read with the attempted extrinsic, selected netuid, and
+whether the subnet still uses the legacy per-block cap model
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor)).
+
+## Distinction from Max Registrations Per Block
+
+Subtensor error codes classify runtime rejection signals. Max registrations per block is legacy
+hyperparameter vocabulary for the per-block cap that `TooManyRegistrationsThisBlock` once reflected.
+The reference now marks that cap as unused for live neuron registration on ordinary subnets
+([Subnet Hyperparameters: MaxRegistrationsPerBlock](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#maxregistrationsperblock),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor)).
+
+Error-label vocabulary and hyperparameter vocabulary answer different diagnostic questions. An error
+code names the rejection family returned by the runtime; max registrations per block names the
+legacy setting that older admission models paired with that family
+([Subtensor Error Codes](https://docs.learnbittensor.org/errors)).
+
+- **Subtensor error codes** — runtime rejection labels, including legacy registration-cap errors.
+- **Max registrations per block** — legacy per-block registration cap vocabulary.
 
 ## Standard and Custom Families
 
@@ -317,9 +340,12 @@ interface-specific context only after the chain-layer signal is understood.
 ## Reader Boundary
 
 Subtensor error codes do not name a complete recovery guide, a full incident report, or a guarantee
-that the same label has the same practical meaning in every context
+that the same label has the same practical meaning in every context. They should not be read as
+proof that a live per-block registration cap blocked admission on current ordinary subnets when burn
+pricing is the documented live gate
 ([Subtensor Error Codes](https://docs.learnbittensor.org/errors),
-[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks),
+[Subnet Hyperparameters: MaxRegistrationsPerBlock](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#maxregistrationsperblock)).
 
 Subtensor error codes identify rejection vocabulary, while rate limits, storage, events, subnet
 settings, and mechanism references describe neighboring parts of the system.
@@ -327,6 +353,8 @@ settings, and mechanism references describe neighboring parts of the system.
 ## Further Reading
 
 - [Subtensor Error Codes](https://docs.learnbittensor.org/errors)
+- [Subnet Hyperparameters: MaxRegistrationsPerBlock](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#maxregistrationsperblock)
+- [Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register)
 - [Subtensor API Errors](https://docs.learnbittensor.org/subtensor-api/errors)
 - [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor)
 - [Subtensor Custom Errors](https://docs.learnbittensor.org/errors/custom)
