@@ -1,0 +1,93 @@
+---
+title: "Can Not Set Root Network Weights"
+summary:
+  "How the CanNotSetRootNetworkWeights error blocks the set_weights extrinsic outright on the Root
+  Subnet, before any of the usual weight-setting checks run."
+category: "Validation"
+tags: ["Validation", "Errors"]
+infoboxTitle: Can Not Set Root Network Weights
+infoboxCaption: Error raised when set_weights targets the Root Subnet.
+infoboxRows:
+  - label: Error
+    value: CanNotSetRootNetworkWeights
+  - label: Trigger
+    value: set_weights called with netuid pointing to the Root Subnet
+  - label: Checked in
+    value: do_set_weights, first validation step
+  - label: Scope
+    value: Root Subnet (Subnet Zero) only
+---
+
+# Can Not Set Root Network Weights
+
+`CanNotSetRootNetworkWeights` is a documented Subtensor standard error raised by the `set_weights`
+extrinsic. The standard-errors reference describes it as "Cannot set weights for the root network"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#cannotsetrootnetworkweights),
+[Root Subnet](https://docs.learnbittensor.org/resources/glossary#root-subnetsubnet-zero)).
+
+## What It Means
+
+`do_set_weights` checks whether the target `netuid` is the Root Subnet before running any of its
+other validation, and rejects the call immediately with `CanNotSetRootNetworkWeights` if it is. That
+check runs ahead of the length, registration, stake, and rate-limit checks that apply to weight
+submissions on ordinary subnets
+([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+The rule reflects what the Root Subnet, also called Subnet Zero, is: a subnet with no miners and no
+task work for validators to score. Weight submissions exist to evaluate miner output, and there is
+no such output to evaluate on Subnet Zero
+([Root Subnet](https://docs.learnbittensor.org/resources/glossary#root-subnetsubnet-zero)).
+
+## Why It Appears
+
+The check is unconditional. It does not depend on the caller's registration status, stake, or any
+other property of the call; supplying the Root Subnet's `netuid` to `set_weights` is enough to raise
+`CanNotSetRootNetworkWeights` regardless of what else is true about the request
+([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+This guard belongs specifically to the immediate `set_weights`/`set_mechanism_weights` path. The
+commit-reveal weight functions, `commit_weights` and `reveal_weights`, do not perform this same
+root-netuid check in their own validation logic; they instead validate against mechanism existence
+and commit-reveal-enabled state before checking registration
+([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+## What It Does Not Mean
+
+This error does not mean weight-setting is restricted on ordinary subnets. The guard fires only when
+the supplied `netuid` resolves to the Root Subnet specifically; weight submissions on any other
+subnet are governed by the usual registration, stake, and rate-limit checks instead
+([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+It also does not say anything about registering on the Root Subnet. Joining the Root Subnet's
+validator set is a separate action, gated by its own checks and its own error, `StakeTooLowForRoot`,
+rather than by this weight-setting guard
+([Stake Too Low For Root](https://docs.learnbittensor.org/errors/subtensor#staketoolowforroot)).
+
+## Distinction from Registration Not Permitted On Root Subnet
+
+`CanNotSetRootNetworkWeights` and `RegistrationNotPermittedOnRootSubnet` follow the same shape, an
+unconditional `netuid.is_root()` guard, but apply to different actions. The weight-setting guard
+blocks `set_weights` on the Root Subnet. The registration guard blocks the ordinary `register` and
+`register_limit` extrinsics from targeting the Root Subnet at all, since the only sanctioned path
+onto the Root Subnet is the dedicated `root_register` extrinsic
+([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs),
+[Subtensor source: registration.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)).
+
+- **CanNotSetRootNetworkWeights** — blocks `set_weights` from targeting the Root Subnet.
+- **RegistrationNotPermittedOnRootSubnet** — blocks ordinary registration extrinsics from targeting
+  the Root Subnet.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the unconditional guard that raises it. It does
+not describe Root Subnet registration, the commit-reveal weight flow in full, or ordinary-subnet
+weight-setting mechanics; those are documented separately
+([Root Subnet](https://docs.learnbittensor.org/resources/glossary#root-subnetsubnet-zero),
+[Glossary: Netuid](https://docs.learnbittensor.org/resources/glossary#netuid)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#cannotsetrootnetworkweights)
+- [Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)
+- [Subtensor source: registration.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)
+- [Root Subnet](https://docs.learnbittensor.org/resources/glossary#root-subnetsubnet-zero)
