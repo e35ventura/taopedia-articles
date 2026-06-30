@@ -1,0 +1,101 @@
+---
+title: "Incorrect Weight Version Key"
+summary:
+  "How the IncorrectWeightVersionKey error signals that a validator submitted weights with a version
+  lower than the subnet's required weights version key."
+category: "Consensus"
+tags: ["Consensus", "Errors"]
+infoboxTitle: Incorrect Weight Version Key
+infoboxCaption: Error raised when a weight submission declares too-low version metadata.
+infoboxRows:
+  - label: Error
+    value: IncorrectWeightVersionKey
+  - label: Trigger
+    value: "`set_weights` call carries a version below the required weights version key"
+  - label: Related parameter
+    value: WeightsVersionKey
+  - label: Scope
+    value: Weight-submission compatibility gate
+---
+
+# Incorrect Weight Version Key
+
+`IncorrectWeightVersionKey` is a documented Subtensor standard error. The standard-errors reference
+defines it simply as "Incorrect weight version key"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#incorrectweightversionkey)).
+
+## What It Means
+
+This error means a validator submitted a `set_weights` transaction carrying a version key lower than
+the subnet's required weights version key. The hyperparameters reference states that if the version
+key specified in the `set_weights` extrinsic is lower than the `WeightsVersionKey` setting, the
+transaction fails
+([Subnet Hyperparameters: WeightsVersion](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#weightsversion),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#incorrectweightversionkey)).
+
+So the rejection is about submission compatibility, not about whether the validator's score choices
+were good or whether the weight vector structure itself was otherwise acceptable
+([Subnet Hyperparameters: WeightsVersion](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#weightsversion)).
+
+## Why It Appears
+
+The weights version key exists so a subnet can require submitted weights to declare at least a
+minimum version. The hyperparameters reference describes that protection as a way to force
+validators to update rather than continue submitting stale-version weight updates
+([Subnet Hyperparameters: WeightsVersion](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#weightsversion)).
+
+That makes `IncorrectWeightVersionKey` a narrow gate on the metadata attached to a weight
+submission. The error does not say the validator submitted too frequently, and it does not say the
+call lacked permission; it says the declared version key was below the subnet's required floor
+([Subnet Hyperparameters: WeightsVersion](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#weightsversion)).
+
+## What It Does Not Mean
+
+This error should not be read as the generic "setting weights too fast" failure. Bittensor documents
+`SettingWeightsTooFast` separately for the rate-limit path on repeated weight submissions
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#settingweightstoofast),
+[Subnet Hyperparameters: WeightsRateLimit / CommitmentRateLimit](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#weightsratelimit--commitmentratelimit)).
+
+It also should not be read as the weights version key itself. `WeightsVersionKey` is the underlying
+subnet parameter; `IncorrectWeightVersionKey` is the runtime error returned when a submitted version
+fails that parameter's requirement
+([Subnet Hyperparameters: WeightsVersion](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#weightsversion),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#incorrectweightversionkey)).
+
+## Distinction from Weights Version Key
+
+`WeightsVersionKey` names the subnet parameter that sets the minimum accepted version on the
+`set_weights` path. `IncorrectWeightVersionKey` is the rejection label when a submitted version key
+falls below that required minimum
+([Subnet Hyperparameters: WeightsVersion](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#weightsversion),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#incorrectweightversionkey)).
+
+- **WeightsVersionKey** — required minimum version floor for accepted weight submissions.
+- **IncorrectWeightVersionKey** — error returned when a submitted version is below that floor.
+
+## Distinction from Setting Weights Too Fast
+
+`IncorrectWeightVersionKey` is a compatibility error on the declared version inside a weight
+submission. `SettingWeightsTooFast` is a pacing error on how soon another weight submission was
+attempted
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#incorrectweightversionkey),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#settingweightstoofast),
+[Subnet Hyperparameters: WeightsRateLimit / CommitmentRateLimit](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#weightsratelimit--commitmentratelimit)).
+
+- **IncorrectWeightVersionKey** — submitted version is too low.
+- **SettingWeightsTooFast** — submission was retried before the rate-limit wait cleared.
+
+## Reader Boundary
+
+This page defines the meaning of the error label. It does not tell a reader which live version key
+any subnet currently requires or which validator software version should be used there. Those are
+separate live or release-specific questions. The stable reference point here is narrower: if the
+declared `set_weights` version is below `WeightsVersionKey`, the transaction fails with
+`IncorrectWeightVersionKey`
+([Subnet Hyperparameters: WeightsVersion](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#weightsversion)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#incorrectweightversionkey)
+- [Subnet Hyperparameters: WeightsVersion](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#weightsversion)
+- [Subtensor Standard Errors: SettingWeightsTooFast](https://docs.learnbittensor.org/errors/subtensor#settingweightstoofast)
