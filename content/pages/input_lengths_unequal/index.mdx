@@ -1,0 +1,74 @@
+---
+title: "Input Lengths Unequal"
+summary:
+  "How the InputLengthsUnequal error blocks a batch weight call when its parallel input arrays have
+  mismatched lengths."
+category: "Validation"
+tags: ["Validation", "Errors"]
+infoboxTitle: Input Lengths Unequal
+infoboxCaption: Error raised when a batch weight call's parallel input arrays don't all match.
+infoboxRows:
+  - label: Error
+    value: InputLengthsUnequal
+  - label: Trigger
+    value: Parallel input arrays in a batch call have different lengths
+  - label: Checked in
+    value: CheckWeights dispatch extension
+  - label: Applies to
+    value: batch_commit_weights, batch_reveal_weights, batch_set_weights
+---
+
+# Input Lengths Unequal
+
+`InputLengthsUnequal` is a documented Subtensor standard error raised by the batch weight
+extrinsics. The standard-errors reference describes it as "Mismatched vector input lengths in batch
+reveal"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#inputlengthsunequal)).
+
+## What It Means
+
+Batch weight calls take multiple parallel arrays as input: a `batch_commit_weights` call pairs
+netuids with commit hashes; a `batch_reveal_weights` call pairs netuids with uid lists, value lists,
+salt lists, and version keys; a `batch_set_weights` call pairs netuids with weight lists and version
+keys. `InputLengthsUnequal` fires when any of those paired arrays have different lengths, making the
+batch uninterpretable as a consistent set of per-entry submissions
+([Subtensor source: check_weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/guards/check_weights.rs)).
+
+The check runs as a pre-dispatch precondition before the batch call reaches its own extrinsic body,
+and non-batch calls pass through it without a length check since their input shapes are fixed by the
+call itself
+([Subtensor source: check_weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/guards/check_weights.rs)).
+
+## Why It Appears
+
+A batch constructed by zipping separate lists of different sizes, or a batch modified after
+construction so one parallel array ends up shorter or longer than the others, fails this check. For
+`batch_reveal_weights` specifically, all four parallel arrays — uid lists, value lists, salt lists,
+and version keys — must share the same count, so a single array of mismatched length fails the batch
+([Subtensor source: check_weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/guards/check_weights.rs)).
+
+## Distinction from Weight Vec Not Equal Size
+
+`InputLengthsUnequal` and `WeightVecNotEqualSize` both check input-array lengths in the
+weight-setting flow, but they apply to different calls at different points. `WeightVecNotEqualSize`
+is checked inside `do_set_weights`, the single-submission weight-setting extrinsic, for the uid and
+value arrays in that one call. `InputLengthsUnequal` is a pre-dispatch check on the batch variants,
+comparing the outer per-entry arrays across the whole batch
+([Subtensor Standard Errors: WeightVecNotEqualSize](https://docs.learnbittensor.org/errors/subtensor#weightvecnotequalsize),
+[Subtensor source: check_weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/guards/check_weights.rs)).
+
+- **WeightVecNotEqualSize** — uid and value arrays differ in the single `set_weights` call.
+- **InputLengthsUnequal** — parallel arrays across a batch call have mismatched entry counts.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the length comparison that raises it. It does
+not describe how batch weight submissions are processed per entry or the full batch-reveal flow;
+those are documented separately
+([Subtensor source: check_weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/guards/check_weights.rs)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#inputlengthsunequal)
+- [Subtensor Standard Errors: WeightVecNotEqualSize](https://docs.learnbittensor.org/errors/subtensor#weightvecnotequalsize)
+- [Subtensor source: check_weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/guards/check_weights.rs)
