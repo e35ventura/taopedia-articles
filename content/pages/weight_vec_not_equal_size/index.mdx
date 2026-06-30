@@ -1,0 +1,74 @@
+---
+title: "Weight Vec Not Equal Size"
+summary:
+  "How the WeightVecNotEqualSize error signals that a set_weights call's uid list and value list did
+  not have matching lengths."
+category: "Validation"
+tags: ["Validation", "Errors"]
+infoboxTitle: Weight Vec Not Equal Size
+infoboxCaption: Error raised when set_weights uids and values have different lengths.
+infoboxRows:
+  - label: Error
+    value: WeightVecNotEqualSize
+  - label: Trigger
+    value: "uids.len() != values.len() in a set_weights call"
+  - label: Checked in
+    value: do_set_weights
+  - label: Check type
+    value: Pure array-length comparison
+---
+
+# Weight Vec Not Equal Size
+
+`WeightVecNotEqualSize` is a documented Subtensor standard error raised by the `set_weights`
+extrinsic. The standard-errors reference describes it as "Weight keys and values vectors have
+different sizes"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#weightvecnotequalsize)).
+
+## What It Means
+
+A `set_weights` call submits two parallel lists: a list of UIDs identifying the neurons being scored
+and a list of weight values for those neurons. `do_set_weights` checks that the two lists are the
+same length through `uids_match_values`, a direct length comparison between the two slices, and
+raises `WeightVecNotEqualSize` when they differ
+([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+The check carries no other condition. It does not inspect what the UIDs or values contain, whether
+the UIDs exist on the subnet, or whether the list is long enough; it only compares the count of
+entries in each list
+([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+## Why It Appears
+
+`do_set_weights` runs this length check immediately after confirming the target subnet is not the
+Root Subnet, ahead of registration, stake, and rate-limit validation. A caller that constructs the
+two lists from different sources, or drops an entry from one list but not the other, produces a
+length mismatch here before any of the network-state checks are reached
+([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+## Distinction from Weight Vec Length Is Low
+
+`WeightVecNotEqualSize` and `WeightVecLengthIsLow` both concern the shape of the submitted weight
+lists, but they check different things. `WeightVecNotEqualSize` compares the UID list's length
+against the value list's length and fires on any mismatch between the two. `WeightVecLengthIsLow` is
+a separate, later check against a per-subnet minimum element count, and applies even when the UID
+and value lists already match each other in length
+([Subtensor Standard Errors: WeightVecLengthIsLow](https://docs.learnbittensor.org/errors/subtensor#weightveclengthislow),
+[Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+- **WeightVecNotEqualSize** — the UID list and value list have different lengths.
+- **WeightVecLengthIsLow** — the lists agree in length but fall short of the subnet's minimum
+  element count.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the single comparison that raises it. It does
+not describe the minimum-length rule, validator-permit requirements, or any other check in the
+`set_weights` validation sequence; those are separate checks with their own error labels
+([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#weightvecnotequalsize)
+- [Subtensor Standard Errors: WeightVecLengthIsLow](https://docs.learnbittensor.org/errors/subtensor#weightveclengthislow)
+- [Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)
