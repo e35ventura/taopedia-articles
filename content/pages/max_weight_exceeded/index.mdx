@@ -1,0 +1,110 @@
+---
+title: "Max Weight Exceeded"
+summary:
+  "How the MaxWeightExceeded error signals that a set_weights call gave a single target too high a
+  share of the validator's normalized weight vector relative to the subnet's max_weight_limit."
+category: "Validation"
+tags: ["Validation", "Errors"]
+infoboxTitle: Max Weight Exceeded
+infoboxCaption:
+  Error raised when the largest share in the normalized weight vector exceeds the subnet's cap.
+infoboxRows:
+  - label: Error
+    value: MaxWeightExceeded
+  - label: Trigger
+    value: Maximum element of the normalized weight vector exceeds max_weight_limit / u16::MAX
+  - label: Checked in
+    value: max_weight_limited and check_vec_max_limited
+  - label: Check type
+    value: Normalized max-share comparison against a per-subnet ratio
+---
+
+# Max Weight Exceeded
+
+`MaxWeightExceeded` is a documented Subtensor standard error. The standard-errors reference
+describes it as "The dispatch is attempting to set weights on chain with weight value exceeding the
+configured max weight limit (currently `u16::MAX`)"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#maxweightexceeded)).
+
+## What It Means
+
+A validator submits a weight vector that names the relative score it wants to assign to each target
+UID on the subnet
+([Glossary: Weight Vector](https://docs.learnbittensor.org/resources/glossary#weight-vector),
+[Glossary: Weight Setting](https://docs.learnbittensor.org/resources/glossary#weight-setting)).
+
+`MaxWeightExceeded` means the validator gave too high a relative share of that vector to a single
+target compared with what the subnet's `max_weight_limit` allows. The chain rejects the submission
+rather than recording weights that concentrate more weight than the subnet permits
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#maxweightexceeded),
+[Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+## Why It Appears
+
+The check is the last per-element step before the upscaled weights are zipped for storage.
+`do_set_weights` first upscales the submitted `values` to a `Vec<u16>` of the same length using
+`vec_u16_max_upscale_to_u16` and then calls
+`Self::max_weight_limited(netuid, neuron_uid, &uids, &max_upscaled_weights)`. The runtime raises
+`MaxWeightExceeded` when that helper returns false
+([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+`max_weight_limited` short-circuits to true in two cases. It returns true when the submission is a
+self-weight (a single UID equal to the caller's own UID), so a self-stake on its own subnet is
+always allowed. It also returns true when the subnet's `max_weight_limit` equals `u16::MAX`, which
+the comment notes is the current constant for that hyperparameter; in that case the cap ratio is 1.0
+and any normalized vector passes
+([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+Otherwise `max_weight_limited` delegates to `check_vec_max_limited(weights, max_weight_limit)`,
+which is the operation that actually defines the error. `check_vec_max_limited` first converts the
+`max_weight_limit` from a raw `u16` cap to a fixed-point ratio by dividing it by `u16::MAX`, then
+converts the input vector to fixed-point, normalizes it in place so its elements sum to 1.0, and
+returns true only when the maximum element of the normalized vector is at or below that ratio. If
+the validator gave any single target a normalized share above `max_weight_limit / u16::MAX`, the
+function returns false and the runtime raises `MaxWeightExceeded`
+([Subtensor source: epoch/math.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/epoch/math.rs)).
+
+The same flow runs in `do_set_mechanism_weights`, where the same helper raises `MaxWeightExceeded`
+for a mechanism-targeted submission whose normalized vector breaches the subnet's per-subnet ratio
+([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+For a reader, the practical meaning is simple: the validator concentrated too much of its relative
+weight on a single target for the subnet's configured `max_weight_limit` to allow. The chain refuses
+the submission instead of recording a vector that would let one peer dominate the score
+([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs),
+[Subtensor source: epoch/math.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/epoch/math.rs)).
+
+## Distinction from Weight Vec Length Is Low
+
+`MaxWeightExceeded` and `WeightVecLengthIsLow` both reject a `set_weights` call from the same
+function, but they inspect different properties of the submission. `WeightVecLengthIsLow` rejects
+the call because the number of weights is below the subnet's minimum count. `MaxWeightExceeded`
+rejects the call because, after the runtime normalised the upscaled vector, the largest share in it
+exceeded the subnet's per-subnet ratio
+([Subtensor Standard Errors: WeightVecLengthIsLow](https://docs.learnbittensor.org/errors/subtensor#weightveclengthislow),
+[Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+- **WeightVecLengthIsLow** — the submission does not contain enough weights.
+- **MaxWeightExceeded** — the submission contains enough weights, but its largest normalized share
+  exceeds the subnet's per-subnet ratio.
+
+## Reader Boundary
+
+This page defines the meaning of the `MaxWeightExceeded` error label and the normalized max-share
+check that raises it inside `check_vec_max_limited`. It does not describe the duplicate-UID check,
+the target-existence check, the length check, the version-key check, or the rate-limit checks that
+surround `set_weights`; those are separate conditions with their own error labels and their own
+articles
+([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs),
+[Subtensor Standard Errors: WeightVecNotEqualSize](https://docs.learnbittensor.org/errors/subtensor#weightvecnotequalsize)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#maxweightexceeded)
+- [Subtensor Standard Errors: WeightVecLengthIsLow](https://docs.learnbittensor.org/errors/subtensor#weightveclengthislow)
+- [Subtensor Standard Errors: WeightVecNotEqualSize](https://docs.learnbittensor.org/errors/subtensor#weightvecnotequalsize)
+- [Subtensor source: errors.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/errors.rs)
+- [Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)
+- [Subtensor source: epoch/math.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/epoch/math.rs)
+- [Glossary: Weight Vector](https://docs.learnbittensor.org/resources/glossary#weight-vector)
+- [Glossary: Weight Setting](https://docs.learnbittensor.org/resources/glossary#weight-setting)
