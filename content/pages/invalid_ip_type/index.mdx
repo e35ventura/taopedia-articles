@@ -1,0 +1,80 @@
+---
+title: "Invalid IP Type"
+summary:
+  "How the InvalidIpType error signals that a serve_axon or serve_prometheus call used an IP version
+  other than IPv4 or IPv6."
+category: "Validation"
+tags: ["Validation", "Errors"]
+infoboxTitle: Invalid IP Type
+infoboxCaption: Error raised when a served endpoint uses an IP type other than IPv4 or IPv6.
+infoboxRows:
+  - label: Error
+    value: InvalidIpType
+  - label: Trigger
+    value: Submitted ip_type is not 4 or 6
+  - label: Checked in
+    value: validate_serve_axon and validate_serve_prometheus
+  - label: Check type
+    value: Allowed-values test on the IP version field
+---
+
+# Invalid IP Type
+
+`InvalidIpType` is a documented Subtensor standard error. The standard-errors reference describes it
+as "Invalid IP type (must be IPv4 or IPv6)"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#invalidiptype)).
+
+## What It Means
+
+A miner or validator can publish an axon endpoint with `serve_axon` and a metrics endpoint with
+`serve_prometheus`. Both calls include an `ip_type` field that tells the runtime whether the
+submitted address should be interpreted as IPv4 or IPv6
+([Subtensor source: serving.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/serving.rs)).
+
+`InvalidIpType` means that `ip_type` was neither `4` nor `6`, so the runtime refuses the endpoint
+before it tries to validate the address itself
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#invalidiptype),
+[Subtensor source: serving.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/serving.rs)).
+
+## Why It Appears
+
+In `serving.rs`, `is_valid_ip_type` defines the accepted values as `[4, 6]`. Both
+`validate_serve_axon` and `validate_serve_prometheus` call that helper and return
+`Error::<T>::InvalidIpType` when the submitted `ip_type` is outside that two-value set
+([Subtensor source: serving.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/serving.rs)).
+
+For a reader, the practical meaning is narrow: the endpoint submission named the wrong IP version.
+The chain is not yet saying the numeric address was malformed or that the port was unusable. It is
+saying the `ip_type` field itself did not identify a supported address family
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#invalidiptype),
+[Glossary: Axon](https://docs.learnbittensor.org/resources/glossary#axon)).
+
+## Distinction from Invalid IP Address
+
+`InvalidIpType` and `InvalidIpAddress` reject different defects in the same serving payload.
+`InvalidIpType` rejects the version marker before address validation can proceed. `InvalidIpAddress`
+rejects the numeric address after the runtime already knows whether it should be read as IPv4 or
+IPv6 ([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#invalidiptype),
+[Subtensor Standard Errors: InvalidIpAddress](https://docs.learnbittensor.org/errors/subtensor#invalidipaddress),
+[Subtensor source: serving.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/serving.rs)).
+
+- **InvalidIpType** — the `ip_type` field is not `4` or `6`.
+- **InvalidIpAddress** — the `ip_type` is recognized, but the numeric address is not valid for that
+  IP family.
+
+## Reader Boundary
+
+This page defines the meaning of the `InvalidIpType` label and the allowed-values check that raises
+it. It does not cover the separate address-validity check, the zero-port check, or the serving rate
+limit applied to repeated endpoint updates
+([Subtensor source: serving.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/serving.rs),
+[Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#invalidiptype)
+- [Subtensor Standard Errors: InvalidIpAddress](https://docs.learnbittensor.org/errors/subtensor#invalidipaddress)
+- [Subtensor source: serving.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/serving.rs)
+- [Subtensor source: errors.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/errors.rs)
+- [Glossary: Axon](https://docs.learnbittensor.org/resources/glossary#axon)
+- [Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)
