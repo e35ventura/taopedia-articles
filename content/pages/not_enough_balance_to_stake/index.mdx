@@ -1,0 +1,131 @@
+---
+title: "Not Enough Balance To Stake"
+summary:
+  "How the NotEnoughBalanceToStake error signals that an add-stake request asked to stake more than
+  the signing coldkey account holds in free balance."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Not Enough Balance To Stake
+infoboxCaption: Error raised when a coldkey tries to stake more than its balance holds.
+infoboxRows:
+  - label: Error
+    value: NotEnoughBalanceToStake
+  - label: Trigger
+    value: Add-stake amount exceeds the coldkey's free balance
+  - label: Check
+    value: Coldkey account can cover the requested stake
+  - label: Scope
+    value: Account-level coldkey balance
+---
+
+# Not Enough Balance To Stake
+
+`NotEnoughBalanceToStake` is a documented Subtensor standard error that means an add-stake request
+asked to stake more than the coldkey account holds. The standard-errors reference describes it as
+"Not enough balance in coldkey account," and the Subtensor source defines the variant as the caller
+requesting adding more stake than there exists in the coldkey account
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake),
+[Subtensor source: errors.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/errors.rs)).
+
+## What It Means
+
+This error is about funds, not about ownership or timing. When an add-stake call arrives, the
+runtime checks that the signing coldkey account can cover the amount being staked before it moves
+anything into a staking position. The Subtensor source expresses this as a balance guard, raising
+the error when the coldkey account cannot supply the requested stake amount
+([Subtensor source: errors.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/errors.rs),
+[Staking and Delegation](https://docs.learnbittensor.org/staking-and-delegation/delegation)).
+
+So when this error appears, the immediate meaning is narrow: the coldkey that signed the request did
+not have enough free balance in its account to fund the stake it asked to add. It does not, by
+itself, say anything about whether the coldkey owns the targeted hotkey or whether the hotkey exists
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake),
+[Glossary: Coldkey](https://docs.learnbittensor.org/resources/glossary#coldkey)).
+
+## Why It Appears
+
+Staking moves balance out of a coldkey account and into a staking position. Because the funds come
+from the coldkey, the runtime requires the coldkey account to hold at least the amount being staked,
+and it rejects the call when the account cannot cover it. The Subtensor source confirms this: the
+variant is documented as the caller requesting adding more stake than there exists in the coldkey
+account
+([Subtensor source: errors.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/errors.rs),
+[Staking and Delegation](https://docs.learnbittensor.org/staking-and-delegation/delegation)).
+
+In practice this typically surfaces when a stake amount is set higher than the coldkey's spendable
+balance, or when other costs have already drawn the account down so that the requested stake no
+longer fits. The chain treats the coldkey balance as the source of the staked funds and refuses the
+operation when that balance is short
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake),
+[Glossary: Stake](https://docs.learnbittensor.org/resources/glossary#stake)).
+
+## What It Does Not Mean
+
+This error should not be read as an ownership or existence failure. Bittensor documents separate
+errors for those conditions, such as `NonAssociatedColdKey` when a coldkey acts on a hotkey it does
+not own and `HotKeyAccountNotExists` when the targeted hotkey is not present on chain.
+`NotEnoughBalanceToStake` is a funds rejection: it concerns the amount the coldkey can supply, not
+who owns the hotkey or whether the hotkey exists
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#nonassociatedcoldkey),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#hotkeyaccountnotexists)).
+
+It also should not be read as a per-subnet condition. The check is on the coldkey account balance,
+which is account-level state for the key, and the Subtensor source raises this error from that
+balance guard rather than from any subnet-specific stored value, so the meaning does not depend on a
+particular netuid
+([Subtensor source: errors.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/errors.rs),
+[Glossary: Coldkey](https://docs.learnbittensor.org/resources/glossary#coldkey)).
+
+## Distinction from Not Enough Stake To Withdraw
+
+`NotEnoughBalanceToStake` and `NotEnoughStakeToWithdraw` sit on opposite sides of a staking
+operation. The standard-errors reference describes `NotEnoughBalanceToStake` as not enough balance
+in the coldkey account, while it describes `NotEnoughStakeToWithdraw` as not enough stake to
+withdraw, and the Subtensor source defines the latter as the caller requesting removing more stake
+than exists in the staking account
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake),
+[Subtensor source: errors.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/errors.rs)).
+
+- **NotEnoughBalanceToStake** — too little coldkey balance to add the requested stake.
+- **NotEnoughStakeToWithdraw** — too little existing stake to remove the requested amount.
+
+## Distinction from Non Associated Cold Key
+
+`NotEnoughBalanceToStake` is a funds check, while `NonAssociatedColdKey` is an ownership check. The
+standard-errors reference describes `NonAssociatedColdKey` as a request made by a coldkey that is
+not associated with the hotkey account, so it names a mismatch between the signer and the hotkey
+rather than a shortfall of funds
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#nonassociatedcoldkey),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake)).
+
+- **NotEnoughBalanceToStake** — right coldkey, but insufficient coldkey balance.
+- **NonAssociatedColdKey** — the signing coldkey does not own the targeted hotkey.
+
+## Distinction from Hot Key Account Not Exists
+
+`NotEnoughBalanceToStake` assumes a valid target and fails on funds, while `HotKeyAccountNotExists`
+fails because the target is missing. The standard-errors reference describes
+`HotKeyAccountNotExists` as the specified hotkey not existing, so it names an absent account rather
+than a balance shortfall
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#hotkeyaccountnotexists),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake)).
+
+- **NotEnoughBalanceToStake** — the hotkey is fine, but the coldkey balance is short.
+- **HotKeyAccountNotExists** — the hotkey is not present on chain at all.
+
+## Reader Boundary
+
+This page defines the meaning of the error label. It does not tell a reader how much balance a given
+coldkey holds on a live network, or how large a stake it can fund; that depends on the current
+on-chain balance of the coldkey account. The documented place to read the error itself is the
+standard-errors reference, and the funds it draws on are part of the chain's account state for the
+coldkey
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake),
+[Glossary: Coldkey](https://docs.learnbittensor.org/resources/glossary#coldkey)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake)
+- [Subtensor source: errors.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/errors.rs)
+- [Staking and Delegation](https://docs.learnbittensor.org/staking-and-delegation/delegation)
+- [Glossary: Stake](https://docs.learnbittensor.org/resources/glossary#stake)
