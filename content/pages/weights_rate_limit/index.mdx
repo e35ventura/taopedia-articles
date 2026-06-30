@@ -55,13 +55,14 @@ reads the validator's most recent stored weights for those epochs rather than ne
 On chain, a weight submission passes the pacing check when the blocks elapsed since the validator's
 last weight update are at least the rate limit. Reaching the limit exactly is enough, since the
 comparison is inclusive, and a submission that arrives sooner is rejected as setting weights too
-fast
-([`check_rate_limit`](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+fast ([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits),
+[Glossary: Weight Setting](https://docs.learnbittensor.org/resources/glossary#weight-setting)).
 
 A validator's first weight submission is exempt. While the stored last-update value is still its
 default of zero, the check passes regardless of the rate limit, so the interval only applies between
 an existing commit and the next one
-([`check_rate_limit`](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits),
+[Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)).
 
 ## Documented Type, Default, and Setter
 
@@ -79,14 +80,26 @@ another subnet's limit
 
 ## Distinction from Activity Cutoff
 
-Activity cutoff is measured in blocks within each epoch and governs whether a validator's weight
-submission arrives early enough to count for the current Yuma Consensus pass. Weights rate limit is
-measured in blocks between commits and governs how soon the same validator can submit again after a
-prior weight commit
+Weights rate limit sets how many blocks a validator must wait between weight commits on a subnet.
+Activity cutoff vocabulary names how long a validator may remain without an on-chain update before
+its stake is masked inactive for consensus—not an early-epoch submission deadline
+([Subnet Hyperparameters: Weights Rate Limit](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#weightsratelimit),
+[Subnet Hyperparameters: Activity Cutoff](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutoff),
+[Subnet Hyperparameters: Activity Cutoff Factor](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutofffactor),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+On dynamic-tempo subnets the fixed block hyperparameter is deprecated; the live inactivity span
+comes from activity cutoff factor and tempo instead
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
-- **Activity cutoff** — whether a submission arrives inside the current epoch window.
-- **Weights rate limit** — how long a validator must wait before the next commit.
+Pacing vocabulary and inactivity-mask vocabulary answer different submission questions on the same
+weight path. A validator can satisfy the block wait between commits yet still be masked inactive
+when last update exceeds the effective span, and a fresh last update does not shorten the minimum
+wait before the next commit ([Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph),
+[Implementation of the Yuma Consensus Epoch: Network State Collection](https://docs.learnbittensor.org/navigating-subtensor/epoch#1-network-state-collection)).
+
+- **Weights rate limit** — minimum block wait between weight commits from the same validator.
+- **Activity cutoff** — inactivity span before a stale validator is masked out of consensus.
 
 ## Distinction from Commit Reveal
 
@@ -196,9 +209,12 @@ upstream of the matrix Yuma processes on the relevant netuid
 ## Reader Boundary
 
 Weights rate limit should not be read as activity cutoff, commit reveal, or a weight-quality rule.
-It names only the subnet hyperparameter that sets how many blocks a validator must wait between
-weight commits on the selected netuid
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+Activity cutoff names validator inactivity tolerance measured from last update—not an early-epoch
+submission window—while this hyperparameter paces how often the same validator may commit weights on
+the selected netuid
+([Subnet Hyperparameters: Activity Cutoff](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutoff),
+[Subnet Hyperparameters: Weights Rate Limit](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#weightsratelimit),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
 ## Further Reading
 
