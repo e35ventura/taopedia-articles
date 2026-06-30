@@ -1,0 +1,101 @@
+---
+title: "Invalid Lease Beneficiary"
+summary:
+  "How the InvalidLeaseBeneficiary error blocks finalizing a crowdloan into a subnet lease when the
+  caller is not the crowdloan creator."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Invalid Lease Beneficiary
+infoboxCaption:
+  Error raised when a leased-network registration call is not signed by the crowdloan creator.
+infoboxRows:
+  - label: Error
+    value: InvalidLeaseBeneficiary
+  - label: Trigger
+    value: Caller is not the crowdloan being finalized
+  - label: Checked in
+    value: do_register_leased_network, first check
+  - label: Check type
+    value: Crowdloan-creator identity match
+---
+
+# Invalid Lease Beneficiary
+
+`InvalidLeaseBeneficiary` is a documented Subtensor standard error raised by
+`do_register_leased_network`, the extrinsic that finalizes a
+[crowdloan](https://docs.learnbittensor.org/subnets/crowdloans) into a registered
+[subnet lease](https://docs.learnbittensor.org/subnets/crowdloans). The standard-errors reference
+describes it as "Invalid lease beneficiary to register the leased network"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#invalidleasebeneficiary)).
+
+## What It Means
+
+Subnet lease registration ties a finalized crowdloan to a beneficiary who will operate the leased
+subnet. `do_register_leased_network` loads the crowdloan currently being finalized and requires the
+signed caller to be that crowdloan's creator. `InvalidLeaseBeneficiary` is the rejection when the
+caller's account does not match the creator recorded for that crowdloan
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#invalidleasebeneficiary),
+[Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+This is the first validation step in the registration path. Later checks, such as whether an
+optional lease end block is still in the future, only run after the caller has already passed this
+creator match
+([Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+## Why It Appears
+
+The error appears when a wallet other than the crowdloan creator submits the leased-network
+registration call. That includes a contributor, a proxy, or any account that did not create the
+crowdloan being finalized, even if that account otherwise participates in the crowdloan
+([Subnet Lease](https://docs.learnbittensor.org/subnets/crowdloans),
+[Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+Because the check runs before subnet registration, lease storage, or beneficiary proxy setup begin,
+none of those steps proceed when it fails
+([Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+For a reader, the practical meaning is narrow: only the crowdloan creator may finalize that
+crowdloan into a leased subnet. The problem is not a stale end block, a missing lease record, or a
+post-registration lookup failure
+([Lease Cannot End In The Past](https://docs.learnbittensor.org/errors/subtensor#leasecannotendinthepast),
+[Lease Does Not Exist](https://docs.learnbittensor.org/errors/subtensor#leasedoesnotexist)).
+
+## Distinction from Lease Cannot End In The Past
+
+`InvalidLeaseBeneficiary` and `LeaseCannotEndInThePast` are both early checks in
+`do_register_leased_network`, but they validate different inputs. `InvalidLeaseBeneficiary` confirms
+the caller is the crowdloan creator. `LeaseCannotEndInThePast` is the separate check on an optional
+end block, reached only after the creator match succeeds
+([Lease Cannot End In The Past](https://docs.learnbittensor.org/errors/subtensor#leasecannotendinthepast),
+[Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+- **InvalidLeaseBeneficiary** — the caller is not the crowdloan creator.
+- **LeaseCannotEndInThePast** — the supplied end block has already passed.
+
+## Distinction from Expected Beneficiary Origin
+
+`InvalidLeaseBeneficiary` and `ExpectedBeneficiaryOrigin` both involve beneficiary identity, but on
+different extrinsics. `InvalidLeaseBeneficiary` blocks leased-network registration when the caller
+is not the crowdloan creator. `ExpectedBeneficiaryOrigin` blocks lease termination when the caller
+is not the stored lease beneficiary
+([Subtensor Standard Errors: ExpectedBeneficiaryOrigin](https://docs.learnbittensor.org/errors/subtensor#expectedbeneficiaryorigin),
+[Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+- **InvalidLeaseBeneficiary** — wrong account is trying to register the leased network.
+- **ExpectedBeneficiaryOrigin** — wrong account is trying to terminate an existing lease.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the crowdloan-creator check that raises it. It
+does not describe crowdloan contribution rules, dividend distribution, or lease termination after
+creation; those are documented separately
+([Subnet Lease](https://docs.learnbittensor.org/subnets/crowdloans),
+[Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#invalidleasebeneficiary)
+- [Subtensor Standard Errors: LeaseCannotEndInThePast](https://docs.learnbittensor.org/errors/subtensor#leasecannotendinthepast)
+- [Subtensor Standard Errors: ExpectedBeneficiaryOrigin](https://docs.learnbittensor.org/errors/subtensor#expectedbeneficiaryorigin)
+- [Subnet Lease](https://docs.learnbittensor.org/subnets/crowdloans)
+- [Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)
