@@ -13,44 +13,48 @@ infoboxRows:
   - label: Trigger
     value: add_stake TAO amount exceeds coldkey free balance
   - label: Checked in
-    value: validate_add_stake
+    value: add_stake extrinsic
   - label: Check type
-    value: Coldkey balance withdrawal test
+    value: Coldkey free-balance withdrawal test
 ---
 
 # Not Enough Balance To Stake
 
-`NotEnoughBalanceToStake` is a documented Subtensor standard error raised on add-stake paths. The
-standard-errors reference describes it as "Not enough balance in coldkey account"
+`NotEnoughBalanceToStake` means the signing coldkey does not have enough free TAO to fund the amount
+named in an add-stake call. The standard-errors reference describes it as "Not enough balance in
+coldkey account"
 ([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake)).
+
+Add-stake calls are signed by the coldkey and name a hotkey, subnet, and TAO amount to stake. This
+error compares that requested TAO against the coldkey's spendable free balance, not against staked
+alpha already held on the subnet.
 
 ## What It Means
 
-An add-stake extrinsic is signed by the coldkey and names a hotkey, subnet, and TAO amount to stake.
-After minimum-amount and slippage checks pass, `validate_add_stake` asks whether the coldkey can
-withdraw the requested TAO from its free balance. `NotEnoughBalanceToStake` means that withdrawal
-test failed, so the extrinsic stops before the subnet swap and stake counters update
-([Subtensor source: stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs),
-[Subtensor source: add_stake.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/add_stake.rs)).
+After minimum-amount and slippage checks pass, the chain asks whether the coldkey can withdraw the
+requested TAO from its free balance. `NotEnoughBalanceToStake` means that withdrawal test failed, so
+the extrinsic stops before the subnet swap and stake counters update
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake)).
 
-The check uses `can_remove_balance_from_coldkey_account` on the TAO amount the caller requested, not
-on the alpha that would be credited after the swap
-([Subtensor source: stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)).
+The check uses the TAO amount the caller requested, not the alpha that would be credited after the
+swap.
 
 ## Why It Appears
 
 This error fires when the coldkey's spendable TAO balance is below the amount named in the
 extrinsic, such as when fees or prior transfers reduced free balance after the client built the
 call, when the amount includes swap fees the wallet did not reserve, or when the call simply names
-more TAO than the account holds
-([Subtensor source: stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)).
+more TAO than the account holds.
 
-For a reader, the practical meaning is narrow: the coldkey cannot fund the requested stake from free
-balance. The problem is not that the hotkey lacks existing staked alpha to remove, that the hotkey
-account does not exist, or that the subnet is disabled
+When debugging, compare add-stake and remove-stake failures before assuming a hotkey or subnet
+problem. `NotEnoughStakeToWithdraw` means the pair lacks enough staked alpha to remove on the
+remove- stake path. `HotKeyAccountNotExists` and `SubtokenDisabled` are separate rejections on other
+checks
 ([Subtensor Standard Errors: NotEnoughStakeToWithdraw](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketowithdraw),
 [Subtensor Standard Errors: HotKeyAccountNotExists](https://docs.learnbittensor.org/errors/subtensor#hotkeyaccountnotexists),
 [Subtensor Standard Errors: SubtokenDisabled](https://docs.learnbittensor.org/errors/subtensor#subtokendisabled)).
+
+The practical meaning is narrow: the coldkey cannot fund the requested stake from free balance.
 
 ## Distinction from Not Enough Stake To Withdraw
 
@@ -58,8 +62,7 @@ account does not exist, or that the subnet is disabled
 apply to opposite directions and different balances. `NotEnoughBalanceToStake` is checked on
 add-stake calls against the coldkey's free TAO balance. `NotEnoughStakeToWithdraw` is checked on
 remove-stake and move-stake paths against staked alpha for the hotkey-coldkey pair on the subnet
-([Subtensor Standard Errors: Not Enough Stake To Withdraw](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketowithdraw),
-[Subtensor source: stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)).
+([Subtensor Standard Errors: Not Enough Stake To Withdraw](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketowithdraw)).
 
 - **NotEnoughBalanceToStake** — not enough free TAO to add stake.
 - **NotEnoughStakeToWithdraw** — not enough staked alpha to remove.
@@ -68,12 +71,10 @@ remove-stake and move-stake paths against staked alpha for the hotkey-coldkey pa
 
 This page defines the meaning of the error label and the coldkey balance check that raises it. It
 does not describe minimum stake thresholds, swap liquidity failures, or hotkey registration
-requirements; those are separate checks in the same validation path
-([Subtensor source: stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)).
+requirements; those are separate checks in the same validation path.
 
 ## Further Reading
 
 - [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake)
 - [Subtensor Standard Errors: NotEnoughStakeToWithdraw](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketowithdraw)
-- [Subtensor source: stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)
-- [Subtensor source: add_stake.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/add_stake.rs)
+- [Staking and Delegation Overview](https://docs.learnbittensor.org/staking-and-delegation/delegation)
