@@ -1,0 +1,139 @@
+---
+title: "Tx Rate Limit Exceeded"
+summary:
+  "How the TxRateLimitExceeded error signals that a transaction hit the chain's default cooldown or
+  another rate-limited path that reuses the same generic rejection label."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Tx Rate Limit Exceeded
+infoboxCaption: Generic error raised when a transaction breaches an enforced cooldown.
+infoboxRows:
+  - label: Error
+    value: TxRateLimitExceeded
+  - label: Primary limit
+    value: TxRateLimit
+  - label: Scope
+    value: Generic runtime rate-limit rejection
+  - label: Trigger
+    value: Transaction attempted before required cooldown expiry
+---
+
+# Tx Rate Limit Exceeded
+
+`TxRateLimitExceeded` is a documented Subtensor standard error that means a transaction hit the
+chain's default transaction cooldown or another rate-limited path that reuses the same generic
+rejection label. The standard-errors reference defines it as "Default transaction rate limit
+exceeded," and the rate-limits reference links that same error to the general `TxRateLimit` rule as
+well as several other cooldown-enforced operations
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#txratelimitexceeded),
+[Chain Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+
+## What It Means
+
+The narrow meaning of this error is timing: the chain rejected an action because the required
+cooldown had not elapsed. In the general transaction-rate-limit section, the rate-limits reference
+describes `TxRateLimit` as the default transaction rate limit, currently documented as 1 block, and
+names `TxRateLimitExceeded` as the error returned when that rule is breached
+([Chain Rate Limits: General transaction rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#general-transaction-rate-limit),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#txratelimitexceeded)).
+
+But the same error label is also reused on several other cooldown-controlled paths. The rate-limits
+reference shows `TxRateLimitExceeded` as the error message not only for the general transaction
+cooldown, but also for UID trimming, owner hyperparameter updates, weights version key updates, the
+administrative freeze window, subnet mechanism updates, and the child-key take rate limit
+([Chain Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+
+So when this error appears, it does not by itself identify the exact operation that was retried too
+soon. It identifies the class of failure: a documented runtime cooldown was hit on the active code
+path ([Chain Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+
+## Why It Appears
+
+The chain-rate-limits reference documents several distinct rules that can surface this same generic
+error. For example, the page ties `TxRateLimitExceeded` to the one-block general transaction
+cooldown, the 216,000-block owner hyperparameter cooldown, the five-block weights-version-key
+cooldown, and the child-key take cooldown
+([Chain Rate Limits: General transaction rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#general-transaction-rate-limit),
+[Chain Rate Limits: Owner hyperparameter rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#owner-hyperparameter-rate-limit),
+[Chain Rate Limits: Weights version key rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#weights-version-key-rate-limit),
+[Chain Rate Limits: Child key take rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#child-key-take-rate-limit)).
+
+That matters because the same error can arise from very different retry windows. A user who sees
+`TxRateLimitExceeded` after a hotkey swap is likely dealing with the short general transaction
+cooldown, while a subnet owner or validator may see the same error name on a completely different
+rate-limited operation with a much longer documented interval
+([Chain Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+
+## What It Does Not Mean
+
+This error should not be read as proof that every rate-limited path on the chain uses the generic
+fallback. Bittensor also documents narrower custom errors for some operations, including
+`NetworkTxRateLimitExceeded`, `DelegateTxRateLimitExceeded`, `HotKeySetTxRateLimitExceeded`, and
+`StakingOperationRateLimitExceeded`
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#networktxratelimitexceeded),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#delegatetxratelimitexceeded),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#hotkeysettxratelimitexceeded),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#stakingoperationratelimitexceeded)).
+
+It also should not be read as meaning the live wait time is always one block. One block is the
+documented value for the general transaction cooldown, but the same error string is reused by other
+documented limits whose windows are much longer
+([Chain Rate Limits: General transaction rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#general-transaction-rate-limit),
+[Chain Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+
+## Reading the Relevant Limit
+
+To understand a specific `TxRateLimitExceeded` event, the reader has to identify which operation was
+attempted. The rate-limits reference maps operations to their underlying cooldown variables or
+rules, such as `TxRateLimit`, `OwnerHyperparamRateLimit`, `WeightsVersionKeyRateLimit`, and the
+administrative freeze window
+([Chain Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+
+That mapping is the key diagnostic step: the error names a rate-limit failure, while the operation
+being attempted tells the reader which documented cooldown actually matters.
+
+## Distinction from Tx Rate Limit
+
+`TxRateLimitExceeded` is the error label. `TxRateLimit` is one specific underlying chain rule: the
+default general transaction cooldown
+([Chain Rate Limits: General transaction rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#general-transaction-rate-limit),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#txratelimitexceeded)).
+
+- **TxRateLimitExceeded** — runtime rejection returned when a cooldown is breached.
+- **TxRateLimit** — the documented default general transaction cooldown.
+
+## Distinction from Network Tx Rate Limit Exceeded
+
+`TxRateLimitExceeded` is the generic fallback error used on multiple cooldown-controlled paths.
+`NetworkTxRateLimitExceeded` is narrower: it is the dedicated error for add-network transactions
+that breach the subnet-registration cooldown
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#txratelimitexceeded),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#networktxratelimitexceeded),
+[Chain Rate Limits: Network registration rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#network-registration-rate-limit)).
+
+- **TxRateLimitExceeded** — generic cooldown rejection.
+- **NetworkTxRateLimitExceeded** — subnet-registration cooldown rejection.
+
+## Distinction from Delegate Tx Rate Limit Exceeded
+
+`DelegateTxRateLimitExceeded` is the dedicated error for repeated delegate-take increases.
+`TxRateLimitExceeded` is broader and can surface on several unrelated cooldown-controlled paths
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#txratelimitexceeded),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#delegatetxratelimitexceeded),
+[Chain Rate Limits: Delegate take rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#delegate-take-rate-limit)).
+
+- **TxRateLimitExceeded** — generic cooldown rejection.
+- **DelegateTxRateLimitExceeded** — delegate-take increase cooldown rejection.
+
+## Reader Boundary
+
+This page defines the meaning of the error label. It does not tell a reader exactly when the next
+attempt will succeed without first identifying the underlying operation and its documented cooldown.
+The rate-limits reference is the authoritative map from operation to enforced wait rule
+([Chain Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#txratelimitexceeded)
+- [Chain Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)
+- [Chain Rate Limits: General transaction rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#general-transaction-rate-limit)
