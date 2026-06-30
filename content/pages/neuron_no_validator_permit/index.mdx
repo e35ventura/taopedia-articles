@@ -1,0 +1,103 @@
+---
+title: "Neuron No Validator Permit"
+summary:
+  "How the NeuronNoValidatorPermit error blocks a weight submission when the calling neuron tries to
+  score other UIDs without holding a validator permit on that subnet."
+category: "Validation"
+tags: ["Validation", "Errors"]
+infoboxTitle: Neuron No Validator Permit
+infoboxCaption: Error raised when non-self weights are submitted without a validator permit.
+infoboxRows:
+  - label: Error
+    value: NeuronNoValidatorPermit
+  - label: Trigger
+    value: Non-self weight vector from a neuron without permit
+  - label: Related concept
+    value: Validator permit
+  - label: Scope
+    value: Weight-setting permission
+---
+
+# Neuron No Validator Permit
+
+`NeuronNoValidatorPermit` is a documented Subtensor standard error raised during weight submission.
+The standard-errors reference describes it as "Attempting to set non-self weights without being a
+permitted validator"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#neuronnovalidatorpermit)).
+
+## What It Means
+
+This error means the calling neuron tried to submit weights for other UIDs on a subnet without the
+validator permit that subnet requires for that kind of submission. The chain rejects the extrinsic
+before it evaluates vector shape, version metadata, or rate limits
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#neuronnovalidatorpermit),
+[Validator Permit](https://docs.learnbittensor.org/resources/glossary#validator-permit)).
+
+A validator permit is the subnet-scoped right to submit non-self weights. Miners and other neurons
+without that permit may still be able to set a self-only weight vector, but they cannot publish a
+score sheet for other UIDs on that subnet
+([Validator Permit](https://docs.learnbittensor.org/resources/glossary#validator-permit),
+[Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+The permit check also has two documented exceptions in the weight path. A submission that assigns
+weight only to the caller's own UID is treated as self-weight and bypasses the permit requirement.
+The subnet owner's UID is also allowed to submit non-self weights even when the permit flag is not
+set for that UID
+([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+## Why It Appears
+
+The most direct cause is a miner, recently registered validator, or deregistered validator trying to
+run the normal validator weight path on a subnet where its UID no longer holds a permit. Permit
+assignment is stake-driven and subnet-specific, so a neuron that lost stake share, fell below the
+subnet's validator cap, or never earned permit status will hit this error when it submits a full
+weight vector
+([Validator Permit](https://docs.learnbittensor.org/resources/glossary#validator-permit),
+[Glossary: VPermit](https://docs.learnbittensor.org/resources/glossary#vpermit)).
+
+Because the check runs only for non-self submissions, a caller that intends to update only its own
+weight should submit a self-only vector. A caller that intends to score the rest of the metagraph
+must hold permit on that subnet first
+([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+## Distinction from Setting Weights Too Fast
+
+`NeuronNoValidatorPermit` and `SettingWeightsTooFast` both appear in weight-submission failures, but
+they reject different problems. `NeuronNoValidatorPermit` means the caller lacks permission to
+publish non-self weights on that subnet. `SettingWeightsTooFast` means the caller retried weight
+submission before the subnet's required wait interval had elapsed
+([Setting Weights Too Fast](https://docs.learnbittensor.org/errors/subtensor#settingweightstoofast),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#neuronnovalidatorpermit)).
+
+- **NeuronNoValidatorPermit** — the neuron is not permitted to score other UIDs.
+- **SettingWeightsTooFast** — the neuron retried submission too soon.
+
+## Distinction from Not Enough Stake To Set Weights
+
+`NeuronNoValidatorPermit` and `NotEnoughStakeToSetWeights` are both permission-family rejections,
+but they measure different gates. `NotEnoughStakeToSetWeights` means the hotkey's stake on that
+subnet is below the minimum required to participate in weight setting at all.
+`NeuronNoValidatorPermit` means the neuron reached the permit check with a non-self vector but its
+UID does not currently hold the validator permit flag
+([Subtensor Standard Errors: NotEnoughStakeToSetWeights](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketosetweights),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#neuronnovalidatorpermit)).
+
+- **NotEnoughStakeToSetWeights** — stake is below the subnet minimum for weight setting.
+- **NeuronNoValidatorPermit** — stake may be sufficient, but the UID lacks validator permit for
+  non-self weights.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the validator-permit gate that raises it. It
+does not explain how permits are allocated across a metagraph, how self-weight vectors are
+constructed, or how subnet owner exceptions are configured beyond the weight path described here
+([Validator Permit](https://docs.learnbittensor.org/resources/glossary#validator-permit),
+[Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#neuronnovalidatorpermit)
+- [Subtensor Standard Errors: SettingWeightsTooFast](https://docs.learnbittensor.org/errors/subtensor#settingweightstoofast)
+- [Subtensor Standard Errors: NotEnoughStakeToSetWeights](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketosetweights)
+- [Validator Permit](https://docs.learnbittensor.org/resources/glossary#validator-permit)
+- [Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)
