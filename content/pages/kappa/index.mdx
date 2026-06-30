@@ -57,18 +57,24 @@ clipping parameter inside settlement, not as interchangeable submission gates
 - **Min allowed weights** — floor on how many targets a valid submission must include.
 - **Kappa** — stake-weighted majority ratio used when deriving the consensus clipping ceiling.
 
-## Weighted-Median Computation
+## How Kappa Derives the Benchmark
 
-On chain, kappa is the majority argument to a column-wise weighted median. For each miner column,
-the consensus weight is the stake-weighted median of validator weights taken at the kappa quantile,
-using only active validator stake. A kappa near 0.5 makes this the ordinary stake-weighted median,
-while a higher kappa requires a larger stake majority before a higher weight level is taken as the
-consensus value
-([`weighted_median_col`](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/epoch/math.rs),
-[`get_float_kappa`](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/epoch/run_epoch.rs)).
+Documentation describes kappa as the stake fraction Yuma uses when deriving each miner's clipping
+benchmark from validator-submitted weights. For each miner column, that process finds the maximum
+weight level still backed by at least the configured fraction of stake-weighted validator support
+([Yuma Consensus: Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping),
+[Subnet Hyperparameters: Kappa](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#kappa)).
 
-The stored `u16` is scaled to that quantile by dividing by the type maximum, so the raw
-hyperparameter and the fraction used in the median are the same value expressed at different scales
+The resulting per-miner value is what
+[consensus score](https://docs.learnbittensor.org/resources/glossary#consensus-score) vocabulary
+names as the benchmark individual weights are capped to during clipping. Kappa supplies the stake
+fraction input; consensus score names the benchmark output for each miner column
+([Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score),
+[Yuma Consensus: Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping)).
+
+The stored `u16` is scaled to that fraction by dividing by the type maximum, so the raw
+hyperparameter and the stake fraction used in the derivation are the same value expressed at
+different scales
 ([Subnet Hyperparameters: Kappa](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#kappa)).
 
 ## Default and Representation
@@ -137,14 +143,15 @@ higher weights in place. Clipping then trims individual ratings that still excee
 
 ## Distinction from Consensus Score
 
-Kappa is the subnet hyperparameter that sets the consensus majority ratio. Consensus score is the
-stake-weighted median benchmark that clipping compares individual weight values against
+Kappa is the subnet hyperparameter that sets the stake fraction used when deriving each miner's
+clipping benchmark. Consensus score names that resulting per-miner benchmark—the agreement level
+individual weights are capped to during clipping—not a separate median computed afterward
 ([Subnet Hyperparameters: Kappa](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#kappa),
 [Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+[Yuma Consensus: Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping)).
 
-- **Kappa** — stake fraction that sets the consensus clipping ceiling input.
-- **Consensus score** — stake-weighted median benchmark clipping compares weights against.
+- **Kappa** — stake fraction input to the per-miner clipping benchmark.
+- **Consensus score** — resulting per-miner benchmark used during clipping.
 
 ## Distinction from Bonds Penalty
 
