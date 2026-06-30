@@ -1,0 +1,103 @@
+---
+title: "Setting Weights Too Fast"
+summary:
+  "How the SettingWeightsTooFast error signals that a validator retried weight submission before the
+  subnet's required weights-rate-limit interval had elapsed."
+category: "Consensus"
+tags: ["Consensus", "Errors"]
+infoboxTitle: Setting Weights Too Fast
+infoboxCaption: Error raised when a validator retries weight submission too soon.
+infoboxRows:
+  - label: Error
+    value: SettingWeightsTooFast
+  - label: Trigger
+    value: Repeated weight submission before the required wait clears
+  - label: Related limit
+    value: WeightsRateLimit / CommitmentRateLimit
+  - label: Scope
+    value: Weight-submission pacing
+---
+
+# Setting Weights Too Fast
+
+`SettingWeightsTooFast` is a documented Subtensor standard error. The standard-errors reference
+defines it as "Exceeded rate limit for setting weights"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#settingweightstoofast)).
+
+## What It Means
+
+This error means a validator attempted to submit weights again before the subnet's required
+weight-submission wait had elapsed. The weights-rate-limit reference defines `WeightsRateLimit` /
+`CommitmentRateLimit` as how long, in blocks, a validator must wait between weight commits on a
+subnet
+([Subnet Hyperparameters: WeightsRateLimit / CommitmentRateLimit](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#weightsratelimit--commitmentratelimit),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#settingweightstoofast)).
+
+So the rejection is about pacing repeated submissions, not about whether the validator had
+permission to set weights or whether the submitted weight vector was structurally valid
+([Subnet Hyperparameters: WeightsRateLimit / CommitmentRateLimit](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#weightsratelimit--commitmentratelimit),
+[Glossary: Weight Setting](https://docs.learnbittensor.org/resources/glossary#weight-setting)).
+
+## Why It Appears
+
+The weights rate limit exists to bound how frequently a validator can change its on-chain weight
+signal. The hyperparameters reference describes it as the minimum block wait between one weight
+commit and the next on the same subnet
+([Subnet Hyperparameters: WeightsRateLimit / CommitmentRateLimit](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#weightsratelimit--commitmentratelimit)).
+
+That makes `SettingWeightsTooFast` the narrow runtime error for retrying the `set_weights` path
+before that wait requirement clears. It does not say the validator chose bad scores, and it does not
+say the submission carried the wrong version metadata
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#settingweightstoofast),
+[Subnet Hyperparameters: WeightsRateLimit / CommitmentRateLimit](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#weightsratelimit--commitmentratelimit)).
+
+## What It Does Not Mean
+
+This error should not be read as the version-compatibility failure on weight submission. Bittensor
+documents `IncorrectWeightVersionKey` separately for the case where a `set_weights` call declares a
+version below the subnet's required weights version key
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#settingweightstoofast),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#incorrectweightversionkey)).
+
+It also should not be read as the weights rate limit parameter itself. `WeightsRateLimit` names the
+underlying subnet rule, while `SettingWeightsTooFast` is the rejection label returned when that rule
+is breached
+([Subnet Hyperparameters: WeightsRateLimit / CommitmentRateLimit](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#weightsratelimit--commitmentratelimit),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#settingweightstoofast)).
+
+## Distinction from Weights Rate Limit
+
+`WeightsRateLimit` / `CommitmentRateLimit` is the subnet hyperparameter that sets the required block
+gap between weight commits. `SettingWeightsTooFast` is the runtime error returned when a validator
+tries again before that gap has passed
+([Subnet Hyperparameters: WeightsRateLimit / CommitmentRateLimit](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#weightsratelimit--commitmentratelimit),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#settingweightstoofast)).
+
+- **WeightsRateLimit / CommitmentRateLimit** — required wait between weight commits.
+- **SettingWeightsTooFast** — error returned when that wait is violated.
+
+## Distinction from Incorrect Weight Version Key
+
+`SettingWeightsTooFast` is a pacing error on how soon another weight submission was attempted.
+`IncorrectWeightVersionKey` is a compatibility error on the version metadata declared inside a
+weight submission
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#settingweightstoofast),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#incorrectweightversionkey)).
+
+- **SettingWeightsTooFast** — submission retried too soon.
+- **IncorrectWeightVersionKey** — submitted version is below the required version floor.
+
+## Reader Boundary
+
+This page defines the meaning of the error label. It does not identify the live wait configured on
+any particular subnet or tell a reader exactly when the next submission will succeed there. The
+stable point here is narrower: if the required weight-commit gap has not elapsed, the chain rejects
+the repeated submission with `SettingWeightsTooFast`
+([Subnet Hyperparameters: WeightsRateLimit / CommitmentRateLimit](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#weightsratelimit--commitmentratelimit)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#settingweightstoofast)
+- [Subnet Hyperparameters: WeightsRateLimit / CommitmentRateLimit](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#weightsratelimit--commitmentratelimit)
+- [Glossary: Weight Setting](https://docs.learnbittensor.org/resources/glossary#weight-setting)
+- [Subtensor Standard Errors: IncorrectWeightVersionKey](https://docs.learnbittensor.org/errors/subtensor#incorrectweightversionkey)
