@@ -26,23 +26,48 @@ for exactly this: participants pursuing their own reward are steered toward the 
 actually wants, so the network does not have to depend on goodwill
 ([Anatomy of an Incentive Mechanism](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
 
-## Why Miners Pursue Quality
+## How Yuma Links Miner Quality to Reward
 
-A miner earns more when validators score its work highly. The documentation describes miners as
-incentivized to optimize their work so validators score it well, which results in higher emissions.
-Chasing reward and producing better work therefore become the same pursuit, and that is how the
-mechanism turns a miner's self-interest into output the subnet values rather than into shortcuts
+Yuma turns validator evaluation into miner-facing credits through aggregated
+[rank](https://docs.learnbittensor.org/resources/glossary#rank). Documentation gives:
+
+`R_j = Σ_i S_i · W̄_ij`
+
+then normalizes each miner's share:
+
+`M_j = R_j / Σ_k R_k`
+
+where `S_i` is validator `i`'s stake, `W̄_ij` is that validator's clipped weight toward miner `j`,
+and `M_j` is the miner-side incentive outcome for the epoch
+([Yuma Consensus: Miner emissions](https://docs.learnbittensor.org/learn/yuma-consensus#miner-emissions),
+[Glossary: Incentives](https://docs.learnbittensor.org/resources/glossary#incentives)).
+
+Higher-quality work tends to earn higher validator weights. When those weights survive consensus
+filtering, the miner receives a larger `M_j`. That is how improving work and chasing emissions
+become the same pursuit on the miner branch rather than a separate goodwill choice
 ([Anatomy of an Incentive Mechanism](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
 
-## Why Validators Score Honestly
+## How Yuma Makes Outlier Scoring Costly
 
-Validators face a parallel pressure. The documentation describes the algorithm penalizing a
-validator whose scores depart from consensus with lower emissions, so accurate, consensus-aligned
-evaluation is the rewarded choice while careless or self-serving scoring costs the validator. Honest
-evaluation is thus the profitable strategy in its own right, not a favor a validator does the
-network
-([Anatomy of an Incentive Mechanism](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+Validators whose weights depart from consensus are capped to the per-miner benchmark:
+
+`W̄_ij = min(W_ij, W̄_j)`
+
+Documentation states that weights above the benchmark are clipped, and neither the miner nor the
+submitting validator receives emissions for the excess portion
+([Yuma Consensus: Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping)).
+
+Validator-side outcomes then read the filtered weights.
+[Validator trust](https://docs.learnbittensor.org/resources/glossary#validator-trust) sums clipped
+contributions as `T_vi = Σ_j W̄_ij`, while validator
+[dividends](https://docs.learnbittensor.org/resources/glossary#emission) pair smoothed bonds with
+miner incentives as `V_i = Σ_j B_ij × M_j`
+([Yuma Consensus: Validator emissions](https://docs.learnbittensor.org/learn/yuma-consensus#validator-emissions)).
+
+Outlier inflation therefore contributes less validator-side credit than consensus-aligned
+evaluation. Honest scoring is the profitable strategy because departure is trimmed before dividends
+are credited, not because validators are asked to cooperate on faith
+([Anatomy of an Incentive Mechanism](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
 
 ## Alignment Is Designed, Not Automatic
 
@@ -117,8 +142,6 @@ Yuma Consensus step that trims validator weights above the stake-weighted consen
 ([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus),
 [Anatomy of an Incentive Mechanism](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
 
-Clipping makes excessive over-rating less profitable than consensus-aligned evaluation.
-
 - **Incentive compatibility** — the goal that honest, high-quality work pays best.
 - **Clipping** — trimming weights that exceed the consensus benchmark.
 
@@ -129,8 +152,6 @@ Rank is the consensus standing that orders miners and drives their reward
 ([Glossary: Rank](https://docs.learnbittensor.org/resources/glossary#rank),
 [Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism),
 [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
-
-Rank delivers the alignment that incentive compatibility names rather than being that goal itself.
 
 - **Incentive compatibility** — the goal that honest, high-quality work pays best.
 - **Rank** — the consensus standing whose quality-based reward delivers that goal.
@@ -143,9 +164,6 @@ while collusion is validators coordinating to inflate weights toward chosen mine
 beyond what honest evaluation would allow
 ([Anatomy of an Incentive Mechanism](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism),
 [Glossary: Incentive Mechanism](https://docs.learnbittensor.org/resources/glossary#incentive-mechanism)).
-
-Collusion is coordinated deviation that clipping and consensus alignment must make unprofitable
-([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
 - **Incentive compatibility** — the goal that honest, high-quality contribution pays best.
 - **Collusion** — validators coordinating to inflate weights beyond honest evaluation.
@@ -161,9 +179,6 @@ emission shares each tempo
 - **Incentive compatibility** — the property a mechanism aims for: honesty pays best.
 - **Yuma Consensus** — the aggregation step that turns validator weights into incentives and
   dividends.
-
-Yuma Consensus implements part of the reward path that incentive compatibility depends on
-([Emission](https://docs.learnbittensor.org/learn/emissions)).
 
 ## Distinction from Commit Reveal
 
