@@ -1,0 +1,76 @@
+---
+title: "Too Many Children"
+summary:
+  "How the TooManyChildren error blocks a parent hotkey from having more than five child hotkeys on
+  a subnet at once."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Too Many Children
+infoboxCaption: Error raised when a parent hotkey's child list exceeds five entries.
+infoboxRows:
+  - label: Error
+    value: TooManyChildren
+  - label: Trigger
+    value: A parent's child list for a netuid exceeds 5 entries
+  - label: Limit
+    value: 5 children per parent per subnet
+  - label: Check type
+    value: Pure count comparison
+---
+
+# Too Many Children
+
+`TooManyChildren` is a documented Subtensor standard error raised when a parent hotkey's child list
+for a subnet would exceed the allowed limit. The standard-errors reference describes it as "Too many
+children"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#toomanychildren)).
+
+## What It Means
+
+A [child hotkey](https://docs.learnbittensor.org/validators/child-hotkeys) lets a parent delegate
+re-route a share of its stake to a separate validating key on a given subnet, and a parent may have
+at most five children on any one netuid. `TooManyChildren` is the rejection when a requested child
+list for a parent on a subnet would push that count past five
+([Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys),
+[Subtensor source: set_children.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/set_children.rs)).
+
+The check counts the full requested child list as a whole rather than counting one addition at a
+time, so a single call that names six or more children at once fails the same way a call that pushes
+an existing five-child list over the limit would
+([Subtensor source: set_children.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/set_children.rs)).
+
+## Why It Appears
+
+Scheduling new child relations for a parent hotkey on a subnet is the main place this limit applies.
+The same consistency check also runs when a hotkey swap re-validates a parent's existing child
+relations under its new identity, so the five-child cap is enforced consistently rather than only at
+the moment children are first scheduled
+([Subtensor source: set_children.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/set_children.rs)).
+
+## Distinction from Proportion Overflow
+
+`TooManyChildren` and `ProportionOverflow` are both raised from the same child-relation consistency
+check, but they guard different properties of the requested child list. `TooManyChildren` counts how
+many children are listed. `ProportionOverflow` instead sums the stake proportions assigned across
+those children and fails if that sum cannot fit in the chain's proportion accounting, independent of
+how many children were listed
+([Subtensor Standard Errors: ProportionOverflow](https://docs.learnbittensor.org/errors/subtensor#proportionoverflow),
+[Subtensor source: set_children.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/set_children.rs)).
+
+- **TooManyChildren** — the child list has more than five entries.
+- **ProportionOverflow** — the listed children's combined stake proportion doesn't fit.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the count limit that raises it. It does not
+describe how child hotkeys are scheduled, how child take is calculated, or the other checks in the
+same consistency step; those are documented separately
+([Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys),
+[Subtensor source: set_children.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/set_children.rs)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#toomanychildren)
+- [Subtensor Standard Errors: ProportionOverflow](https://docs.learnbittensor.org/errors/subtensor#proportionoverflow)
+- [Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys)
+- [Subtensor source: set_children.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/set_children.rs)
