@@ -54,6 +54,36 @@ Examples tied to netuid 1 illustrate one subnet's conviction path. They should n
 representing production staking behavior on another network
 ([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
 
+## How the Conviction Score Is Computed
+
+The conviction-staking reference gives conviction as an exponential maturation of the locked mass
+rather than a flat function of its size. In perpetual mode it documents
+`c1 = m - (m - c0) * e^(-dt / tau)`, where `m` is the locked mass, `c0` the prior conviction, `dt`
+the elapsed blocks, and `tau` the maturity time constant. Because the gap `(m - c0)` shrinks
+exponentially, conviction rises quickly at first and then approaches `m` without reaching it, which
+is the level-off behavior the perpetual curve shows
+([The conviction score](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking#the-conviction-score)).
+
+That maturity time constant is documented as `MaturityRate`, currently 311,622 blocks — about 43
+days, with a 30-day half-life. One time constant reaches roughly 63.2% of the locked mass (about 43
+days) and about 2.3 time constants reaches roughly 90% (about 99 days), so the signal takes months
+of continuous locking to mature
+([The conviction score](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking#the-conviction-score)).
+
+Decaying mode runs two exponentials against each other. The locked mass itself decays under a slower
+`UnlockRate` of 934,866 blocks — about 130 days, with a 90-day half-life — while conviction keeps
+maturing at the faster 43-day rate. Conviction therefore climbs only until the maturation gain no
+longer outpaces the eroding mass, which is why the documentation puts the decaying-mode peak at
+about 57.9% of the original locked mass around day 71 before it declines
+([The conviction score](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking#the-conviction-score)).
+
+The gap between the 43-day maturity rate and the 130-day unlock rate is what makes the signal hard
+to reverse quietly. Switching out of perpetual mode is recorded on chain immediately through the
+`PerpetualLockUpdated` event, after which the locked mass still takes on the order of three unlock
+time constants — roughly 390 days — to wind down toward zero, so other stakers can observe the
+withdrawal long before the commitment fully unwinds
+([Decaying and perpetual modes](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking#decaying-and-perpetual-modes)).
+
 ## Distinction from Staking
 
 Staking attaches alpha support inside a subnet. Locked stake applies a commitment constraint to
