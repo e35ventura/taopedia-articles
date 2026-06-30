@@ -101,17 +101,27 @@ The [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-netw
 separates mainnet, testnet, and localnet. A hyperparameter example from one environment should not
 be read as representing production subnet configuration on another network.
 
-## Activity Cutoff Sets the Early Weight Window
+## Activity Cutoff and Activity Cutoff Factor
 
 Subnet [hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters) include
-activity cutoff measured in blocks within each
-[epoch](https://docs.learnbittensor.org/resources/glossary#epoch). On a subnet such as netuid 1, a
-validator must submit
-[validator weights](https://docs.learnbittensor.org/resources/glossary#weight-vector) within the
-first activity-cutoff blocks of an epoch or wait until the next epoch to participate.
+activity cutoff vocabulary for validator inactivity tolerance and the live
+[activity cutoff factor](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutofffactor)
+setting under dynamic tempos. When too many blocks have passed since a validator's
+[last update](https://docs.learnbittensor.org/subnets/metagraph) relative to the effective
+inactivity span, that validator is treated as inactive for the epoch pass and its stake is masked
+out before stake-weighted consensus runs
+([Implementation of the Yuma Consensus Epoch: Network State Collection](https://docs.learnbittensor.org/navigating-subtensor/epoch#1-network-state-collection),
+[Subnet Hyperparameters: Activity Cutoff](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutoff)).
 
-That setting shapes validator signal timing. It is one example of how hyperparameters constrain
-consensus input without defining what miners produce
+The legacy fixed-block activity cutoff hyperparameter is deprecated on dynamic-tempo subnets. Live
+inactivity tolerance is derived from activity cutoff factor and tempo instead, so readers comparing
+staleness to the allowed span need those subnet settings rather than a single fixed block count
+alone ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+That setting shapes validator participation in consensus, not an early-epoch submission deadline. It
+is one example of how hyperparameters constrain which stake still counts without defining what
+miners produce
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
 ## Min and Max Burn Bound Neuron Registration Cost
@@ -170,8 +180,9 @@ before validator weights submitted under Commit Reveal become readable
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
 [Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)).
 
-This is a tempo-counted delay, not a block-counted one like activity cutoff. A longer commit-reveal
-period means more full epochs pass before a given submission's weights can be read.
+This is a tempo-counted delay. Activity cutoff factor, by contrast, derives an effective inactivity
+span in blocks from tempo under dynamic tempos rather than counting concealed tempos before reveal
+([Subnet Hyperparameters: Activity Cutoff Factor](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutofffactor)).
 
 ## Weights Rate Limit Spaces Out Weight Commits
 
@@ -179,8 +190,11 @@ The hyperparameter reference lists `WeightsRateLimit` as the number of blocks a 
 between weight commits
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
-That setting bounds how often a single validator can resubmit weights, separate from activity
-cutoff, which bounds when a submission must arrive to count for the current epoch.
+That setting bounds how often a single validator can resubmit weights, separate from activity cutoff
+vocabulary, which names validator inactivity tolerance measured from last update rather than
+submission pacing
+([Subnet Hyperparameters: Activity Cutoff](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutoff),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
 ## Serving Rate Limit Paces Miner Endpoint Registration
 
@@ -189,8 +203,10 @@ register or update its network endpoint information on the subnet
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
 This setting paces endpoint-registration activity specifically. It is separate from
-weight-submission pacing, which the weights rate limit and activity cutoff hyperparameters govern
-instead.
+weight-submission pacing, which weights rate limit governs, and from activity cutoff vocabulary,
+which names validator inactivity tolerance before stake is masked for consensus
+([Subnet Hyperparameters: Weights Rate Limit](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#weightsratelimit),
+[Subnet Hyperparameters: Activity Cutoff](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutoff)).
 
 ## Max Allowed UIDs Caps Total Registered Neurons
 
@@ -267,6 +283,25 @@ This hyperparameter selects which consensus version processes a subnet's weights
 timing hyperparameters such as tempo or activity cutoff. It does not change what miners are asked to
 produce.
 
+## Distinction from Activity Cutoff
+
+Subnet hyperparameters name the owner-settable protocol envelope for a subnet. Activity cutoff
+vocabulary names validator inactivity tolerance measured from last update before stake is masked
+inactive for consensus—not an early-epoch submission deadline
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Subnet Hyperparameters: Activity Cutoff](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutoff),
+[Subnet Hyperparameters: Activity Cutoff Factor](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutofffactor),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+Configuration-envelope vocabulary and inactivity-mask vocabulary answer different reader questions.
+Tempo, weights rate limit, and commit reveal period pace or conceal submissions; activity cutoff
+governs whether a validator's stake still counts once last update exceeds the effective inactivity
+span ([Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph),
+[Implementation of the Yuma Consensus Epoch: Network State Collection](https://docs.learnbittensor.org/navigating-subtensor/epoch#1-network-state-collection)).
+
+- **Subnet hyperparameters** — owner-settable protocol envelope for a subnet.
+- **Activity cutoff** — inactivity span before a stale validator is masked out of consensus.
+
 ## Distinction from Subtensor Constants
 
 A subnet hyperparameter and a Subtensor constant name a live per-subnet value and a runtime default.
@@ -320,9 +355,11 @@ epoch-boundary mechanism that allocates rewards from consensus while validators 
 
 A hyperparameter claim should name the behavior being described and stay separate from the subnet
 task, incentive mechanism, or live value source. Tempo claims concern epoch cadence; Commit Reveal
-claims concern weight-submission timing; neither replaces the work target
+claims concern weight-submission timing; activity cutoff claims concern validator inactivity
+tolerance from last update—not how early weights must arrive. None of those replace the work target
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
-[Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)).
+[Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism),
+[Subnet Hyperparameters: Activity Cutoff](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutoff)).
 
 Subnet hyperparameters are best used as context around timing, weights, consensus, emissions, and
 limits. They are not an operator manual, deployment status label, or substitute for the subnet's
@@ -331,6 +368,9 @@ incentive design.
 ## Further Reading
 
 - [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+- [Subnet Hyperparameters: Activity Cutoff Factor](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutofffactor)
+- [Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)
+- [Implementation of the Yuma Consensus Epoch: Network State Collection](https://docs.learnbittensor.org/navigating-subtensor/epoch#1-network-state-collection)
 - [Understanding Incentive Mechanisms](https://docs.learnbittensor.org/learn/anatomy-of-incentive-mechanism)
 - [Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)
 - [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)
