@@ -1,0 +1,130 @@
+---
+title: "Delegate Tx Rate Limit Exceeded"
+summary:
+  "How the DelegateTxRateLimitExceeded error signals that a validator tried to raise delegate take
+  again before the delegate-take cooldown had expired."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Delegate Tx Rate Limit Exceeded
+infoboxCaption: Error raised when delegate-take changes are attempted too soon.
+infoboxRows:
+  - label: Error
+    value: DelegateTxRateLimitExceeded
+  - label: Related limit
+    value: TxDelegateTakeRateLimit
+  - label: Scope
+    value: Delegate-take increase pacing
+  - label: Trigger
+    value: Repeated delegate-take increase before cooldown expiry
+---
+
+# Delegate Tx Rate Limit Exceeded
+
+`DelegateTxRateLimitExceeded` is a documented Subtensor standard error that signals a delegate-take
+change was attempted before the delegate-take cooldown had expired. The standard-errors reference
+defines it as "Rate limit exceeded for delegate transaction," and the rate-limits reference ties it
+to the delegate take rate limit
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#delegatetxratelimitexceeded),
+[Chain Rate Limits: Delegate take rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#delegate-take-rate-limit)).
+
+## What It Means
+
+This error is about pacing changes to delegate take, not about whether delegation exists or whether
+delegators can earn rewards. The rate-limits reference says the related limit prevents frequent
+changes to delegate take percentages, with a documented cooldown of 216,000 blocks, approximately 30
+days
+([Chain Rate Limits: Delegate take rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#delegate-take-rate-limit)).
+
+So when this error appears, the narrow meaning is that a delegate-take increase was retried too
+soon. It is a timing rejection for commission changes, not a statement that delegation itself is
+disabled or that the validator cannot receive delegated stake
+([Staking and Delegation Overview](https://docs.learnbittensor.org/staking-and-delegation/delegation),
+[Delegation Mechanism](https://subtensor.com/reference/mechanisms/delegation)).
+
+## Why It Appears
+
+The rate-limits reference documents `TxDelegateTakeRateLimit` as the chain-state variable behind
+this cooldown. That is the pacing rule associated with delegate take changes, and the same section
+names `DelegateTxRateLimitExceeded` as the error returned when the rule is breached
+([Chain Rate Limits: Delegate take rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#delegate-take-rate-limit)).
+
+The official delegation reference makes the action-level behavior more concrete: `increase_take`
+raises delegate commission, while `decrease_take` lowers it. The same reference states that take
+decrease is effective immediately, while take increase requires a cooldown. That makes the error a
+specific rejection on the increase path rather than a generic failure of all take updates
+([Delegation Mechanism](https://subtensor.com/reference/mechanisms/delegation)).
+
+## What It Does Not Mean
+
+This error should not be read as a failure of delegation rewards. Delegation rewards describe how
+delegators share validator-side returns after the validator's take, while
+`DelegateTxRateLimitExceeded` is only the cooldown error for adjusting that take too frequently
+([Staking and Delegation Overview](https://docs.learnbittensor.org/staking-and-delegation/delegation),
+[Chain Rate Limits: Delegate take rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#delegate-take-rate-limit)).
+
+It also should not be read as the general transaction-rate-limit error. Bittensor documents a
+separate `TxRateLimitExceeded` error for the chain's general transaction cooldown, while
+`DelegateTxRateLimitExceeded` belongs specifically to delegate-take changes
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#txratelimitexceeded),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#delegatetxratelimitexceeded),
+[Chain Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+
+## Reading the Related Limit
+
+The rate-limits reference identifies the underlying rule as `TxDelegateTakeRateLimit` and documents
+its current value as 216,000 blocks, about 30 days
+([Chain Rate Limits: Delegate take rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#delegate-take-rate-limit)).
+
+That limit answers the pacing question directly: how long the chain requires between permitted
+delegate-take increases. The error names the rejection condition; the limit names the rule being
+enforced.
+
+## Distinction from Validator Take
+
+Validator take is the commission setting itself: the percentage a validator keeps from delegated
+returns before the remaining share is distributed to delegators. `DelegateTxRateLimitExceeded` is
+instead the error returned when the validator tries to raise that commission again before the
+cooldown clears
+([Staking and Delegation Overview](https://docs.learnbittensor.org/staking-and-delegation/delegation),
+[Delegation Mechanism](https://subtensor.com/reference/mechanisms/delegation)).
+
+- **Validator take** — the commission setting on delegated returns.
+- **DelegateTxRateLimitExceeded** — the cooldown error for changing that setting too soon.
+
+## Distinction from Delegation Rewards
+
+Delegation rewards are the delegator's share of validator-side returns after take.
+`DelegateTxRateLimitExceeded` is a governance-and-timing error on commission changes, not a payout
+formula or reward category
+([Staking and Delegation Overview](https://docs.learnbittensor.org/staking-and-delegation/delegation),
+[Delegation Mechanism](https://subtensor.com/reference/mechanisms/delegation)).
+
+- **Delegation rewards** — delegator returns after validator take.
+- **DelegateTxRateLimitExceeded** — rate-limit error for repeated take increases.
+
+## Distinction from Tx Rate Limit Exceeded
+
+`DelegateTxRateLimitExceeded` and `TxRateLimitExceeded` are different documented error paths.
+`TxRateLimitExceeded` belongs to the general transaction rate limit, while
+`DelegateTxRateLimitExceeded` belongs to the delegate-take cooldown specifically
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#txratelimitexceeded),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#delegatetxratelimitexceeded),
+[Chain Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+
+- **DelegateTxRateLimitExceeded** — delegate-take increase cooldown breach.
+- **TxRateLimitExceeded** — general transaction-rate-limit breach.
+
+## Reader Boundary
+
+This page defines the meaning of the error label. It does not tell a reader exactly when a specific
+validator will next be able to raise take on a live network; that depends on the current chain state
+and when the last successful increase occurred. The documented reference point is the delegate-take
+rate-limit rule itself
+([Chain Rate Limits: Delegate take rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#delegate-take-rate-limit)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#delegatetxratelimitexceeded)
+- [Chain Rate Limits: Delegate take rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#delegate-take-rate-limit)
+- [Staking and Delegation Overview](https://docs.learnbittensor.org/staking-and-delegation/delegation)
+- [Delegation Mechanism](https://subtensor.com/reference/mechanisms/delegation)
