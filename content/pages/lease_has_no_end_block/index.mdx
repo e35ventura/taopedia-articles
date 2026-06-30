@@ -1,0 +1,74 @@
+---
+title: "Lease Has No End Block"
+summary:
+  "How the LeaseHasNoEndBlock error blocks terminating an open-ended subnet lease that was created
+  without an end block at all."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Lease Has No End Block
+infoboxCaption: Error raised when terminating a lease that was registered without an end block.
+infoboxRows:
+  - label: Error
+    value: LeaseHasNoEndBlock
+  - label: Trigger
+    value: The lease's end_block field is unset (open-ended lease)
+  - label: Checked in
+    value: do_terminate_lease
+  - label: Check type
+    value: Optional-field presence check
+---
+
+# Lease Has No End Block
+
+`LeaseHasNoEndBlock` is a documented Subtensor standard error raised by `do_terminate_lease`, the
+extrinsic a [subnet lease](https://docs.learnbittensor.org/subnets/crowdloans)'s beneficiary calls
+to claim ownership once the lease has run its course. The standard-errors reference describes it as
+"Lease has no end block"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#leasehasnoendblock)).
+
+## What It Means
+
+A subnet lease can be registered with or without an end block: registering one without an end block
+creates an open-ended lease. `do_terminate_lease` reads the lease's stored end block and raises
+`LeaseHasNoEndBlock` when that field is unset, since there is no end point for this termination path
+to compare against
+([Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+This check runs only on a lease that already passed the earlier existence and beneficiary checks. It
+reflects a property of how the specific lease was set up at registration, not a transient condition
+that changes over time
+([Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+## Why It Appears
+
+The comment on `do_terminate_lease` states the beneficiary can terminate the lease after the end
+block has passed and take subnet ownership. An open-ended lease has no such block to wait out, so
+attempting this termination path on one fails here regardless of how much time has elapsed since
+registration
+([Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+## Distinction from Lease Has Not Ended
+
+`LeaseHasNoEndBlock` and `LeaseHasNotEnded` are checked back to back in `do_terminate_lease`, but
+they cover different conditions. `LeaseHasNoEndBlock` means the lease has no end block at all.
+`LeaseHasNotEnded` applies to a lease that does have an end block, but the current block has not yet
+reached it
+([Subtensor Standard Errors: LeaseHasNotEnded](https://docs.learnbittensor.org/errors/subtensor#leasehasnotended),
+[Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+- **LeaseHasNoEndBlock** — the lease was registered without an end block.
+- **LeaseHasNotEnded** — the lease has an end block, but it hasn't been reached yet.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the field check that raises it. It does not
+describe how to register a lease with or without an end block, or the rest of the termination flow;
+those are documented separately
+([Subnet Lease](https://docs.learnbittensor.org/subnets/crowdloans)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#leasehasnoendblock)
+- [Subtensor Standard Errors: LeaseHasNotEnded](https://docs.learnbittensor.org/errors/subtensor#leasehasnotended)
+- [Subnet Lease](https://docs.learnbittensor.org/subnets/crowdloans)
+- [Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)
