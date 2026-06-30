@@ -70,8 +70,8 @@ across subnets, but the miner work and validator scoring rules give the entries 
 ## Filtering and Output Terms
 
 The weight matrix and consensus score describe different parts of the same Yuma process. The matrix
-collects validator weight vectors, while consensus score is the stake-weighted benchmark used to
-filter outlier weights before final rank calculations
+collects validator weight vectors, while consensus score is the per-miner clipping benchmark Yuma
+derives from those grouped inputs when filtering outlier weights before final rank calculations
 ([Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score),
 [Glossary: Weight Matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix)).
 
@@ -83,9 +83,9 @@ trust describes how much miner-side support remains after clipping
 ([Glossary: Rank](https://docs.learnbittensor.org/resources/glossary#rank),
 [Glossary: Trust](https://docs.learnbittensor.org/resources/glossary#trust)).
 
-Validator trust is also later than the matrix. It measures validator-side influence after consensus
-filtering, while the matrix names the collection of validator weight vectors before those effects
-are read
+Validator trust is also later than the matrix. It sums each validator's clipped contributions across
+miners after consensus filtering, while the matrix names the collection of validator weight vectors
+before those effects are read
 ([Glossary: Validator Trust](https://docs.learnbittensor.org/resources/glossary#validator-trust),
 [Glossary: Weight Matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix),
 [Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
@@ -167,10 +167,10 @@ consensus. Those checks limit which submitted vectors can enter the matrix Yuma 
 
 ## Kappa Clips Matrix Values Before Rank
 
-Before rank and trust are computed, Yuma Consensus compares matrix values against a stake-weighted
-[consensus score](https://docs.learnbittensor.org/resources/glossary#consensus-score) benchmark. The
-hyperparameter kappa sets how much validator stake must support a weight level before that level
-becomes the clipping ceiling for a miner
+Before rank and trust are computed, Yuma Consensus compares matrix values against the per-miner
+[consensus score](https://docs.learnbittensor.org/resources/glossary#consensus-score) clipping
+benchmark. The hyperparameter kappa sets how much validator stake must support a weight level before
+that level becomes the clipping ceiling for a miner column
 ([Yuma Consensus: Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping),
 [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
@@ -295,14 +295,14 @@ independent consensus calculations, so matrix vocabulary should always name the 
 ## Distinction from Consensus Score
 
 A weight matrix stacks validator vectors into subnet-wide consensus input. Consensus score is the
-stake-weighted agreement benchmark Yuma Consensus derives from that grouped input when clipping
-outlier weights on the selected subnet
+per-miner agreement benchmark Yuma derives from that grouped input when clipping outlier weights on
+the selected subnet
 ([Glossary: Weight Matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix),
 [Glossary: Consensus Score](https://docs.learnbittensor.org/resources/glossary#consensus-score),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+[Yuma Consensus: Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping)).
 
 - **Weight matrix** — assembled validator input entering consensus.
-- **Consensus score** — stake-weighted clipping benchmark derived from that input.
+- **Consensus score** — per-miner clipping benchmark derived from that input.
 
 ## Distinction from Rank
 
@@ -319,25 +319,25 @@ the miner-side standing read after that grouped input is processed on the select
 
 A weight matrix stacks validator weight vectors into the grouped input Yuma Consensus processes.
 Trust and validator trust are both post-matrix outcomes, but they answer different sides of the same
-clipping pass. Trust names how much miner-side support survived clipping on the selected subnet,
-while validator trust names how closely each validator's submitted weights aligned with the
-resulting consensus benchmark
+clipping pass. Trust names the miner-side ratio showing how much pre-rank support survived clipping
+on the selected subnet, while validator trust sums each validator's clipped contributions across
+miners—not how closely submitted weights aligned with the benchmark
 ([Glossary: Weight Matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix),
 [Glossary: Trust](https://docs.learnbittensor.org/resources/glossary#trust),
 [Glossary: Validator Trust](https://docs.learnbittensor.org/resources/glossary#validator-trust),
-[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+[Yuma Consensus: Clipping](https://docs.learnbittensor.org/learn/yuma-consensus#clipping)).
 
 Readers searching matrix documentation often conflate those two trust terms because both are read
 after Yuma processes the matrix. Matrix vocabulary still names only the pre-filter input collection;
 trust vocabulary names miner-side clipping preservation, and validator-trust vocabulary names
-validator-side alignment with consensus
+validator-side clipped influence summed across miners
 ([Glossary: Weight Matrix](https://docs.learnbittensor.org/resources/glossary#weight-matrix),
 [Glossary: Trust](https://docs.learnbittensor.org/resources/glossary#trust),
 [Glossary: Validator Trust](https://docs.learnbittensor.org/resources/glossary#validator-trust)).
 
 - **Weight matrix** — all validators' weight vectors stacked as consensus input.
 - **Trust** — miner-side support preservation after clipping.
-- **Validator trust** — per-validator alignment with consensus after clipping.
+- **Validator trust** — per-validator clipped influence summed after filtering.
 
 ## Distinction from Yuma Consensus
 
