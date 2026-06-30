@@ -1,0 +1,104 @@
+---
+title: "Not Enough Stake To Set Weights"
+summary:
+  "How the NotEnoughStakeToSetWeights error blocks a set_weights call when the signing hotkey's
+  stake weight on the subnet is below the global stake threshold."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Not Enough Stake To Set Weights
+infoboxCaption: Error raised when stake weight is below the threshold required to set weights.
+infoboxRows:
+  - label: Error
+    value: NotEnoughStakeToSetWeights
+  - label: Trigger
+    value: Hotkey stake weight is below StakeThreshold
+  - label: Checked in
+    value: internal_set_weights
+  - label: Related parameter
+    value: StakeThreshold
+---
+
+# Not Enough Stake To Set Weights
+
+`NotEnoughStakeToSetWeights` is a documented Subtensor standard error raised on weight-setting
+paths. The standard-errors reference describes it as "Less than minimum stake required to set
+weights"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketosetweights)).
+
+## What It Means
+
+Weight submission requires the signing hotkey to carry enough stake weight on the targeted subnet.
+Before version-key, rate-limit, or validator-permit checks run, `internal_set_weights` calls
+`check_weights_min_stake` and returns `NotEnoughStakeToSetWeights` when the hotkey's stake weight on
+that subnet is below the global `StakeThreshold` value
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketosetweights),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs),
+[Subtensor source: lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/lib.rs)).
+
+In `lib.rs`, `check_weights_min_stake` compares the hotkey's stake weight from
+`get_stake_weights_for_hotkey_on_subnet` against `get_stake_threshold()`, except for the subnet
+owner hotkey, which is allowed through regardless of stake
+([Subtensor source: lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/lib.rs)).
+
+## Why It Appears
+
+This error appears when a registered hotkey tries to submit weights but its stake weight on the
+subnet falls below the global minimum. That can happen after partial unstaking, when delegated stake
+has not yet reached the threshold, or when the hotkey is registered but still under the documented
+minimum for weight submission
+([Validating in Bittensor](https://docs.learnbittensor.org/validators),
+[Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+For a reader, the practical meaning is narrow: the hotkey does not meet the stake-weight floor for
+submitting weights on that subnet. The problem is not that the UID and value lists have different
+lengths, that the weights version key is stale, or that the neuron lacks a validator permit for
+non-self weights
+([Weight Vec Not Equal Size](https://docs.learnbittensor.org/errors/subtensor#weightvecnotequalsize),
+[Incorrect Weight Version Key](https://docs.learnbittensor.org/errors/subtensor#incorrectweightversionkey),
+[Subtensor Standard Errors: NeuronNoValidatorPermit](https://docs.learnbittensor.org/errors/subtensor#neuronnovalidatorpermit)).
+
+## Distinction from Neuron No Validator Permit
+
+`NotEnoughStakeToSetWeights` and `NeuronNoValidatorPermit` both appear in weight submission, but
+they reject different requirements. `NotEnoughStakeToSetWeights` is the stake-weight floor checked
+early in `internal_set_weights`. `NeuronNoValidatorPermit` is the later check that blocks non-self
+weight assignments when the neuron does not hold a validator permit
+([Subtensor Standard Errors: NeuronNoValidatorPermit](https://docs.learnbittensor.org/errors/subtensor#neuronnovalidatorpermit),
+[Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+A hotkey can fail the stake threshold even though permit questions have not been reached yet. It can
+also clear the stake threshold and still fail later on permit rules for non-self weights.
+
+- **NotEnoughStakeToSetWeights** — stake weight is below the global threshold for weight submission.
+- **NeuronNoValidatorPermit** — non-self weights were submitted without a validator permit.
+
+## Distinction from Not Enough Stake To Withdraw
+
+`NotEnoughStakeToSetWeights` and `NotEnoughStakeToWithdraw` both involve stake balances, but on
+different extrinsics. `NotEnoughStakeToSetWeights` blocks weight submission when total stake weight
+is too low to meet the global threshold. `NotEnoughStakeToWithdraw` blocks unstaking when the
+requested removal exceeds the staked alpha held by a hotkey-coldkey pair on a subnet
+([Not Enough Stake To Withdraw](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketowithdraw),
+[Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+- **NotEnoughStakeToSetWeights** — stake weight is too low to submit weights.
+- **NotEnoughStakeToWithdraw** — unstake amount exceeds available staked alpha.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the stake-threshold check that raises it. It
+does not describe how validator permits are awarded each epoch, how stake weight is computed in
+full, or the live `StakeThreshold` value on a network; those are documented separately
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Validating in Bittensor](https://docs.learnbittensor.org/validators),
+[Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketosetweights)
+- [Subtensor Standard Errors: NeuronNoValidatorPermit](https://docs.learnbittensor.org/errors/subtensor#neuronnovalidatorpermit)
+- [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+- [Validating in Bittensor](https://docs.learnbittensor.org/validators)
+- [Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)
+- [Subtensor source: lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/lib.rs)
