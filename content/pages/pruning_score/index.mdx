@@ -27,26 +27,28 @@ continuing to earn, and the participant that has earned the least is the one ask
 
 ## What It Represents
 
-Pruning score ranks emission standing among subnet participants when a full subnet must displace one
-incumbent for a new registration. The lowest-scoring participant is the first candidate for removal
-under documented deregistration rules
-([Glossary: Pruning Score](https://docs.learnbittensor.org/resources/glossary#pruning-score),
+Official docs still use pruning score as shorthand for the emissions-based ordering used when a full
+subnet must displace one incumbent for a new registration. In that high-level sense, the
+lowest-emission participant is still the first candidate for removal under documented deregistration
+rules ([Glossary: Pruning Score](https://docs.learnbittensor.org/resources/glossary#pruning-score),
 [Mining: Miner deregistration](https://docs.learnbittensor.org/miners#miner-deregistration)).
 
 The constants reference exposes the startup value as
 `api.consts.subtensorModule.initialPruningScore`, listed as `65535` and summarized as the initial
-pruning score for each neuron. That value names the initialization point; later pruning-score
-standing is the live earnings-based ranking used when a full subnet needs to free a UID slot
-([Subtensor Constants: initialPruningScore](https://docs.learnbittensor.org/subtensor-api/constants#initialpruningscore),
-[Glossary: Pruning Score](https://docs.learnbittensor.org/resources/glossary#pruning-score)).
+pruning score for each neuron. Current Subtensor code, however, no longer maintains a live
+`PruningScores` table during epochs: `get_pruning_score_for_uid` is deprecated and always returns
+`u16::MAX`, while the registration path selects a replacement candidate directly from current
+emissions, immunity status, and registration-block order on ties
+([Subtensor Constants](https://docs.learnbittensor.org/subtensor-api/constants),
+[`get_pruning_score_for_uid`](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/misc.rs),
+[`get_neuron_to_prune`](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)).
 
-Pruning score names emissions-based replacement standing, not a scheduled eviction. A low standing
-does not by itself remove a neuron; displacement is triggered only when the subnet has reached its
-UID capacity and a new registration needs a free slot. Until that registration pressure exists, the
-ranking shows who would be displaced first without forcing any removal
+That means the `65535` constant is best read as legacy startup vocabulary rather than as a live
+per-UID score readers can query from current chain state. The current rule is still emissions-based,
+but the implementation now applies that rule through live deregistration logic rather than through a
+maintained pruning-score ranking
 ([Mining: Miner deregistration](https://docs.learnbittensor.org/miners#miner-deregistration),
-[Glossary: Pruning Score](https://docs.learnbittensor.org/resources/glossary#pruning-score),
-[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+[Glossary: Pruning Score](https://docs.learnbittensor.org/resources/glossary#pruning-score)).
 
 Examples tied to netuid 1 illustrate one subnet's slot competition path. They should not be read as
 representing production displacement outcomes on another network
@@ -183,27 +185,29 @@ recurring settlement pass that allocates rewards from consensus.
 
 ## Distinction from Subnet Miner
 
-A pruning score and a subnet miner relate as a metric and the participant it is computed for. A
-subnet miner is the participant that performs the subnet's task at a UID, while the pruning score is
-the per-UID value the chain uses to decide which neuron is dropped when a full subnet must make room
-for a new registration
+A pruning score and a subnet miner relate as a replacement rule and the participant it is applied
+to. A subnet miner is the participant that performs the subnet's task at a UID, while pruning-score
+vocabulary names the emissions-based ordering used when a full subnet must make room for a new
+registration
 ([Glossary: Pruning Score](https://docs.learnbittensor.org/resources/glossary#pruning-score),
 [Glossary: Subnet Miner](https://docs.learnbittensor.org/resources/glossary#subnet-miner),
 [Mining: Miner deregistration](https://docs.learnbittensor.org/miners#miner-deregistration)).
 
-A UID can perform subnet miner work yet still face displacement when its pruning score is lowest
-among eligible neurons once immunity ends
+A UID can perform subnet miner work yet still face displacement when its emissions standing is
+lowest among eligible neurons once immunity ends
 ([Mining: Miner deregistration](https://docs.learnbittensor.org/miners#miner-deregistration)).
 
 - **Subnet miner** — the participant performing the task at a UID.
-- **Pruning score** — the per-UID value that decides which neuron is deregistered.
+- **Pruning score** — shorthand for the emissions-based ordering used when one neuron is
+  deregistered.
 
 ## Reader Boundary
 
-This page describes the concept at a high level. Which participant actually stands lowest on a given
-subnet at a given time is live state that shifts as earnings change, and is best read from current
-chain data at the time of observation
-([Mining in Bittensor](https://docs.learnbittensor.org/miners)).
+This page describes pruning score as high-level vocabulary for emissions-based displacement on a
+full subnet. The current runtime does not expose a maintained pruning-score table to query; live
+deregistration outcomes come from current emissions, immunity status, and registration order on the
+relevant netuid ([Mining in Bittensor](https://docs.learnbittensor.org/miners),
+[`get_neuron_to_prune`](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)).
 
 ## Further Reading
 
