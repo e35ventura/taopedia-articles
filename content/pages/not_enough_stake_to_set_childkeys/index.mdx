@@ -1,0 +1,109 @@
+---
+title: "Not Enough Stake To Set Childkeys"
+summary:
+  "How the NotEnoughStakeToSetChildkeys error blocks a set_children call when the parent hotkey's
+  own stake is below the global stake threshold and the submitted child list is not empty."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Not Enough Stake To Set Childkeys
+infoboxCaption: Error raised when own stake is too low to assign child hotkeys.
+infoboxRows:
+  - label: Error
+    value: NotEnoughStakeToSetChildkeys
+  - label: Trigger
+    value: Own stake below StakeThreshold with a non-empty child list
+  - label: Checked in
+    value: do_set_children
+  - label: Related parameter
+    value: StakeThreshold
+---
+
+# Not Enough Stake To Set Childkeys
+
+`NotEnoughStakeToSetChildkeys` is a documented Subtensor standard error raised on child-hotkey
+scheduling paths. The standard-errors reference describes it as "Parent hotkey doesn't have enough
+own stake"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketosetchildkeys)).
+
+## What It Means
+
+Child-hotkey scheduling can require the parent hotkey to hold enough of its own stake before the
+chain accepts a non-empty child list. Near the end of `do_set_children`, after rate-limit, subnet,
+ownership, duplicate, and consistency checks, the chain compares the parent hotkey's total own stake
+from `get_total_stake_for_hotkey` against the global `StakeThreshold` value. If the submitted child
+list is not empty and that own-stake total is below the threshold, the call returns
+`NotEnoughStakeToSetChildkeys`
+([Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Subtensor source: set_children.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/set_children.rs)).
+
+The subnet owner hotkey is allowed through this check regardless of stake, matching the bypass used
+on the weight-setting stake gate
+([Subtensor source: set_children.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/set_children.rs)).
+
+Submitting an empty child list clears children without running this stake floor, because the
+threshold applies only when the parent is assigning at least one child
+([Subtensor source: set_children.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/set_children.rs)).
+
+## Why It Appears
+
+This error appears when a parent hotkey tries to schedule one or more children but its own stake
+total has not reached the documented minimum. That can happen after partial unstaking, when
+delegated stake raises weight elsewhere but the parent hotkey's own stake remains below the
+threshold, or when a registered parent attempts child assignment before meeting the floor
+([Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys),
+[Subtensor source: set_children.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/set_children.rs)).
+
+For a reader, the practical meaning is narrow: the parent hotkey does not meet the own-stake floor
+for assigning children. The problem is not that the coldkey does not own the hotkey, that the same
+child appears twice in the list, or that the combined proportions overflow the chain limit
+([NonAssociatedColdKey](https://docs.learnbittensor.org/errors/subtensor#nonassociatedcoldkey),
+[Subtensor Standard Errors: DuplicateChild](https://docs.learnbittensor.org/errors/subtensor#duplicatechild),
+[Proportion Overflow](https://docs.learnbittensor.org/errors/subtensor#proportionoverflow)).
+
+## Distinction from Not Enough Stake To Set Weights
+
+`NotEnoughStakeToSetChildkeys` and `NotEnoughStakeToSetWeights` both compare stake against
+`StakeThreshold`, but they measure different quantities on different extrinsics. Child scheduling
+uses the parent hotkey's own stake total from `get_total_stake_for_hotkey`. Weight submission uses
+stake weight on the targeted subnet from `get_stake_weights_for_hotkey_on_subnet` through
+`check_weights_min_stake`. The source notes that the weight check would not be appropriate for
+childkeys because it can include grandparent stake in that context
+([Not Enough Stake To Set Weights](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketosetweights),
+[Subtensor source: set_children.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/set_children.rs),
+[Subtensor source: lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/lib.rs)).
+
+A parent can fail the childkey stake floor even though its subnet stake weight would pass the weight
+gate, or the reverse.
+
+- **NotEnoughStakeToSetChildkeys** — own stake is too low to assign a non-empty child list.
+- **NotEnoughStakeToSetWeights** — subnet stake weight is too low to submit weights.
+
+## Distinction from Tx Rate Limit Exceeded
+
+`NotEnoughStakeToSetChildkeys` and `TxRateLimitExceeded` both appear in `do_set_children`, but at
+different stages. `TxRateLimitExceeded` is the early rate-limit rejection before subnet and list
+checks run. `NotEnoughStakeToSetChildkeys` is the later own-stake floor that applies only when the
+child list is not empty ([Tx Rate Limit](https://docs.learnbittensor.org/learn/chain-rate-limits),
+[Subtensor Standard Errors: TxRateLimitExceeded](https://docs.learnbittensor.org/errors/subtensor#txratelimitexceeded),
+[Subtensor source: set_children.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/set_children.rs)).
+
+- **TxRateLimitExceeded** — the set-children transaction was retried before the cooldown elapsed.
+- **NotEnoughStakeToSetChildkeys** — own stake is below the threshold for assigning children.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the own-stake check that raises it. It does not
+describe how child proportions are computed at epoch, how pending child changes are scheduled, or
+the live `StakeThreshold` value on a network; those are documented separately
+([Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketosetchildkeys)
+- [Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys)
+- [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+- [Subtensor source: set_children.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/set_children.rs)
+- [Subtensor source: lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/lib.rs)
