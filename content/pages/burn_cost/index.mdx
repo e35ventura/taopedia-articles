@@ -122,23 +122,31 @@ shares on subnets that already exist
 
 ## How Burn Cost Adjusts
 
-Burn cost is not a continuous demand estimate. Each subnet creation records the paid amount as the
-new lock baseline, and the cost is then read as that last lock doubled, reduced linearly by the
-number of blocks elapsed since the last creation. After one lock-reduction interval the cost returns
-to the previous lock value and keeps decaying toward the network minimum lock, where it is clamped,
-so an idle stretch lets the cost fall back while a fresh creation steps it up again
-([`get_network_lock_cost`](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/root.rs)).
+The create-a-subnet guide describes burn cost as dynamic recycled TAO that doubles when a subnet is
+created and then lowers gradually over time
+([Create a Subnet: Burn cost](https://docs.learnbittensor.org/subnets/create-a-subnet#burn-cost),
+[Glossary: Burn Cost](https://docs.learnbittensor.org/resources/glossary#burn-cost)).
+
+The lock-reduction interval hyperparameter sets the block span over which that elevated cost halves,
+so decay pacing is network-wide rather than stored on an existing netuid
+([Subnet Hyperparameters: LockReductionInterval](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#lockreductioninterval),
+[Create a Subnet: Burn cost](https://docs.learnbittensor.org/subnets/create-a-subnet#burn-cost)).
 
 The multiplier is two once any subnet has been created, so back-to-back creations roughly double the
 cost each time before decay has room to act. This is why creation cost can spike after rapid subnet
 launches and then ease over the following blocks
 ([Create a Subnet: Burn cost](https://docs.learnbittensor.org/subnets/create-a-subnet#burn-cost)).
 
+Decay does not drive burn cost to zero. The elevated quote eases toward the network min lock cost
+floor, a separate network-global hyperparameter that bounds how low subnet-creation pricing can fall
+even after a long idle stretch
+([Subnet Hyperparameters: NetworkMinLockCost](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#networkminlockcost),
+[Create a Subnet: Burn cost](https://docs.learnbittensor.org/subnets/create-a-subnet#burn-cost)).
+
 Burn cost is only one live condition for subnet creation. The create-a-subnet guide also documents a
 14,400-block registration interval (approximately two days) between successful subnet creations,
-stored on chain as `networkRateLimit` and queryable through `subtensorModule.networkRateLimit()`. A
-prospective creator therefore needs both enough recycled TAO for the current burn-cost quote and
-enough blocks since the last network registration
+stored on chain as `networkRateLimit`. A prospective creator therefore needs both enough recycled
+TAO for the current burn-cost quote and enough blocks since the last network registration
 ([Create a Subnet: Subnet creation rate limit](https://docs.learnbittensor.org/subnets/create-a-subnet#subnet-creation-rate-limit),
 [Chain Rate Limits: Network registration rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#network-registration-rate-limit)).
 
@@ -188,9 +196,11 @@ subnet-creation burn cost is the separate network-level TAO charge that opens a 
 Burn cost is a conceptual and accounting term, not timing advice, a price forecast, or a general
 transfer fee. It names the dynamic TAO amount required for subnet creation, and Bittensor
 documentation treats that TAO as recycled rather than simply destroyed. It does not report the live
-burn-cost quote, whether a coldkey is inside the 14,400-block creation interval, or registration
-burn on an existing netuid such as netuid 1. Those are separate live chain reads
+burn-cost quote, whether a coldkey is inside the 14,400-block creation interval, the network min
+lock cost floor, or registration burn on an existing netuid such as netuid 1. Those are separate
+live chain reads
 ([Create a Subnet: Burn cost](https://docs.learnbittensor.org/subnets/create-a-subnet#burn-cost),
+[Subnet Hyperparameters: NetworkMinLockCost](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#networkminlockcost),
 [Glossary: Burn Cost](https://docs.learnbittensor.org/resources/glossary#burn-cost)).
 
 Live values belong in the tool or source that reports the relevant environment at the time of
