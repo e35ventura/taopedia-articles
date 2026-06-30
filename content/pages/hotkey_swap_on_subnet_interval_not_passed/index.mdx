@@ -1,0 +1,75 @@
+---
+title: "Hotkey Swap On Subnet Interval Not Passed"
+summary:
+  "How the HotKeySwapOnSubnetIntervalNotPassed error blocks a hotkey swap on a specific subnet when
+  the per-subnet cooldown since the last swap on that subnet has not yet elapsed."
+category: "Wallets"
+tags: ["Wallets", "Errors"]
+infoboxTitle: Hotkey Swap On Subnet Interval Not Passed
+infoboxCaption: Error raised when the per-subnet hotkey swap cooldown has not elapsed.
+infoboxRows:
+  - label: Error
+    value: HotKeySwapOnSubnetIntervalNotPassed
+  - label: Trigger
+    value: Swap attempted before the per-subnet swap cooldown clears
+  - label: Cooldown source
+    value: HotkeySwapOnSubnetInterval constant
+  - label: Tracked per
+    value: Coldkey and subnet
+---
+
+# Hotkey Swap On Subnet Interval Not Passed
+
+`HotKeySwapOnSubnetIntervalNotPassed` is a documented Subtensor standard error raised by the hotkey
+swap extrinsic. The standard-errors reference describes it as "Attempting a hotkey swap on subnet
+too frequently"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#hotkeyswaponsubnetintervalnotpassed)).
+
+## What It Means
+
+Each subnet tracks when the calling coldkey's hotkey was last swapped there, stored in
+`LastHotkeySwapOnNetuid`. When a hotkey swap would touch a subnet, the chain compares the current
+block against that recorded block plus the `HotkeySwapOnSubnetInterval` constant. If the resulting
+cooldown block has not been reached yet, `HotKeySwapOnSubnetIntervalNotPassed` is raised for that
+subnet
+([Subtensor source: swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs)).
+
+This check is tracked per coldkey per subnet, not per hotkey globally. A swap that was accepted on
+one subnet does not reset or affect the cooldown for any other subnet
+([Subtensor source: swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs)).
+
+## Why It Appears
+
+A hotkey swap that targets a single subnet explicitly and a hotkey swap that touches all subnets the
+hotkey participates in both enforce this same per-subnet cooldown before the swap on each affected
+subnet proceeds. A swap attempt on the same subnet within the cooldown window fails regardless of
+whether any other subnet's cooldown has cleared
+([Subtensor source: swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs),
+[Hotkey Swap On Subnet Interval](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+
+## Distinction from Hotkey Set Tx Rate Limit Exceeded
+
+`HotKeySwapOnSubnetIntervalNotPassed` and `HotKeySetTxRateLimitExceeded` both gate the hotkey swap
+extrinsic, but at different scopes. `HotKeySetTxRateLimitExceeded` is the short, coldkey-level
+general transaction rate limit checked once before any subnet-specific logic runs.
+`HotKeySwapOnSubnetIntervalNotPassed` is the longer, per-subnet cooldown checked separately for each
+subnet the swap would touch
+([Subtensor Standard Errors: HotKeySetTxRateLimitExceeded](https://docs.learnbittensor.org/errors/subtensor#hotkeysettxratelimitexceeded),
+[Subtensor source: swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs)).
+
+- **HotKeySetTxRateLimitExceeded** — short, coldkey-level general transaction cooldown.
+- **HotKeySwapOnSubnetIntervalNotPassed** — longer, per-subnet swap cooldown.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the per-subnet cooldown check that raises it.
+The length of the cooldown is documented separately
+([Hotkey Swap On Subnet Interval](https://docs.learnbittensor.org/learn/chain-rate-limits),
+[Subtensor source: swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#hotkeyswaponsubnetintervalnotpassed)
+- [Subtensor Standard Errors: HotKeySetTxRateLimitExceeded](https://docs.learnbittensor.org/errors/subtensor#hotkeysettxratelimitexceeded)
+- [Hotkey Swap On Subnet Interval](https://docs.learnbittensor.org/learn/chain-rate-limits)
+- [Subtensor source: swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs)
