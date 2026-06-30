@@ -20,57 +20,73 @@ infoboxRows:
 
 # Duplicate Child
 
-`DuplicateChild` is a documented Subtensor standard error raised by the `schedule_children`
-extrinsic. The standard-errors reference describes it as "Duplicate child when setting children"
+`DuplicateChild` means the same child hotkey was listed more than once in one child-set call for a
+parent on a subnet. The standard-errors reference describes it as "Duplicate child when setting
+children"
 ([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#duplicatechild)).
+
+The scan applies to the submitted list itself, not to whether that hotkey was already a child before
+the call ([Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys)).
 
 ## What It Means
 
-A `schedule_children` call submits a full list of
+A `set_children` call submits a full list of
 [child hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys) for a parent on a subnet,
-each paired with its own stake proportion. `do_schedule_children` scans that list for repeats before
-accepting it, and raises `DuplicateChild` as soon as it finds the same child hotkey listed a second
-time
-([Subtensor source: set_children.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/set_children.rs)).
+each paired with its own stake proportion. `DuplicateChild` is the rejection when that list names
+the same child hotkey twice
+([Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#duplicatechild)).
 
-The scan looks only at the child identities in the submitted list. It does not compare the list
-against any existing children already recorded for the parent; a brand-new list with an internal
-repeat fails the same way a list that happens to repeat an existing child would
-([Subtensor source: set_children.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/set_children.rs)).
+The scan looks only at child identities inside the submitted list. A brand-new list with an internal
+repeat fails the same way a merged list would if the same hotkey ended up added twice
+([Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys)).
 
 ## Why It Appears
 
-`do_schedule_children` runs this duplicate scan after confirming the rate limit, subnet existence,
-and coldkey ownership, and before it checks the list against the broader consistency rules that also
-cover the five-child cap and the proportion total. A list built by merging child entries from more
-than one source, where the same hotkey ends up added twice, fails here before those later checks are
-ever reached
-([Subtensor source: set_children.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/set_children.rs)).
+Child-hotkey scheduling validates the full list a parent submits on a netuid. A duplicate entry
+fails before later consistency checks such as the five-child cap or proportion totals, so a repeated
+hotkey in one call should be ruled out before assuming `TooManyChildren` or `ProportionOverflow`
+([Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys),
+[Subtensor Standard Errors: TooManyChildren](https://docs.learnbittensor.org/errors/subtensor#toomanychildren),
+[Subtensor Standard Errors: ProportionOverflow](https://docs.learnbittensor.org/errors/subtensor#proportionoverflow),
+[Chain Rate Limits: Child hotkey operations rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#child-hotkey-operations-rate-limit)).
+
+Lists built by merging entries from more than one source are a common way to hit this error when the
+same hotkey is accidentally included twice.
 
 ## Distinction from Too Many Children
 
-`DuplicateChild` and `TooManyChildren` both inspect the same submitted child list but at different
-points. `DuplicateChild` is a single, early scan inside `do_schedule_children` for repeated entries.
-`TooManyChildren` is a separate, later count check against the five-child limit, and unlike
-`DuplicateChild` it also applies when a hotkey swap re-validates a parent's existing child
-relations, not only when new children are first scheduled
-([Too Many Children](https://docs.learnbittensor.org/errors/subtensor#toomanychildren),
-[Subtensor source: set_children.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/set_children.rs)).
+`DuplicateChild` and `TooManyChildren` both inspect the same submitted child list but guard
+different problems. `DuplicateChild` fires when one hotkey appears twice in the list.
+`TooManyChildren` fires when the list still has more than five entries
+([Subtensor Standard Errors: DuplicateChild](https://docs.learnbittensor.org/errors/subtensor#duplicatechild),
+[Subtensor Standard Errors: TooManyChildren](https://docs.learnbittensor.org/errors/subtensor#toomanychildren),
+[Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys)).
 
 - **DuplicateChild** — the same child hotkey is listed more than once in one call.
-- **TooManyChildren** — the (deduplicated) child list still has more than five entries.
+- **TooManyChildren** — the child list has more than five entries.
+
+## Distinction from Proportion Overflow
+
+`DuplicateChild` checks for repeated hotkeys in the submitted list. `ProportionOverflow` checks
+whether the listed stake proportions fit in the chain's proportion accounting, independent of
+whether any hotkey was duplicated
+([Subtensor Standard Errors: ProportionOverflow](https://docs.learnbittensor.org/errors/subtensor#proportionoverflow),
+[Subtensor Standard Errors: DuplicateChild](https://docs.learnbittensor.org/errors/subtensor#duplicatechild)).
+
+- **DuplicateChild** — repeated child hotkey in one submitted list.
+- **ProportionOverflow** — combined stake proportions do not fit.
 
 ## Reader Boundary
 
-This page defines the meaning of the error label and the duplicate scan that raises it. It does not
-describe how child hotkeys are scheduled, how child take is calculated, or the consistency checks
-that run after this scan; those are documented separately
-([Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys),
-[Subtensor source: set_children.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/set_children.rs)).
+This page defines the meaning of the error label and the duplicate-entry check. It does not describe
+childkey take, minimum parent stake thresholds, or the live child list on a netuid; those are
+separate reads ([Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys),
+[Chain Rate Limits: Child hotkey operations rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#child-hotkey-operations-rate-limit)).
 
 ## Further Reading
 
 - [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#duplicatechild)
 - [Subtensor Standard Errors: TooManyChildren](https://docs.learnbittensor.org/errors/subtensor#toomanychildren)
+- [Subtensor Standard Errors: ProportionOverflow](https://docs.learnbittensor.org/errors/subtensor#proportionoverflow)
 - [Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys)
-- [Subtensor source: set_children.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/set_children.rs)
