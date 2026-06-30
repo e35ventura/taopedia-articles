@@ -1,0 +1,73 @@
+---
+title: "Not Enough Balance To Pay Swap Hotkey"
+summary:
+  "How the NotEnoughBalanceToPaySwapHotKey error blocks a hotkey swap when the coldkey's balance
+  can't cover the swap cost, which differs between an all-subnets swap and a single-subnet swap."
+category: "Wallets"
+tags: ["Wallets", "Errors"]
+infoboxTitle: Not Enough Balance To Pay Swap Hotkey
+infoboxCaption: Error raised when a coldkey's balance can't cover a hotkey swap's cost.
+infoboxRows:
+  - label: Error
+    value: NotEnoughBalanceToPaySwapHotKey
+  - label: Trigger
+    value: Coldkey balance below the applicable swap cost
+  - label: Checked in
+    value: do_swap_hotkey, two cost paths
+  - label: Check type
+    value: Balance comparison against a fixed cost
+---
+
+# Not Enough Balance To Pay Swap Hotkey
+
+`NotEnoughBalanceToPaySwapHotKey` is a documented Subtensor standard error raised by the hotkey swap
+extrinsic. The standard-errors reference describes it as "Not enough balance to pay swapping hotkey"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetopayswaphotkey)).
+
+## What It Means
+
+A hotkey swap is not free: the calling coldkey must be able to cover a swap cost before the chain
+accepts the call, and `NotEnoughBalanceToPaySwapHotKey` is the rejection when the coldkey's balance
+falls short of that cost
+([Subtensor source: swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs)).
+
+The cost itself is not a single fixed number. A swap that moves a hotkey across every subnet it
+participates in is priced through one cost figure, while a swap scoped to a single subnet is priced
+through a separate, subnet-swap-specific cost. Both paths run the same balance check, but each
+checks the coldkey's balance against its own applicable cost
+([Subtensor source: swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs)).
+
+## Why It Appears
+
+Both swap paths check the coldkey's balance only after the earlier ownership, identity, and
+rate-limit checks have already passed, so a coldkey only reaches this balance check once the rest of
+the swap request is already well-formed. The chain does not partially apply a swap when the balance
+check fails; the whole call is rejected
+([Subtensor source: swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs)).
+
+## Distinction from New Hotkey Is Same With Old
+
+`NotEnoughBalanceToPaySwapHotKey` and `NewHotKeyIsSameWithOld` are both possible rejections from the
+same hotkey swap call, but they check different things at different points. `NewHotKeyIsSameWithOld`
+is an early identity comparison between the old and new hotkey. `NotEnoughBalanceToPaySwapHotKey` is
+a later balance check that only runs once the swap request has already cleared the identity,
+ownership, and rate-limit checks earlier in the call
+([New Hotkey Is Same With Old](https://docs.learnbittensor.org/errors/subtensor#newhotkeyissamewithold),
+[Subtensor source: swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs)).
+
+- **NewHotKeyIsSameWithOld** — an early identity comparison between the two hotkeys.
+- **NotEnoughBalanceToPaySwapHotKey** — a later balance check against the swap cost.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the balance check that raises it. It does not
+state the current swap cost for either path, since both are fixed runtime configuration rather than
+something this page should restate; readers should treat the applicable cost as something to confirm
+at the time of the swap
+([Subtensor source: swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetopayswaphotkey)
+- [Subtensor Standard Errors: NewHotKeyIsSameWithOld](https://docs.learnbittensor.org/errors/subtensor#newhotkeyissamewithold)
+- [Subtensor source: swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs)
