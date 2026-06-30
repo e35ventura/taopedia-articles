@@ -1,0 +1,72 @@
+---
+title: "Reveal Period Too Large"
+summary:
+  "How the RevealPeriodTooLarge error blocks setting a subnet's commit-reveal reveal period above
+  the allowed maximum of 100 epochs."
+category: "Validation"
+tags: ["Validation", "Errors"]
+infoboxTitle: Reveal Period Too Large
+infoboxCaption: Error raised when a reveal period value exceeds 100 epochs.
+infoboxRows:
+  - label: Error
+    value: RevealPeriodTooLarge
+  - label: Trigger
+    value: Reveal period value exceeds MAX_COMMIT_REVEAL_PEROIDS (100 epochs)
+  - label: Checked in
+    value: set_reveal_period
+  - label: Set by
+    value: Root
+---
+
+# Reveal Period Too Large
+
+`RevealPeriodTooLarge` is a documented Subtensor standard error raised when setting a subnet's
+commit-reveal reveal period. The standard-errors reference describes it as "Reveal period is too
+large"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#revealperiodtoolarge)).
+
+## What It Means
+
+The reveal period governs how many epochs after a weight commit was made before that commit's
+matching reveal is accepted by the chain. `set_reveal_period` checks the submitted value against a
+fixed global ceiling before writing it to chain state, and raises `RevealPeriodTooLarge` when the
+submitted value exceeds 100 epochs, the `MAX_COMMIT_REVEAL_PEROIDS` constant
+([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs),
+[Commit-Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)).
+
+The ceiling is a global constant defined in the pallet, not live chain state that can change after
+deployment. Any reveal period value above 100 fails this check regardless of which subnet the setter
+is targeting
+([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+## Why It Appears
+
+`set_reveal_period` runs the upper-bound check first, before the separate lower-bound check that
+guards against a value of zero. A submitted value that is above the ceiling fails here before the
+lower-bound check is ever reached
+([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+## Distinction from Reveal Period Too Small
+
+`RevealPeriodTooLarge` and `RevealPeriodTooSmall` guard opposite ends of the same allowed range.
+`RevealPeriodTooLarge` fires when the value exceeds the 100-epoch ceiling; `RevealPeriodTooSmall`
+fires when it falls below the 1-epoch floor, enforced by the `MIN_COMMIT_REVEAL_PEROIDS` constant in
+the same function
+([Subtensor Standard Errors: RevealPeriodTooSmall](https://docs.learnbittensor.org/errors/subtensor#revealperiodtoosmall),
+[Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+- **RevealPeriodTooLarge** — the value is above the 100-epoch ceiling.
+- **RevealPeriodTooSmall** — the value is below the 1-epoch floor.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the ceiling check that raises it. It does not
+describe how the reveal period interacts with commit timing or weight reveal eligibility; those are
+documented separately ([Commit-Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#revealperiodtoolarge)
+- [Subtensor Standard Errors: RevealPeriodTooSmall](https://docs.learnbittensor.org/errors/subtensor#revealperiodtoosmall)
+- [Commit-Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)
+- [Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)
