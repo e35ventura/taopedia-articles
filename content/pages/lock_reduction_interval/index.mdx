@@ -50,19 +50,24 @@ halves over about two weeks before easing further toward the floor
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
 [Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet)).
 
-The underlying decay is linear, not compounding. On chain the creation cost is read as the last paid
-lock doubled, minus a fixed amount per block equal to that last lock divided by the lock reduction
-interval, multiplied by the blocks elapsed since the last creation. After one full interval the
-doubled cost has therefore fallen by exactly the last lock — back to the previous value — and it
-keeps descending at that same per-block rate until it reaches the minimum lock floor
-([`get_network_lock_cost`](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/root.rs)).
+The underlying decay is linear, not compounding. After a creation event, the quoted cost is read
+from the last paid lock doubled, then reduced each block by an amount equal to that last lock
+divided by the lock reduction interval, multiplied by the blocks elapsed since the last creation.
+After one full interval the doubled cost has therefore fallen by exactly the last lock — back to the
+pre-doubling value — and it keeps descending at that same per-block rate until it reaches the
+network min lock cost floor
+([Subnet Hyperparameters: LockReductionInterval](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#lockreductioninterval),
+[Subnet Hyperparameters: NetworkMinLockCost](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#networkminlockcost),
+[Create a Subnet: Burn cost](https://docs.learnbittensor.org/subnets/create-a-subnet#burn-cost)).
 
 ## How the Decay Bottoms Out
 
 The decay does not continue to zero. As the creation cost falls across the lock reduction interval
 it approaches the minimum lock cost floor rather than dropping away entirely, so the interval
 governs the speed of the descent while the floor governs where it stops
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+([Subnet Hyperparameters: NetworkMinLockCost](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#networkminlockcost),
+[Subnet Hyperparameters: LockReductionInterval](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#lockreductioninterval),
+[Create a Subnet: Burn cost](https://docs.learnbittensor.org/subnets/create-a-subnet#burn-cost)).
 
 - **Lock reduction interval** — how fast the creation cost decays.
 - **Network min lock cost** — the floor the decay approaches.
@@ -99,10 +104,24 @@ root-settable value the network uses after launch
 Network rate limit is the minimum block wait between subnet registrations, while lock reduction
 interval is the span over which the creation cost halves. One paces how often subnets can be
 created, the other paces how fast the cost falls
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+([Subnet Hyperparameters: NetworkRateLimit](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#networkratelimit),
+[Subnet Hyperparameters: LockReductionInterval](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#lockreductioninterval),
+[Chain Rate Limits: Network registration rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#network-registration-rate-limit)).
 
 - **Lock reduction interval** — how fast the creation cost decays.
 - **Network rate limit** — minimum wait between new subnet registrations.
+
+## Reader Boundary
+
+Lock reduction interval names decay pacing for subnet-creation pricing, not the live burn-cost
+quote, network min lock cost floor, or minimum block wait between registrations. Those are separate
+network-global reads
+([Subnet Hyperparameters: LockReductionInterval](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#lockreductioninterval),
+[Subnet Hyperparameters: NetworkMinLockCost](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#networkminlockcost),
+[Chain Rate Limits: Network registration rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#network-registration-rate-limit)).
+
+Live values belong in the tool or source that reports the relevant environment at the time of
+observation.
 
 ## Further Reading
 
