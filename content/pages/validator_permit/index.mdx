@@ -71,6 +71,19 @@ permits a subnet issues each epoch up to its max-validators cap
 [Glossary: Stake Weight](https://docs.learnbittensor.org/resources/glossary#stake-weight),
 [Glossary: Validator Permit](https://docs.learnbittensor.org/resources/glossary#validator-permit)).
 
+Holding a permit is not the same as counting as active for the epoch pass. Activity cutoff
+vocabulary names how long a validator may remain without an on-chain update before its stake is
+masked inactive for consensus, measured from
+[last update](https://docs.learnbittensor.org/subnets/metagraph) rather than from permit status
+alone
+([Subnet Hyperparameters: Activity Cutoff](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutoff),
+[Implementation of the Yuma Consensus Epoch: Network State Collection](https://docs.learnbittensor.org/navigating-subtensor/epoch#1-network-state-collection)).
+
+Readers should therefore treat permit, last update, and the effective inactivity span as separate
+inputs when asking why a validator's weights did or did not influence a pass
+([Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
 ## Distinction from Max Validators
 
 A validator permit is the rights flag granted to higher-stake neurons. Max validators is the
@@ -83,13 +96,42 @@ system fills.
 
 ## Distinction from Activity Cutoff
 
-A validator permit records whether a UID may submit counting weights. Activity cutoff is the
-early-epoch block window within which those weights must arrive to count in the current consensus
-pass
+A validator permit records whether a UID may submit counting weights. Activity cutoff vocabulary
+names how long a validator may remain without an on-chain update before its stake is masked inactive
+for consensus—not an early-epoch submission deadline
 ([Glossary: Validator Permit](https://docs.learnbittensor.org/resources/glossary#validator-permit),
-[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+[Subnet Hyperparameters: Activity Cutoff](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutoff),
+[Subnet Hyperparameters: Activity Cutoff Factor](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutofffactor),
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
 
-Permission and timing are separate gates on the same weight-submission path.
+On dynamic-tempo subnets the fixed block hyperparameter is deprecated; the live inactivity span
+comes from activity cutoff factor and tempo instead
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+Readers tracing a failed participation check should compare permit status and last-update freshness
+against the effective inactivity span on the same netuid rather than treating either field as a full
+activity verdict by itself ([Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph),
+[Implementation of the Yuma Consensus Epoch: Network State Collection](https://docs.learnbittensor.org/navigating-subtensor/epoch#1-network-state-collection)).
+
+Permission vocabulary and inactivity-mask vocabulary answer different gates on the same weight path.
+A neuron can hold a permit yet still be masked inactive when last update exceeds the allowed span,
+and a recent last update does not substitute for permit authority
+([Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus)).
+
+- **Validator permit** — whether a UID may submit counting validator weights.
+- **Activity cutoff** — inactivity span before a stale validator is masked out of consensus.
+
+## Distinction from Last Update
+
+A validator permit records authorization to submit counting weights. Last update records the block
+height of a neuron's most recent on-chain change and feeds the inactivity test that activity cutoff
+vocabulary names
+([Glossary: Validator Permit](https://docs.learnbittensor.org/resources/glossary#validator-permit),
+[Glossary: Last Update](https://docs.learnbittensor.org/resources/glossary#last-update),
+[Subnet Hyperparameters: Activity Cutoff](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutoff)).
+
+- **Validator permit** — whether a UID may submit counting validator weights.
+- **Last update** — block timestamp measured against the allowed inactivity span.
 
 ## Distinction from Deregistration
 
@@ -216,15 +258,20 @@ threshold can be clipped and may reduce resulting rank and dividends
 
 ## Reader Boundary
 
-Validator permit names validation rights inside one subnet. Stake weight names stake-derived
+Validator permit should not be read as activity cutoff, proof of recent last update, or guarantee of
+dividend share. It names validation rights inside one subnet. Stake weight names stake-derived
 validator influence, and VPermit names broader authorization context
 ([Glossary: Validator Permit](https://docs.learnbittensor.org/resources/glossary#validator-permit),
 [Glossary: Stake Weight](https://docs.learnbittensor.org/resources/glossary#stake-weight),
-[Glossary: VPermit](https://docs.learnbittensor.org/resources/glossary#vpermit)).
+[Glossary: VPermit](https://docs.learnbittensor.org/resources/glossary#vpermit),
+[Subnet Hyperparameters: Activity Cutoff](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutoff)).
 
 ## Further Reading
 
 - [Glossary: Validator Permit](https://docs.learnbittensor.org/resources/glossary#validator-permit)
 - [Glossary: VPermit](https://docs.learnbittensor.org/resources/glossary#vpermit)
+- [Glossary: Last Update](https://docs.learnbittensor.org/resources/glossary#last-update)
+- [Subnet Metagraph](https://docs.learnbittensor.org/subnets/metagraph)
+- [Subnet Hyperparameters: Activity Cutoff Factor](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutofffactor)
 - [Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)
 - [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
