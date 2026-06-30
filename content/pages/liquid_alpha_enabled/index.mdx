@@ -44,13 +44,13 @@ on their consensus alignment, shaped by `alpha_sigmoid_steepness`
 
 When the feature is off, that single fixed alpha is not a separate setting. Documentation describes
 the subnet-wide smoothing factor as derived from `BondsMovingAverage`—one minus the scaled
-bonds-moving-average value—rather than from the alpha low and alpha high bounds
+bonds-moving-average value—rather than from the alpha low and alpha high bounds. A higher
+`BondsMovingAverage` therefore produces a smaller disabled-path alpha, which slows bond-history
+updates subnet-wide until the toggle is turned on
 ([Subnet Hyperparameters: BondsMovingAverage](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#bondsmovingaverage),
+[Subnet Hyperparameters: LiquidAlphaEnabled](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#liquidalphaenabled),
 [Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights),
 [Yuma Consensus: Bonding mechanics](https://docs.learnbittensor.org/learn/yuma-consensus#bonding)).
-
-Implementation derives that disabled-path alpha from the stored bonds-moving-average value
-([`compute_disabled_liquid_alpha`](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/epoch/run_epoch.rs)).
 
 ## When It Matters
 
@@ -63,8 +63,11 @@ is still using a single fixed alpha, and the bounds sit inert until the switch i
 This is why the toggle is worth checking before reasoning about a subnet's bond behavior. On netuid
 1, for instance, the active value lives among the subnet's hyperparameters keyed by that netuid, so
 reading netuid 1's `liquid_alpha_enabled` tells you whether its alpha low and alpha high bounds are
-actually in force or merely configured
-([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+actually in force or merely configured. When the toggle is false, the next read for bond-smoothing
+behavior is `BondsMovingAverage` on that netuid rather than the alpha bounds
+([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters),
+[Subnet Hyperparameters: BondsMovingAverage](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#bondsmovingaverage),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
 ## Why It Is a Toggle
 
@@ -141,8 +144,10 @@ That read path keeps toggle and bound claims tied to a parseable netuid on the s
 
 Liquid alpha enabled should not be read as liquid alpha itself, as alpha low or alpha high, or as
 proof that a subnet's bonds are currently smoothing in a particular way. It names only whether the
-subnet uses variable per-pair bond smoothing or the fixed bonds-moving-average path
+subnet uses variable per-pair bond smoothing or the fixed bonds-moving-average path, and it does not
+report the live toggle value on a selected netuid
 ([Subnet Hyperparameters: LiquidAlphaEnabled](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#liquidalphaenabled),
+[Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters),
 [Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)).
 
 ## Further Reading
