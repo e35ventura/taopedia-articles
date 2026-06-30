@@ -14,77 +14,72 @@ infoboxRows:
   - label: Trigger
     value: Submitted netuid equals the root subnet
   - label: Checked in
-    value: internal_set_weights, before any list-shape or registration check
+    value: set_weights, set_mechanism_weights, and commit-reveal reveal paths
   - label: Related concept
     value: Root subnet identity
 ---
 
 # Can Not Set Root Network Weights
 
-`CanNotSetRootNetworkWeights` is a documented Subtensor standard error. The standard-errors
-reference describes it as "Can not set weights for the root network"
+`CanNotSetRootNetworkWeights` means a weight-setting call targeted the root subnet instead of an
+ordinary subnet. The standard-errors reference describes it as "Can not set weights for the root
+network"
 ([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#cannotsetrootnetworkweights)).
+
+The root subnet runs its own consensus path and is not a destination for ordinary validator weight
+submissions
+([Root Subnet / Subnet Zero](https://docs.learnbittensor.org/resources/glossary#root-subnetsubnet-zero)).
 
 ## What It Means
 
 The `set_weights` extrinsic accepts a target `netuid` and writes the validator's scores into that
-subnet's weight storage. The root subnet is a special subnet that runs its own consensus path and is
-not a destination for ordinary validator weight submissions
-([Root Subnet / Subnet Zero](https://docs.learnbittensor.org/resources/glossary#root-subnetsubnet-zero)).
+subnet's weight storage. `CanNotSetRootNetworkWeights` means the submitted `netuid` was the root
+subnet, so the chain rejected the call and wrote no weights
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#cannotsetrootnetworkweights)).
 
-`CanNotSetRootNetworkWeights` means the runtime rejected a weight-setting call because the submitted
-`netuid` was the root subnet. The call is refused and no weight storage on any subnet is written
-([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#cannotsetrootnetworkweights),
-[Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+This is an early netuid guard on the weight-setting path. It runs before list-shape, registration,
+rate-limit, and other later checks because the root subnet is never a valid target for these
+submissions.
 
 ## Why It Appears
 
-The check is the first validation in `internal_set_weights`, sitting before any list-shape,
-registration, or rate-limit check. The runtime checks whether the submitted `netuid` is the root
-subnet, and rejects the call when it is. Both `set_weights` and `set_mechanism_weights` go through
-this function, so the same guard fires regardless of whether the caller submits a `netuid` directly
-or a `netuid + mecid` pair
-([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+The check fires whenever a plain weight call, mechanism-weight call, or commit-reveal reveal routes
+into weight storage with the root subnet as its target. A misconfigured client, copied extrinsic, or
+automation defaulting to netuid zero can hit this error before any UID-list or stake validation
+runs.
 
-The guard also runs in the commit-reveal path. After `internal_reveal_weights` matches a stored
-commit, it routes the reveal through `do_set_mechanism_weights`, which falls into the same
-`internal_set_weights` and reaches this check. A reveal targeting the root subnet is therefore
-rejected with the same error rather than being silently dropped
-([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+When debugging, confirm the submitted `netuid` is an ordinary subnet, not the root subnet. Then
+compare direction against root-only operations: `NotRootSubnet` is the reverse check, rejecting
+calls that require the root subnet when a non-root netuid was submitted
+([Subtensor Standard Errors: NotRootSubnet](https://docs.learnbittensor.org/errors/subtensor#notrootsubnet)).
 
-For a reader, the practical meaning is narrow: the caller directed a weight-setting call at the root
-subnet. The runtime refuses because that subnet's weights are not a valid destination for validator
-submissions
-([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#cannotsetrootnetworkweights),
-[Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+The practical meaning is narrow: the caller directed a weight-setting call at the root subnet. The
+problem is not invalid UIDs, missing registration on a normal subnet, or a rate-limit failure on an
+otherwise valid target.
 
 ## Distinction from Not Root Subnet
 
 `CanNotSetRootNetworkWeights` and `NotRootSubnet` both check the relationship between a caller's
 target netuid and the root subnet, but in opposite directions. `CanNotSetRootNetworkWeights` rejects
-a weight-setting call when the target IS the root subnet. `NotRootSubnet` is the reverse check on
-root-only operations, which rejects when the target is NOT the root subnet
-([Subtensor Standard Errors: NotRootSubnet](https://docs.learnbittensor.org/errors/subtensor#notrootsubnet),
-[Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+a weight-setting call when the target is the root subnet. `NotRootSubnet` rejects root-only
+operations when the submitted netuid is something else
+([Subtensor Standard Errors: NotRootSubnet](https://docs.learnbittensor.org/errors/subtensor#notrootsubnet)).
 
-- **CanNotSetRootNetworkWeights** — the target `netuid` is the root subnet, which the weight-
-  setting path does not accept.
-- **NotRootSubnet** — the operation requires the root subnet, but the submitted `netuid` is
-  something else.
+- **CanNotSetRootNetworkWeights** — the target netuid is the root subnet, which the weight-setting
+  path does not accept.
+- **NotRootSubnet** — the operation requires the root subnet, but the submitted netuid is something
+  else.
 
 ## Reader Boundary
 
-This page defines the meaning of the `CanNotSetRootNetworkWeights` error label and the root- subnet
-guard in `internal_set_weights`. It does not describe how root-subnet consensus decides its own
-weights, the lifecycle of subnet deregistration, or the rest of the weight-setting validation
-sequence beyond this first rejection condition; those are separate topics with their own articles
-([Root Subnet / Subnet Zero](https://docs.learnbittensor.org/resources/glossary#root-subnetsubnet-zero),
-[Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+This page defines the meaning of the error label and the root-subnet rejection on weight-setting
+paths. It does not describe how root-subnet consensus decides its own weights, subnet
+deregistration, or the rest of the weight-setting validation sequence beyond this first rejection;
+those are separate topics
+([Root Subnet / Subnet Zero](https://docs.learnbittensor.org/resources/glossary#root-subnetsubnet-zero)).
 
 ## Further Reading
 
 - [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#cannotsetrootnetworkweights)
 - [Subtensor Standard Errors: NotRootSubnet](https://docs.learnbittensor.org/errors/subtensor#notrootsubnet)
-- [Subtensor source: errors.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/errors.rs)
-- [Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)
 - [Glossary: Root Subnet / Subnet Zero](https://docs.learnbittensor.org/resources/glossary#root-subnetsubnet-zero)
