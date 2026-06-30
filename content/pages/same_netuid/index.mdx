@@ -1,0 +1,77 @@
+---
+title: "Same Netuid"
+summary:
+  "How the SameNetuid error blocks a move_stake, transfer_stake, or swap_stake call that would leave
+  a staked position pointed at the same hotkey, coldkey, and subnet it already has."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Same Netuid
+infoboxCaption: Error raised when a same-key stake transition doesn't actually change subnet.
+infoboxRows:
+  - label: Error
+    value: SameNetuid
+  - label: Trigger
+    value: Origin and destination netuid match while hotkey and coldkey stay the same
+  - label: Shared by
+    value: move_stake, transfer_stake, swap_stake
+  - label: Check type
+    value: Pure input comparison
+---
+
+# Same Netuid
+
+`SameNetuid` is a documented Subtensor standard error shared by the `move_stake`, `transfer_stake`,
+and `swap_stake` extrinsics, which all validate their input through the same helper function. The
+standard-errors reference describes it as "Invalid netuid duplication"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#samenetuid)).
+
+## What It Means
+
+Each of these three extrinsics moves a staked position from an origin hotkey, coldkey, and subnet to
+a destination hotkey, coldkey, and subnet. The shared validation step checks whether the call would
+actually change anything: if the destination hotkey and coldkey are identical to the origin, the
+only thing left that could make the call meaningful is the subnet, so the destination subnet must
+differ from the origin subnet in that case
+([Subtensor source: stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)).
+
+`SameNetuid` is the rejection when that condition fails: hotkey and coldkey both stay the same, and
+the subnet stays the same too, so the call would not move the position anywhere
+([Subtensor source: stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)).
+
+## Why It Appears
+
+The check only applies when both keys are unchanged. A call that changes the destination hotkey or
+the destination coldkey is already a real transition regardless of subnet, so it skips this
+particular condition entirely; `SameNetuid` only fires for the narrower case of a same-key call that
+also names the same subnet on both sides
+([Subtensor source: stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)).
+
+This commonly surfaces from a caller passing the same netuid as both the origin and destination
+argument by mistake, since the three extrinsics otherwise accept that pair of arguments
+independently.
+
+## Distinction from Subnet Not Exists
+
+`SameNetuid` and `SubnetNotExists` are both early checks in the same shared validation step, but
+they catch different problems. `SameNetuid` compares the origin and destination arguments against
+each other and fires when they describe a no-op transition. `SubnetNotExists` is a separate,
+following check that confirms the origin and destination subnets are each real, registered subnets,
+independent of whether they match each other
+([Subtensor Standard Errors: SubnetNotExists](https://docs.learnbittensor.org/errors/subtensor#subnetnotexists),
+[Subtensor source: stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)).
+
+- **SameNetuid** — origin and destination describe the same no-op transition.
+- **SubnetNotExists** — one of the named subnets does not exist on chain.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the no-op condition that raises it. It does not
+describe the full validation sequence for `move_stake`, `transfer_stake`, or `swap_stake`; those
+extrinsics run several further checks of their own after this one passes
+([Subtensor source: stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#samenetuid)
+- [Subtensor Standard Errors: SubnetNotExists](https://docs.learnbittensor.org/errors/subtensor#subnetnotexists)
+- [Subtensor source: stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)
