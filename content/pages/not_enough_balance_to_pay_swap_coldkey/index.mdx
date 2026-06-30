@@ -1,0 +1,77 @@
+---
+title: "Not Enough Balance To Pay Swap Coldkey"
+summary:
+  "How the NotEnoughBalanceToPaySwapColdKey error blocks a coldkey swap announcement when the source
+  coldkey can't cover the announcement fee."
+category: "Wallets"
+tags: ["Wallets", "Errors"]
+infoboxTitle: Not Enough Balance To Pay Swap Coldkey
+infoboxCaption: Error raised when a coldkey can't cover the coldkey swap fee.
+infoboxRows:
+  - label: Error
+    value: NotEnoughBalanceToPaySwapColdKey
+  - label: Trigger
+    value: Source coldkey balance below the swap fee
+  - label: Checked in
+    value: announce_coldkey_swap (first announcement only)
+  - label: Check type
+    value: Balance comparison against a fixed cost
+---
+
+# Not Enough Balance To Pay Swap Coldkey
+
+`NotEnoughBalanceToPaySwapColdKey` is a documented Subtensor standard error raised through
+`charge_swap_cost`, the shared helper that collects a swap fee from a coldkey. The standard-errors
+reference describes it as "Not enough balance to pay for the swap"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetopayswapcoldkey)).
+
+## What It Means
+
+A [coldkey swap](https://docs.learnbittensor.org/keys/coldkey-swap) charges an announcement fee from
+the source coldkey the first time a swap is announced for that account, not on every reannouncement.
+`NotEnoughBalanceToPaySwapColdKey` is the rejection when that coldkey's balance cannot cover the fee
+at the moment of the first announcement
+([Subtensor source: swap_coldkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_coldkey.rs),
+[Coldkey Swap](https://docs.learnbittensor.org/keys/coldkey-swap)).
+
+This is the same shared fee-charging helper used by a separate, root-only path that can force a
+coldkey swap for any account without going through the announcement flow at all. Both paths can fail
+with this error if the targeted coldkey's balance is insufficient, though the ordinary path any
+wallet owner uses is the announcement flow
+([Subtensor source: swap_coldkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_coldkey.rs)).
+
+## Why It Appears
+
+Because the fee is only charged on a coldkey's first swap announcement, this error specifically
+means that first announcement attempt failed for lack of balance; a reannouncement of an
+already-announced swap does not trigger a second fee charge and so cannot fail this way
+([Subtensor source: swap_coldkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_coldkey.rs),
+[Coldkey Swap](https://docs.learnbittensor.org/keys/coldkey-swap)).
+
+## Distinction from Coldkey Swap Reannounced Too Early
+
+`NotEnoughBalanceToPaySwapColdKey` and `ColdkeySwapReannouncedTooEarly` both relate to the
+announcement step of a coldkey swap, but they apply to different attempts. The balance error applies
+only to a coldkey's first announcement, when the fee is actually charged. The reannouncement error
+applies to a later attempt to re-announce a swap that is already pending, before the required delay
+since the prior announcement has passed
+([Coldkey Swap Reannounced Too Early](https://docs.learnbittensor.org/errors/subtensor#coldkeyswapreannouncedtooearly),
+[Subtensor source: swap_coldkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_coldkey.rs)).
+
+- **NotEnoughBalanceToPaySwapColdKey** — the first announcement's fee charge failed.
+- **ColdkeySwapReannouncedTooEarly** — a reannouncement arrived before the required delay.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the fee charge that raises it. It does not
+describe the rest of the coldkey swap process, such as the pending window, dispute path, or
+finalization step; those are documented separately
+([Coldkey Swap](https://docs.learnbittensor.org/keys/coldkey-swap),
+[Subtensor source: swap_coldkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_coldkey.rs)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetopayswapcoldkey)
+- [Subtensor Standard Errors: ColdkeySwapReannouncedTooEarly](https://docs.learnbittensor.org/errors/subtensor#coldkeyswapreannouncedtooearly)
+- [Coldkey Swap](https://docs.learnbittensor.org/keys/coldkey-swap)
+- [Subtensor source: swap_coldkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_coldkey.rs)
