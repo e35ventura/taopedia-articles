@@ -1,0 +1,88 @@
+---
+title: "Beneficiary Does Not Own Hotkey"
+summary:
+  "How the BeneficiaryDoesNotOwnHotkey error signals that a do_terminate_lease call came from the
+  lease beneficiary's coldkey but that coldkey does not own the hotkey passed into the call."
+category: "Validation"
+tags: ["Validation", "Errors"]
+infoboxTitle: Beneficiary Does Not Own Hotkey
+infoboxCaption:
+  Error raised when a lease-termination caller owns the lease but not the submitted hotkey.
+infoboxRows:
+  - label: Error
+    value: BeneficiaryDoesNotOwnHotkey
+  - label: Trigger
+    value: Caller is the lease beneficiary but does not own the submitted hotkey
+  - label: Checked in
+    value: do_terminate_lease
+  - label: Related concept
+    value: Subnet lease termination
+---
+
+# Beneficiary Does Not Own Hotkey
+
+`BeneficiaryDoesNotOwnHotkey` is a documented Subtensor standard error. The standard-errors
+reference describes it as "Beneficiary does not own hotkey"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#beneficiarydoesnotownhotkey)).
+
+## What It Means
+
+A leased subnet names a beneficiary who is allowed to take ownership of the subnet after the lease
+ends. Terminating a lease moves ownership to that beneficiary using a hotkey the caller supplies
+([Subnet Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans)).
+
+`BeneficiaryDoesNotOwnHotkey` means the runtime accepted the caller as the lease beneficiary but
+then found that the beneficiary's coldkey does not own the hotkey the caller passed in to receive
+the subnet. The termination is refused and the lease state does not change
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#beneficiarydoesnotownhotkey),
+[Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+## Why It Appears
+
+The check is the last precondition in `do_terminate_lease`, just before ownership transfer. By the
+time the runtime reaches the ownership step, it has already verified that the lease exists
+(`LeaseDoesNotExist`), that the caller's account matches the lease's beneficiary
+(`ExpectedBeneficiaryOrigin`), and that the lease's end block has already passed
+(`LeaseHasNotEnded`). The runtime then asks whether the beneficiary's coldkey owns the hotkey the
+caller passed in. If that relationship does not hold, `BeneficiaryDoesNotOwnHotkey` is raised and
+the termination fails before any ownership writes happen
+([Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+For a reader, the practical meaning is narrow: the caller is the beneficiary of a lease that has
+ended, but the hotkey they submitted for the new subnet owner is not one they control. The runtime
+refuses the transfer rather than write a subnet ownership relationship the beneficiary could not
+later prove
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#beneficiarydoesnotownhotkey),
+[Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+## Distinction from Expected Beneficiary Origin
+
+`BeneficiaryDoesNotOwnHotkey` and `ExpectedBeneficiaryOrigin` are both raised from the early
+preconditions of `do_terminate_lease`, but they check different things about the caller.
+`ExpectedBeneficiaryOrigin` fires before any beneficiary-side check, when the caller is not the
+account recorded as the lease's beneficiary at all. `BeneficiaryDoesNotOwnHotkey` fires later, after
+the runtime has accepted that the caller is the beneficiary, when the beneficiary's coldkey does not
+own the submitted hotkey
+([Subtensor Standard Errors: ExpectedBeneficiaryOrigin](https://docs.learnbittensor.org/errors/subtensor#expectedbeneficiaryorigin),
+[Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+- **ExpectedBeneficiaryOrigin** — the caller is not the lease's beneficiary.
+- **BeneficiaryDoesNotOwnHotkey** — the caller is the lease's beneficiary, but does not own the
+  submitted hotkey.
+
+## Reader Boundary
+
+This page defines the meaning of the `BeneficiaryDoesNotOwnHotkey` error label and the
+beneficiary-versus-hotkey check inside `do_terminate_lease`. It does not describe lease creation,
+the crowdloan that backs a lease, the conditions that make a lease eligible for termination, or the
+broader subnet-ownership transfer flow; those are separate conditions with their own error labels
+and their own articles ([Subnet Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans),
+[Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#beneficiarydoesnotownhotkey)
+- [Subtensor Standard Errors: ExpectedBeneficiaryOrigin](https://docs.learnbittensor.org/errors/subtensor#expectedbeneficiaryorigin)
+- [Subtensor source: errors.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/errors.rs)
+- [Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)
+- [Subnet Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans)
