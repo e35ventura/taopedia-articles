@@ -15,70 +15,62 @@ infoboxRows:
   - label: Trigger
     value: Submitted take fails direction or minimum checks
   - label: Checked in
-    value: do_increase_take, do_decrease_take
+    value: increase_take and decrease_take extrinsics
   - label: Related concept
     value: Validator take
 ---
 
 # Delegate Take Too Low
 
-`DelegateTakeTooLow` is a documented Subtensor standard error raised by delegate-take update calls.
-The standard-errors reference describes it as "Delegate take is too low"
+`DelegateTakeTooLow` means a delegate-take update failed a direction or minimum check on whichever
+extrinsic was called. The standard-errors reference describes it as "Delegate take is too low"
 ([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#delegatetoolow)).
-
-## What It Means
 
 Validator take is the commission percentage a delegate keeps from delegated returns before the
 remainder is shared with delegators. The chain exposes separate extrinsics to raise and lower that
-commission. `DelegateTakeTooLow` means the submitted take value failed the direction or minimum
-check on whichever extrinsic was called, so the update is rejected before storage changes
-([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#delegatetoolow),
-[Staking and Delegation Overview](https://docs.learnbittensor.org/staking-and-delegation/delegation),
-[Subtensor source: increase_take.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/increase_take.rs),
-[Subtensor source: decrease_take.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/decrease_take.rs)).
+commission
+([Staking and Delegation Overview](https://docs.learnbittensor.org/staking-and-delegation/delegation)).
 
-On the increase path, `do_increase_take` requires the new take to be strictly greater than the
-hotkey's current take when a current value already exists. On the decrease path, `do_decrease_take`
-requires the new take to be strictly lower than the current value, and also requires the result to
-stay at or above `MinDelegateTake`
-([Subtensor source: increase_take.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/increase_take.rs),
-[Subtensor source: decrease_take.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/decrease_take.rs)).
+## What It Means
+
+`DelegateTakeTooLow` means the submitted take value failed the direction or minimum check on the
+called path, so the update is rejected before storage changes
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#delegatetoolow)).
+
+On the increase path, the new take must be strictly greater than the hotkey's current take when a
+current value already exists. On the decrease path, the new take must be strictly lower than the
+current value and must stay at or above the chain's minimum allowed take.
 
 ## Why It Appears on Increase
 
-The delegation reference describes `increase_take` as the extrinsic that raises delegate commission.
-`DelegateTakeTooLow` on that path means the caller submitted a take that is equal to or below the
-hotkey's stored take, so the call is not a valid increase
-([Delegation Mechanism](https://subtensor.com/reference/mechanisms/delegation),
-[Subtensor source: increase_take.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/increase_take.rs)).
+`DelegateTakeTooLow` on the increase path means the caller submitted a take that is equal to or
+below the hotkey's stored take, so the call is not a valid increase.
 
-For a reader, the practical meaning on this path is narrow: the requested value does not actually
-raise take. The problem is not that the value exceeds the configured maximum, that the change was
-attempted too soon, or that delegation itself is unavailable
-([Delegate Take Too High](https://docs.learnbittensor.org/errors/subtensor#delegatetakehigh),
-[Delegate Tx Rate Limit Exceeded](https://docs.learnbittensor.org/errors/subtensor#delegatetxratelimitexceeded)).
+When debugging increases, rule out the ceiling and cooldown first. `DelegateTakeTooHigh` means the
+submitted value exceeds the chain maximum. `DelegateTxRateLimitExceeded` means a prior take increase
+has not cleared the delegate-take cooldown yet
+([Subtensor Standard Errors: DelegateTakeTooHigh](https://docs.learnbittensor.org/errors/subtensor#delegatetakehigh),
+[Subtensor Standard Errors: DelegateTxRateLimitExceeded](https://docs.learnbittensor.org/errors/subtensor#delegatetxratelimitexceeded),
+[Chain Rate Limits: Delegate take rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#delegate-take-rate-limit)).
+
+The practical meaning on this path is narrow: the requested value does not actually raise take.
 
 ## Why It Appears on Decrease
 
-The delegation reference describes `decrease_take` as the extrinsic that lowers delegate commission.
-`DelegateTakeTooLow` on that path covers two separate rejections: the submitted value is not
-strictly below the current take, or it would fall below the chain's minimum allowed take
-([Delegation Mechanism](https://subtensor.com/reference/mechanisms/delegation),
-[Subtensor source: decrease_take.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/decrease_take.rs)).
+`DelegateTakeTooLow` on the decrease path covers two separate rejections: the submitted value is not
+strictly below the current take, or it would fall below the chain's minimum allowed take.
 
-Because decrease is documented as effective immediately, unlike take increases that are paced by a
-cooldown, this error is a value-and-direction rejection rather than a timing failure
+Decreases take effect immediately, unlike take increases that are paced by a cooldown. On this path,
+`DelegateTakeTooLow` is a value-and-direction rejection rather than a timing failure
 ([Chain Rate Limits: Delegate take rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#delegate-take-rate-limit)).
 
 ## Distinction from Delegate Take Too High
 
 `DelegateTakeTooLow` and `DelegateTakeTooHigh` are paired bound checks on delegate-take changes, but
-they apply on different extrinsics. `DelegateTakeTooLow` rejects invalid increases, invalid
+they apply on different rejection paths. `DelegateTakeTooLow` rejects invalid increases, invalid
 decreases, or values below the minimum on the decrease path. `DelegateTakeTooHigh` rejects only
-increase calls whose submitted value is above `MaxDelegateTake`
-([Delegate Take Too High](https://docs.learnbittensor.org/errors/subtensor#delegatetakehigh),
-[Subtensor source: increase_take.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/increase_take.rs),
-[Subtensor source: decrease_take.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/decrease_take.rs)).
+increase calls whose submitted value is above the chain maximum
+([Subtensor Standard Errors: DelegateTakeTooHigh](https://docs.learnbittensor.org/errors/subtensor#delegatetakehigh)).
 
 - **DelegateTakeTooLow** — the submitted take is not a valid increase or decrease, or is below the
   minimum.
@@ -88,10 +80,10 @@ increase calls whose submitted value is above `MaxDelegateTake`
 
 `DelegateTakeTooLow` and `DelegateTxRateLimitExceeded` can both appear while a delegate is trying to
 change take, but they reject different problems. `DelegateTakeTooLow` is a value check on the
-submitted commission. `DelegateTxRateLimitExceeded` is the separate cooldown rejection that applies
-only when a take increase is retried too soon
+submitted commission. `DelegateTxRateLimitExceeded` is the cooldown rejection that applies only when
+a take increase is retried too soon
 ([Delegate Tx Rate Limit Exceeded](https://docs.learnbittensor.org/errors/subtensor#delegatetxratelimitexceeded),
-[Subtensor source: increase_take.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/increase_take.rs)).
+[Chain Rate Limits: Delegate take rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#delegate-take-rate-limit)).
 
 - **DelegateTakeTooLow** — the submitted take fails direction or minimum checks.
 - **DelegateTxRateLimitExceeded** — the increase was attempted before the cooldown expired.
@@ -110,6 +102,4 @@ validators, or the full cooldown rule for repeated take increases; those are doc
 - [Subtensor Standard Errors: DelegateTakeTooHigh](https://docs.learnbittensor.org/errors/subtensor#delegatetakehigh)
 - [Subtensor Standard Errors: DelegateTxRateLimitExceeded](https://docs.learnbittensor.org/errors/subtensor#delegatetxratelimitexceeded)
 - [Staking and Delegation Overview](https://docs.learnbittensor.org/staking-and-delegation/delegation)
-- [Delegation Mechanism](https://subtensor.com/reference/mechanisms/delegation)
-- [Subtensor source: increase_take.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/increase_take.rs)
-- [Subtensor source: decrease_take.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/decrease_take.rs)
+- [Chain Rate Limits: Delegate take rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#delegate-take-rate-limit)
