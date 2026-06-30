@@ -1,0 +1,120 @@
+---
+title: "Network Rate Limit"
+summary:
+  "How the network rate limit global setting paces how often Bittensor can accept a new subnet
+  registration, separate from the dynamic lock cost required to create that subnet."
+category: "Subnets"
+tags: ["Subnets", "Registration"]
+infoboxTitle: Network Rate Limit
+infoboxCaption: Block-counted wait between successful subnet registrations.
+infoboxRows:
+  - label: Parameter
+    value: NetworkRateLimit
+  - label: Scope
+    value: Network-global
+  - label: Measured in
+    value: Blocks
+  - label: Applies to
+    value: Subnet registration
+  - label: Set by
+    value: Root
+---
+
+# Network Rate Limit
+
+Network rate limit is a network-global setting, listed in the documentation as `NetworkRateLimit`,
+that paces how often the chain accepts a successful new subnet registration. It is the cooldown on
+creating the next subnet, not the price paid to create one
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#networkratelimit),
+[Chain Rate Limits: Network registration rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#network-registration-rate-limit)).
+
+## What It Controls
+
+The setting is a block-counted wait between successful subnet-creation events. The rate-limits
+reference describes it as the minimum interval between successful new-subnet registrations and notes
+that violating it returns `NetworkTxRateLimitExceeded`
+([Chain Rate Limits: Network registration rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#network-registration-rate-limit)).
+
+That means subnet creation is constrained by both cadence and cost. A creator still needs enough TAO
+for the current subnet-registration lock cost, but even a fully funded creator must wait until the
+network rate limit window has elapsed before another subnet can be created
+([Create a Subnet: Subnet creation rate limit](https://docs.learnbittensor.org/subnets/create-a-subnet#subnet-creation-rate-limit),
+[Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet)).
+
+## Current Documented Interval Versus Startup Constant
+
+The current reader-facing references describe subnet creation as limited to one successful subnet
+registration every 14,400 blocks, roughly two days at the documented block cadence
+([Chain Rate Limits: Network registration rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#network-registration-rate-limit),
+[Create a Subnet: Subnet creation rate limit](https://docs.learnbittensor.org/subnets/create-a-subnet#subnet-creation-rate-limit)).
+
+The constants reference separately lists `api.consts.subtensorModule.initialNetworkRateLimit` as
+`7200`, with the summary "Initial network creation rate limit." That constant is the startup value,
+while the live `NetworkRateLimit` chain state is the value the network enforces after launch
+([Subtensor Constants: initialNetworkRateLimit](https://docs.learnbittensor.org/subtensor-api/constants#initialnetworkratelimit),
+[Create a Subnet: Subnet creation rate limit](https://docs.learnbittensor.org/subnets/create-a-subnet#subnet-creation-rate-limit)).
+
+For a reader, the important boundary is that `7200` and `14,400` are not competing names for the
+same thing on the same layer. `7200` is the documented startup constant; `14,400` is the current
+documented subnet-creation interval readers are told to expect, and the create-a-subnet guide notes
+that the live value can be queried from `subtensorModule.networkRateLimit()`
+([Subtensor Constants: initialNetworkRateLimit](https://docs.learnbittensor.org/subtensor-api/constants#initialnetworkratelimit),
+[Create a Subnet: Subnet creation rate limit](https://docs.learnbittensor.org/subnets/create-a-subnet#subnet-creation-rate-limit)).
+
+## Scope and Permission
+
+Network rate limit is global rather than per-subnet. It governs how frequently the network accepts a
+new [[Subnet Registration]], not how one existing netuid configures its own hyperparameters
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#networkratelimit),
+[Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet)).
+
+Because it is a network-wide creation gate, the setting is root-governed rather than subnet-owner
+governed. The hyperparameters reference lists `sudo_set_network_rate_limit` as the setter
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#networkratelimit)).
+
+## Distinction from Network Min Lock Cost
+
+[[Network Min Lock Cost]] is the floor on the TAO lock cost required to create a subnet. Network
+rate limit is the block-counted wait between successful subnet creations, so one bounds price while
+the other bounds timing
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#networkratelimit),
+[Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet)).
+
+- **Network rate limit** — wait between successful subnet registrations.
+- **Network min lock cost** — floor on the subnet-creation lock cost.
+
+## Distinction from Lock Reduction Interval
+
+[[Lock Reduction Interval]] sets how quickly the dynamic subnet-creation cost halves toward its
+floor after idle time. Network rate limit instead decides how soon the next subnet registration may
+succeed, so one governs cost decay and the other creation cadence
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#networkratelimit),
+[Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet)).
+
+- **Network rate limit** — block wait before the next subnet can be created.
+- **Lock reduction interval** — block span over which creation cost halves.
+
+## Distinction from Tx Rate Limit
+
+[[Tx Rate Limit]] is the general account-level transaction cooldown that currently governs hotkey
+swaps. Network rate limit is the subnet-creation cooldown, so the two rate limits gate different
+actions at different scopes
+([Chain Rate Limits: Network registration rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#network-registration-rate-limit),
+[Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+
+- **Network rate limit** — subnet-creation pacing.
+- **Tx rate limit** — general account transaction pacing.
+
+## Reader Boundary
+
+This page defines the concept at a high level. It does not report how many blocks remain before the
+next subnet can be created on a live network. That is chain state and should be checked through the
+current subnet-creation flow or the live `subtensorModule.networkRateLimit()` query path
+([Create a Subnet: Subnet creation rate limit](https://docs.learnbittensor.org/subnets/create-a-subnet#subnet-creation-rate-limit)).
+
+## Further Reading
+
+- [Chain Rate Limits: Network registration rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#network-registration-rate-limit)
+- [Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet)
+- [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#networkratelimit)
+- [Subtensor Constants: initialNetworkRateLimit](https://docs.learnbittensor.org/subtensor-api/constants#initialnetworkratelimit)
