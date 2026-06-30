@@ -1,0 +1,126 @@
+---
+title: "Serving Rate Limit Exceeded"
+summary:
+  "How the ServingRateLimitExceeded error signals that a serve_axon or serve_prometheus call arrived
+  before the subnet's serving rate limit had elapsed since the neuron's last endpoint update."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Serving Rate Limit Exceeded
+infoboxCaption: Error raised when a neuron republishes its serving endpoint too soon.
+infoboxRows:
+  - label: Error
+    value: ServingRateLimitExceeded
+  - label: Trigger
+    value: A serve_axon or serve_prometheus call before the serving gap has elapsed
+  - label: Related limit
+    value: ServingRateLimit
+  - label: Scope
+    value: Per-subnet endpoint-update pacing
+---
+
+# Serving Rate Limit Exceeded
+
+`ServingRateLimitExceeded` is a documented Subtensor standard error that fires when a neuron tries
+to publish its serving endpoint information too soon. The standard-errors reference describes it as
+"Rate limit exceeded for axon serve/publish," and the subnet-hyperparameters reference ties the
+limit to how often the `serve_axon` and `serve_prometheus` extrinsics may be called
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#servingratelimitexceeded),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## What It Means
+
+This error is about pacing how often a neuron rewrites its on-chain serving metadata, not about
+whether the neuron is registered or whether its live server is reachable. The hyperparameters
+reference lists `ServingRateLimit` with the description "Rate limit for calling `serve_axon` and
+`serve_prometheus` extrinsics used by miners," so the limit governs the cadence of endpoint updates
+on a subnet
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Glossary: Axon](https://docs.learnbittensor.org/resources/glossary#axon)).
+
+In the Subtensor source, the serving extrinsics check a single condition before accepting a new
+endpoint record: the current block must be at least `ServingRateLimit` blocks past the block of the
+previous serve. The `axon_passes_rate_limit` helper returns true only when the rate limit is zero,
+no prior serve exists, or the gap since the last serve has reached the rate limit, and the serve
+extrinsic raises `ServingRateLimitExceeded` when that check fails
+([Subtensor source: pallets/subtensor/src/subnets/serving.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/serving.rs)).
+
+## Why It Appears
+
+The error appears when a neuron republishes its serving endpoint before the configured gap has
+elapsed since its last update on that subnet. Both `serve_axon` and `serve_prometheus` run the same
+style of block-gap check, through `axon_passes_rate_limit` and `prometheus_passes_rate_limit`
+respectively, so either extrinsic can return this single error when called too soon
+([Subtensor source: pallets/subtensor/src/subnets/serving.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/serving.rs),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+The serving rate limit is a per-subnet hyperparameter set by the subnet owner, so the exact block
+gap that triggers the rejection depends on the value stored for the netuid in question rather than
+on a single chain-wide constant
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## What It Does Not Mean
+
+This error should not be read as a registration or membership failure. Bittensor documents separate
+errors for those conditions, such as `HotKeyNotRegisteredInSubNet` when a hotkey is not registered
+on the subnet. `ServingRateLimitExceeded` is narrower: it names the timing gate on endpoint updates,
+not whether the caller belongs to the subnet
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#servingratelimitexceeded),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor)).
+
+It also should not be read as a reachability test. The check only paces how often the on-chain
+serving record may be rewritten; it does not verify that the neuron's axon server is online or that
+validators can reach it at query time
+([Subtensor source: pallets/subtensor/src/subnets/serving.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/serving.rs),
+[Understanding Neurons](https://docs.learnbittensor.org/learn/neurons#neuron-to-neuron-communication)).
+
+## Distinction from Serving Rate Limit
+
+`ServingRateLimitExceeded` and `ServingRateLimit` name two sides of the same rule.
+`ServingRateLimit` is the per-subnet hyperparameter that stores the minimum block gap between
+serving updates, while `ServingRateLimitExceeded` is the error raised when a serve call breaches
+that gap ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#servingratelimitexceeded)).
+
+- **ServingRateLimit** — the configured minimum block gap between endpoint updates.
+- **ServingRateLimitExceeded** — the rejection when a serve call arrives before that gap elapses.
+
+## Distinction from Tx Rate Limit Exceeded
+
+`ServingRateLimitExceeded` is specific to the `serve_axon` and `serve_prometheus` endpoint
+extrinsics, while `TxRateLimitExceeded` is the general transaction rate limit the standard-errors
+reference describes as "Default transaction rate limit exceeded." One names the serving-update gate;
+the other names the broad transaction-pacing gate
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#servingratelimitexceeded),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#txratelimitexceeded)).
+
+- **ServingRateLimitExceeded** — axon or prometheus serve call too soon.
+- **TxRateLimitExceeded** — general transaction rate limit breach.
+
+## Distinction from Staking Operation Rate Limit Exceeded
+
+`ServingRateLimitExceeded` gates how often a neuron republishes its axon or prometheus serving
+metadata, while `StakingOperationRateLimitExceeded` gates how often stake is changed on a subnet,
+described in the standard-errors reference as "Attempting staking operations too frequently." Both
+are per-subnet rate limits, but one is a serving-pace error and the other a staking-pace error
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#servingratelimitexceeded),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#stakingoperationratelimitexceeded)).
+
+- **ServingRateLimitExceeded** — axon or prometheus serve or publish too soon.
+- **StakingOperationRateLimitExceeded** — add, remove, or move stake too soon.
+
+## Reader Boundary
+
+This page defines the meaning of the error label. It does not tell a reader exactly when their next
+serve call on a subnet will be accepted; the serving rate limit is per-subnet chain state, so the
+next acceptable block depends on the live `ServingRateLimit` value for that netuid and the block at
+which the previous endpoint update landed. The documented place to read the rule itself is the
+subnet-hyperparameters reference
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Glossary: Block](https://docs.learnbittensor.org/resources/glossary#block)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#servingratelimitexceeded)
+- [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+- [Glossary: Axon](https://docs.learnbittensor.org/resources/glossary#axon)
+- [Understanding Neurons](https://docs.learnbittensor.org/learn/neurons#neuron-to-neuron-communication)
