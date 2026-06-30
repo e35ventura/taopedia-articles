@@ -1,0 +1,100 @@
+---
+title: "Amount Too Low"
+summary:
+  "How the AmountTooLow error blocks a staking call when the submitted TAO or alpha amount falls
+  below the chain's DefaultMinStake floor or is zero on an unstake path."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Amount Too Low
+infoboxCaption: Error raised when a stake amount is below the minimum allowed increment.
+infoboxRows:
+  - label: Error
+    value: AmountTooLow
+  - label: Trigger
+    value: Stake amount below DefaultMinStake or zero unstake
+  - label: Checked in
+    value: validate_add_stake and validate_remove_stake
+  - label: Related parameter
+    value: DefaultMinStake
+---
+
+# Amount Too Low
+
+`AmountTooLow` is a documented Subtensor standard error raised on staking paths. The standard-errors
+reference describes it as "Stake amount is too low"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#amounttoolow)).
+
+## What It Means
+
+Staking calls must name amounts large enough to satisfy the chain's minimum stake increment. In
+`stake_utils.rs`, `validate_add_stake` and `validate_remove_stake` compare submitted amounts against
+`DefaultMinStake` and return `AmountTooLow` when the value is too small for the path
+([Managing Your Stakes](https://docs.learnbittensor.org/staking-and-delegation/managing-stake-sdk),
+[Subtensor source: stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)).
+
+On add-stake paths, `validate_add_stake` requires the requested TAO to meet a minimum that includes
+`DefaultMinStake` plus swap fees, and it checks that the simulated swap's `amount_paid_in` is at
+least `DefaultMinStake`
+([Subtensor source: stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)).
+
+On remove-stake paths, `validate_remove_stake` rejects a zero unstake amount and, when a partial
+unstake would leave non-zero alpha behind, requires the TAO equivalent paid out for the unstaked
+portion to meet `DefaultMinStake`. A full unstake bypasses that remainder check
+([Subtensor source: stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)).
+
+## Why It Appears
+
+This error appears when a wallet submits a stake or unstake amount below the documented minimum
+transaction size, names zero alpha on an unstake call, or attempts a partial unstake that would
+leave a remainder too small to satisfy the floor
+([Managing Your Stakes](https://docs.learnbittensor.org/staking-and-delegation/managing-stake-sdk),
+[Subtensor source: stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)).
+
+For a reader, the practical meaning is narrow: the amount in the extrinsic is below the minimum
+increment for that staking action. The problem is not that the coldkey lacks enough free TAO to fund
+a valid-sized stake, that the pair lacks enough staked alpha to cover a removal, or that the swap
+pool lacks liquidity
+([Subtensor Standard Errors: NotEnoughBalanceToStake](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake),
+[Subtensor Standard Errors: NotEnoughStakeToWithdraw](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketowithdraw),
+[Subtensor Standard Errors: InsufficientLiquidity](https://docs.learnbittensor.org/errors/subtensor#insufficientliquidity)).
+
+## Distinction from Not Enough Balance To Stake
+
+`AmountTooLow` and `NotEnoughBalanceToStake` both appear on add-stake paths, but they test different
+limits. `AmountTooLow` means the requested amount is smaller than the `DefaultMinStake` floor,
+including fee-adjusted minimums from `validate_add_stake`. `NotEnoughBalanceToStake` means the
+coldkey's free balance cannot cover a stake amount that already passed the minimum-size checks
+([Not Enough Balance To Stake](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake),
+[Subtensor source: stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)).
+
+- **AmountTooLow** — the stake amount is below the minimum allowed increment.
+- **NotEnoughBalanceToStake** — free balance cannot fund the requested stake amount.
+
+## Distinction from Not Enough Stake To Withdraw
+
+`AmountTooLow` and `NotEnoughStakeToWithdraw` both appear around unstaking, but they reject
+different problems. `AmountTooLow` is the minimum-size gate, including zero unstake amounts and
+partial unstakes that would leave a remainder below `DefaultMinStake`. `NotEnoughStakeToWithdraw`
+means the requested removal exceeds the staked alpha held by the hotkey-coldkey pair on that subnet
+([Not Enough Stake To Withdraw](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketowithdraw),
+[Subtensor source: stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)).
+
+- **AmountTooLow** — the unstake amount is zero or below the minimum increment rules.
+- **NotEnoughStakeToWithdraw** — the unstake amount exceeds available staked alpha.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the `DefaultMinStake` checks in
+`validate_add_stake` and `validate_remove_stake`. It does not describe every other path that can
+raise `AmountTooLow`, such as move-stake validation, or the live `DefaultMinStake` value on a
+network; those are documented separately
+([Managing Your Stakes](https://docs.learnbittensor.org/staking-and-delegation/managing-stake-sdk),
+[Subtensor source: stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#amounttoolow)
+- [Managing Your Stakes](https://docs.learnbittensor.org/staking-and-delegation/managing-stake-sdk)
+- [Not Enough Balance To Stake](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake)
+- [Not Enough Stake To Withdraw](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketowithdraw)
+- [Subtensor source: stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)
