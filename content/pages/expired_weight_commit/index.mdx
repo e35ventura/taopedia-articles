@@ -14,85 +14,88 @@ infoboxRows:
   - label: Trigger
     value: Reveal-derived hash matches a commit whose epoch has exceeded the subnet reveal period
   - label: Checked in
-    value: internal_reveal_weights
-  - label: Check type
-    value: Membership check against the just-pruned expired-hash set
+    value: reveal and batch_reveal weight extrinsics
+  - label: Related hyperparameter
+    value: CommitRevealPeriod
 ---
 
 # Expired Weight Commit
 
-`ExpiredWeightCommit` is a documented Subtensor standard error. The standard-errors reference
-describes it as "Attempted to reveal weights that are expired"
+`ExpiredWeightCommit` means a reveal matched a stored commit that had already aged past the subnet's
+reveal window. The standard-errors reference describes it as "Attempted to reveal weights that are
+expired"
 ([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#expiredweightcommit)).
+
+Each pending commit carries the epoch it was made in. The subnet's `CommitRevealPeriod` sets how
+long that commit stays eligible before the chain treats it as expired
+([Commit-Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
+[Commit Reveal Period](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#commitrevealperiod)).
 
 ## What It Means
 
-A validator that has opted into the commit-reveal scheme first submits a hash commitment over its
-planned weight vector, then later submits the actual weights together with the salt it used to
-produce the commitment
-([Concepts: Commit-Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)).
+[Commit-reveal](https://docs.learnbittensor.org/concepts/commit-reveal) weight submission happens in
+two steps: a hash commitment first, then the actual weights and salt later. `ExpiredWeightCommit`
+means the reveal step recomputed a hash that matched a stored commitment, but that commitment had
+already exceeded the subnet's reveal period and was no longer eligible, so the chain rejected the
+reveal instead of applying weights
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#expiredweightcommit)).
 
-`ExpiredWeightCommit` means the runtime recomputed the hash from the reveal's
-`(uids, values, salt, version_key)` and found that the only stored commitment on the subnet whose
-hash matched is one whose commit epoch has already exceeded the subnet's reveal period. The runtime
-therefore rejects the reveal and discards the expired commitment
-([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#expiredweightcommit),
-[Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+This is a late-reveal failure: the commit existed and the hash paired correctly, but the validator
+waited too long to reveal within the subnet's allowed window.
 
 ## Why It Appears
 
-The reveal path is implemented as `internal_reveal_weights`, which is reached from both
-`do_reveal_weights` and `do_batch_reveal_weights`. After verifying the caller and that commit-reveal
-is enabled for the subnet, it pulls the caller's stored commit queue and walks it from the front,
-popping any commit whose commit epoch has expired under the subnet's reveal period and recording its
-hash in a local `expired_hashes` set
-([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+This error appears on the reveal side after commit-reveal is enabled for the target netuid. It fires
+when automation or a client submits a reveal after the matching commit has aged out of the active
+pending queue
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#expiredweightcommit)).
 
-`is_commit_expired` is the predicate that drives that walk: a commit at `commit_epoch` is expired
-when the current epoch exceeds `commit_epoch + reveal_period`
-([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+When debugging, compare timing and lookup errors before assuming a bad hash. `RevealTooEarly` means
+the matching commit is still active but the eligible reveal epoch has not arrived yet.
+`NoWeightsCommitFound` means no matching active stored commit exists for that hotkey and netuid
+([Subtensor Standard Errors: RevealTooEarly](https://docs.learnbittensor.org/errors/subtensor#revealtooearly),
+[Subtensor Standard Errors: NoWeightsCommitFound](https://docs.learnbittensor.org/errors/subtensor#noweightscommitfound)).
 
-After pruning, the runtime recomputes the reveal's hash and looks for it in the remaining
-non-expired commits. If the hash is in `expired_hashes` but in no remaining commit, the runtime
-raises `ExpiredWeightCommit`. The same fallback path appears in `do_batch_reveal_weights`, where
-each individual reveal that resolves only to an expired commit raises the same error
-([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
-
-For a reader, the practical meaning is simple: the validator is trying to reveal against a
-commitment that was made too long ago for the subnet to honor. The runtime refuses the reveal
-instead of letting weights land through a stale commitment
-([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+The practical meaning is narrow: the validator is trying to reveal against a commitment that was
+made too long ago for the subnet to honor. The problem is not that commit-reveal is disabled or that
+the reveal simply arrived before its window opened.
 
 ## Distinction from Invalid Reveal Commit Hash Not Match
 
-`ExpiredWeightCommit` and `InvalidRevealCommitHashNotMatch` both fire from the same final fallback
-in `internal_reveal_weights` after the recomputed reveal hash fails to match any remaining
-non-expired commit. They distinguish what kind of mismatch occurred: the hash matched a just-pruned
-expired commit (`ExpiredWeightCommit`), or it matched no commit at all
-(`InvalidRevealCommitHashNotMatch`)
-([Subtensor Standard Errors: InvalidRevealCommitHashNotMatch](https://docs.learnbittensor.org/errors/subtensor#invalidrevealcommithashnotmatch),
-[Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+`ExpiredWeightCommit` and `InvalidRevealCommitHashNotMatch` both appear when a reveal hash fails to
+match any remaining active commit, but they reject different causes. `ExpiredWeightCommit` means the
+hash matched a stored commit that had just been pruned as expired. `InvalidRevealCommitHashNotMatch`
+means the hash matched no stored commit at all — for example because the reveal used the wrong salt,
+weight vector, or version key
+([Subtensor Standard Errors: InvalidRevealCommitHashNotMatch](https://docs.learnbittensor.org/errors/subtensor#invalidrevealcommithashnotmatch)).
 
-- **ExpiredWeightCommit** — the reveal's hash matches a stored commit, but that commit is past the
-  subnet's reveal period and has just been pruned.
-- **InvalidRevealCommitHashNotMatch** — the reveal's hash matches no stored commit at all on the
-  subnet.
+- **ExpiredWeightCommit** — the hash matched a stored commit, but that commit had already expired.
+- **InvalidRevealCommitHashNotMatch** — the hash matched no stored commit at all.
+
+## Distinction from Reveal Too Early
+
+`ExpiredWeightCommit` and `RevealTooEarly` are opposite timing failures on the reveal side.
+`RevealTooEarly` means a matching commit is still active, but the current epoch is before its
+eligible reveal epoch. `ExpiredWeightCommit` means the matching commit existed but has already aged
+out
+([Subtensor Standard Errors: RevealTooEarly](https://docs.learnbittensor.org/errors/subtensor#revealtooearly)).
+
+- **RevealTooEarly** — the commit is still active, but its eligible epoch hasn't arrived.
+- **ExpiredWeightCommit** — the matching commit aged out before the reveal was processed.
 
 ## Reader Boundary
 
-This page defines the meaning of the `ExpiredWeightCommit` error label and the `is_commit_expired`
-predicate that drives the pruning step inside `internal_reveal_weights`. It does not describe the
-broader commit-reveal scheme, the rules that determine when commit-reveal is enabled on a subnet, or
-the version-key and rate-limit checks that surround the reveal call; those are separate conditions
-with their own articles
-([Concepts: Commit-Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
-[Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+This page defines the meaning of the error label and the expired-commit condition that raises it. It
+does not describe the full commit-reveal lifecycle, how reveal timing windows are computed, or how
+expired commits are pruned; those are separate topics
+([Commit-Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
+[Commit Reveal Period](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#commitrevealperiod)).
 
 ## Further Reading
 
 - [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#expiredweightcommit)
 - [Subtensor Standard Errors: InvalidRevealCommitHashNotMatch](https://docs.learnbittensor.org/errors/subtensor#invalidrevealcommithashnotmatch)
-- [Subtensor source: errors.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/errors.rs)
-- [Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)
-- [Concepts: Commit-Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)
-- [Glossary: Weight Vector](https://docs.learnbittensor.org/resources/glossary#weight-vector)
+- [Subtensor Standard Errors: RevealTooEarly](https://docs.learnbittensor.org/errors/subtensor#revealtooearly)
+- [Subtensor Standard Errors: NoWeightsCommitFound](https://docs.learnbittensor.org/errors/subtensor#noweightscommitfound)
+- [Commit-Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)
+- [Commit Reveal Period](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#commitrevealperiod)
