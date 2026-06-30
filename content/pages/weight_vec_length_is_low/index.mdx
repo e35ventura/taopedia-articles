@@ -1,0 +1,98 @@
+---
+title: "Weight Vec Length Is Low"
+summary:
+  "How the WeightVecLengthIsLow error signals that a set_weights call scored fewer UIDs than the
+  effective minimum required on that subnet."
+category: "Validation"
+tags: ["Validation", "Errors"]
+infoboxTitle: Weight Vec Length Is Low
+infoboxCaption: Error raised when a weight vector contains too few scored UIDs.
+infoboxRows:
+  - label: Error
+    value: WeightVecLengthIsLow
+  - label: Trigger
+    value: Weight count is below the effective MinAllowedWeights floor
+  - label: Checked in
+    value: do_set_weights
+  - label: Related hyperparameter
+    value: MinAllowedWeights
+---
+
+# Weight Vec Length Is Low
+
+`WeightVecLengthIsLow` is a documented Subtensor standard error raised by the `set_weights`
+extrinsic. The standard-errors reference describes it as "Setting weights with fewer elements than
+allowed"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#weightveclengthislow)).
+
+## What It Means
+
+A `set_weights` call must include enough scored UIDs to meet the subnet's effective minimum weight
+count. `WeightVecLengthIsLow` means the submitted UID and value lists already match in length, but
+that shared length is still below the floor the runtime enforces for that submission
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#weightveclengthislow),
+[Min Allowed Weights](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#minallowedweights),
+[Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+In `weights.rs`, `do_set_weights` calls `check_length` and returns `WeightVecLengthIsLow` when that
+function reports the weight count is too small. The effective floor is the smaller of the configured
+`MinAllowedWeights` value and the subnet's current neuron count, so a small subnet is not asked to
+score more UIDs than exist
+([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+## Why It Appears
+
+This error is a minimum-count check, not a list-alignment check. It fires after the UID and value
+lists have already been accepted as the same length, when the shared count still falls below the
+effective minimum for a non-exempt submission
+([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+The check is skipped for a pure self-weight submission on a non-root subnet: when the vector
+contains only the caller's own UID, `check_length` returns true without comparing against the
+configured minimum
+([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+For a reader, the practical meaning is narrow: the weight vector is too short. The problem is not a
+UID/value length mismatch, an upscaled value above `MaxWeightLimit`, or a rate-limit violation
+([Subtensor Standard Errors: WeightVecNotEqualSize](https://docs.learnbittensor.org/errors/subtensor#weightvecnotequalsize),
+[Subtensor Standard Errors: MaxWeightExceeded](https://docs.learnbittensor.org/errors/subtensor#maxweightexceeded),
+[Subtensor Standard Errors: SettingWeightsTooFast](https://docs.learnbittensor.org/errors/subtensor#settingweightstoofast)).
+
+## Distinction from Weight Vec Not Equal Size
+
+`WeightVecLengthIsLow` and `WeightVecNotEqualSize` both concern the shape of a submitted weight
+vector, but they check different properties. `WeightVecNotEqualSize` compares the UID list length
+against the value list length and rejects any mismatch. `WeightVecLengthIsLow` applies only after
+those lists already agree in length and tests whether that shared count meets the effective minimum
+([Weight Vec Not Equal Size](https://docs.learnbittensor.org/errors/subtensor#weightvecnotequalsize),
+[Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+- **WeightVecNotEqualSize** — the UID list and value list have different lengths.
+- **WeightVecLengthIsLow** — the lists match, but there are too few scored UIDs.
+
+## Distinction from Max Weight Exceeded
+
+`WeightVecLengthIsLow` and `MaxWeightExceeded` are checked at different points in the `set_weights`
+path. `WeightVecLengthIsLow` is the minimum element-count gate. `MaxWeightExceeded` is a later
+value-cap comparison on upscaled weights after the count check has already passed
+([Max Weight Exceeded](https://docs.learnbittensor.org/errors/subtensor#maxweightexceeded),
+[Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+- **WeightVecLengthIsLow** — too few UIDs were included in the weight vector.
+- **MaxWeightExceeded** — the vector is long enough, but an upscaled value exceeds the cap.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the minimum-count check that raises it. It does
+not describe how `MinAllowedWeights` is configured, how weights are upscaled, or the
+validator-permit and rate-limit checks that surround this step in the same extrinsic
+([Min Allowed Weights](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#minallowedweights),
+[Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#weightveclengthislow)
+- [Subtensor Standard Errors: WeightVecNotEqualSize](https://docs.learnbittensor.org/errors/subtensor#weightvecnotequalsize)
+- [Subtensor Standard Errors: MaxWeightExceeded](https://docs.learnbittensor.org/errors/subtensor#maxweightexceeded)
+- [Min Allowed Weights](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#minallowedweights)
+- [Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)
