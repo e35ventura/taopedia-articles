@@ -1,0 +1,97 @@
+---
+title: "Admin Action Prohibited During Weights Window"
+summary:
+  "How the AdminActionProhibitedDuringWeightsWindow error blocks subnet hyperparameter changes
+  submitted during the admin freeze window at the end of an epoch."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Admin Action Prohibited During Weights Window
+infoboxCaption: Error raised when an admin change lands inside the epoch-end freeze.
+infoboxRows:
+  - label: Error
+    value: AdminActionProhibitedDuringWeightsWindow
+  - label: Trigger
+    value: Call arrives while the admin freeze window is active
+  - label: Checked in
+    value: ensure_admin_window_open
+  - label: Related parameter
+    value: AdminFreezeWindow
+---
+
+# Admin Action Prohibited During Weights Window
+
+`AdminActionProhibitedDuringWeightsWindow` is a documented Subtensor standard error raised when an
+administrative hyperparameter change is submitted during the protected window at the end of an
+epoch. The standard-errors reference describes it as "Admin operation is prohibited during the
+protected weights window"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#adminactionprohibitedduringweightswindow)).
+
+## What It Means
+
+Subnet hyperparameter setters in the admin-utils pallet call `ensure_admin_window_open` before
+writing changes. That helper compares the current block to the subnet's tempo boundary and returns
+`AdminActionProhibitedDuringWeightsWindow` when the chain is inside the admin freeze window: the
+final `AdminFreezeWindow` blocks before the next automatic epoch
+([Subtensor source: misc.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/misc.rs),
+[Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+
+The freeze exists so hyperparameters cannot change in the last blocks before validators finalize
+weights at the epoch boundary. The error is a timing gate on authorized admin extrinsics, not a
+rejection of the submitted parameter value itself
+([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+
+## Why It Appears
+
+This error appears when an admin hyperparameter extrinsic is signed while the freeze window is
+active for the targeted subnet. Automation that fires at epoch boundaries, retries that land in the
+final blocks of a tempo, or clients that do not account for the short blackout can see this failure
+even when the caller is otherwise permitted to change the parameter
+([Subtensor source: misc.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/misc.rs)).
+
+When debugging, rule out authorization failures first. `BadOrigin` and `NotSubnetOwner` mean the
+signer lacks the required root or subnet-owner permission for the extrinsic. Only after
+authorization passes does `ensure_admin_window_open` evaluate the freeze timing
+([Subtensor Standard Errors: BadOrigin](https://docs.learnbittensor.org/errors/subtensor#badorigin),
+[Subtensor Standard Errors: NotSubnetOwner](https://docs.learnbittensor.org/errors/subtensor#notsubnetowner)).
+
+The practical fix is timing: submit the change earlier in the tempo, or wait until the new epoch
+begins and the freeze has lifted
+([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+
+## Distinction from Activity Cutoff Too Low
+
+`AdminActionProhibitedDuringWeightsWindow` and `ActivityCutoffTooLow` can both appear on
+hyperparameter setters, but they reject different problems. The weights-window error is a timing
+gate at epoch end. `ActivityCutoffTooLow` is a value floor on the legacy activity cutoff setter that
+runs only after authorization and timing checks have already passed
+([Activity Cutoff Too Low](https://docs.learnbittensor.org/errors/subtensor#activitycutofftoolow),
+[Subtensor source: admin-utils lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+- **AdminActionProhibitedDuringWeightsWindow** — the call arrived during the epoch-end admin freeze.
+- **ActivityCutoffTooLow** — the submitted cutoff value is below the configured minimum.
+
+## Distinction from Owner Hyperparameter Rate Limit
+
+`AdminActionProhibitedDuringWeightsWindow` and the owner hyperparameter rate limit both restrict
+when subnet hyperparameters can change, but along different axes. The rate limit is a per-parameter
+cooldown measured in tempos between repeated changes to the same setting. The admin freeze window is
+a short blackout at the end of every epoch that blocks admin changes regardless of which parameter
+is involved ([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+
+- **AdminActionProhibitedDuringWeightsWindow** — when in the epoch any admin change is blocked.
+- **Owner hyperparameter rate limit** — how soon the same hyperparameter can be changed again.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the `ensure_admin_window_open` check. It does
+not describe the live `AdminFreezeWindow` value on a network, every extrinsic that calls the helper,
+or how tempo and epoch boundaries are computed; those are documented separately
+([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits),
+[Subtensor source: misc.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/misc.rs)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#adminactionprohibitedduringweightswindow)
+- [Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)
+- [Subtensor source: misc.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/misc.rs)
+- [Subtensor source: admin-utils lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)
