@@ -1,0 +1,75 @@
+---
+title: "Symbol Already In Use"
+summary:
+  "How the SymbolAlreadyInUse error signals that a submitted subnet symbol is valid, but another
+  subnet is already using it."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Symbol Already In Use
+infoboxCaption: Error raised when a valid subnet symbol is already assigned elsewhere.
+infoboxRows:
+  - label: Error
+    value: SymbolAlreadyInUse
+  - label: Trigger
+    value: Submitted symbol matches one already stored for another subnet
+  - label: Check type
+    value: Existing-symbol reuse check
+  - label: Related concept
+    value: Subnet symbol
+---
+
+# Symbol Already In Use
+
+`SymbolAlreadyInUse` is a documented Subtensor standard error. The standard-errors reference
+describes it simply as "Symbol already in use"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#symbolalreadyinuse)).
+
+## What It Means
+
+This error means the submitted symbol is a recognized symbol, but the chain finds that another
+subnet already uses the same symbol. In `symbols.rs`, `ensure_symbol_available` iterates through
+stored `TokenSymbol` values and returns `SymbolAlreadyInUse` when the submitted symbol is already
+present
+([Subtensor source: symbols.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/symbols.rs)).
+
+So the rejection is about reuse, not about symbol validity. The symbol itself passes the existence
+question; the problem is that the same valid symbol is already assigned elsewhere
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#symbolalreadyinuse),
+[Subtensor source: symbols.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/symbols.rs)).
+
+## Why It Appears
+
+The chain keeps track of symbols already assigned to subnets. When a submitted symbol matches one of
+those stored values, `ensure_symbol_available` rejects the duplicate instead of allowing two subnets
+to share the same symbol
+([Subtensor source: symbols.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/symbols.rs)).
+
+For a reader, the practical meaning is narrow: the chain is not saying the symbol is unknown. It is
+saying the symbol is known and valid, but unavailable because another subnet already has it
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#symbolalreadyinuse),
+[Subtensor Standard Errors: SymbolDoesNotExist](https://docs.learnbittensor.org/errors/subtensor#symboldoesnotexist)).
+
+## Distinction from Symbol Does Not Exist
+
+`SymbolAlreadyInUse` and `SymbolDoesNotExist` reject different symbol problems. `SymbolAlreadyInUse`
+means the symbol is valid, but unavailable because it is already assigned. `SymbolDoesNotExist`
+means the submitted symbol is outside the chain's allowed symbol set
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#symbolalreadyinuse),
+[Subtensor Standard Errors: SymbolDoesNotExist](https://docs.learnbittensor.org/errors/subtensor#symboldoesnotexist),
+[Subtensor source: symbols.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/symbols.rs)).
+
+- **SymbolAlreadyInUse** — the symbol is valid, but another subnet already uses it.
+- **SymbolDoesNotExist** — the symbol is not in the chain's allowed symbol set.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the reuse check that raises it. It does not
+explain the full subnet-symbol assignment process or the full symbol-selection strategy beyond this
+one rejection condition
+([Subtensor source: symbols.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/symbols.rs)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#symbolalreadyinuse)
+- [Subtensor Standard Errors: SymbolDoesNotExist](https://docs.learnbittensor.org/errors/subtensor#symboldoesnotexist)
+- [Subtensor source: symbols.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/symbols.rs)
