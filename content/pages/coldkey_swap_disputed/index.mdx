@@ -1,0 +1,92 @@
+---
+title: "Coldkey Swap Disputed"
+summary:
+  "How the ColdkeySwapDisputed error blocks all signed calls while a coldkey swap for the calling
+  account is under dispute."
+category: "Wallets"
+tags: ["Wallets", "Errors"]
+infoboxTitle: Coldkey Swap Disputed
+infoboxCaption: Error raised when a disputed swap announcement blocks the attempted call.
+infoboxRows:
+  - label: Error
+    value: ColdkeySwapDisputed
+  - label: Trigger
+    value: Signed call while a swap dispute record is active
+  - label: Checked in
+    value: CheckColdkeySwap dispatch extension
+  - label: Check type
+    value: Dispute-state dispatch guard
+---
+
+# Coldkey Swap Disputed
+
+`ColdkeySwapDisputed` is a documented Subtensor standard error raised while a
+[coldkey swap](https://docs.learnbittensor.org/keys/coldkey-swap) is under dispute. The
+standard-errors reference describes it as "A coldkey swap for this account is under dispute"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#coldkeyswapdisputed)).
+
+This page covers the error label returned when a blocked call is rejected. It is separate from the
+successful `ColdkeySwapDisputed` event that `dispute_coldkey_swap` emits after a valid dispute is
+recorded
+([Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)).
+
+## What It Means
+
+After `dispute_coldkey_swap` records a dispute for a coldkey, the chain keeps both the pending
+announcement and a dispute record for that account. The `CheckColdkeySwap` dispatch extension checks
+that dispute state before signed calls run. If the signer has an active dispute record, the
+extension rejects the call with `ColdkeySwapDisputed`, regardless of which extrinsic was attempted
+([Subtensor source: check_coldkey_swap.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/guards/check_coldkey_swap.rs),
+[Coldkey Swap](https://docs.learnbittensor.org/keys/coldkey-swap)).
+
+This is stricter than the undisputed announcement lock. While a pending but undisputed announcement
+still allows swap-related calls such as finalizing or disputing the swap, a disputed announcement
+blocks every signed call for that coldkey, including swap-flow calls
+([Subtensor source: check_coldkey_swap.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/guards/check_coldkey_swap.rs)).
+
+The coldkey swap concept article describes this as a full freeze until governance resolves the
+dispute rather than an automatic return to normal wallet use
+([Coldkey Swap](https://docs.learnbittensor.org/keys/coldkey-swap)).
+
+## Why It Appears
+
+The most direct cause is attempting any signed operation after a dispute has already been recorded
+for that coldkey. That includes ordinary operations such as staking or transfers, but also
+swap-related calls that would still pass during an undisputed announcement, such as
+`swap_coldkey_announced` or `clear_coldkey_swap_announcement`
+([Subtensor source: check_coldkey_swap.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/guards/check_coldkey_swap.rs)).
+
+Because the extension runs on every signed dispatch for the account, the same error label can appear
+on unrelated calls until root clears the swap state through the reset path documented for disputed
+swaps. This is separate from `ColdkeySwapAlreadyDisputed`, which is raised only when
+`dispute_coldkey_swap` is called a second time while a dispute record already exists
+([Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs),
+[Coldkey Swap](https://docs.learnbittensor.org/keys/coldkey-swap)).
+
+## Distinction from Coldkey Swap Announced
+
+`ColdkeySwapDisputed` and `ColdkeySwapAnnounced` are both raised by the same `CheckColdkeySwap`
+extension, but they correspond to different announcement states. `ColdkeySwapAnnounced` applies when
+a pending announcement exists and is not disputed: most ordinary calls are blocked, but swap-related
+calls can still pass. `ColdkeySwapDisputed` applies once a dispute record exists and blocks all
+signed calls for that coldkey, including swap-related ones
+([Coldkey Swap Announced](https://docs.learnbittensor.org/errors/subtensor#coldkeyswapannounced),
+[Subtensor source: check_coldkey_swap.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/guards/check_coldkey_swap.rs)).
+
+- **ColdkeySwapAnnounced** — pending announcement active; most calls blocked, swap flow still
+  allowed.
+- **ColdkeySwapDisputed** — swap under dispute; all signed calls blocked.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the dispatch guard that raises it. It does not
+describe how to open a dispute, how the Triumvirate resolves one, or the root reset path; those are
+documented separately ([Coldkey Swap](https://docs.learnbittensor.org/keys/coldkey-swap),
+[Subtensor source: check_coldkey_swap.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/guards/check_coldkey_swap.rs)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#coldkeyswapdisputed)
+- [Subtensor Standard Errors: ColdkeySwapAnnounced](https://docs.learnbittensor.org/errors/subtensor#coldkeyswapannounced)
+- [Coldkey Swap](https://docs.learnbittensor.org/keys/coldkey-swap)
+- [Subtensor source: check_coldkey_swap.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/guards/check_coldkey_swap.rs)
