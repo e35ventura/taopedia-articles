@@ -14,54 +14,74 @@ infoboxRows:
     value: Current epoch does not match the commit's eligible reveal epoch
   - label: Checked in
     value: Pre-dispatch and inside the reveal extrinsic
-  - label: Check type
-    value: Epoch-index equality check
+  - label: Related hyperparameter
+    value: CommitRevealPeriod
 ---
 
 # Reveal Too Early
 
-`RevealTooEarly` is a documented Subtensor standard error raised by the commit-reveal weight reveal
-extrinsics. The standard-errors reference describes it as "Attempted to reveal weights too early"
+`RevealTooEarly` means a reveal weight extrinsic arrived before the one specific epoch when its
+stored commit becomes eligible. The standard-errors reference describes it as "Attempted to reveal
+weights too early"
 ([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#revealtooearly)).
+
+Each commit is tagged with the epoch it was made in. The chain derives one eligible reveal epoch
+from that commit epoch plus the subnet's `CommitRevealPeriod`, then accepts a matching reveal only
+when the current epoch equals that target — not merely when "enough time has passed"
+([Commit-Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
+[Commit Reveal Period](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#commitrevealperiod)).
 
 ## What It Means
 
 [Commit-reveal](https://docs.learnbittensor.org/concepts/commit-reveal) weight submission happens in
-two steps: a hash commitment first, then the actual weights and salt later. Each commit is tagged
-with the epoch it was made in, and the chain only accepts a matching reveal during one specific
-later epoch, derived from that commit epoch plus the subnet's configured reveal period. The check is
-an exact match, not a "has enough time passed" comparison, so `RevealTooEarly` fires whenever the
-current epoch has not yet reached that specific target epoch
-([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+two steps: a hash commitment first, then the actual weights and salt later. `RevealTooEarly` means
+the reveal side ran while the current epoch still had not reached the commit's eligible reveal
+epoch, so the chain rejected the call instead of applying weights
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#revealtooearly)).
 
-The chain runs this same epoch check twice for the same reveal call: once as a precondition before
-the call is dispatched, and again inside the reveal extrinsic itself. Both checks read the same
-underlying epoch comparison, so they agree on the outcome; the duplication is a defense-in-depth
-measure rather than two different rules
-([Subtensor source: check_weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/guards/check_weights.rs),
-[Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+The same epoch comparison runs as a precondition before the reveal extrinsic is dispatched and again
+inside the reveal path itself. Both checks use the same rule, so they agree on the outcome.
 
 ## Why It Appears
 
 A validator that reveals immediately after committing, or anywhere before the subnet's reveal period
 has elapsed, will not yet be in the eligible epoch and will see this error. Submitting the reveal
-during the correct epoch is what the commit-reveal scheme expects; arriving early is treated the
-same as arriving for the wrong commit entirely, since the check only recognizes one specific epoch
-as valid for any given commit
-([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+during the correct epoch is what the commit-reveal scheme expects; arriving early is treated as a
+timing mismatch for that specific commit
+([Commit-Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)).
+
+When debugging, confirm a matching commit exists for the same hotkey and netuid before assuming a
+missing-commit failure. Then compare timing errors: `NoWeightsCommitFound` means no usable stored
+commit was found, while `ExpiredWeightCommit` means a matching commit existed but had already aged
+out
+([Subtensor Standard Errors: NoWeightsCommitFound](https://docs.learnbittensor.org/errors/subtensor#noweightscommitfound),
+[Subtensor Standard Errors: ExpiredWeightCommit](https://docs.learnbittensor.org/errors/subtensor#expiredweightcommit)).
+
+`CommitRevealDisabled` is a separate early gate: it means commit-reveal is off on that netuid before
+any reveal timing check runs
+([Subtensor Standard Errors: CommitRevealDisabled](https://docs.learnbittensor.org/errors/subtensor#commitrevealdisabled)).
 
 ## Distinction from Expired Weight Commit
 
 `RevealTooEarly` and `ExpiredWeightCommit` are both reveal-side rejections, but they apply to
 commits in different states. `RevealTooEarly` applies to a commit that is still active and simply
 has not reached its eligible epoch yet. `ExpiredWeightCommit` applies once a commit has aged out and
-been pruned from the active list before it was ever revealed, which is a separate cleanup path
-rather than a timing comparison on a still-active commit
-([Expired Weight Commit](https://docs.learnbittensor.org/errors/subtensor#expiredweightcommit),
-[Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+been pruned from the active list before it was ever revealed
+([Expired Weight Commit](https://docs.learnbittensor.org/errors/subtensor#expiredweightcommit)).
 
 - **RevealTooEarly** — the commit is still active, but its eligible epoch hasn't arrived.
 - **ExpiredWeightCommit** — the commit aged out and was pruned before being revealed.
+
+## Distinction from No Weights Commit Found
+
+`RevealTooEarly` and `NoWeightsCommitFound` both appear during reveal troubleshooting, but they
+reject different conditions. `RevealTooEarly` means a matching commit is present and active, but the
+current epoch is still before its eligible reveal epoch. `NoWeightsCommitFound` means the chain
+found no matching active stored commit for that hotkey and netuid
+([No Weights Commit Found](https://docs.learnbittensor.org/errors/subtensor#noweightscommitfound)).
+
+- **RevealTooEarly** — commit exists, but the reveal window has not opened yet.
+- **NoWeightsCommitFound** — no matching active stored commit exists for the reveal.
 
 ## Reader Boundary
 
@@ -69,12 +89,12 @@ This page defines the meaning of the error label and the epoch check that raises
 describe the full commit-reveal flow, how the reveal period is configured, or how expired commits
 are pruned; those are documented separately
 ([Commit-Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
-[Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+[Commit Reveal Period](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#commitrevealperiod)).
 
 ## Further Reading
 
 - [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#revealtooearly)
 - [Subtensor Standard Errors: ExpiredWeightCommit](https://docs.learnbittensor.org/errors/subtensor#expiredweightcommit)
+- [Subtensor Standard Errors: NoWeightsCommitFound](https://docs.learnbittensor.org/errors/subtensor#noweightscommitfound)
 - [Commit-Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)
-- [Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)
-- [Subtensor source: check_weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/guards/check_weights.rs)
+- [Commit Reveal Period](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#commitrevealperiod)
