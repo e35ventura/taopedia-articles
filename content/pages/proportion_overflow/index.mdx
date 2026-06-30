@@ -1,0 +1,98 @@
+---
+title: "Proportion Overflow"
+summary:
+  "How the ProportionOverflow error blocks a schedule_children call when the combined stake
+  proportions assigned across its child hotkeys exceed what the chain can represent."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Proportion Overflow
+infoboxCaption:
+  Error raised when a child list's combined stake proportions overflow proportion accounting.
+infoboxRows:
+  - label: Error
+    value: ProportionOverflow
+  - label: Trigger
+    value: Sum of listed child proportions exceeds u64::MAX
+  - label: Checked in
+    value: ensure_total_proportions
+  - label: Check type
+    value: Combined proportion sum
+---
+
+# Proportion Overflow
+
+`ProportionOverflow` means the stake proportions listed for a parent's child hotkeys on a subnet add
+up to more than the chain can represent in one child-set call. The standard-errors reference
+describes it as "Proportion overflow when setting children"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#proportionoverflow)).
+
+The check applies to the submitted proportion values themselves, not to whether each child hotkey is
+valid or unique ([Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys)).
+
+## What It Means
+
+A [child hotkey](https://docs.learnbittensor.org/validators/child-hotkeys) lets a parent delegate a
+share of its stake to separate validating keys on a subnet. Each child in a `set_children` call is
+paired with a proportion value that defines how much of the parent's stake routes to that child.
+`ProportionOverflow` is the rejection when the sum of those proportions is too large for the chain's
+proportion accounting ([Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#proportionoverflow)).
+
+In `set_children.rs`, `ensure_total_proportions` adds the submitted proportion values and returns
+`ProportionOverflow` when their combined total exceeds `u64::MAX`
+([Subtensor source: set_children.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/set_children.rs)).
+
+## Why It Appears
+
+Child-hotkey scheduling validates the full list a parent submits on a subnet. `DuplicateChild`
+rejects repeated hotkeys in that list, `TooManyChildren` rejects lists with more than five entries,
+and `ProportionOverflow` is the separate rejection when the listed proportion values still sum past
+`u64::MAX` ([Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys),
+[Subtensor Standard Errors: DuplicateChild](https://docs.learnbittensor.org/errors/subtensor#duplicatechild),
+[Subtensor Standard Errors: TooManyChildren](https://docs.learnbittensor.org/errors/subtensor#toomanychildren),
+[Subtensor source: set_children.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/set_children.rs)).
+
+For a reader, the practical meaning is narrow: the listed proportions collectively do not fit the
+chain's accounting limit. The problem is not simply that the list has too many entries or that the
+same child hotkey appears twice
+([Too Many Children](https://docs.learnbittensor.org/errors/subtensor#toomanychildren),
+[Duplicate Child](https://docs.learnbittensor.org/errors/subtensor#duplicatechild)).
+
+## Distinction from Too Many Children
+
+`ProportionOverflow` and `TooManyChildren` are both raised from child-relation consistency checks,
+but they guard different properties of the submitted child list. `ProportionOverflow` sums the stake
+proportions across the listed children. `TooManyChildren` counts how many children are listed and
+rejects lists with more than five entries
+([Too Many Children](https://docs.learnbittensor.org/errors/subtensor#toomanychildren),
+[Subtensor source: set_children.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/set_children.rs)).
+
+- **ProportionOverflow** — the combined proportions exceed the representable total.
+- **TooManyChildren** — the child list has more than five entries.
+
+## Distinction from Duplicate Child
+
+`ProportionOverflow` and `DuplicateChild` both appear while validating one submitted child list, but
+they reject different defects. `ProportionOverflow` is about the combined size of the proportion
+values. `DuplicateChild` is about the same child hotkey being named more than once in the list
+([Duplicate Child](https://docs.learnbittensor.org/errors/subtensor#duplicatechild),
+[Subtensor source: set_children.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/set_children.rs)).
+
+- **ProportionOverflow** — the listed proportions sum past the accounting ceiling.
+- **DuplicateChild** — the same child hotkey appears more than once in one call.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the combined-proportion check that raises it.
+It does not describe childkey take, minimum parent stake thresholds, or the live child list on a
+subnet; those are separate reads
+([Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys),
+[Chain Rate Limits: Child hotkey operations rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#child-hotkey-operations-rate-limit)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#proportionoverflow)
+- [Subtensor Standard Errors: TooManyChildren](https://docs.learnbittensor.org/errors/subtensor#toomanychildren)
+- [Subtensor Standard Errors: DuplicateChild](https://docs.learnbittensor.org/errors/subtensor#duplicatechild)
+- [Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys)
+- [Subtensor source: set_children.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/set_children.rs)
