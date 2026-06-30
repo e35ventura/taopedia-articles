@@ -12,47 +12,48 @@ infoboxRows:
     value: HotKeyNotRegisteredInSubNet
   - label: Trigger
     value: Signed call targets a netuid where the hotkey has no UID slot
-  - label: Checked via
-    value: is_hotkey_registered_on_network
+  - label: Checked in
+    value: Subnet-scoped extrinsics such as set_weights
   - label: Check type
-    value: Uids map membership test
+    value: Per-subnet UID slot membership
 ---
 
 # Hotkey Not Registered In Subnet
 
-`HotKeyNotRegisteredInSubNet` is a documented Subtensor standard error raised across subnet-scoped
-extrinsics. The standard-errors reference describes it as "The hotkey is not registered in the
+`HotKeyNotRegisteredInSubNet` means the signing hotkey does not hold a UID on the netuid the call
+targets. The standard-errors reference describes it as "The hotkey is not registered in the
 specified subnet"
 ([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#hotkeynotregisteredinsubnet)).
+
+Subnet membership is scoped per hotkey and netuid. A hotkey registered on one subnet still fails
+here when the extrinsic names a different netuid where it has no slot.
 
 ## What It Means
 
 Many extrinsics name a `netuid` and require the signing hotkey to already occupy a neuron slot on
-that subnet. `is_hotkey_registered_on_network` returns true only when the hotkey appears in the
-subnet's `Uids` map. `HotKeyNotRegisteredInSubNet` means that lookup failed for the combination of
-caller and targeted subnet, so the extrinsic stops before later stake, weight, or commit logic runs
-([Subtensor source: uids.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/uids.rs),
-[Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+that subnet. `HotKeyNotRegisteredInSubNet` means that membership lookup failed for the caller and
+targeted subnet, so the extrinsic stops before later stake, weight, or commit logic runs
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#hotkeynotregisteredinsubnet)).
 
-On the plain `set_weights` path this is the fifth check, after list-shape and subnet-existence
-checks but before minimum-stake and validator-permit gates. Commit and timelocked commit paths run
-the same registration test before rate-limit and queue handling
-([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+On weight and commit paths this is an early gate: the chain checks subnet registration before
+minimum-stake, validator-permit, rate-limit, or commit-queue handling.
 
 ## Why It Appears
 
 The most direct cause is signing with a hotkey that never registered on the chosen subnet,
 registered on a different subnet only, or lost its slot through pruning after the client cached an
 outdated UID mapping. Because the check is per `netuid`, a hotkey registered elsewhere still fails
-here when the call targets a subnet where it has no slot
-([Subtensor source: uids.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/uids.rs)).
+here when the call targets a subnet where it has no slot.
 
-For a reader, the practical meaning is narrow: the signing hotkey is not a neuron on that subnet.
-The problem is not that the hotkey already registered there, that coldkey association is invalid, or
-that stake is too low for weights; those are separate checks on other paths
+When debugging, rule out association and stake failures on other paths.
+`HotKeyAlreadyRegisteredInSubNet` is the opposite case on registration — the hotkey already holds a
+UID there. `NonAssociatedColdKey` means the signing coldkey is not paired with the hotkey.
+`NotEnoughStakeToSetWeights` means registration passed but stake is too low for weights
 ([Subtensor Standard Errors: HotKeyAlreadyRegisteredInSubNet](https://docs.learnbittensor.org/errors/subtensor#hotkeyalreadyregisteredinsubnet),
 [Subtensor Standard Errors: NonAssociatedColdKey](https://docs.learnbittensor.org/errors/subtensor#nonassociatedcoldkey),
 [Subtensor Standard Errors: NotEnoughStakeToSetWeights](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketosetweights)).
+
+The practical meaning is narrow: the signing hotkey is not a neuron on that subnet.
 
 ## Distinction from Hotkey Already Registered In Subnet
 
@@ -61,9 +62,7 @@ same subnet membership lookup, checked in different extrinsics. `HotKeyNotRegist
 subnet operations when the hotkey lacks a UID on the targeted `netuid`.
 `HotKeyAlreadyRegisteredInSubNet` blocks a new registration attempt when the hotkey already holds
 that slot
-([Hotkey Already Registered In Subnet](https://docs.learnbittensor.org/errors/subtensor#hotkeyalreadyregisteredinsubnet),
-[Subtensor source: registration.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs),
-[Subtensor source: uids.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/uids.rs)).
+([Subtensor Standard Errors: HotKeyAlreadyRegisteredInSubNet](https://docs.learnbittensor.org/errors/subtensor#hotkeyalreadyregisteredinsubnet)).
 
 - **HotKeyNotRegisteredInSubNet** — the hotkey has no UID on the subnet the call targets.
 - **HotKeyAlreadyRegisteredInSubNet** — registration is redundant because the UID already exists.
@@ -72,13 +71,11 @@ that slot
 
 This page defines the meaning of the error label and the subnet registration lookup that raises it.
 It does not describe how to register a neuron, how pruning removes slots, or global hotkey existence
-checks used by other errors; those are documented separately
-([Subtensor source: uids.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/uids.rs),
-[Subtensor source: registration.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)).
+checks used by other errors; those are documented separately.
 
 ## Further Reading
 
 - [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#hotkeynotregisteredinsubnet)
 - [Subtensor Standard Errors: HotKeyAlreadyRegisteredInSubNet](https://docs.learnbittensor.org/errors/subtensor#hotkeyalreadyregisteredinsubnet)
-- [Subtensor source: uids.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/uids.rs)
-- [Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)
+- [Subtensor Standard Errors: NonAssociatedColdKey](https://docs.learnbittensor.org/errors/subtensor#nonassociatedcoldkey)
+- [Subtensor Standard Errors: NotEnoughStakeToSetWeights](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketosetweights)
