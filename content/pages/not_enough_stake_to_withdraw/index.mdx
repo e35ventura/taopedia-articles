@@ -13,43 +13,47 @@ infoboxRows:
   - label: Trigger
     value: Requested unstake exceeds hotkey-coldkey stake on netuid
   - label: Checked in
-    value: validate_remove_stake and move-stake paths
+    value: remove_stake and move_stake extrinsics
   - label: Check type
     value: Staked-alpha balance comparison
 ---
 
 # Not Enough Stake To Withdraw
 
-`NotEnoughStakeToWithdraw` is a documented Subtensor standard error raised on stake-removal paths.
-The standard-errors reference describes it as "Not enough stake to withdraw"
+`NotEnoughStakeToWithdraw` means a remove-stake or move-stake call requested more alpha than the
+hotkey-coldkey pair currently holds on that netuid. The standard-errors reference describes it as
+"Not enough stake to withdraw"
 ([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketowithdraw)).
+
+Stake is tracked per hotkey, coldkey, and subnet. An unstake compares the requested alpha amount
+against the balance recorded for that specific pair on the targeted netuid, not against the
+coldkey's free TAO balance.
 
 ## What It Means
 
-Stake is tracked per hotkey, coldkey, and subnet. Before an unstake or move-stake call proceeds, the
-runtime compares the requested alpha amount against the staked balance for that specific pair on the
-targeted `netuid`. `NotEnoughStakeToWithdraw` means the caller asked to remove more alpha than that
-pair currently holds on the subnet, so the extrinsic stops before swap and counter updates run
-([Subtensor source: stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs),
-[Subtensor source: remove_stake.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/remove_stake.rs)).
+Before an unstake or move-stake call proceeds, the chain compares the requested alpha amount against
+the staked balance for that hotkey-coldkey pair on the targeted `netuid`. `NotEnoughStakeToWithdraw`
+means the caller asked to remove more alpha than that pair currently holds on the subnet, so the
+extrinsic stops before swap and counter updates run
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketowithdraw)).
 
-In `validate_remove_stake`, this comparison happens through `calculate_reduced_stake_on_subnet`,
-which returns the error when the current stake is less than the requested decrement
-([Subtensor source: stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)).
+This is a staked-alpha comparison on the removal path. It does not test whether the coldkey has free
+TAO available to add new stake.
 
 ## Why It Appears
 
 This error fires when the unstake amount in the extrinsic is larger than the staked alpha recorded
 for that hotkey-coldkey pair on the subnet, such as after partial prior unstakes, when the client
-cached an outdated stake figure, or when the call targets the wrong subnet for the pair's stake
-([Subtensor source: stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)).
+cached an outdated stake figure, or when the call targets the wrong subnet for the pair's stake.
 
-For a reader, the practical meaning is narrow: the removal request exceeds what that pair has staked
-there. The problem is not that the coldkey lacks free TAO for a new stake, that the hotkey account
-does not exist, or that the subnet itself is missing
+When debugging, compare add-stake and remove-stake failures before assuming an account or subnet
+problem. `NotEnoughBalanceToStake` means the coldkey lacks free TAO on the add-stake path.
+`HotKeyAccountNotExists` and `SubnetNotExists` are separate rejections on other checks
 ([Subtensor Standard Errors: NotEnoughBalanceToStake](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake),
 [Subtensor Standard Errors: HotKeyAccountNotExists](https://docs.learnbittensor.org/errors/subtensor#hotkeyaccountnotexists),
 [Subtensor Standard Errors: SubnetNotExists](https://docs.learnbittensor.org/errors/subtensor#subnetnotexists)).
+
+The practical meaning is narrow: the removal request exceeds what that pair has staked there.
 
 ## Distinction from Not Enough Balance To Stake
 
@@ -58,22 +62,19 @@ compare different balances on different paths. `NotEnoughBalanceToStake` is rais
 calls when the signing coldkey does not have enough free balance to fund the requested TAO amount.
 `NotEnoughStakeToWithdraw` is raised on remove-stake and move-stake paths when the requested alpha
 removal exceeds the pair's existing staked alpha on the subnet
-([Subtensor source: stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)).
+([Subtensor Standard Errors: NotEnoughBalanceToStake](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake)).
 
-- **NotEnoughBalanceToStake** — the coldkey cannot pay the TAO needed to add stake.
-- **NotEnoughStakeToWithdraw** — the pair does not have enough staked alpha to remove.
+- **NotEnoughBalanceToStake** — not enough free TAO to add stake.
+- **NotEnoughStakeToWithdraw** — not enough staked alpha to remove.
 
 ## Reader Boundary
 
-This page defines the meaning we mean by “stake to withdraw” and the staked-alpha comparison that
-raises the error. It does not describe lock rules that can reduce available unstake separately, swap
-slippage limits, or minimum unstake thresholds; those are checked elsewhere in the same validation
-path
-([Subtensor source: stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)).
+This page defines the meaning of the error label and the staked-alpha comparison that raises it. It
+does not describe lock rules that can reduce available unstake separately, swap slippage limits, or
+minimum unstake thresholds; those are checked elsewhere in the same validation path.
 
 ## Further Reading
 
 - [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketowithdraw)
 - [Subtensor Standard Errors: NotEnoughBalanceToStake](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake)
-- [Subtensor source: stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)
-- [Subtensor source: remove_stake.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/remove_stake.rs)
+- [Staking and Delegation Overview](https://docs.learnbittensor.org/staking-and-delegation/delegation)
