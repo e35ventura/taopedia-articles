@@ -1,0 +1,125 @@
+---
+title: "Staking Operation Rate Limit Exceeded"
+summary:
+  "How the StakingOperationRateLimitExceeded error signals that a second staking operation was
+  attempted on a subnet before the one-per-block staking cooldown had cleared."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Staking Operation Rate Limit Exceeded
+infoboxCaption: Error raised when staking operations are attempted too frequently.
+infoboxRows:
+  - label: Error
+    value: StakingOperationRateLimitExceeded
+  - label: Trigger
+    value: A second staking operation on a subnet within the cooldown
+  - label: Related limit
+    value: StakingOperationRateLimiter
+  - label: Scope
+    value: Per-subnet staking operation pacing
+---
+
+# Staking Operation Rate Limit Exceeded
+
+`StakingOperationRateLimitExceeded` is a documented Subtensor standard error that means a staking
+operation was attempted too frequently. The standard-errors reference describes it as "Attempting
+staking operations too frequently," and the rate-limits reference ties it to the per-subnet limit on
+how often a user can stake
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#stakingoperationratelimitexceeded),
+[Chain Rate Limits: Staking operations rate limits](https://docs.learnbittensor.org/learn/chain-rate-limits#staking-operations-rate-limits)).
+
+## What It Means
+
+This error is about pacing staking actions on a given subnet, not about whether the caller had the
+balance or stake for the action. The rate-limits reference says the staking-operations limit
+controls how frequently a user can perform staking operations (add stake, remove stake, move stake)
+to a particular subnet, and lists the limit as one operation per block
+([Chain Rate Limits: Staking operations rate limits](https://docs.learnbittensor.org/learn/chain-rate-limits#staking-operations-rate-limits)).
+
+So when this error appears, the immediate meaning is narrow: a second staking operation on that
+subnet was submitted before the previous one-per-block window had cleared. It does not, by itself,
+say anything about whether the caller held enough balance or stake for the operation
+([Staking and Delegation](https://docs.learnbittensor.org/staking-and-delegation/delegation),
+[Glossary: Stake](https://docs.learnbittensor.org/resources/glossary#stake)).
+
+## Why It Appears
+
+The rate-limits reference lists staking operations at one accepted operation per block, backed by
+the Boolean `StakingOperationRateLimiter` chain-state variable because the limit is a single
+operation. The reference groups add stake, remove stake, and move stake together under this one
+pacing rule, so any of those actions can trip the same window
+([Chain Rate Limits: Staking operations rate limits](https://docs.learnbittensor.org/learn/chain-rate-limits#staking-operations-rate-limits)).
+
+The staking documentation describes those same actions as the normal ways holders manage stake:
+holders can stake liquidity to a validator, unstake it, and move stake between positions. The error
+is the rejection signal when one of those operations arrives before the previous one on the subnet
+has been accepted
+([Staking and Delegation](https://docs.learnbittensor.org/staking-and-delegation/delegation),
+[Chain Rate Limits: Staking operations rate limits](https://docs.learnbittensor.org/learn/chain-rate-limits#staking-operations-rate-limits)).
+
+## What It Does Not Mean
+
+This error should not be read as a balance or stake-amount failure. Bittensor documents separate
+errors for those conditions, such as `NotEnoughBalanceToStake` for an insufficient coldkey balance
+and `NotEnoughStakeToWithdraw` for an insufficient stake position.
+`StakingOperationRateLimitExceeded` is narrower: it names the timing gate on how often staking
+operations are accepted, not the funds behind them
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#stakingoperationratelimitexceeded),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor)).
+
+It also should not be read as a network-wide transaction cooldown. The rate-limits reference scopes
+this limit to a particular subnet, so it is observed against a specific netuid rather than across
+the whole chain
+([Chain Rate Limits: Staking operations rate limits](https://docs.learnbittensor.org/learn/chain-rate-limits#staking-operations-rate-limits),
+[Glossary: Netuid](https://docs.learnbittensor.org/resources/glossary#netuid)).
+
+## Distinction from Tx Rate Limit Exceeded
+
+`StakingOperationRateLimitExceeded` and `TxRateLimitExceeded` are different documented error paths.
+`TxRateLimitExceeded` belongs to the general transaction rate limit, which the rate-limits reference
+notes currently applies to hotkey swaps, while `StakingOperationRateLimitExceeded` belongs to the
+per-subnet staking-operations limit
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#txratelimitexceeded),
+[Chain Rate Limits: Staking operations rate limits](https://docs.learnbittensor.org/learn/chain-rate-limits#staking-operations-rate-limits)).
+
+- **StakingOperationRateLimitExceeded** — per-subnet staking-operation cooldown breach.
+- **TxRateLimitExceeded** — general transaction-rate-limit breach.
+
+## Distinction from Add Stake Burn Rate Limit Exceeded
+
+`StakingOperationRateLimitExceeded` paces ordinary staking operations at one per block, while
+`AddStakeBurnRateLimitExceeded` is a separate error described as a stake-burn operation exceeding
+its rate limit, with the standard-errors text directing the caller to try again in the next tempo.
+One names the per-block staking cooldown, while the other names a tempo-paced burn limit
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#stakingoperationratelimitexceeded),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#addstakeburnratelimitexceeded)).
+
+- **StakingOperationRateLimitExceeded** — too-frequent add, remove, or move stake.
+- **AddStakeBurnRateLimitExceeded** — stake-burn operation past its rate limit.
+
+## Distinction from Serving Rate Limit Exceeded
+
+`StakingOperationRateLimitExceeded` gates how often stake is changed on a subnet, while
+`ServingRateLimitExceeded` gates how often a neuron republishes its axon serving information. One is
+a staking-pace error and the other a serving-pace error, even though both are per-subnet rate limits
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#servingratelimitexceeded),
+[Chain Rate Limits: Staking operations rate limits](https://docs.learnbittensor.org/learn/chain-rate-limits#staking-operations-rate-limits)).
+
+- **StakingOperationRateLimitExceeded** — add, remove, or move stake too soon.
+- **ServingRateLimitExceeded** — axon serve or publish too soon.
+
+## Reader Boundary
+
+This page defines the meaning of the error label. It does not tell a reader exactly when their next
+staking operation on a subnet will be accepted; the rate-limits reference describes the rule as one
+operation per block, so the next acceptable moment depends on the live chain state and the block at
+which the previous operation landed. The documented place to read the rule itself is the
+staking-operations rate-limit reference
+([Chain Rate Limits: Staking operations rate limits](https://docs.learnbittensor.org/learn/chain-rate-limits#staking-operations-rate-limits),
+[Glossary: Block](https://docs.learnbittensor.org/resources/glossary#block)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#stakingoperationratelimitexceeded)
+- [Chain Rate Limits: Staking operations rate limits](https://docs.learnbittensor.org/learn/chain-rate-limits#staking-operations-rate-limits)
+- [Staking and Delegation](https://docs.learnbittensor.org/staking-and-delegation/delegation)
+- [Glossary: Stake](https://docs.learnbittensor.org/resources/glossary#stake)
