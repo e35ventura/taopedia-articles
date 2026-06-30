@@ -1,0 +1,112 @@
+---
+title: "Not Enough Stake To Set Weights"
+summary:
+  "How the NotEnoughStakeToSetWeights error signals that a weight submission failed because the
+  validator-side minimum stake gate was not met."
+category: "Consensus"
+tags: ["Consensus", "Errors"]
+infoboxTitle: Not Enough Stake To Set Weights
+infoboxCaption: Error raised when stake is below the minimum gate for weight submission.
+infoboxRows:
+  - label: Error
+    value: NotEnoughStakeToSetWeights
+  - label: Trigger
+    value: Weight submission attempted without meeting the minimum stake requirement
+  - label: Related gate
+    value: StakeThreshold / validator permit path
+  - label: Scope
+    value: Weight-submission authorization
+---
+
+# Not Enough Stake To Set Weights
+
+`NotEnoughStakeToSetWeights` is a documented Subtensor standard error. The standard-errors reference
+defines it as "Less than minimum stake required to set weights"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketosetweights)).
+
+## What It Means
+
+This error means a weight submission hit the stake gate on the validator side. The validators guide
+states that a node needs a validator permit to submit miner evaluations, and that holding a permit
+requires sufficient stake weight on the subnet
+([Validating in Bittensor](https://docs.learnbittensor.org/validators),
+[Glossary: Validator Permit](https://docs.learnbittensor.org/resources/glossary#validator-permit)).
+
+The stake-floor reference for that gate is `StakeThreshold`, the root-set minimum stake required for
+validating. The subnet-hyperparameters reference lists it as the minimum stake required for
+validating and documents a current value of 1000
+([Subnet Hyperparameters: StakeThreshold](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#stakethreshold)).
+
+So the rejection is about insufficient stake to clear the validator-side minimum on the
+weight-setting path, not about whether the submitted scores were well chosen or whether the vector
+layout itself was malformed
+([Glossary: Weight Setting](https://docs.learnbittensor.org/resources/glossary#weight-setting),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketosetweights)).
+
+## Why It Appears
+
+Validator permits are awarded through a stake-gated path. The validators guide says a validator must
+have a stake weight of at least 1000 to validate, and the epoch documentation describes permit
+management as filtering below-threshold stake before permit selection proceeds
+([Validating in Bittensor](https://docs.learnbittensor.org/validators),
+[Implementation of the Yuma Consensus Epoch: Validator Permit Management](https://docs.learnbittensor.org/navigating-subtensor/epoch#3-validator-permit-management)).
+
+That makes `NotEnoughStakeToSetWeights` the narrow runtime signal for a submission that did not meet
+the minimum stake side of that path. It does not describe a pacing violation, and it does not say
+the validator submitted too few targets; it says the submission failed at the stake gate before
+weight-setting authority could proceed
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketosetweights),
+[Subnet Hyperparameters: StakeThreshold](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#stakethreshold)).
+
+## What It Does Not Mean
+
+This error should not be read as the ordinary repeated-submission rate-limit failure.
+`SettingWeightsTooFast` is documented separately for the case where a validator retries weight
+submission before the required wait clears
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#settingweightstoofast)).
+
+It also should not be read as the structural minimum on submission shape. `MinAllowedWeights` names
+the subnet rule for how many targets a valid weight vector must include, while
+`NotEnoughStakeToSetWeights` is the stake-gate rejection on whether the validator can submit
+counting weights at all
+([Subnet Hyperparameters: MinAllowedWeights](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#minallowedweights),
+[Glossary: Validator Permit](https://docs.learnbittensor.org/resources/glossary#validator-permit)).
+
+## Distinction from Stake Threshold
+
+`StakeThreshold` is the underlying root-set minimum stake rule for validating.
+`NotEnoughStakeToSetWeights` is the runtime error returned when a submission fails that minimum
+stake gate
+([Subnet Hyperparameters: StakeThreshold](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#stakethreshold),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketosetweights)).
+
+- **StakeThreshold** — documented minimum stake required for validating.
+- **NotEnoughStakeToSetWeights** — error returned when that minimum stake gate is not met on the
+  weight-setting path.
+
+## Distinction from Setting Weights Too Fast
+
+`NotEnoughStakeToSetWeights` is a stake-gate error on whether the validator-side minimum is met.
+`SettingWeightsTooFast` is a pacing error on how soon another weight submission was attempted
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketosetweights),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#settingweightstoofast)).
+
+- **NotEnoughStakeToSetWeights** — submission blocked because stake is below the minimum gate.
+- **SettingWeightsTooFast** — submission blocked because the retry came too soon.
+
+## Reader Boundary
+
+This page defines the meaning of the error label. It does not tell a reader the live stake standing
+of a particular validator on a particular subnet, or whether the current active threshold has been
+changed from the documented value by root governance. The stable point here is narrower: if the
+weight-setting path fails the minimum stake gate, the chain can return `NotEnoughStakeToSetWeights`
+([Subnet Hyperparameters: StakeThreshold](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#stakethreshold),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketosetweights)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketosetweights)
+- [Validating in Bittensor](https://docs.learnbittensor.org/validators)
+- [Subnet Hyperparameters: StakeThreshold](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#stakethreshold)
+- [Glossary: Validator Permit](https://docs.learnbittensor.org/resources/glossary#validator-permit)
+- [Glossary: Weight Setting](https://docs.learnbittensor.org/resources/glossary#weight-setting)
