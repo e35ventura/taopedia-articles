@@ -1,0 +1,73 @@
+---
+title: "Too Many Unrevealed Commits"
+summary:
+  "How the TooManyUnrevealedCommits error blocks a commit-reveal weight commit when the caller
+  already has ten unrevealed commits pending for that subnet."
+category: "Validation"
+tags: ["Validation", "Errors"]
+infoboxTitle: Too Many Unrevealed Commits
+infoboxCaption: Error raised when a commit queue already has ten pending unrevealed commits.
+infoboxRows:
+  - label: Error
+    value: TooManyUnrevealedCommits
+  - label: Trigger
+    value: A tenth or later commit before any prior commit is revealed
+  - label: Limit
+    value: 10 unrevealed commits per hotkey per subnet
+  - label: Check type
+    value: Queue-length comparison
+---
+
+# Too Many Unrevealed Commits
+
+`TooManyUnrevealedCommits` is a documented Subtensor standard error raised by commit-reveal weight
+commit extrinsics. The standard-errors reference describes it as "Maximum commit limit reached"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#toomanyunrevealedcommits)).
+
+## What It Means
+
+When a commit-reveal weight commit is accepted, it is appended to a per-hotkey per-subnet queue of
+pending reveals. The chain keeps at most ten non-expired commits in that queue at once. Before
+adding a new commit, the extrinsic prunes any commits that have expired, then checks whether the
+remaining queue is already at the limit; `TooManyUnrevealedCommits` is raised when it is, before the
+new commit is added
+([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs),
+[Commit-Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)).
+
+The limit applies per hotkey per subnet. A validator with ten pending unrevealed commits on one
+subnet is not affected on any other subnet it participates in
+([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+## Why It Appears
+
+Because expired commits are pruned before the count is checked, a hotkey can reduce its pending
+queue by letting commits age out; only the non-expired queue length is what the check enforces. A
+validator that commits repeatedly for many epochs without revealing those commitments will
+accumulate pending commits until this limit fires
+([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+## Distinction from Committing Weights Too Fast
+
+`TooManyUnrevealedCommits` and `CommittingWeightsTooFast` are both checked during the commit step of
+commit-reveal weight submission, but they measure different things. `CommittingWeightsTooFast` is a
+per-neuron rate limit on how quickly commits can be submitted in terms of blocks.
+`TooManyUnrevealedCommits` counts how many non-expired commits are still pending in the queue,
+regardless of timing
+([Subtensor Standard Errors: CommittingWeightsTooFast](https://docs.learnbittensor.org/errors/subtensor#committingweightstoofast),
+[Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+- **CommittingWeightsTooFast** — commits are arriving faster than the per-neuron rate allows.
+- **TooManyUnrevealedCommits** — too many commits are already pending reveal in the queue.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the queue-length check that raises it. It does
+not describe how to reveal pending commits or how expired commits are pruned; those are documented
+separately ([Commit-Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#toomanyunrevealedcommits)
+- [Subtensor Standard Errors: CommittingWeightsTooFast](https://docs.learnbittensor.org/errors/subtensor#committingweightstoofast)
+- [Commit-Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)
+- [Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)
