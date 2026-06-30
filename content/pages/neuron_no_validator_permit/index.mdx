@@ -1,0 +1,97 @@
+---
+title: "Neuron No Validator Permit"
+summary:
+  "How the NeuronNoValidatorPermit error blocks a set_weights call when the signing neuron submits
+  non-self weights without holding a validator permit on that subnet."
+category: "Validation"
+tags: ["Validation", "Errors"]
+infoboxTitle: Neuron No Validator Permit
+infoboxCaption: Error raised when non-self weights are submitted without a validator permit.
+infoboxRows:
+  - label: Error
+    value: NeuronNoValidatorPermit
+  - label: Trigger
+    value: Non-self weights submitted without a validator permit
+  - label: Checked in
+    value: internal_set_weights
+  - label: Check type
+    value: Validator-permit gate for non-self weights
+---
+
+# Neuron No Validator Permit
+
+`NeuronNoValidatorPermit` is a documented Subtensor standard error raised on weight-setting paths.
+The standard-errors reference describes it as "Attempting to set non-self weights without being a
+permitted validator"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#neuronnovalidatorpermit)).
+
+## What It Means
+
+Weight submission can assign scores to other neurons on a subnet, but only when the caller passes
+the validator-permit gate for non-self assignments. In `internal_set_weights`, after
+stake-threshold, version-key, and rate-limit checks, `check_validator_permit` returns false and the
+extrinsic raises `NeuronNoValidatorPermit`
+([Validating in Bittensor](https://docs.learnbittensor.org/validators),
+[Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+In `weights.rs`, `check_validator_permit` allows a pure self-weight submission through
+`is_self_weight` and otherwise requires `get_validator_permit_for_uid` to be true for the caller's
+UID
+([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+## Why It Appears
+
+This error appears when a registered hotkey submits weights that target neurons other than itself
+without holding a validator permit for that subnet. That can happen when a miner attempts to assign
+non-self weights, when a validator permit expired or was not yet granted for the epoch, or when the
+submitted vector mixes self and non-self entries without permit coverage for the non-self portion
+([Validating in Bittensor](https://docs.learnbittensor.org/validators),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#neuronnovalidatorpermit)).
+
+For a reader, the practical meaning is narrow: the neuron lacks permit authority for non-self weight
+assignment. The problem is not that stake weight is below the global threshold, that the weights
+version key is stale, or that the submission exceeded the weights rate limit
+([Not Enough Stake To Set Weights](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketosetweights),
+[Incorrect Weight Version Key](https://docs.learnbittensor.org/errors/subtensor#incorrectweightversionkey),
+[Setting Weights Too Fast](https://docs.learnbittensor.org/errors/subtensor#settingweightstoofast)).
+
+## Distinction from Not Enough Stake To Set Weights
+
+`NeuronNoValidatorPermit` and `NotEnoughStakeToSetWeights` both appear in weight submission, but
+they reject different requirements. `NotEnoughStakeToSetWeights` is the earlier stake-weight floor
+checked before version-key and rate-limit rules run. `NeuronNoValidatorPermit` is the later permit
+check that blocks non-self weight assignments when the neuron does not hold a validator permit
+([Not Enough Stake To Set Weights](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketosetweights),
+[Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+A hotkey can fail the stake threshold before permit questions are reached. It can also clear the
+stake threshold and still fail here on non-self weights.
+
+- **NotEnoughStakeToSetWeights** — stake weight is below the global threshold for weight submission.
+- **NeuronNoValidatorPermit** — non-self weights were submitted without a validator permit.
+
+## Distinction from Max Weight Exceeded
+
+`NeuronNoValidatorPermit` and `MaxWeightExceeded` both appear late in the weight path, but they test
+different rules. `NeuronNoValidatorPermit` is the permit gate for non-self assignments.
+`MaxWeightExceeded` is the cap check on upscaled weight values against `MaxWeightLimit`
+([Max Weight Exceeded](https://docs.learnbittensor.org/errors/subtensor#maxweightexceeded),
+[Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+- **NeuronNoValidatorPermit** — non-self weights were submitted without a validator permit.
+- **MaxWeightExceeded** — an upscaled weight value exceeds the subnet max-weight cap.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the validator-permit check that raises it. It
+does not describe how validator permits are awarded each epoch, how self-weight detection works in
+full, or live permit rosters on a network; those are documented separately
+([Validating in Bittensor](https://docs.learnbittensor.org/validators),
+[Yuma Consensus Epoch](https://docs.learnbittensor.org/navigating-subtensor/epoch)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#neuronnovalidatorpermit)
+- [Validating in Bittensor](https://docs.learnbittensor.org/validators)
+- [Not Enough Stake To Set Weights](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketosetweights)
+- [Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)
