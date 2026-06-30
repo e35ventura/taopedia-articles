@@ -1,0 +1,73 @@
+---
+title: "New Hotkey Is Same With Old"
+summary:
+  "How the NewHotKeyIsSameWithOld error blocks a hotkey swap when the new hotkey submitted is
+  identical to the hotkey it would replace."
+category: "Wallets"
+tags: ["Wallets", "Errors"]
+infoboxTitle: New Hotkey Is Same With Old
+infoboxCaption: Error raised when a hotkey swap's new and old hotkeys are identical.
+infoboxRows:
+  - label: Error
+    value: NewHotKeyIsSameWithOld
+  - label: Trigger
+    value: old_hotkey == new_hotkey in a hotkey swap call
+  - label: Checked in
+    value: do_swap_hotkey
+  - label: Check type
+    value: Pure key-equality comparison
+---
+
+# New Hotkey Is Same With Old
+
+`NewHotKeyIsSameWithOld` is a documented Subtensor standard error raised by the hotkey swap
+extrinsic. The standard-errors reference describes it as "The new hotkey is the same as old one"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#newhotkeyissamewithold)).
+
+## What It Means
+
+A hotkey swap replaces a coldkey's hotkey with a different hotkey, moving stake and registrations
+over to the new key. `do_swap_hotkey` compares the submitted new hotkey against the old hotkey being
+replaced, and raises `NewHotKeyIsSameWithOld` when the two are identical, since a swap to the same
+key would not change anything
+([Subtensor source: swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs)).
+
+The comparison is a single equality check on the two submitted account values. It does not depend on
+ownership, registration, or any other property of either key, only on whether they are the same
+account
+([Subtensor source: swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs)).
+
+## Why It Appears
+
+`do_swap_hotkey` runs this check after confirming the calling coldkey owns the old hotkey, and after
+confirming the coldkey also owns the new hotkey when that new hotkey already exists on chain. Both
+of those earlier checks can pass even when the two hotkeys are identical, so this separate equality
+check is what specifically catches a same-key swap attempt
+([Subtensor source: swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs)).
+
+## Distinction from Non Associated Cold Key
+
+`NewHotKeyIsSameWithOld` and `NonAssociatedColdKey` are both checked early in `do_swap_hotkey`, but
+they guard different properties of the call. The ownership checks confirm the calling coldkey
+actually controls the old hotkey, and the new hotkey if it already exists, and raise
+`NonAssociatedColdKey` when that ownership is missing. `NewHotKeyIsSameWithOld` runs after those
+ownership checks pass and catches the separate case where the submitted hotkeys are identical
+([Non Associated Cold Key](https://docs.learnbittensor.org/errors/subtensor#nonassociatedcoldkey),
+[Subtensor source: swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs)).
+
+- **NonAssociatedColdKey** — the caller does not own the old or new hotkey.
+- **NewHotKeyIsSameWithOld** — the new and old hotkeys are the same account.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the equality check that raises it. It does not
+describe the rest of the hotkey swap validation sequence, such as the transaction rate limit or
+per-subnet registration checks that run afterward; those are separate checks with their own error
+labels
+([Subtensor source: swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#newhotkeyissamewithold)
+- [Subtensor Standard Errors: NonAssociatedColdKey](https://docs.learnbittensor.org/errors/subtensor#nonassociatedcoldkey)
+- [Subtensor source: swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs)
