@@ -1,0 +1,73 @@
+---
+title: "Lease Has Not Ended"
+summary:
+  "How the LeaseHasNotEnded error blocks terminating a subnet lease before its recorded end block
+  has been reached."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Lease Has Not Ended
+infoboxCaption: Error raised when a lease termination is attempted before its end block.
+infoboxRows:
+  - label: Error
+    value: LeaseHasNotEnded
+  - label: Trigger
+    value: Current block is before the lease's recorded end_block
+  - label: Checked in
+    value: do_terminate_lease
+  - label: Check type
+    value: Block-number comparison, only after the end-block field is confirmed set
+---
+
+# Lease Has Not Ended
+
+`LeaseHasNotEnded` is a documented Subtensor standard error raised by `do_terminate_lease`, the
+extrinsic a [subnet lease](https://docs.learnbittensor.org/subnets/crowdloans)'s beneficiary calls
+to claim ownership once the lease has run its course. The standard-errors reference describes it as
+"Lease has not ended"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#leasehasnotended)).
+
+## What It Means
+
+For a lease that does have a recorded end block, `do_terminate_lease` compares the current block
+against that end block and raises `LeaseHasNotEnded` if the current block has not yet reached it.
+The comment on the extrinsic states the beneficiary can terminate the lease only after the end block
+has passed
+([Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+This check only runs once the chain has already confirmed the lease has an end block at all; an
+open-ended lease never reaches this comparison, since it fails the earlier `LeaseHasNoEndBlock`
+check instead
+([Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+## Why It Appears
+
+A beneficiary that attempts termination before the lease's recorded end block, expecting an early
+exit, will see this error regardless of any other condition of the lease. The chain enforces the
+full lease duration before ownership transfers through this path
+([Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+## Distinction from Lease Has No End Block
+
+`LeaseHasNotEnded` and `LeaseHasNoEndBlock` are checked back to back in `do_terminate_lease`, but
+they cover different conditions. `LeaseHasNoEndBlock` fires when the lease was registered without an
+end block at all. `LeaseHasNotEnded` applies only to a lease that does have one, when the current
+block simply has not reached it yet
+([Subtensor Standard Errors: LeaseHasNoEndBlock](https://docs.learnbittensor.org/errors/subtensor#leasehasnoendblock),
+[Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+- **LeaseHasNoEndBlock** — the lease was registered without an end block.
+- **LeaseHasNotEnded** — the lease has an end block, but it hasn't been reached yet.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the timing comparison that raises it. It does
+not describe the rest of the termination flow, such as the ownership-transfer or beneficiary-hotkey
+checks that run after it passes; those are documented separately
+([Subnet Lease](https://docs.learnbittensor.org/subnets/crowdloans)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#leasehasnotended)
+- [Subtensor Standard Errors: LeaseHasNoEndBlock](https://docs.learnbittensor.org/errors/subtensor#leasehasnoendblock)
+- [Subnet Lease](https://docs.learnbittensor.org/subnets/crowdloans)
+- [Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)
