@@ -1,0 +1,74 @@
+---
+title: "Lease Cannot End In The Past"
+summary:
+  "How the LeaseCannotEndInThePast error blocks registering a leased network when an optional lease
+  end block is supplied that has already passed."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Lease Cannot End In The Past
+infoboxCaption: Error raised when a supplied lease end block is not in the future.
+infoboxRows:
+  - label: Error
+    value: LeaseCannotEndInThePast
+  - label: Trigger
+    value: Supplied end_block is not strictly after the current block
+  - label: Checked in
+    value: do_register_leased_network
+  - label: Check type
+    value: Block-number comparison, only when an end block is supplied
+---
+
+# Lease Cannot End In The Past
+
+`LeaseCannotEndInThePast` is a documented Subtensor standard error raised by
+`do_register_leased_network`, the extrinsic that finalizes a
+[crowdloan](https://docs.learnbittensor.org/subnets/crowdloans) into a registered
+[subnet lease](https://docs.learnbittensor.org/subnets/crowdloans). The standard-errors reference
+describes it as "Lease cannot end in the past"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#leasecannotendinthepast)).
+
+## What It Means
+
+A subnet lease's end block is optional: a lease can be created without one for an open-ended
+arrangement. When an end block is supplied, the chain compares it against the current block and
+raises `LeaseCannotEndInThePast` if the supplied value is not strictly after the current block
+([Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+The check only runs when an end block is actually provided. A lease registered without one skips
+this comparison entirely, since there is no end block to validate
+([Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+## Why It Appears
+
+`do_register_leased_network` checks this immediately after confirming the caller is the crowdloan's
+creator. A lease end block computed or copied from stale data, or one constructed with the wrong
+units, can land in the past by the time the registration call is processed and fails here before the
+lease is actually created
+([Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+## Distinction from Invalid Lease Beneficiary
+
+`LeaseCannotEndInThePast` and `InvalidLeaseBeneficiary` are both checked early in
+`do_register_leased_network`, but they validate different things. `InvalidLeaseBeneficiary` runs
+first and confirms the caller is the crowdloan's own creator. `LeaseCannotEndInThePast` is the
+separate, later check on the optional end block, reached only after the caller has already been
+confirmed as the valid beneficiary
+([Subtensor Standard Errors: InvalidLeaseBeneficiary](https://docs.learnbittensor.org/errors/subtensor#invalidleasebeneficiary),
+[Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+- **InvalidLeaseBeneficiary** — the caller is not the crowdloan's creator.
+- **LeaseCannotEndInThePast** — the supplied end block has already passed.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the comparison that raises it. It does not
+describe the rest of the leased-network registration flow or how subnet leases operate after
+creation; those are documented separately
+([Subnet Lease](https://docs.learnbittensor.org/subnets/crowdloans)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#leasecannotendinthepast)
+- [Subtensor Standard Errors: InvalidLeaseBeneficiary](https://docs.learnbittensor.org/errors/subtensor#invalidleasebeneficiary)
+- [Subnet Lease](https://docs.learnbittensor.org/subnets/crowdloans)
+- [Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)
