@@ -20,24 +20,23 @@ infoboxRows:
 
 # Non Associated Cold Key
 
-`NonAssociatedColdKey` is a documented Subtensor standard error that means a request was made by a
-coldkey that is not associated with the targeted hotkey account. The standard-errors reference
-describes it as "Request made by a coldkey that is not associated with the hotkey account," and the
-Subtensor source defines the variant as a request to stake, unstake, or subscribe made by a coldkey
-that is not associated with the hotkey account
-([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#nonassociatedcoldkey),
-[Subtensor source: errors.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/errors.rs)).
+`NonAssociatedColdKey` means the coldkey that signed a request is not the owner of the hotkey being
+acted on. The standard-errors reference describes it as "Request made by a coldkey that is not
+associated with the hotkey account"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#nonassociatedcoldkey)).
+
+Stake, unstake, and subscribe calls must be signed by the coldkey that owns the target hotkey
+([Hotkey and Coldkey](https://docs.learnbittensor.org/getting-started/wallets),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#nonassociatedcoldkey)).
 
 ## What It Means
 
 This error is about ownership, not about funds or timing. In Bittensor, every hotkey is associated
 with an owning coldkey, and the chain stores that coldkey-to-hotkey relationship as account state.
 When a staking-related call arrives, the runtime checks that the signing coldkey actually owns the
-hotkey it is acting on, and rejects the call with `NonAssociatedColdKey` when it does not. The
-Subtensor source expresses this as an ownership guard, raising the error when the
-coldkey-owns-hotkey check fails
+hotkey it is acting on, and rejects the call with `NonAssociatedColdKey` when it does not
 ([Hotkey and Coldkey](https://docs.learnbittensor.org/getting-started/wallets),
-[Subtensor source: errors.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/errors.rs)).
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#nonassociatedcoldkey)).
 
 So when this error appears, the immediate meaning is narrow: the coldkey that signed the request is
 not the coldkey associated with that hotkey. It does not, by itself, say anything about how much
@@ -48,17 +47,16 @@ balance or stake the account holds
 ## Why It Appears
 
 The wallet model in Bittensor pairs a coldkey with the hotkeys it owns, and many staking operations
-must be signed by the coldkey that owns the hotkey involved. The Subtensor source confirms this: the
-error variant is documented as covering requests to stake, unstake, or subscribe that come from a
-coldkey not associated with the hotkey account, and the ownership guard sits ahead of those
-operations
-([Subtensor source: errors.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/errors.rs),
+must be signed by the coldkey that owns the hotkey involved. The standard-errors reference documents
+this variant for stake, unstake, or subscribe requests from a coldkey not associated with the
+targeted hotkey account
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#nonassociatedcoldkey),
 [Hotkey and Coldkey](https://docs.learnbittensor.org/getting-started/wallets)).
 
 In practice this typically surfaces when a call references the wrong coldkey-hotkey pairing: a
 mismatched wallet, a hotkey that belongs to a different coldkey, or a hotkey whose ownership has
-changed. The chain treats the association as the source of truth and refuses the operation when the
-signer is not the owner
+changed. When debugging, check wallet pairing before balance or rate-limit errors, because the chain
+rejects the ownership mismatch even if the signing coldkey would otherwise have enough TAO
 ([Hotkey and Coldkey](https://docs.learnbittensor.org/getting-started/wallets),
 [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#nonassociatedcoldkey)).
 
@@ -73,10 +71,9 @@ hotkey's owner in the first place
 [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake)).
 
 It also should not be read as a per-subnet condition. The coldkey-to-hotkey association is account
-state that the chain tracks globally for the key pair, and the Subtensor source raises this error
-from the ownership check rather than from any subnet-specific stored value, so the meaning does not
-depend on a particular netuid
-([Subtensor source: errors.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/errors.rs),
+state that the chain tracks globally for the key pair, so the meaning does not depend on a
+particular netuid ([Hotkey and Coldkey](https://docs.learnbittensor.org/getting-started/wallets),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#nonassociatedcoldkey),
 [Glossary: Hotkey](https://docs.learnbittensor.org/resources/glossary#hotkey)).
 
 ## Distinction from Hot Key Account Not Exists
@@ -95,10 +92,10 @@ signed the request
 
 `NonAssociatedColdKey` is an ownership check, while `NotEnoughBalanceToStake` is a funds check. The
 standard-errors reference describes `NotEnoughBalanceToStake` as not enough balance in the coldkey
-account, and the Subtensor source defines it as requesting more stake than exists in the coldkey
-account, so it concerns the amount, not the ownership relationship
+account when requesting more stake than exists there, so it concerns the amount, not the ownership
+relationship
 ([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake),
-[Subtensor source: errors.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/errors.rs)).
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#nonassociatedcoldkey)).
 
 - **NonAssociatedColdKey** — wrong coldkey for the hotkey.
 - **NotEnoughBalanceToStake** — right coldkey, but insufficient coldkey balance.
@@ -110,7 +107,8 @@ account, so it concerns the amount, not the ownership relationship
 `ColdKeyAlreadyAssociated` as the coldkey having already been swapped, so it names a state in the
 coldkey-swap flow rather than a mismatch between a signer and a hotkey
 ([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#coldkeyalreadyassociated),
-[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#nonassociatedcoldkey)).
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#nonassociatedcoldkey),
+[Coldkey Swap](https://docs.learnbittensor.org/keys/coldkey-swap)).
 
 - **NonAssociatedColdKey** — signer does not own the targeted hotkey.
 - **ColdKeyAlreadyAssociated** — the coldkey has already been swapped.
@@ -127,6 +125,5 @@ owning relationship is part of the chain's account state for the coldkey and hot
 ## Further Reading
 
 - [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#nonassociatedcoldkey)
-- [Subtensor source: errors.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/errors.rs)
 - [Hotkey and Coldkey](https://docs.learnbittensor.org/getting-started/wallets)
 - [Glossary: Coldkey](https://docs.learnbittensor.org/resources/glossary#coldkey)
