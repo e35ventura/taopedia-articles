@@ -1,0 +1,104 @@
+---
+title: "Tx Childkey Take Rate Limit Exceeded"
+summary:
+  "How the TxChildkeyTakeRateLimitExceeded error signals that a childkey-take increase was attempted
+  again before the childkey-take cooldown had elapsed."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Tx Childkey Take Rate Limit Exceeded
+infoboxCaption: Error raised when childkey-take increases are attempted too soon.
+infoboxRows:
+  - label: Error
+    value: TxChildkeyTakeRateLimitExceeded
+  - label: Related limit
+    value: TxChildkeyTakeRateLimit
+  - label: Scope
+    value: Childkey-take increase pacing
+  - label: Trigger
+    value: Repeated childkey-take increase before cooldown expiry
+---
+
+# Tx Childkey Take Rate Limit Exceeded
+
+`TxChildkeyTakeRateLimitExceeded` is a documented Subtensor standard error that signals a
+childkey-take increase was attempted before the childkey-take cooldown had elapsed. The
+standard-errors reference describes it as "Childkey take rate limit exceeded," and the rate-limits
+reference ties it to the child key take rate limit
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#txchildkeytakeratelimitexceeded),
+[Chain Rate Limits: Child key take rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#child-key-take-rate-limit)).
+
+## What It Means
+
+[Childkey take](https://docs.learnbittensor.org/validators/child-hotkeys) is the share of validation
+dividends a child hotkey keeps when validating on behalf of a parent on one subnet. This error is
+about pacing increases to that rate, not about whether child-hotkey relationships exist or whether
+dividends are being earned. The rate-limits reference documents a 216,000-block cooldown between
+successful childkey-take increases, approximately 30 days
+([Chain Rate Limits: Child key take rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#child-key-take-rate-limit),
+[Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys)).
+
+When this error appears, the narrow meaning is that a childkey-take increase was retried too soon.
+It is a timing rejection on the increase path, not a statement that the submitted take is outside
+the allowed range
+([Subtensor Standard Errors: InvalidChildkeyTake](https://docs.learnbittensor.org/errors/subtensor#invalidchildkeytake),
+[Subtensor source: set_children.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/set_children.rs)).
+
+## Why It Appears
+
+In `set_children.rs`, `do_set_childkey_take` applies the cooldown only when the submitted take is
+higher than the stored take for that hotkey on the selected subnet. If the increase path fails the
+subnet-specific rate-limit check, it returns `TxChildkeyTakeRateLimitExceeded` before updating
+storage
+([Subtensor source: set_children.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/set_children.rs)).
+
+Child-hotkey documentation states that lowering take can proceed without waiting out that window.
+The cooldown applies only to increases, and it is separate from the pacing rule on assigning or
+revoking child hotkeys through `set_children`
+([Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys),
+[Chain Rate Limits: Child hotkey operations rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#child-hotkey-operations-rate-limit)).
+
+For a reader, the practical meaning is narrow: the caller tried to raise childkey take again before
+the increase cooldown cleared. The problem is not an out-of-range take value
+([Invalid Childkey Take](https://docs.learnbittensor.org/errors/subtensor#invalidchildkeytake)).
+
+## Distinction from Invalid Childkey Take
+
+`TxChildkeyTakeRateLimitExceeded` and `InvalidChildkeyTake` both appear on childkey-take updates,
+but they reject different stages. `InvalidChildkeyTake` is the range check on the submitted value.
+`TxChildkeyTakeRateLimitExceeded` is the later cooldown rejection when the new take is higher than
+the stored take and the rate limit has not elapsed
+([Invalid Childkey Take](https://docs.learnbittensor.org/errors/subtensor#invalidchildkeytake),
+[Subtensor source: set_children.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/set_children.rs)).
+
+- **InvalidChildkeyTake** — the submitted take is outside the allowed range.
+- **TxChildkeyTakeRateLimitExceeded** — a take increase was attempted before the cooldown expired.
+
+## Distinction from Delegate Tx Rate Limit Exceeded
+
+`TxChildkeyTakeRateLimitExceeded` and `DelegateTxRateLimitExceeded` are both take-increase cooldown
+errors, but they belong to different extrinsics. The childkey-take error paces increases to the
+parent-child dividend split on one subnet. The delegate-take error paces increases to validator
+commission on delegated returns
+([Delegate Tx Rate Limit Exceeded](https://docs.learnbittensor.org/errors/subtensor#delegatetxratelimitexceeded),
+[Chain Rate Limits: Delegate take rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#delegate-take-rate-limit),
+[Chain Rate Limits: Child key take rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#child-key-take-rate-limit)).
+
+- **TxChildkeyTakeRateLimitExceeded** — childkey-take increase cooldown breach.
+- **DelegateTxRateLimitExceeded** — delegate-take increase cooldown breach.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the childkey-take increase cooldown that raises
+it. It does not tell a reader exactly when a specific hotkey will next be able to raise take on a
+live network; that depends on chain state and when the last successful increase occurred. The
+documented reference point is the child key take rate-limit rule itself
+([Chain Rate Limits: Child key take rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#child-key-take-rate-limit)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#txchildkeytakeratelimitexceeded)
+- [Subtensor Standard Errors: InvalidChildkeyTake](https://docs.learnbittensor.org/errors/subtensor#invalidchildkeytake)
+- [Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys)
+- [Chain Rate Limits: Child key take rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#child-key-take-rate-limit)
+- [Chain Rate Limits: Child hotkey operations rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#child-hotkey-operations-rate-limit)
+- [Subtensor source: set_children.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/set_children.rs)
