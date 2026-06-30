@@ -1,0 +1,57 @@
+---
+title: "Invalid Subnet Number"
+summary:
+  "How the InvalidSubnetNumber error blocks a claim_root call whose subnet set is either empty or
+  larger than the maximum number of subnets claimable in one call."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Invalid Subnet Number
+infoboxCaption: Error raised when claim_root's subnet set is empty or too large.
+infoboxRows:
+  - label: Error
+    value: InvalidSubnetNumber
+  - label: Trigger
+    value: Supplied subnet set is empty, or exceeds MAX_SUBNET_CLAIMS
+  - label: Limit
+    value: 5 subnets per claim_root call
+  - label: Checked in
+    value: claim_root extrinsic
+---
+
+# Invalid Subnet Number
+
+`InvalidSubnetNumber` is a documented Subtensor standard error raised by the `claim_root` extrinsic.
+The Subtensor API error reference describes it as "Exceeded subnet limit number or zero"
+([Subtensor API: Errors](https://docs.learnbittensor.org/subtensor-api/errors)).
+
+## What It Means
+
+`claim_root` takes a set of subnets to claim
+[root](https://docs.learnbittensor.org/staking-and-delegation/root-claims) emissions for in one
+call. The extrinsic checks that set against two bounds before anything else runs: it must not be
+empty, and it must not contain more than `MAX_SUBNET_CLAIMS`, a fixed constant set to 5.
+`InvalidSubnetNumber` covers both failure cases under the same error label
+([Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)).
+
+The limit is a fixed constant in the pallet, not chain state that changes. Any call with zero
+subnets or more than five subnets in the set fails this check regardless of which subnets were named
+([Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)).
+
+## Why It Appears
+
+A call built with an empty subnet set, for example from a filter that produced no results, fails the
+lower bound. A call that tries to batch a claim across more than five subnets at once fails the
+upper bound. Both land on the same error label, so the label alone does not say which bound was hit
+([Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)).
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the two bounds that raise it. It does not
+describe how root claims are calculated or paid out; that is documented separately
+([Root Claims](https://docs.learnbittensor.org/staking-and-delegation/root-claims)).
+
+## Further Reading
+
+- [Subtensor API: Errors](https://docs.learnbittensor.org/subtensor-api/errors)
+- [Root Claims](https://docs.learnbittensor.org/staking-and-delegation/root-claims)
+- [Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)
