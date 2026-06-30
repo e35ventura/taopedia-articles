@@ -1,0 +1,97 @@
+---
+title: "Commit Reveal Disabled"
+summary:
+  "How the CommitRevealDisabled error blocks commit-reveal weight extrinsics when the target subnet
+  has not enabled the commit-reveal weight scheme."
+category: "Validation"
+tags: ["Validation", "Errors"]
+infoboxTitle: Commit Reveal Disabled
+infoboxCaption:
+  Error raised when commit-reveal weight calls hit a subnet without the scheme enabled.
+infoboxRows:
+  - label: Error
+    value: CommitRevealDisabled
+  - label: Trigger
+    value: Commit or reveal extrinsic on a subnet with commit-reveal disabled
+  - label: Related hyperparameter
+    value: CommitRevealWeightsEnabled
+  - label: Related concept
+    value: Commit-reveal
+---
+
+# Commit Reveal Disabled
+
+`CommitRevealDisabled` is a documented Subtensor standard error raised by commit-reveal weight
+extrinsics. The standard-errors reference describes it as "Attempting to commit/reveal weights when
+disabled"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#commitrevealdisabled)).
+
+## What It Means
+
+This error means the caller used a commit-reveal weight path on a subnet where the commit-reveal
+scheme is turned off. The chain rejects the extrinsic before it checks registration, version keys,
+rate limits, or stored commits
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#commitrevealdisabled),
+[Commit Reveal Weights Enabled](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#commitrevealweightsenabled)).
+
+The per-subnet `CommitRevealWeightsEnabled` hyperparameter is the switch that controls whether
+commit-reveal weight submission is active. When that flag is false, commit and reveal extrinsics for
+that subnet return `CommitRevealDisabled` instead of entering the concealed commit queue
+([Commit Reveal Weights Enabled](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#commitrevealweightsenabled),
+[Commit-Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
+[Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+## Why It Appears
+
+The most direct cause is a validator or automation still calling commit or reveal extrinsics after a
+subnet owner has left commit-reveal disabled, or while targeting a subnet that never enabled it.
+Because the check runs early in the commit-reveal path, the failure is about scheme availability,
+not about whether a prior commit exists or whether a reveal arrived on time
+([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+For a reader, the practical meaning is narrow: the subnet is not accepting concealed commit-reveal
+weight submissions. The caller should use the ordinary weight path for that subnet, or wait until
+commit-reveal is enabled there before retrying the commit or reveal extrinsic
+([Commit-Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
+[Subtensor Standard Errors: CommitRevealEnabled](https://docs.learnbittensor.org/errors/subtensor#commitrevealenabled)).
+
+## Distinction from Commit Reveal Enabled
+
+`CommitRevealDisabled` and `CommitRevealEnabled` are paired rejections on opposite weight paths.
+`CommitRevealDisabled` means a commit-reveal extrinsic was sent to a subnet where the scheme is off.
+`CommitRevealEnabled` means a plain weight-setting extrinsic was sent to a subnet where
+commit-reveal is on and concealed submission is required instead
+([Subtensor Standard Errors: CommitRevealEnabled](https://docs.learnbittensor.org/errors/subtensor#commitrevealenabled),
+[Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+- **CommitRevealDisabled** — commit-reveal calls are not accepted because the scheme is off.
+- **CommitRevealEnabled** — plain weight calls are not accepted because commit-reveal is on.
+
+## Distinction from No Weights Commit Found
+
+`CommitRevealDisabled` and `NoWeightsCommitFound` both appear in commit-reveal troubleshooting, but
+they reject different problems. `CommitRevealDisabled` means the subnet does not use the
+commit-reveal scheme at all. `NoWeightsCommitFound` means commit-reveal is active, but the reveal
+step could not find a matching stored commit for that hotkey and subnet
+([No Weights Commit Found](https://docs.learnbittensor.org/errors/subtensor#noweightscommitfound),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#commitrevealdisabled)).
+
+- **CommitRevealDisabled** — the subnet has not enabled commit-reveal.
+- **NoWeightsCommitFound** — commit-reveal is enabled, but no matching stored commit exists.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the disabled-scheme gate that raises it. It
+does not describe how commit-reveal timing works, how reveal periods are configured, or how the
+subnet owner enables the hyperparameter; those are separate topics
+([Commit-Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
+[Commit Reveal Weights Enabled](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#commitrevealweightsenabled)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#commitrevealdisabled)
+- [Subtensor Standard Errors: CommitRevealEnabled](https://docs.learnbittensor.org/errors/subtensor#commitrevealenabled)
+- [Subtensor Standard Errors: NoWeightsCommitFound](https://docs.learnbittensor.org/errors/subtensor#noweightscommitfound)
+- [Commit-Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)
+- [Commit Reveal Weights Enabled](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#commitrevealweightsenabled)
+- [Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)
