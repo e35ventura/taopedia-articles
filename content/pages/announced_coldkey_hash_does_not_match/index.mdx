@@ -1,0 +1,86 @@
+---
+title: "Announced Coldkey Hash Does Not Match"
+summary:
+  "How the AnnouncedColdkeyHashDoesNotMatch error blocks finalizing a coldkey swap when the supplied
+  new coldkey does not hash to the value committed at announcement time."
+category: "Wallets"
+tags: ["Wallets", "Errors"]
+infoboxTitle: Announced Coldkey Hash Does Not Match
+infoboxCaption: Error raised when a finalize call's coldkey doesn't match the announced hash.
+infoboxRows:
+  - label: Error
+    value: AnnouncedColdkeyHashDoesNotMatch
+  - label: Trigger
+    value: Supplied new coldkey hash differs from the announced hash
+  - label: Checked in
+    value: swap_coldkey_announced, second check
+  - label: Check type
+    value: Hash comparison against stored announcement
+---
+
+# Announced Coldkey Hash Does Not Match
+
+`AnnouncedColdkeyHashDoesNotMatch` is a documented Subtensor standard error raised by
+`swap_coldkey_announced`, the extrinsic that finalizes a previously announced
+[coldkey swap](https://docs.learnbittensor.org/keys/coldkey-swap). The standard-errors reference
+describes it as "The announced coldkey hash does not match the new coldkey hash"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#announcedcoldkeyhashdoesnotmatch)).
+
+## What It Means
+
+When a coldkey swap is announced, the chain stores a hash of the intended destination coldkey rather
+than the public key itself. `swap_coldkey_announced` takes the pending announcement for the caller,
+then compares that stored hash against the hash of the new coldkey supplied in the finalize call.
+`AnnouncedColdkeyHashDoesNotMatch` is the rejection when those two hashes differ
+([Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs),
+[Coldkey Swap](https://docs.learnbittensor.org/keys/coldkey-swap)).
+
+This is the second of three checks the extrinsic runs in sequence. It only runs after the storage
+lookup for a pending announcement succeeds, and before the block-number comparison that confirms the
+pending window has elapsed
+([Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)).
+
+## Why It Appears
+
+The most direct cause is calling `swap_coldkey_announced` with a different coldkey than the one
+whose hash was submitted through `announce_coldkey_swap`. That can happen when the wrong key file is
+used, when the destination key pair was regenerated or replaced after announcement, or when a caller
+mistakenly finalizes against a different unused coldkey than the one they committed to at
+announcement time
+([Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs),
+[Coldkey Swap](https://docs.learnbittensor.org/keys/coldkey-swap)).
+
+Because the announcement step stores only the hash, the finalize step is where the chain verifies
+that the revealed coldkey is the same destination that was committed earlier. A mismatch at this
+point means the swap cannot proceed even though a valid pending announcement exists for the caller
+([Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)).
+
+## Distinction from Coldkey Swap Announcement Not Found
+
+`AnnouncedColdkeyHashDoesNotMatch` and `ColdkeySwapAnnouncementNotFound` are both raised by
+`swap_coldkey_announced`, but they correspond to different steps in the same sequence. The first
+step uses `take()` to remove the pending announcement record; if nothing is on record, the call
+fails with `ColdkeySwapAnnouncementNotFound` before any hash comparison runs. Only when that lookup
+succeeds does the extrinsic compare the supplied new coldkey against the hash stored in the
+announcement
+([Coldkey Swap Announcement Not Found](https://docs.learnbittensor.org/errors/subtensor#coldkeyswapannouncementnotfound),
+[Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)).
+
+- **ColdkeySwapAnnouncementNotFound** — no announcement record exists for the caller.
+- **AnnouncedColdkeyHashDoesNotMatch** — an announcement exists, but the supplied coldkey doesn't
+  match its committed hash.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the hash comparison that raises it. It does not
+describe how the announcement hash is created, how long the pending window lasts, or what happens
+after a successful match; those are documented separately
+([Coldkey Swap](https://docs.learnbittensor.org/keys/coldkey-swap),
+[Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#announcedcoldkeyhashdoesnotmatch)
+- [Subtensor Standard Errors: ColdkeySwapAnnouncementNotFound](https://docs.learnbittensor.org/errors/subtensor#coldkeyswapannouncementnotfound)
+- [Coldkey Swap](https://docs.learnbittensor.org/keys/coldkey-swap)
+- [Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)
