@@ -20,26 +20,28 @@ infoboxRows:
 
 # Commit Reveal Enabled
 
-`CommitRevealEnabled` is a documented Subtensor standard error raised by batch weight extrinsics.
-The standard-errors reference describes it as "Attempting to call set_weights when commit/reveal is
-enabled"
+`CommitRevealEnabled` means a batch weight call included a plain weight entry for a netuid that
+requires concealed commit-then-reveal submission. The standard-errors reference describes it as
+"Attempting to call set_weights when commit/reveal is enabled"
 ([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#commitrevealenabled)).
+
+The `CommitRevealWeightsEnabled` hyperparameter is set per netuid, so one subnet can require
+commit-reveal while another still accepts plain weight submission
+([Commit Reveal Weights Enabled](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#commitrevealweightsenabled)).
 
 ## What It Means
 
-When the `CommitRevealWeightsEnabled` hyperparameter is on for a network, validator weights must
-follow the concealed commit-then-reveal path rather than a direct `set_weights` submission.
-`CommitRevealEnabled` means a batch weight call included a plain weight entry for such a network, so
-that entry is rejected instead of being stored
+When `CommitRevealWeightsEnabled` is on for a network, validator weights must follow the concealed
+commit-then-reveal path rather than a direct `set_weights` submission. `CommitRevealEnabled` means a
+batch weight call included a plain weight entry for such a network, so that entry is rejected
+instead of being stored
 ([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#commitrevealenabled),
 [Commit Reveal Weights Enabled](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#commitrevealweightsenabled),
-[Commit-Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
-[Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+[Commit-Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)).
 
-In `weights.rs`, `do_batch_set_weights` checks each targeted network before delegating to the plain
-`set_weights` path. When commit-reveal is enabled for an entry's network, that entry returns
-`CommitRevealEnabled` instead of proceeding
-([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+This error is raised on the plain batch weight path. Each batch entry is checked against that
+entry's netuid before the chain delegates to ordinary weight storage, so mixed batches can succeed
+for some netuids and fail for others in the same call.
 
 ## Why It Appears
 
@@ -47,13 +49,13 @@ This error appears on the direct-weight path, not on commit or reveal extrinsics
 automation or a client still batches plain weight vectors for a network that has already switched to
 concealed submission. The rejection is about which extrinsic family is allowed, not about whether a
 prior commit exists or whether a reveal arrived on time
-([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs),
-[Subtensor Standard Errors: NoWeightsCommitFound](https://docs.learnbittensor.org/errors/subtensor#noweightscommitfound),
+([Subtensor Standard Errors: NoWeightsCommitFound](https://docs.learnbittensor.org/errors/subtensor#noweightscommitfound),
 [Subtensor Standard Errors: RevealTooEarly](https://docs.learnbittensor.org/errors/subtensor#revealtooearly)).
 
-For a reader, the practical meaning is narrow: that network entry must use commit and reveal
+When debugging, read `CommitRevealWeightsEnabled` for each netuid in the batch before chasing reveal
+timing or missing-commit failures. If the scheme is on, switch that netuid to commit and reveal
 extrinsics instead of plain batch weights. The problem is not a missing stored commit, a disabled
-scheme, or a mismatched batch vector length
+scheme on the wrong path, or a mismatched batch vector length
 ([Subtensor Standard Errors: CommitRevealDisabled](https://docs.learnbittensor.org/errors/subtensor#commitrevealdisabled),
 [Subtensor Standard Errors: InputLengthsUnequal](https://docs.learnbittensor.org/errors/subtensor#inputlengthsunequal)).
 
@@ -63,8 +65,7 @@ scheme, or a mismatched batch vector length
 `CommitRevealEnabled` means a plain weight submission was sent to a network where commit-reveal is
 on. `CommitRevealDisabled` means a commit or reveal submission was sent to a network where the
 scheme is off
-([Subtensor Standard Errors: CommitRevealDisabled](https://docs.learnbittensor.org/errors/subtensor#commitrevealdisabled),
-[Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+([Subtensor Standard Errors: CommitRevealDisabled](https://docs.learnbittensor.org/errors/subtensor#commitrevealdisabled)).
 
 - **CommitRevealEnabled** — plain weight calls are not accepted because commit-reveal is on.
 - **CommitRevealDisabled** — commit-reveal calls are not accepted because the scheme is off.
@@ -75,8 +76,7 @@ scheme is off
 they reject different stages. `CommitRevealEnabled` blocks the wrong extrinsic family before any
 commit queue lookup runs. `NoWeightsCommitFound` means commit-reveal is active and the reveal step
 could not find a matching stored commit
-([No Weights Commit Found](https://docs.learnbittensor.org/errors/subtensor#noweightscommitfound),
-[Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+([No Weights Commit Found](https://docs.learnbittensor.org/errors/subtensor#noweightscommitfound)).
 
 - **CommitRevealEnabled** — plain weights were used where commit-reveal is required.
 - **NoWeightsCommitFound** — a reveal arrived without a matching stored commit.
@@ -96,4 +96,3 @@ configured; those are separate topics
 - [Subtensor Standard Errors: NoWeightsCommitFound](https://docs.learnbittensor.org/errors/subtensor#noweightscommitfound)
 - [Commit-Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)
 - [Commit Reveal Weights Enabled](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#commitrevealweightsenabled)
-- [Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)
