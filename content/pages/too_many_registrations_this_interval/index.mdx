@@ -1,0 +1,113 @@
+---
+title: "Too Many Registrations This Interval"
+summary:
+  "How the TooManyRegistrationsThisInterval error blocks root_register when the Root Subnet has
+  already exceeded its interval registration allowance."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Too Many Registrations This Interval
+infoboxCaption: Error raised when root registration bursts exceed the interval cap.
+infoboxRows:
+  - label: Error
+    value: TooManyRegistrationsThisInterval
+  - label: Trigger
+    value: Root registrations this interval exceeded three times TargetRegistrationsPerInterval
+  - label: Checked in
+    value: root_register path
+  - label: Related hyperparameter
+    value: TargetRegistrationsPerInterval
+---
+
+# Too Many Registrations This Interval
+
+`TooManyRegistrationsThisInterval` means a `root_register` call arrived after the Root Subnet had
+already used its allowed registration slots for the current interval. The standard-errors reference
+describes it as "Too many registration attempts in interval"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#toomanyregistrationsthisinterval)).
+
+The check applies on the Root Subnet validator-entry path only, immediately after the per-block
+registration gate and before hotkey membership and stake checks
+([Subtensor source: root.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/root.rs)).
+
+## What It Means
+
+`root_register` admits validators to the Root Subnet, also called Subnet Zero. After the per-block
+cap passes, the chain counts how many root registrations have succeeded in the current interval and
+compares that count against three times the Root Subnet's `TargetRegistrationsPerInterval` setting.
+`TooManyRegistrationsThisInterval` means the interval allowance is already exhausted, so the call is
+rejected
+([Subtensor source: root.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/root.rs),
+[Subnet Hyperparameters: TargetRegistrationsPerInterval](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#targetregistrationsperinterval)).
+
+This is a wider burst-rate gate than the per-block cap. Ordinary mining-subnet registration is
+priced through continuous burn economics rather than this interval counter
+([Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register)).
+
+## Why It Appears
+
+This error appears when repeated `root_register` calls succeed often enough within one interval that
+the Root Subnet's interval allowance is exhausted before the caller's transaction executes.
+Automation that retries root registration across many blocks in the same interval, or sustained
+bursts of root validator entry, can see this failure even when the current block cap has not been
+reached
+([Subtensor source: root.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/root.rs)).
+
+When debugging, rule out the adjacent root registration pacing failure first.
+`TooManyRegistrationsThisBlock` means only the current block's registration cap is full, not the
+broader interval counter
+([Subtensor Standard Errors: TooManyRegistrationsThisBlock](https://docs.learnbittensor.org/errors/subtensor#toomanyregistrationsthisblock)).
+
+The practical meaning is narrow: the Root Subnet's interval registration allowance is full. The
+problem is not that the hotkey is already registered on the Root Subnet, that root stake is too low
+to displace an incumbent, or that ordinary subnet registration burn pricing changed.
+
+## Distinction from Too Many Registrations This Block
+
+`TooManyRegistrationsThisInterval` and `TooManyRegistrationsThisBlock` are paired burst limits on
+`root_register`. `TooManyRegistrationsThisBlock` means the current block's registration count has
+hit `MaxRegistrationsPerBlock`. `TooManyRegistrationsThisInterval` means the wider interval counter
+has exceeded three times `TargetRegistrationsPerInterval`, checked immediately after the per-block
+gate on the same path
+([Subtensor Standard Errors: TooManyRegistrationsThisBlock](https://docs.learnbittensor.org/errors/subtensor#toomanyregistrationsthisblock),
+[Subtensor source: root.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/root.rs)).
+
+- **TooManyRegistrationsThisBlock** — the block's root registration cap is full.
+- **TooManyRegistrationsThisInterval** — the interval's root registration cap is full.
+
+## Distinction from Stake Too Low For Root
+
+`TooManyRegistrationsThisInterval` and `StakeTooLowForRoot` both appear on `root_register`, but at
+different stages. `TooManyRegistrationsThisInterval` is an interval pacing rejection before
+membership and stake comparison run. `StakeTooLowForRoot` means the Root Subnet is full and the
+registering hotkey's root stake is not high enough to replace the weakest validator
+([Subtensor Standard Errors: StakeTooLowForRoot](https://docs.learnbittensor.org/errors/subtensor#staketoolowforroot),
+[Subtensor source: root.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/root.rs)).
+
+- **TooManyRegistrationsThisInterval** — the interval's root registration allowance is exhausted.
+- **StakeTooLowForRoot** — root stake was too low to displace the weakest root validator.
+
+## Distinction from Hotkey Already Registered In Subnet
+
+`TooManyRegistrationsThisInterval` and `HotKeyAlreadyRegisteredInSubNet` both appear on
+`root_register`, but at different stages. `TooManyRegistrationsThisInterval` is the interval pacing
+rejection before membership is evaluated. `HotKeyAlreadyRegisteredInSubNet` means the hotkey already
+holds a UID on the Root Subnet
+([Subtensor Standard Errors: HotKeyAlreadyRegisteredInSubNet](https://docs.learnbittensor.org/errors/subtensor#hotkeyalreadyregisteredinsubnet)).
+
+- **TooManyRegistrationsThisInterval** — the interval's root registration allowance is exhausted.
+- **HotKeyAlreadyRegisteredInSubNet** — the hotkey already has a root UID.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the interval cap on `root_register`. It does
+not describe ordinary mining-subnet registration, how root stake displacement works, or the live
+`TargetRegistrationsPerInterval` value on a network; those are documented separately
+([Subnet Hyperparameters: TargetRegistrationsPerInterval](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#targetregistrationsperinterval),
+[Stake Too Low For Root](https://docs.learnbittensor.org/errors/subtensor#staketoolowforroot)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#toomanyregistrationsthisinterval)
+- [Subtensor Standard Errors: TooManyRegistrationsThisBlock](https://docs.learnbittensor.org/errors/subtensor#toomanyregistrationsthisblock)
+- [Subnet Hyperparameters: TargetRegistrationsPerInterval](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#targetregistrationsperinterval)
+- [Subtensor source: root.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/root.rs)
