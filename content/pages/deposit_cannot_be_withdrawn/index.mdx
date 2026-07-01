@@ -1,0 +1,65 @@
+---
+title: "Deposit Cannot Be Withdrawn"
+summary:
+  "How the DepositCannotBeWithdrawn error blocks a crowdloan creator's withdrawal when their entire
+  contribution is locked as the crowdloan's required deposit."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Deposit Cannot Be Withdrawn
+infoboxCaption:
+  Error raised when the creator tries to withdraw a contribution that is fully locked as a deposit.
+infoboxRows:
+  - label: Error
+    value: DepositCannotBeWithdrawn
+  - label: Trigger
+    value: Creator's contribution minus the deposit leaves zero or nothing
+  - label: Checked in
+    value: withdraw extrinsic, creator-specific branch
+  - label: Check type
+    value: Remaining-amount check after deposit subtraction
+---
+
+# Deposit Cannot Be Withdrawn
+
+`DepositCannotBeWithdrawn` is a documented Subtensor standard error raised by the `withdraw`
+extrinsic in the crowdloan pallet. The Subtensor API error reference describes it as "The deposit
+cannot be withdrawn from the crowdloan"
+([Subtensor API: Errors](https://docs.learnbittensor.org/subtensor-api/errors)).
+
+## What It Means
+
+When the [crowdloan](https://docs.learnbittensor.org/subnets/crowdloans) creator calls `withdraw`,
+the extrinsic handles their case differently from ordinary contributors. The creator's required
+deposit is reserved within their contribution, so before returning any funds, the deposit amount is
+subtracted first. `DepositCannotBeWithdrawn` fires when subtracting the deposit leaves no
+withdrawable amount remaining — meaning the creator's entire contribution equals their deposit, so
+there is nothing to return yet
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+This check only applies to the crowdloan creator. Ordinary contributors go through a separate path
+in `withdraw` that does not involve the deposit, and they never encounter this error
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+## Distinction from No Contribution
+
+`DepositCannotBeWithdrawn` and `NoContribution` are both raised inside `withdraw`, but at different
+stages. `NoContribution` is checked earlier and fires when the caller has no recorded contribution
+at all. `DepositCannotBeWithdrawn` is checked after that confirmation, in the creator-specific
+branch, when the contribution exists but is fully consumed by the locked deposit
+([Subtensor Standard Errors: NoContribution](https://docs.learnbittensor.org/subtensor-api/errors),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+- **NoContribution** — caller has no contribution on record at all.
+- **DepositCannotBeWithdrawn** — creator has a contribution, but it is fully locked as the deposit.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the deposit-subtraction check that raises it.
+It does not describe how crowdloan deposits are set or the rest of the withdrawal flow; those are
+documented separately ([Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans)).
+
+## Further Reading
+
+- [Subtensor API: Errors](https://docs.learnbittensor.org/subtensor-api/errors)
+- [Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans)
+- [Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)
