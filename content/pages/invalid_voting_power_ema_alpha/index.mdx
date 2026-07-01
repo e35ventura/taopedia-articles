@@ -1,0 +1,107 @@
+---
+title: "Invalid Voting Power EMA Alpha"
+summary:
+  "How the InvalidVotingPowerEmaAlpha error blocks sudo_set_voting_power_ema_alpha when the
+  submitted alpha value exceeds the documented 10^18 ceiling for the voting-power EMA smoothing
+  factor."
+category: "Consensus"
+tags: ["Consensus", "Errors"]
+infoboxTitle: Invalid Voting Power EMA Alpha
+infoboxCaption: Error raised when voting-power EMA alpha is above the allowed ceiling.
+infoboxRows:
+  - label: Error
+    value: InvalidVotingPowerEmaAlpha
+  - label: Trigger
+    value: Submitted alpha is above 10^18
+  - label: Related storage
+    value: VotingPowerEmaAlpha
+  - label: Example netuid
+    value: netuid 1
+---
+
+# Invalid Voting Power EMA Alpha
+
+`InvalidVotingPowerEmaAlpha` means a `sudo_set_voting_power_ema_alpha` call for netuid 1 or another
+named subnet submitted an alpha value above the documented ceiling. The Subtensor API errors
+reference summarizes it as an invalid voting power EMA alpha value that must be less than or equal
+to 10^18
+([Subtensor API Errors: InvalidVotingPowerEmaAlpha](https://docs.learnbittensor.org/subtensor-api/errors#invalidvotingpoweremaalpha)).
+
+The setter is listed among Subtensor extrinsics as `sudo_set_voting_power_ema_alpha` with `netuid`
+and `alpha` parameters
+([Subtensor Extrinsics](https://docs.learnbittensor.org/navigating-subtensor/subtensor-extrinsics)).
+
+## What It Means
+
+Exponential moving averages smooth subnet signals over time so recent values weigh more heavily than
+older ones ([Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema),
+[Glossary: Exponential Moving Average](https://docs.learnbittensor.org/resources/glossary#exponential-moving-average-ema)).
+
+`VotingPowerEmaAlpha` is per-netuid chain storage that holds the smoothing factor used in
+voting-power tracking. A successful update emits `VotingPowerEmaAlphaSet` for the target netuid
+([Subtensor API Events: VotingPowerEmaAlphaSet](https://docs.learnbittensor.org/subtensor-api/events#votingpoweremaalphasetnetuid-u64)).
+
+`InvalidVotingPowerEmaAlpha` means the submitted alpha exceeded the allowed ceiling of 10^18, which
+corresponds to 1.0 on the chain's fixed-point scale for this setter
+([Subtensor API Errors: InvalidVotingPowerEmaAlpha](https://docs.learnbittensor.org/subtensor-api/errors#invalidvotingpoweremaalpha)).
+
+This is a value-range gate on the voting-power EMA alpha setter. The failure concerns the submitted
+alpha magnitude, not whether the target netuid exists or whether voting-power tracking is enabled.
+
+## Why It Appears
+
+This error appears when a root sudo call submits an alpha above 10^18 for a netuid. That can happen
+when a client uses the wrong fixed-point scale, copies an outdated extrinsic, or treats the alpha
+argument as an unscaled decimal without converting to the chain's integer representation
+([Subtensor API Errors: InvalidVotingPowerEmaAlpha](https://docs.learnbittensor.org/subtensor-api/errors#invalidvotingpoweremaalpha),
+[Subtensor Extrinsics](https://docs.learnbittensor.org/navigating-subtensor/subtensor-extrinsics)).
+
+On netuid 1, readers can compare a proposed alpha against the live `VotingPowerEmaAlpha` storage
+value through the subnet storage query patterns described in the Subtensor documentation before
+resubmitting an update
+([Subtensor Storage Query Examples](https://docs.learnbittensor.org/subtensor-nodes/subtensor-storage-query-examples)).
+
+When debugging, rule out authorization failures first. `BadOrigin` means the signer lacks the root
+sudo permission required for this setter
+([Subtensor Standard Errors: BadOrigin](https://docs.learnbittensor.org/errors/subtensor#badorigin)).
+
+The practical meaning is narrow: the submitted voting-power EMA alpha is above the allowed ceiling.
+
+## Distinction from Invalid Value
+
+`InvalidVotingPowerEmaAlpha` and `InvalidValue` both signal out-of-range parameter input, but at
+different specificity. `InvalidVotingPowerEmaAlpha` is the dedicated rejection when the voting-power
+EMA alpha exceeds 10^18. `InvalidValue` is the generic out-of-range label used on other parameter
+setters
+([Subtensor Standard Errors: InvalidValue](https://docs.learnbittensor.org/errors/subtensor#invalidvalue),
+[Subtensor API Errors: InvalidVotingPowerEmaAlpha](https://docs.learnbittensor.org/subtensor-api/errors#invalidvotingpoweremaalpha)).
+
+- **InvalidVotingPowerEmaAlpha** — the submitted voting-power EMA alpha is above 10^18.
+- **InvalidValue** — a generic parameter value is outside its allowed range on another setter.
+
+## Distinction from Alpha High Too Low
+
+`InvalidVotingPowerEmaAlpha` and `AlphaHighTooLow` both involve alpha smoothing bounds, but on
+different hyperparameters. `InvalidVotingPowerEmaAlpha` applies to the voting-power EMA alpha setter
+for voting-power tracking. `AlphaHighTooLow` applies to the liquid-alpha `alpha_high` bound on
+`sudo_set_alpha_values`
+([Subtensor Standard Errors: AlphaHighTooLow](https://docs.learnbittensor.org/errors/subtensor#alphahightoolow),
+[Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)).
+
+- **InvalidVotingPowerEmaAlpha** — the voting-power EMA alpha exceeds 10^18.
+- **AlphaHighTooLow** — the submitted liquid-alpha high bound is below the minimum floor.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the 10^18 ceiling it represents. It does not
+report the live voting-power EMA alpha on a particular netuid; that value is subnet chain state
+readers can query for the selected netuid
+([Subtensor Storage Query Examples](https://docs.learnbittensor.org/subtensor-nodes/subtensor-storage-query-examples),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: InvalidVotingPowerEmaAlpha](https://docs.learnbittensor.org/subtensor-api/errors#invalidvotingpoweremaalpha)
+- [Subtensor Extrinsics](https://docs.learnbittensor.org/navigating-subtensor/subtensor-extrinsics)
+- [Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema)
+- [Subtensor API Events: VotingPowerEmaAlphaSet](https://docs.learnbittensor.org/subtensor-api/events#votingpoweremaalphasetnetuid-u64)
