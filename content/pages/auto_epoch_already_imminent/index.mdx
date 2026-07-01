@@ -1,0 +1,108 @@
+---
+title: "Auto Epoch Already Imminent"
+summary:
+  "How the AutoEpochAlreadyImminent error blocks a manual epoch trigger when the subnet's next
+  automatic epoch on the tempo schedule is already too close for an out-of-band trigger to matter."
+category: "Consensus"
+tags: ["Consensus", "Errors"]
+infoboxTitle: Auto Epoch Already Imminent
+infoboxCaption: Error raised when a manual epoch trigger arrives too near the automatic boundary.
+infoboxRows:
+  - label: Error
+    value: AutoEpochAlreadyImminent
+  - label: Trigger
+    value: Manual epoch trigger while automatic epoch is already imminent
+  - label: Related concept
+    value: Tempo and automatic epoch schedule
+  - label: Example netuid
+    value: netuid 1
+---
+
+# Auto Epoch Already Imminent
+
+`AutoEpochAlreadyImminent` means a subnet owner tried to arm a manual epoch trigger on netuid 1 or
+another named subnet when the next automatic epoch on that subnet's tempo schedule is already so
+close that the manual trigger would have no effect. The Subtensor API errors reference summarizes it
+as "The next automatic epoch is already imminent; a manual trigger would have no effect"
+([Subtensor API Errors: AutoEpochAlreadyImminent](https://docs.learnbittensor.org/subtensor-api/errors#autoepochalreadyimminent)).
+
+Subnet owners can otherwise schedule a manual epoch ahead of the automatic tempo boundary
+([Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase),
+[Glossary: Epoch](https://docs.learnbittensor.org/resources/glossary#epoch)).
+
+## What It Means
+
+An epoch is the consensus period inside a subnet, paced by tempo
+([Glossary: Epoch](https://docs.learnbittensor.org/resources/glossary#epoch),
+[Subnet Hyperparameters: tempo](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#tempo)).
+
+`AutoEpochAlreadyImminent` is a proximity gate on manual epoch triggers. It means the automatic
+epoch boundary is already near enough on the tempo schedule that arming a manual trigger would not
+change outcomes in a meaningful way
+([Subtensor API Errors: AutoEpochAlreadyImminent](https://docs.learnbittensor.org/subtensor-api/errors#autoepochalreadyimminent)).
+
+This is a scheduling rejection tied to how close the automatic epoch is, not a value-range failure
+on tempo and not an authorization failure when the signer otherwise has subnet-owner permission.
+
+## Why It Appears
+
+This error appears when a subnet owner submits a manual epoch trigger in the final stretch before
+the subnet's next automatic epoch on its tempo cadence. That can happen when automation fires late
+in the tempo, when operators misread how many blocks remain before the boundary, or when a client
+retries a trigger call after the automatic schedule has already closed the useful window
+([Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase),
+[Admin Freeze Window](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+
+When debugging on netuid 1, readers can read the live tempo with
+`btcli subnet hyperparameters --netuid 1 --network finney` to see the automatic epoch cadence before
+deciding whether a manual trigger is still useful
+([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
+
+When debugging, rule out authorization and sibling scheduling failures first. `BadOrigin` and
+`NotSubnetOwner` mean the signer lacks subnet-owner permission. `EpochTriggerAlreadyPending` means a
+manual trigger is already armed for the subnet and a second trigger must wait until the first fires
+([Subtensor Standard Errors: BadOrigin](https://docs.learnbittensor.org/errors/subtensor#badorigin),
+[Subtensor Standard Errors: NotSubnetOwner](https://docs.learnbittensor.org/errors/subtensor#notsubnetowner),
+[Subtensor API Errors: EpochTriggerAlreadyPending](https://docs.learnbittensor.org/subtensor-api/errors#epochtriggeralreadypending)).
+
+The practical fix is to let the imminent automatic epoch run, then arm a manual trigger earlier in
+the next tempo if one is still needed.
+
+## Distinction from Epoch Trigger Already Pending
+
+`AutoEpochAlreadyImminent` and `EpochTriggerAlreadyPending` both appear on manual epoch trigger
+paths, but they reject different scheduling problems. `AutoEpochAlreadyImminent` means the automatic
+epoch is already too close for a manual trigger to matter. `EpochTriggerAlreadyPending` means a
+manual trigger is already armed and a second one cannot be stacked
+([Subtensor API Errors: EpochTriggerAlreadyPending](https://docs.learnbittensor.org/subtensor-api/errors#epochtriggeralreadypending)).
+
+- **AutoEpochAlreadyImminent** — the automatic epoch is already imminent.
+- **EpochTriggerAlreadyPending** — a manual trigger is already pending for the subnet.
+
+## Distinction from Admin Action Prohibited During Weights Window
+
+`AutoEpochAlreadyImminent` and `AdminActionProhibitedDuringWeightsWindow` both involve epoch timing
+near a boundary, but on different calls. `AutoEpochAlreadyImminent` blocks a manual epoch trigger
+when the automatic schedule is already too close. `AdminActionProhibitedDuringWeightsWindow` blocks
+subnet-owner hyperparameter changes during the admin freeze window in the final blocks before an
+automatic epoch
+([Admin Action Prohibited During Weights Window](https://docs.learnbittensor.org/errors/subtensor#adminactionprohibitedduringweightswindow)).
+
+- **AutoEpochAlreadyImminent** — a manual trigger would have no effect because the automatic epoch
+  is imminent.
+- **AdminActionProhibitedDuringWeightsWindow** — an admin hyperparameter change arrived during the
+  freeze window.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the automatic-epoch proximity gate it
+represents. It does not report how many blocks remain before the next epoch on a particular netuid;
+that timing is subnet chain state readers can query for the selected netuid
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: AutoEpochAlreadyImminent](https://docs.learnbittensor.org/subtensor-api/errors#autoepochalreadyimminent)
+- [Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase)
+- [Glossary: Epoch](https://docs.learnbittensor.org/resources/glossary#epoch)
+- [Admin Freeze Window](https://docs.learnbittensor.org/learn/chain-rate-limits)
