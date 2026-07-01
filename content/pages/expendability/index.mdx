@@ -1,0 +1,83 @@
+---
+title: "Expendability"
+summary:
+  "How the Expendability error blocks a transfer or payment when the KeepAlive requirement would be
+  violated because the operation would reduce the sender's balance below the existential deposit."
+category: "Wallets"
+tags: ["Wallets", "Errors", "Security"]
+infoboxTitle: Expendability
+infoboxCaption:
+  Error raised when a transfer with a KeepAlive requirement would drop the sender's balance below
+  the existential deposit.
+infoboxRows:
+  - label: Error
+    value: Expendability
+  - label: Pallet
+    value: balances
+  - label: Trigger
+    value: Withdrawal would kill the account but KeepAlive mode is active
+  - label: Check type
+    value: Account-liveness check on the withdrawal path
+---
+
+# Expendability
+
+`Expendability` is a balances pallet error raised when a withdrawal or payment would reduce the
+sender's balance below the existential deposit while the operation requires the account to remain
+alive. The pallet source describes it as "Transfer/payment would kill account"
+([Subtensor API Errors: Expendability](https://docs.learnbittensor.org/subtensor-api/errors#expendability)).
+
+## What It Means
+
+Every account on the Bittensor network must maintain a minimum balance known as the existential
+deposit. Transfers that include a KeepAlive requirement block operations that would drop the
+sender's balance below this threshold. `Expendability` fires when a withdrawal would kill the
+sender's account and the KeepAlive requirement is in effect
+([Subtensor API Errors: Expendability](https://docs.learnbittensor.org/subtensor-api/errors#expendability)).
+
+This error is raised by operations such as `transferKeepAlive` on the sender's side when the
+transfer amount plus any fees would leave the account with less than the existential deposit
+([Subtensor API Errors: Expendability](https://docs.learnbittensor.org/subtensor-api/errors#expendability)).
+
+## Why It Appears
+
+This error appears when the free balance after the requested withdrawal would drop below the
+existential deposit, and the operation was submitted with a KeepAlive requirement. Reducing the
+transfer amount or using an AllowDeath transfer instead resolves the error if the caller accepts the
+account being reaped
+([Subtensor API Errors: Expendability](https://docs.learnbittensor.org/subtensor-api/errors#expendability)).
+
+## Distinction from Insufficient Balance
+
+`Expendability` and `InsufficientBalance` both block balance withdrawals, but for different reasons.
+`InsufficientBalance` fires when the free balance is too low to cover the requested amount at all.
+`Expendability` fires when the balance is sufficient to cover the amount, but the transfer would
+reduce the account below the existential deposit under a KeepAlive constraint
+([Subtensor API Errors: InsufficientBalance](https://docs.learnbittensor.org/subtensor-api/errors#insufficientbalance)).
+
+- **InsufficientBalance** — free balance cannot cover the requested amount.
+- **Expendability** — balance covers the amount but account would be killed under KeepAlive.
+
+## Distinction from Existential Deposit
+
+`Expendability` and `ExistentialDeposit` both involve the existential deposit threshold, but on
+opposite sides of a transfer. `ExistentialDeposit` fires on the recipient side when a deposit would
+create a new account with less than the minimum balance. `Expendability` fires on the sender side
+when the transfer would leave the sender's account below the existential deposit
+([Subtensor API Errors: ExistentialDeposit](https://docs.learnbittensor.org/subtensor-api/errors#existentialdeposit)).
+
+- **ExistentialDeposit** — recipient account would be created below the minimum.
+- **Expendability** — sender account would be killed by the transfer.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the account-liveness check that raises it. It
+does not report the current existential deposit value or the sender's current balance; those are
+live chain state
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: Expendability](https://docs.learnbittensor.org/subtensor-api/errors#expendability)
+- [Subtensor API Errors: InsufficientBalance](https://docs.learnbittensor.org/subtensor-api/errors#insufficientbalance)
+- [Subtensor API Errors: ExistentialDeposit](https://docs.learnbittensor.org/subtensor-api/errors#existentialdeposit)
