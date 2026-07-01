@@ -1,0 +1,100 @@
+---
+title: "Duplicate Order In Batch"
+summary:
+  "How the DuplicateOrderInBatch error blocks batched limit-order execution when the same order
+  appears more than once in a single batch."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Duplicate Order In Batch
+infoboxCaption: Error raised when a batched limit-order call repeats the same order ID.
+infoboxRows:
+  - label: Error
+    value: DuplicateOrderInBatch
+  - label: Trigger
+    value: Same order_id appears more than once in one execute_batched_orders call
+  - label: Checked in
+    value: execute_batched_orders extrinsic
+  - label: Check type
+    value: In-batch duplicate order detection
+---
+
+# Duplicate Order In Batch
+
+`DuplicateOrderInBatch` is a documented limit-orders error raised by `execute_batched_orders`. The
+Subtensor API errors reference lists it under the limit-orders pallet
+([Subtensor API Errors: DuplicateOrderInBatch](https://docs.learnbittensor.org/subtensor-api/errors#duplicateorderinbatch)).
+
+## What It Means
+
+`execute_batched_orders` processes multiple signed limit orders together for one subnet. Before it
+executes the batch, the runtime derives an `order_id` for each entry and inserts those IDs into an
+in-memory set. `DuplicateOrderInBatch` means the same `order_id` appeared more than once in that
+single batch, so the runtime rejects the whole call instead of processing the repeated order twice
+([Subnet Liquidity Pools](https://docs.learnbittensor.org/subnets/understanding-subnets#liquidity-pools),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+This is an in-batch deduplication check on the batched execution path. It is not about whether an
+order was fulfilled or cancelled earlier in chain state. It is specifically about duplicate entries
+inside the current `execute_batched_orders` submission
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs),
+[Subtensor source: limit-orders README](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/README.md)).
+
+The practical meaning is narrow: the batch itself repeats an order that should appear only once.
+
+## Why It Appears
+
+This error appears when a relayer or client submits one batch that includes the same limit order
+more than once
+([Subtensor API Errors: DuplicateOrderInBatch](https://docs.learnbittensor.org/subtensor-api/errors#duplicateorderinbatch),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+The tests show two direct cases. One batch fails when it includes the exact same signed order twice.
+Another regression test fails when two signed envelopes carry the same inner order but different
+`partial_fill` values, because the runtime still derives the same `order_id` from the shared inner
+order
+([Subtensor test: limit-orders/extrinsics.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/tests/extrinsics.rs)).
+
+The same tests also show the safety effect: when this error fires, the batch rolls back and no order
+status is recorded for that repeated order
+([Subtensor test: limit-orders/extrinsics.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/tests/extrinsics.rs)).
+
+## Distinction from Order Already Processed
+
+`DuplicateOrderInBatch` and `OrderAlreadyProcessed` can both block limit-order handling, but they
+check different things. `OrderAlreadyProcessed` means the order ID is already stored on chain as
+fulfilled or cancelled from an earlier operation. `DuplicateOrderInBatch` means the current batch
+submission repeats the same order ID before execution can proceed
+([Subtensor API Errors: OrderAlreadyProcessed](https://docs.learnbittensor.org/subtensor-api/errors#orderalreadyprocessed),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+- **OrderAlreadyProcessed** — the order was already fulfilled or cancelled in chain state.
+- **DuplicateOrderInBatch** — the current batch repeats the same order ID more than once.
+
+## Distinction from Order Cancelled
+
+`DuplicateOrderInBatch` and `OrderCancelled` both reference order handling, but they describe
+separate states. `OrderCancelled` means the order has already been marked cancelled.
+`DuplicateOrderInBatch` means the batch itself is malformed because it repeats an order ID,
+regardless of whether that order was otherwise cancellable
+([Subtensor API Errors: OrderCancelled](https://docs.learnbittensor.org/subtensor-api/errors#ordercancelled),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+- **OrderCancelled** — the order already carries cancelled status.
+- **DuplicateOrderInBatch** — the batch repeats one order within the same call.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the in-batch duplicate check that raises it. It
+does not describe the full limit-order execution sequence or every other batched-order validation
+rule; those are separate parts of the limit-orders flow
+([Subtensor source: limit-orders README](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/README.md)).
+
+## Further Reading
+
+- [Subtensor API Errors: DuplicateOrderInBatch](https://docs.learnbittensor.org/subtensor-api/errors#duplicateorderinbatch)
+- [Subtensor API Errors: OrderAlreadyProcessed](https://docs.learnbittensor.org/subtensor-api/errors#orderalreadyprocessed)
+- [Subtensor API Errors: OrderCancelled](https://docs.learnbittensor.org/subtensor-api/errors#ordercancelled)
+- [Subnet Liquidity Pools](https://docs.learnbittensor.org/subnets/understanding-subnets#liquidity-pools)
+- [Subtensor source: limit-orders README](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/README.md)
+- [Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)
+- [Subtensor test: limit-orders/extrinsics.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/tests/extrinsics.rs)
