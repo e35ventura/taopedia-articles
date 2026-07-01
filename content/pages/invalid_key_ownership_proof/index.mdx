@@ -1,0 +1,93 @@
+---
+title: "Invalid Key Ownership Proof"
+summary:
+  "How the InvalidKeyOwnershipProof error blocks a GRANDPA equivocation report when the submitted
+  key ownership proof does not verify the offender as the key owner."
+category: "Consensus"
+tags: ["Consensus", "Errors"]
+infoboxTitle: Invalid Key Ownership Proof
+infoboxCaption: Error raised when a GRANDPA equivocation report's key ownership proof is invalid.
+infoboxRows:
+  - label: Error
+    value: InvalidKeyOwnershipProof
+  - label: Pallet
+    value: grandpa
+  - label: Trigger
+    value: Equivocation report submitted with a key ownership proof that does not verify
+  - label: Check type
+    value: Key-ownership-proof-validation guard on the equivocation report path
+---
+
+# Invalid Key Ownership Proof
+
+`InvalidKeyOwnershipProof` is a grandpa pallet error raised when a GRANDPA equivocation report's key
+ownership proof does not verify the reported offender as the owner of the validator key. The API
+errors reference summarizes it as "A key ownership proof provided as part of an equivocation report
+is invalid."
+([Subtensor API Errors: InvalidKeyOwnershipProof](https://docs.learnbittensor.org/subtensor-api/errors#invalidkeyownershipproof)).
+
+## What It Means
+
+GRANDPA is the block finality gadget on Subtensor. When a validator produces two conflicting
+finality votes for the same round, that pair of votes is an equivocation. Reporting the equivocation
+requires two proofs: an equivocation proof (the conflicting votes) and a key ownership proof (that
+the reported validator was the owner of the signing key at the time of the offence).
+`InvalidKeyOwnershipProof` means the key ownership proof failed validation, so the runtime rejects
+the report before it reaches the offence-recording step
+([Subtensor API Errors: InvalidKeyOwnershipProof](https://docs.learnbittensor.org/subtensor-api/errors#invalidkeyownershipproof)).
+
+This is the key-ownership-proof-validation guard on the equivocation report path. It does not, by
+itself, mean the equivocation proof was invalid, that the equivocation was a duplicate, or that the
+report arrived through an unsigned path that the runtime rejects.
+
+## Why It Appears
+
+This error appears when a GRANDPA equivocation report is processed and the key ownership proof does
+not verify the offender as the key owner. The pinned grandpa-pallet source describes the check:
+after the equivocation proof is validated, the report path submits the key ownership proof to the
+chain's proof-checking system and maps a verification failure to
+`Error::<T>::InvalidKeyOwnershipProof`
+([opentensor/polkadot-sdk: substrate/frame/grandpa/src/equivocation.rs#L198](https://github.com/opentensor/polkadot-sdk/blob/7cc54bf2d50ae3921d718736dfeb0de9468539c7/substrate/frame/grandpa/src/equivocation.rs#L198)).
+
+The practical meaning is narrow: the key ownership proof must verify the offender before the
+equivocation report can proceed to the offence-recording step.
+
+## Distinction from Duplicate Offence Report
+
+`InvalidKeyOwnershipProof` and `DuplicateOffenceReport` are both grandpa-pallet errors on the
+equivocation report path, but they fire at different stages. `InvalidKeyOwnershipProof` is the
+key-ownership-proof-validation guard that runs before the offence is recorded.
+`DuplicateOffenceReport` is the already-on-record guard that runs after both proofs are validated
+and the offence is submitted to the reporting system
+([Subtensor API Errors: InvalidKeyOwnershipProof](https://docs.learnbittensor.org/subtensor-api/errors#invalidkeyownershipproof),
+[Subtensor API Errors: DuplicateOffenceReport](https://docs.learnbittensor.org/subtensor-api/errors#duplicateoffencereport)).
+
+- **InvalidKeyOwnershipProof** — the key ownership proof did not verify the offender.
+- **DuplicateOffenceReport** — both proofs are valid but the equivocation is already on record.
+
+## Distinction from Invalid Equivocation Proof
+
+`InvalidKeyOwnershipProof` and `InvalidEquivocationProof` are both grandpa-pallet errors that fire
+on the equivocation report path, but they validate different proofs. `InvalidKeyOwnershipProof` is
+the key-ownership-proof-validation guard. `InvalidEquivocationProof` is the equivocation-proof guard
+that runs when the conflicting votes do not form a valid equivocation
+([Subtensor API Errors: InvalidKeyOwnershipProof](https://docs.learnbittensor.org/subtensor-api/errors#invalidkeyownershipproof),
+[Subtensor API Errors: InvalidEquivocationProof](https://docs.learnbittensor.org/subtensor-api/errors#invalidequivocationproof)).
+
+- **InvalidKeyOwnershipProof** — the key ownership proof is invalid.
+- **InvalidEquivocationProof** — the equivocation proof (conflicting votes) is invalid.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the key-ownership-proof-validation guard it
+represents on the GRANDPA equivocation report path. It does not describe how to construct a valid
+key ownership proof, list the equivocation-report extrinsic, or report which validator keys are
+currently in the authority set
+([Subtensor API Errors: InvalidKeyOwnershipProof](https://docs.learnbittensor.org/subtensor-api/errors#invalidkeyownershipproof)).
+
+## Further Reading
+
+- [Subtensor API Errors: InvalidKeyOwnershipProof](https://docs.learnbittensor.org/subtensor-api/errors#invalidkeyownershipproof)
+- [Subtensor API Errors: DuplicateOffenceReport](https://docs.learnbittensor.org/subtensor-api/errors#duplicateoffencereport)
+- [Subtensor API Errors: InvalidEquivocationProof](https://docs.learnbittensor.org/subtensor-api/errors#invalidequivocationproof)
+- [opentensor/polkadot-sdk: frame/grandpa/src/equivocation.rs#L198](https://github.com/opentensor/polkadot-sdk/blob/7cc54bf2d50ae3921d718736dfeb0de9468539c7/substrate/frame/grandpa/src/equivocation.rs#L198)
