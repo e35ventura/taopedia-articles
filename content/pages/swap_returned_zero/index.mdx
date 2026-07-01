@@ -1,0 +1,97 @@
+---
+title: "Swap Returned Zero"
+summary:
+  "How the SwapReturnedZero error blocks execute_batched_orders when the netted pool swap returns
+  zero output for a non-zero net amount."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Swap Returned Zero
+infoboxCaption: Error raised when a batched net swap yields zero output.
+infoboxRows:
+  - label: Error
+    value: SwapReturnedZero
+  - label: Trigger
+    value: Netted buy_alpha or sell_alpha returns zero for non-zero net input
+  - label: Checked in
+    value: execute_net_swap, called by do_execute_batched_orders
+  - label: Check type
+    value: Non-zero swap output guard
+---
+
+# Swap Returned Zero
+
+`SwapReturnedZero` is a documented limit-orders error raised when batched net execution gets zero
+output from the pool on a non-zero net swap. The Subtensor API error reference describes it as "The
+pool swap returned zero output for a non-zero input"
+([Subtensor API Errors: SwapReturnedZero](https://docs.learnbittensor.org/subtensor-api/errors#swapreturnedzero)).
+
+## What It Means
+
+`execute_batched_orders` aggregates validated buy and sell intents, nets the two sides, and then
+runs one residual pool swap through `execute_net_swap`. When a non-zero residual buy or sell leg
+calls `buy_alpha` or `sell_alpha`, the runtime checks that output is strictly greater than zero.
+`SwapReturnedZero` means that call returned zero output despite non-zero residual input
+([Subnet Liquidity Pools](https://docs.learnbittensor.org/subnets/understanding-subnets#liquidity-pools),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+The guard applies only on the residual net-swap step in the batched path. If netting fully offsets
+both sides and no residual swap runs, this check is not reached
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+This is a pool-output safety rejection on batched net execution, not proof that an individual order
+failed signature, expiry, or price-condition validation.
+
+## Why It Appears
+
+This error appears when `execute_batched_orders` reaches a non-zero residual swap and the pool
+interface returns zero output for that swap leg. Because the batched path is all-or-nothing, this
+rejection aborts the call so collected inputs are not finalized against a zero-output net swap
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+When debugging, compare against earlier batched rejections. `OrderNetUidMismatch` means an order
+targets a different subnet than the batch parameter. `DuplicateOrderInBatch` means the same order ID
+appears more than once. `PriceConditionNotMet` is a per-order validation failure from
+`is_order_valid` before net swap execution
+([Order Netuid Mismatch](https://docs.learnbittensor.org/errors/subtensor#ordernetuidmismatch),
+[Duplicate Order In Batch](https://docs.learnbittensor.org/errors/subtensor#duplicateorderinbatch),
+[Price Condition Not Met](https://docs.learnbittensor.org/errors/subtensor#priceconditionnotmet),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+## Distinction from Zero Share In Batch
+
+`SwapReturnedZero` and `ZeroShareInBatch` are both all-or-nothing batched execution failures, but on
+different steps. `SwapReturnedZero` is raised on the residual pool swap when non-zero net input
+yields zero output. `ZeroShareInBatch` is raised later during pro-rata distribution when an order's
+computed share floors to zero
+([Subtensor API Errors: ZeroShareInBatch](https://docs.learnbittensor.org/subtensor-api/errors#zeroshareinbatch),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+- **SwapReturnedZero** — residual pool swap output is zero.
+- **ZeroShareInBatch** — per-order distributed share floors to zero.
+
+## Distinction from Price Condition Not Met
+
+`SwapReturnedZero` and `PriceConditionNotMet` both block batched execution, but at different stages.
+`PriceConditionNotMet` is a per-order gate in `is_order_valid` before aggregation and net swap.
+`SwapReturnedZero` occurs after validated orders are netted and the runtime performs the residual
+pool swap
+([Price Condition Not Met](https://docs.learnbittensor.org/errors/subtensor#priceconditionnotmet),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+- **PriceConditionNotMet** — an order fails limit-price validation.
+- **SwapReturnedZero** — residual net swap returned zero output.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the non-zero-output guard on batched net swap
+execution. It does not report live pool depth, residual net amounts, or current price for a subnet;
+those are runtime state values readers can query separately
+([Subnet Liquidity Pools](https://docs.learnbittensor.org/subnets/understanding-subnets#liquidity-pools),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: SwapReturnedZero](https://docs.learnbittensor.org/subtensor-api/errors#swapreturnedzero)
+- [Zero Share In Batch](https://docs.learnbittensor.org/errors/subtensor#zeroshareinbatch)
+- [Order Netuid Mismatch](https://docs.learnbittensor.org/errors/subtensor#ordernetuidmismatch)
+- [Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)
