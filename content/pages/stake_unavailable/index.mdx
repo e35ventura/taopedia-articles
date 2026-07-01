@@ -1,0 +1,121 @@
+---
+title: "Stake Unavailable"
+summary:
+  "How the StakeUnavailable error blocks unstake, move-stake, and recycle paths when the requested
+  alpha amount exceeds the coldkey's unlocked stake on the subnet."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Stake Unavailable
+infoboxCaption: Error raised when locked stake blocks the requested unstake amount.
+infoboxRows:
+  - label: Error
+    value: StakeUnavailable
+  - label: Trigger
+    value: Requested amount exceeds available_to_unstake
+  - label: Checked in
+    value: ensure_available_to_unstake
+  - label: Related concept
+    value: Conviction and locked stake
+---
+
+# Stake Unavailable
+
+`StakeUnavailable` means a stake-removal call named more alpha than the coldkey can currently
+unstake on the subnet after locked stake is excluded. In `lock.rs`, the runtime defines
+`available_to_unstake` as total coldkey alpha on the subnet minus the current locked amount, and
+`ensure_available_to_unstake` returns this error when the requested amount exceeds that value
+([Subtensor source: lock.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/lock.rs)).
+
+## What It Means
+
+Conviction locks constrain how far a coldkey's subnet alpha can fall while a lock is active
+([Conviction and locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking)).
+
+On unstake-related paths, Subtensor separates three quantities through `stake_availability`: total
+alpha on the subnet, locked alpha, and the remaining available alpha. `StakeUnavailable` means the
+call tried to move or remove more alpha than that available figure allows
+([Subtensor source: lock.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/lock.rs)).
+
+The check runs on remove-stake validation, move-stake validation, alpha recycle, and order-swap
+paths that call `ensure_available_to_unstake` before decreasing stake
+([Subtensor source: stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs),
+[Subtensor source: recycle_alpha.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/recycle_alpha.rs)).
+
+## Why It Appears
+
+This error appears when a coldkey submits an unstake, move-stake, recycle, or order-swap amount that
+is larger than `available_to_unstake` for that subnet. That happens when part of the coldkey's alpha
+on the subnet is locked and the call names more than the unlocked remainder
+([Subtensor source: lock.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/lock.rs),
+[Conviction and locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking)).
+
+When debugging, rule out earlier stake-size checks on the same extrinsic. `NotEnoughStakeToWithdraw`
+means the hotkey-coldkey pair does not hold enough total staked alpha for the requested amount.
+`StakeUnavailable` is the later lock-aware check when total stake may be sufficient but the unlocked
+portion is not
+([Subtensor Standard Errors: NotEnoughStakeToWithdraw](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketowithdraw),
+[Subtensor source: lock.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/lock.rs)).
+
+The practical meaning is narrow: the requested alpha exceeds the unlocked stake available on the
+subnet.
+
+## Distinction from Not Enough Stake To Withdraw
+
+`StakeUnavailable` and `NotEnoughStakeToWithdraw` both block stake removal, but they compare against
+different balances. `NotEnoughStakeToWithdraw` means the hotkey-coldkey pair lacks enough total
+staked alpha on the subnet. `StakeUnavailable` means enough total alpha may exist, but the locked
+portion leaves insufficient unlocked alpha for the request
+([Subtensor Standard Errors: NotEnoughStakeToWithdraw](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketowithdraw),
+[Subtensor source: lock.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/lock.rs)).
+
+- **StakeUnavailable** — the requested amount exceeds unlocked alpha on the subnet.
+- **NotEnoughStakeToWithdraw** — total staked alpha on the pair is too low.
+
+## Distinction from Insufficient Stake For Lock
+
+`StakeUnavailable` and `InsufficientStakeForLock` both involve locked stake, but on opposite
+directions. `InsufficientStakeForLock` is raised when creating or topping up a lock without enough
+total alpha on the subnet to cover the lock amount. `StakeUnavailable` is raised when removing or
+moving alpha would exceed what remains unlocked
+([Subtensor source: lock.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/lock.rs)).
+
+- **InsufficientStakeForLock** — not enough total alpha to create or increase a lock.
+- **StakeUnavailable** — not enough unlocked alpha for the removal request.
+
+## Distinction from Staking Operation Rate Limit Exceeded
+
+`StakeUnavailable` and `StakingOperationRateLimitExceeded` can both appear on staking extrinsics,
+but they enforce different rules. `StakingOperationRateLimitExceeded` is the per-subnet pacing
+rejection when staking operations are submitted too frequently. `StakeUnavailable` is the lock-aware
+availability rejection on the requested alpha amount
+([Staking Operation Rate Limit Exceeded](https://docs.learnbittensor.org/errors/subtensor#stakingoperationratelimitexceeded),
+[Subtensor source: lock.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/lock.rs)).
+
+- **StakeUnavailable** — locked stake leaves too little unlocked alpha for the request.
+- **StakingOperationRateLimitExceeded** — the subnet staking cooldown has not elapsed.
+
+## Distinction from Amount Too Low
+
+`StakeUnavailable` and `AmountTooLow` both stop stake-removal calls, but for different reasons.
+`AmountTooLow` means the submitted amount falls below the chain's minimum staking or swap increment
+for the path. `StakeUnavailable` means the amount exceeds the unlocked alpha currently available on
+the subnet
+([Subtensor Standard Errors: AmountTooLow](https://docs.learnbittensor.org/errors/subtensor#amounttoolow),
+[Subtensor source: lock.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/lock.rs)).
+
+- **StakeUnavailable** — the request exceeds unlocked alpha on the subnet.
+- **AmountTooLow** — the request is below the minimum allowed amount.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the lock-aware availability check in
+`ensure_available_to_unstake`. It does not report a wallet's live locked or unlocked alpha on any
+subnet; those values depend on chain state at observation time
+([Conviction and locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking)).
+
+## Further Reading
+
+- [Subtensor source: lock.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/lock.rs)
+- [Subtensor source: stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)
+- [Conviction and locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking)
+- [Subtensor Standard Errors: NotEnoughStakeToWithdraw](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketowithdraw)
