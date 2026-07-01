@@ -1,0 +1,102 @@
+---
+title: "Failed To Extract Runtime Version"
+summary:
+  "How the FailedToExtractRuntimeVersion error blocks a runtime upgrade submission when the new
+  runtime's embedded version metadata cannot be decoded."
+category: "Core Concepts"
+tags: ["Transactions", "Errors"]
+infoboxTitle: Failed To Extract Runtime Version
+infoboxCaption:
+  Error raised when a runtime upgrade submission's embedded version metadata cannot be decoded.
+infoboxRows:
+  - label: Error
+    value: FailedToExtractRuntimeVersion
+  - label: Pallet
+    value: system
+  - label: Trigger
+    value: Runtime upgrade submission's embedded version metadata cannot be decoded
+  - label: Check type
+    value: Embedded-version-metadata decode check at runtime upgrade validation
+---
+
+# Failed To Extract Runtime Version
+
+`FailedToExtractRuntimeVersion` is a system pallet error raised when a runtime upgrade submission's
+embedded version metadata cannot be decoded. The API errors reference summarizes it as "Failed to
+extract the runtime version from the new runtime. Either calling `Core_version` or decoding
+`RuntimeVersion` failed."
+([Subtensor API Errors: FailedToExtractRuntimeVersion](https://docs.learnbittensor.org/subtensor-api/errors#failedtoextractruntimeversion)).
+
+## What It Means
+
+Subtensor runs a Substrate-style runtime that identifies each compiled runtime build by an embedded
+version metadata record. Submitting a replacement runtime requires the runtime to first read that
+embedded record before it can compare the new runtime's identity and version against the chain's
+current state. `FailedToExtractRuntimeVersion` means the runtime upgrade check tried to read the
+embedded version metadata and the decode failed, so the upgrade path stops before any version
+comparison happens
+([Subtensor API Errors: FailedToExtractRuntimeVersion](https://docs.learnbittensor.org/subtensor-api/errors#failedtoextractruntimeversion)).
+
+This is the embedded-version-metadata decode check on the runtime upgrade path. It does not, by
+itself, mean the new runtime's `spec_name` differs from the current one, that the new runtime's
+`spec_version` was lower than the current one, or that the runtime upgrade was blocked by the
+dispatch filter.
+
+## Why It Appears
+
+This error appears when a runtime upgrade submission is processed with `check_version: true` and the
+embedded version metadata cannot be decoded. The pinned frame-system source describes the check
+inside the `can_set_code` helper: the runtime attempts to read the embedded version metadata from
+the submitted code bytes, and when the decode returns no version record, the helper returns
+`CanSetCodeResult::InvalidVersion(Error::<T>::FailedToExtractRuntimeVersion)`
+([opentensor/polkadot-sdk: substrate/frame/system/src/lib.rs#L2329](https://github.com/opentensor/polkadot-sdk/blob/7cc54bf2d50ae3921d718736dfeb0de9468539c7/substrate/frame/system/src/lib.rs#L2329)).
+
+The `can_set_code` helper performs three sequential upgrade-version checks against the embedded
+version metadata: this decode check first
+([`InvalidSpecName`](https://docs.learnbittensor.org/subtensor-api/errors#invalidspecname),
+[opentensor/polkadot-sdk: lib.rs#L2338](https://github.com/opentensor/polkadot-sdk/blob/7cc54bf2d50ae3921d718736dfeb0de9468539c7/substrate/frame/system/src/lib.rs#L2338)),
+then
+[`SpecVersionNeedsToIncrease`](https://docs.learnbittensor.org/subtensor-api/errors#specversionneedstoincrease)
+([opentensor/polkadot-sdk: lib.rs#L2342](https://github.com/opentensor/polkadot-sdk/blob/7cc54bf2d50ae3921d718736dfeb0de9468539c7/substrate/frame/system/src/lib.rs#L2342)).
+
+## Distinction from Invalid Spec Name
+
+`FailedToExtractRuntimeVersion` and `InvalidSpecName` both surface as `InvalidVersion` results from
+`can_set_code`, but they fire at different stages. `FailedToExtractRuntimeVersion` is the
+embedded-version-metadata decode check that runs before any field comparison. `InvalidSpecName` is
+the spec_name equality check that runs after the decode succeeds
+([Subtensor API Errors: FailedToExtractRuntimeVersion](https://docs.learnbittensor.org/subtensor-api/errors#failedtoextractruntimeversion),
+[Subtensor API Errors: InvalidSpecName](https://docs.learnbittensor.org/subtensor-api/errors#invalidspecname)).
+
+- **FailedToExtractRuntimeVersion** — the embedded version metadata could not be decoded.
+- **InvalidSpecName** — the embedded version metadata decoded but its `spec_name` did not match.
+
+## Distinction from Spec Version Needs To Increase
+
+`FailedToExtractRuntimeVersion` and `SpecVersionNeedsToIncrease` both appear inside the same
+`can_set_code` helper's version validation, but they check different things.
+`FailedToExtractRuntimeVersion` is the embedded-version-metadata decode check that runs before any
+field comparison. `SpecVersionNeedsToIncrease` is the `spec_version` monotonicity check that runs
+after the decode succeeds
+([Subtensor API Errors: FailedToExtractRuntimeVersion](https://docs.learnbittensor.org/subtensor-api/errors#failedtoextractruntimeversion),
+[Subtensor API Errors: SpecVersionNeedsToIncrease](https://docs.learnbittensor.org/subtensor-api/errors#specversionneedstoincrease)).
+
+- **FailedToExtractRuntimeVersion** — the embedded version metadata could not be decoded.
+- **SpecVersionNeedsToIncrease** — the embedded version metadata decoded but its `spec_version` did
+  not increase.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the embedded-version-metadata decode check it
+represents on the runtime upgrade path. It does not report which runtime upgrade extrinsic submits
+the new bytes, decode the embedded version metadata on the reader's behalf, or describe how to
+package a runtime for upgrade
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks),
+[Subtensor API Errors: FailedToExtractRuntimeVersion](https://docs.learnbittensor.org/subtensor-api/errors#failedtoextractruntimeversion)).
+
+## Further Reading
+
+- [Subtensor API Errors: FailedToExtractRuntimeVersion](https://docs.learnbittensor.org/subtensor-api/errors#failedtoextractruntimeversion)
+- [Subtensor API Errors: InvalidSpecName](https://docs.learnbittensor.org/subtensor-api/errors#invalidspecname)
+- [Subtensor API Errors: SpecVersionNeedsToIncrease](https://docs.learnbittensor.org/subtensor-api/errors#specversionneedstoincrease)
+- [opentensor/polkadot-sdk: frame/system/src/lib.rs#L2329](https://github.com/opentensor/polkadot-sdk/blob/7cc54bf2d50ae3921d718736dfeb0de9468539c7/substrate/frame/system/src/lib.rs#L2329)
