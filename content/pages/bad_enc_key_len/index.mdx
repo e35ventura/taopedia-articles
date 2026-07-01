@@ -1,0 +1,101 @@
+---
+title: "Bad Enc Key Len"
+summary:
+  "How the BadEncKeyLen error blocks MEV Shield key announcement when the submitted ML-KEM
+  encapsulation key does not match the runtime's expected length."
+category: "Safety"
+tags: ["Safety", "Errors"]
+infoboxTitle: Bad Enc Key Len
+infoboxCaption: Error raised when an announced encapsulation key has invalid length.
+infoboxRows:
+  - label: Error
+    value: BadEncKeyLen
+  - label: Trigger
+    value: announced ML-KEM encapsulation key fails length validation
+  - label: Checked in
+    value: announce_next_key
+  - label: Check type
+    value: Encapsulation key length guard
+---
+
+# Bad Enc Key Len
+
+`BadEncKeyLen` is a MEV Shield pallet error. The pallet defines it as "The announced ML-KEM
+encapsulation key length is invalid", and the Subtensor API errors reference lists it under
+`api.errors.mevShield.BadEncKeyLen`
+([Subtensor source: shield/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/shield/src/lib.rs),
+[Subtensor API Errors: BadEncKeyLen](https://docs.learnbittensor.org/subtensor-api/errors#badenckeylen)).
+
+## What It Means
+
+The [MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield) pallet rotates encryption keys
+through a block inherent called `announce_next_key`. When a block author submits a key with that
+inherent, the runtime checks that the announced ML-KEM encapsulation key matches the expected byte
+length before storing it for future shielded transactions. `BadEncKeyLen` is returned when that
+length check fails
+([Subtensor source: shield/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/shield/src/lib.rs),
+[MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield)).
+
+The same inherent can also be used to withdraw a block author from future shielded-transaction
+eligibility by submitting no key announcement. That removal path does not run the length check and
+does not raise `BadEncKeyLen`
+([Subtensor source: shield/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/shield/src/lib.rs)).
+
+This is an encapsulation-key format rejection on the key-announcement inherent, not proof that the
+current block author cannot be resolved and not proof that the encrypted-extrinsic queue is full.
+
+## Why It Appears
+
+This error appears when block-author software submits an announced encapsulation key whose byte
+length does not match the ML-KEM-768 length enforced by the shield pallet. That can happen when key
+material is truncated, padded incorrectly, or generated for a different algorithm than the runtime
+expects
+([Subtensor API Errors: BadEncKeyLen](https://docs.learnbittensor.org/subtensor-api/errors#badenckeylen),
+[Subtensor source: shield/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/shield/src/lib.rs)).
+
+When debugging on this inherent, compare against the check that runs earlier on the same path.
+`Unreachable` is returned when the runtime cannot resolve the current block author, while
+`BadEncKeyLen` is returned only after author resolution succeeds and the announced key fails length
+validation ([Unreachable](https://docs.learnbittensor.org/subtensor-api/errors#unreachable),
+[Subtensor source: shield/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/shield/src/lib.rs)).
+
+## Distinction from Unreachable
+
+`BadEncKeyLen` and `Unreachable` both appear on `announce_next_key`, but at different steps.
+`Unreachable` means the runtime could not resolve the current block author. `BadEncKeyLen` means
+author resolution succeeded but the announced encapsulation key failed the length check
+([Subtensor API Errors: Unreachable](https://docs.learnbittensor.org/subtensor-api/errors#unreachable),
+[Subtensor API Errors: BadEncKeyLen](https://docs.learnbittensor.org/subtensor-api/errors#badenckeylen),
+[Subtensor source: shield/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/shield/src/lib.rs)).
+
+- **Unreachable** — current block author cannot be resolved.
+- **BadEncKeyLen** — announced encapsulation key has an invalid length.
+
+## Distinction from Too Many Pending Extrinsics
+
+`BadEncKeyLen` and `TooManyPendingExtrinsics` both belong to the MEV Shield pallet, but on different
+extrinsics. `BadEncKeyLen` is returned from `announce_next_key` when an announced encapsulation key
+fails length validation. `TooManyPendingExtrinsics` is returned from encrypted-extrinsic submission
+when the pending queue is at capacity
+([Too Many Pending Extrinsics](https://docs.learnbittensor.org/subtensor-api/errors#toomanypendingextrinsics),
+[Subtensor source: shield/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/shield/src/lib.rs)).
+
+- **BadEncKeyLen** — announced encapsulation key has an invalid length on `announce_next_key`.
+- **TooManyPendingExtrinsics** — pending queue is at capacity on encrypted-extrinsic submission.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the encapsulation-key length check on
+`announce_next_key`. It does not report which block authors currently hold announced keys on any
+network; readers can inspect shield storage separately for the runtime they use
+([Subtensor source: shield/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/shield/src/lib.rs),
+[MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield)).
+
+## Further Reading
+
+- [Subtensor API Errors: BadEncKeyLen](https://docs.learnbittensor.org/subtensor-api/errors#badenckeylen)
+- [MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield)
+- [Using MEV Shield with the Bittensor SDK](https://docs.learnbittensor.org/sdk/mev-protection)
+- [Subtensor API Errors: Unreachable](https://docs.learnbittensor.org/subtensor-api/errors#unreachable)
+- [Subtensor API Errors: TooManyPendingExtrinsics](https://docs.learnbittensor.org/subtensor-api/errors#toomanypendingextrinsics)
+- [Subtensor source: shield/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/shield/src/lib.rs)
