@@ -1,0 +1,125 @@
+---
+title: "Active Lock Exists"
+summary:
+  "How the ActiveLockExists error blocks a coldkey swap when the destination coldkey already holds
+  active conviction locked mass on any subnet."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Active Lock Exists
+infoboxCaption: Error raised when the destination coldkey already has an active conviction lock.
+infoboxRows:
+  - label: Error
+    value: ActiveLockExists
+  - label: Trigger
+    value: Destination coldkey has active locked mass on a subnet
+  - label: Checked in
+    value: Coldkey swap lock transfer
+  - label: Related concept
+    value: Conviction and locked stake
+---
+
+# Active Lock Exists
+
+`ActiveLockExists` means a coldkey swap tried to move conviction locks onto a destination coldkey
+that already holds active locked mass on at least one subnet. Before locks transfer, the runtime
+scans the destination's conviction locks and returns this error when any rolled lock still has
+positive locked mass
+([Subtensor source: lock.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/lock.rs),
+[Conviction and locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking)).
+
+## What It Means
+
+Conviction locks bind part of a coldkey's subnet alpha to a hotkey and a commitment signal
+([Conviction and locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking)).
+
+A coldkey swap migrates stake, hotkey associations, and conviction locks from one coldkey to
+another. The destination must be clear of active locks so the source locks can transfer without
+conflicting with locks the destination already owns
+([Coldkey swap](https://docs.learnbittensor.org/keys/coldkey-swap),
+[Conviction and locked stake: Coldkey swap](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking)).
+
+`ActiveLockExists` means the destination coldkey still has at least one conviction lock whose locked
+mass is greater than zero after the chain rolls that lock forward to the current block. The swap
+stops before any lock transfer begins
+([Subtensor source: lock.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/lock.rs),
+[Subtensor source: swap_coldkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_coldkey.rs)).
+
+This is a destination-lock conflict on the coldkey swap path, not proof that the source coldkey
+lacks locks to move or that the announced swap hash is wrong.
+
+## Why It Appears
+
+This error appears when the new coldkey in a coldkey swap already participates in conviction locking
+on one or more subnets. Common causes include reusing a coldkey that still holds a decaying or
+perpetual lock, attempting a swap before an old lock has fully decayed to zero mass, or pointing the
+swap at a wallet that was previously used for conviction staking
+([Conviction and locked stake: Coldkey swap](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking),
+[Coldkey swap](https://docs.learnbittensor.org/keys/coldkey-swap)).
+
+When debugging, compare against other coldkey-swap rejections on the same call.
+`ColdKeyAlreadyAssociated` means the destination already lists staking hotkeys. `NewColdKeyIsHotkey`
+means the destination account is registered as a hotkey. `AccountRejectsLockedAlpha` means the
+destination has not opted in to receive incoming locked alpha from the source
+([Subtensor source: swap_coldkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_coldkey.rs)).
+
+The practical meaning is narrow: the destination coldkey must have no active conviction locks before
+the swap can copy the source locks onto it.
+
+## Distinction from No Existing Lock
+
+`ActiveLockExists` and `NoExistingLock` are opposite lock-presence failures on different paths.
+`ActiveLockExists` means a coldkey swap found active locks on the destination that block the
+transfer. `NoExistingLock` means a move-lock call found no lock on the submitted subnet for the
+signing coldkey to reassign
+([Subtensor source: lock.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/lock.rs)).
+
+- **ActiveLockExists** — the destination coldkey already has active locked mass.
+- **NoExistingLock** — no lock exists on the subnet for the move-lock call.
+
+## Distinction from Account Rejects Locked Alpha
+
+`ActiveLockExists` and `AccountRejectsLockedAlpha` both involve coldkey swaps and conviction locks,
+but they test different destination requirements. `AccountRejectsLockedAlpha` means the destination
+coldkey rejects incoming locked alpha by default and has not opted in to receive the source locks.
+`ActiveLockExists` means the destination already owns active conviction locks that must be cleared
+first
+([Subtensor source: lock.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/lock.rs)).
+
+- **ActiveLockExists** — destination already holds active conviction locks.
+- **AccountRejectsLockedAlpha** — destination has not opted in to receive incoming locked alpha.
+
+## Distinction from Cold Key Already Associated
+
+`ActiveLockExists` and `ColdKeyAlreadyAssociated` both block coldkey swaps, but at different stages.
+`ColdKeyAlreadyAssociated` means the destination coldkey already has staking hotkeys linked to it.
+`ActiveLockExists` means the destination has active conviction locked mass even if those hotkey
+associations are otherwise acceptable
+([Subtensor source: swap_coldkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_coldkey.rs)).
+
+- **ActiveLockExists** — active conviction locks remain on the destination.
+- **ColdKeyAlreadyAssociated** — the destination already has linked staking hotkeys.
+
+## Distinction from Insufficient Stake For Lock
+
+`ActiveLockExists` and `InsufficientStakeForLock` both involve conviction locks, but on different
+operations. `InsufficientStakeForLock` is raised when a lock-stake call names more alpha than the
+coldkey holds on a subnet. `ActiveLockExists` is raised when a coldkey swap cannot proceed because
+the destination coldkey already has active locked mass
+([Subtensor source: lock.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/lock.rs)).
+
+- **ActiveLockExists** — destination locks block the coldkey swap.
+- **InsufficientStakeForLock** — total subnet alpha is below the lock-stake request.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the active-lock check on the coldkey swap path.
+It does not report whether a particular coldkey currently holds active conviction locks on any live
+subnet; that depends on chain state at observation time
+([Conviction and locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking)).
+
+## Further Reading
+
+- [Conviction and locked stake: Coldkey swap](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking)
+- [Coldkey swap](https://docs.learnbittensor.org/keys/coldkey-swap)
+- [Subtensor source: lock.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/lock.rs)
+- [Subtensor source: swap_coldkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_coldkey.rs)
