@@ -38,6 +38,10 @@ The guard applies only on the residual net-swap step in the batched path. If net
 both sides and no residual swap runs, this check is not reached
 ([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
 
+By contrast, `execute_orders` performs per-order swaps directly and does not use this explicit
+non-zero-output guard label on that path
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
 This is a pool-output safety rejection on batched net execution, not proof that an individual order
 failed signature, expiry, or price-condition validation.
 
@@ -80,6 +84,16 @@ pool swap
 
 - **PriceConditionNotMet** — an order fails limit-price validation.
 - **SwapReturnedZero** — residual net swap returned zero output.
+
+## Distinction from execute_orders direct swap path
+
+`SwapReturnedZero` is tied to `execute_batched_orders` residual net swap logic. The direct
+`execute_orders` path also calls pool swap interfaces, but it does not apply the same explicit
+zero-output error label
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+- **SwapReturnedZero** — explicit guard on batched residual swap output.
+- **execute_orders** — direct per-order swap path without this explicit label.
 
 ## Reader Boundary
 
