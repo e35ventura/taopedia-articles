@@ -1,0 +1,108 @@
+---
+title: "Invalid Crowdloan Id"
+summary:
+  "How the InvalidCrowdloanId error blocks crowdloan calls when the submitted crowdloan id does not
+  match any stored campaign record."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Invalid Crowdloan Id
+infoboxCaption: Error raised when a crowdloan id does not resolve to stored campaign state.
+infoboxRows:
+  - label: Error
+    value: InvalidCrowdloanId
+  - label: Trigger
+    value: no Crowdloans record for crowdloan_id
+  - label: Checked in
+    value:
+      contribute, withdraw, finalize, refund, dissolve, update_min_contribution, update_end,
+      update_cap, set_max_contribution
+  - label: Check type
+    value: Crowdloan storage lookup by id
+---
+
+# Invalid Crowdloan Id
+
+`InvalidCrowdloanId` is a crowdloan pallet error raised when a call references a crowdloan id that
+does not resolve to stored campaign state. The pallet defines it as "The crowdloan id is invalid"
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+## What It Means
+
+Most [crowdloan](https://docs.learnbittensor.org/subnets/crowdloans) extrinsics begin by loading the
+campaign record for the submitted `crowdloan_id`. That lookup returns `InvalidCrowdloanId` when no
+matching entry exists in crowdloan storage
+([Crowdloans: Crowdloan Lifecycle](https://docs.learnbittensor.org/subnets/crowdloans#crowdloan-lifecycle),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+The check runs on `contribute`, `withdraw`, `finalize`, `refund`, `dissolve`,
+`update_min_contribution`, `update_end`, `update_cap`, and `set_max_contribution` before those calls
+evaluate campaign-specific rules such as finalization state, contribution limits, or creator
+permission.
+
+This is an id-resolution rejection, not proof that the caller lacks creator permission, that the
+campaign was already finalized, or that a contribution amount was too small.
+
+## Why It Appears
+
+This error appears when a client submits a `crowdloan_id` that does not match any stored campaign.
+That can happen when the id is mistyped, copied from another network, refers to a dissolved campaign
+that was already removed from storage, or comes from stale cache after the record was cleaned up
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+When debugging, compare against rejections that only appear after a crowdloan record loads.
+`AlreadyFinalized`, `CapNotRaised`, and `InvalidOrigin` all assume the id resolved to a stored
+campaign first. If the lookup fails, the call returns `InvalidCrowdloanId` before those checks run
+([Already Finalized](https://docs.learnbittensor.org/errors/subtensor#alreadyfinalized),
+[Cap Not Raised](https://docs.learnbittensor.org/errors/subtensor#capnotraised),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+The practical meaning is narrow: confirm the crowdloan id exists on the target network before
+retrying lifecycle or contribution calls.
+
+## Distinction from Invalid Origin
+
+`InvalidCrowdloanId` and `InvalidOrigin` both block crowdloan calls, but at different stages.
+`InvalidCrowdloanId` means no stored campaign exists for the submitted id. `InvalidOrigin` means the
+id resolved to a campaign, but the signing account is not the crowdloan creator on paths that
+require creator permission
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+- **InvalidCrowdloanId** — the crowdloan id does not resolve to stored state.
+- **InvalidOrigin** — the signer is not the crowdloan creator.
+
+## Distinction from Already Finalized
+
+`InvalidCrowdloanId` and `AlreadyFinalized` both block crowdloan calls, but at different stages.
+`InvalidCrowdloanId` means the submitted id does not match any stored campaign. `AlreadyFinalized`
+means the id resolved to a campaign that has already completed finalization
+([Already Finalized](https://docs.learnbittensor.org/errors/subtensor#alreadyfinalized),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+- **InvalidCrowdloanId** — no stored campaign exists for the id.
+- **AlreadyFinalized** — the campaign was already finalized.
+
+## Distinction from Not Ready to Dissolve
+
+`InvalidCrowdloanId` and `NotReadyToDissolve` both block cleanup-related calls, but at different
+stages. `InvalidCrowdloanId` means the submitted id does not match any stored campaign.
+`NotReadyToDissolve` means the id resolved to a non-finalized campaign whose contributor balances
+still prevent dissolution
+([Not Ready to Dissolve](https://docs.learnbittensor.org/errors/subtensor#notreadytodissolve),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+- **InvalidCrowdloanId** — no stored campaign exists for the id.
+- **NotReadyToDissolve** — contributor refunds are not yet complete for dissolution.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the crowdloan storage lookup that raises it. It
+does not report which crowdloan ids exist on any network; those are chain state readers can query
+separately ([Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Crowdloans: Crowdloan Lifecycle](https://docs.learnbittensor.org/subnets/crowdloans#crowdloan-lifecycle)
+- [Already Finalized](https://docs.learnbittensor.org/errors/subtensor#alreadyfinalized)
+- [Not Ready to Dissolve](https://docs.learnbittensor.org/errors/subtensor#notreadytodissolve)
+- [Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)
