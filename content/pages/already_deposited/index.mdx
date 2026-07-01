@@ -1,0 +1,69 @@
+---
+title: "Already Deposited"
+summary:
+  "How the AlreadyDeposited error blocks a safe-mode entry or extension when the calling account
+  already has an active deposit reserved, preventing a second deposit before the first is released."
+category: "Wallets"
+tags: ["Wallets", "Errors", "Security"]
+infoboxTitle: Already Deposited
+infoboxCaption:
+  Error raised when an account attempts to enter or extend safe mode but already has a deposit
+  reserved.
+infoboxRows:
+  - label: Error
+    value: AlreadyDeposited
+  - label: Pallet
+    value: safe-mode
+  - label: Trigger
+    value: enter or extend called by an account that already has a reserved deposit
+  - label: Check type
+    value: Held-balance check before placing a new deposit
+---
+
+# Already Deposited
+
+`AlreadyDeposited` is a safe-mode pallet error raised when an account tries to place a deposit but
+already has one reserved. The pallet source describes it as "The account already has a deposit
+reserved and can therefore not enter or extend again"
+([Subtensor API Errors: AlreadyDeposited](https://docs.learnbittensor.org/subtensor-api/errors#alreadydeposited)).
+
+## What It Means
+
+When a signed account calls `enter` or `extend` to participate in safe mode, the pallet reserves a
+deposit from that account. Only one deposit per account is permitted at a time. `AlreadyDeposited`
+fires when the calling account already has a deposit on hold, blocking a second deposit until the
+first is released
+([Subtensor API Errors: AlreadyDeposited](https://docs.learnbittensor.org/subtensor-api/errors#alreadydeposited)).
+
+The deposit must be released via `releaseDeposit` before the same account can place another one
+([Subtensor API Errors: AlreadyDeposited](https://docs.learnbittensor.org/subtensor-api/errors#alreadydeposited)).
+
+## Why It Appears
+
+This error appears when `enter` or `extend` is called by a signed account that still has a deposit
+held from a previous call. Releasing that deposit first — once safe mode has exited and the release
+delay has elapsed — clears the held balance and allows a new deposit
+([Subtensor API Errors: AlreadyDeposited](https://docs.learnbittensor.org/subtensor-api/errors#alreadydeposited)).
+
+## Distinction from Not Configured
+
+`AlreadyDeposited` and `NotConfigured` both block `enter` and `extend`, but at different stages.
+`NotConfigured` fires when the required deposit amount has not been set by the network, disabling
+depositor-signed entry entirely. `AlreadyDeposited` fires when the deposit amount is configured but
+the calling account already holds one
+([Subtensor API Errors: NotConfigured](https://docs.learnbittensor.org/subtensor-api/errors#notconfigured)).
+
+- **NotConfigured** — no deposit amount configured; depositor entry is disabled.
+- **AlreadyDeposited** — deposit amount configured but the account already has one reserved.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the held-balance check that raises it. It does
+not report whether a specific account currently has a deposit reserved; that is live chain state
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: AlreadyDeposited](https://docs.learnbittensor.org/subtensor-api/errors#alreadydeposited)
+- [Subtensor API Errors: NotConfigured](https://docs.learnbittensor.org/subtensor-api/errors#notconfigured)
+- [Subtensor API Errors: NoDeposit](https://docs.learnbittensor.org/subtensor-api/errors#nodeposit)
