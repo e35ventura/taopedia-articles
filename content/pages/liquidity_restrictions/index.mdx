@@ -1,0 +1,80 @@
+---
+title: "Liquidity Restrictions"
+summary:
+  "How the LiquidityRestrictions error blocks a balance withdrawal when the amount requested would
+  reduce free balance below the account's total frozen balance."
+category: "Wallets"
+tags: ["Wallets", "Errors", "Security"]
+infoboxTitle: Liquidity Restrictions
+infoboxCaption:
+  Error raised when a withdrawal would reduce an account's free balance below its frozen balance.
+infoboxRows:
+  - label: Error
+    value: LiquidityRestrictions
+  - label: Pallet
+    value: balances
+  - label: Trigger
+    value: Withdrawal amount would bring free balance below the total frozen balance
+  - label: Check type
+    value: Frozen-balance floor check on the withdrawal path
+---
+
+# Liquidity Restrictions
+
+`LiquidityRestrictions` is a balances pallet error raised when a withdrawal would bring an account's
+free balance below its frozen balance. The pallet source describes it as "Account liquidity
+restrictions prevent withdrawal"
+([Subtensor API Errors: LiquidityRestrictions](https://docs.learnbittensor.org/subtensor-api/errors#liquidityrestrictions)).
+
+## What It Means
+
+An account may have a portion of its free balance frozen by other pallets. Frozen balance cannot be
+spent — it represents funds that are locked for a purpose such as staking or governance
+participation. Any withdrawal that would reduce the free balance below the total frozen amount is
+blocked
+([Subtensor API Errors: LiquidityRestrictions](https://docs.learnbittensor.org/subtensor-api/errors#liquidityrestrictions)).
+
+`LiquidityRestrictions` fires when the free balance after the requested withdrawal would be less
+than the account's frozen balance. The withdrawal must be reduced or the freeze must be removed
+before the operation can proceed
+([Subtensor API Errors: LiquidityRestrictions](https://docs.learnbittensor.org/subtensor-api/errors#liquidityrestrictions)).
+
+## Why It Appears
+
+This error appears when an account has an active balance freeze and a withdrawal would dip below it.
+The frozen balance floor is enforced on every deduction from the free balance
+([Subtensor API Errors: LiquidityRestrictions](https://docs.learnbittensor.org/subtensor-api/errors#liquidityrestrictions)).
+
+## Distinction from Insufficient Balance
+
+`LiquidityRestrictions` and `InsufficientBalance` both block withdrawals, but for different reasons.
+`InsufficientBalance` fires when the free balance itself is too low to cover the requested amount.
+`LiquidityRestrictions` fires when the free balance is high enough to cover the amount in total, but
+the frozen portion prevents the specific withdrawal
+([Subtensor API Errors: InsufficientBalance](https://docs.learnbittensor.org/subtensor-api/errors#insufficientbalance)).
+
+- **InsufficientBalance** — free balance is too low for the withdrawal amount.
+- **LiquidityRestrictions** — free balance is sufficient but frozen balance blocks spending it.
+
+## Distinction from Expendability
+
+`LiquidityRestrictions` and `Expendability` both block balance deductions, but at different checks.
+`Expendability` fires when a KeepAlive transfer would kill the account by dropping below the
+existential deposit. `LiquidityRestrictions` fires because the frozen balance floor prevents the
+deduction regardless of account liveness rules
+([Subtensor API Errors: Expendability](https://docs.learnbittensor.org/subtensor-api/errors#expendability)).
+
+- **Expendability** — transfer would kill account under KeepAlive mode.
+- **LiquidityRestrictions** — frozen balance prevents the withdrawal regardless.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the frozen-balance floor check that raises it.
+It does not report the current frozen balance or active freezes on an account; those are live chain
+state ([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: LiquidityRestrictions](https://docs.learnbittensor.org/subtensor-api/errors#liquidityrestrictions)
+- [Subtensor API Errors: InsufficientBalance](https://docs.learnbittensor.org/subtensor-api/errors#insufficientbalance)
+- [Subtensor API Errors: Expendability](https://docs.learnbittensor.org/subtensor-api/errors#expendability)
