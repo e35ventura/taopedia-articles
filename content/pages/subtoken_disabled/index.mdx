@@ -13,48 +13,47 @@ infoboxRows:
   - label: Trigger
     value: SubtokenEnabled is false for the subnet
   - label: Checked in
-    value: add_stake and move_stake paths
+    value: add_stake and move_stake extrinsics
   - label: Related hyperparameter
     value: SubtokenEnabled
 ---
 
 # Subtoken Disabled
 
-`SubtokenDisabled` is a documented Subtensor standard error raised when subtoken trading is turned
-off on a subnet. The standard-errors reference describes it as "SubToken disabled"
+`SubtokenDisabled` means a staking call targeted a subnet that has subtoken trading turned off. The
+standard-errors reference describes it as "SubToken disabled"
 ([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#subtokendisabled)).
+
+Each subnet can enable or disable subtoken trading through the `SubtokenEnabled` hyperparameter
+([Subnet Hyperparameters: SubtokenEnabled](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#subtokenenabled)).
 
 ## What It Means
 
-Each subnet can enable or disable subtoken trading through the `SubtokenEnabled` hyperparameter.
-When that setting is false, staking paths that depend on TAO-alpha pool activity are rejected with
-`SubtokenDisabled` instead of proceeding to balance or swap checks
-([Subnet Hyperparameters: SubtokenEnabled](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
-[Subtensor source: lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/lib.rs)).
+When `SubtokenEnabled` is false for a subnet, staking paths that depend on TAO-alpha pool activity
+are rejected with `SubtokenDisabled`
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#subtokendisabled),
+[Subnet Hyperparameters: SubtokenEnabled](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#subtokenenabled)).
 
-On add-stake paths, the runtime checks `SubtokenEnabled` before minimum-size, funding, and pool
-conversion rules run
-([Subtensor source: stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)).
+For debugging, treat this as a subnet trading toggle, not as proof that the subnet does not exist,
+that free balance cannot fund an add-stake call, or that the pool lacks liquidity for a conversion
+([Subtensor Standard Errors: SubnetNotExists](https://docs.learnbittensor.org/errors/subtensor#subnetnotexists),
+[Subtensor Standard Errors: NotEnoughBalanceToStake](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake),
+[Subtensor Standard Errors: InsufficientLiquidity](https://docs.learnbittensor.org/errors/subtensor#insufficientliquidity)).
 
-On move-stake and transfer-stake paths, the check applies to both the origin and destination subnet
-when those subnets differ, so a disabled setting on either side can block the call
-([Subtensor source: stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)).
+On move-stake calls that cross subnets, either the origin or destination netuid can trigger this
+error when that side has subtoken trading disabled
+([Managing Your Stakes](https://docs.learnbittensor.org/staking-and-delegation/managing-stake-sdk)).
 
 ## Why It Appears
 
-This error appears when a wallet tries to add stake, remove stake through pool-backed paths, or move
-stake through a subnet whose `SubtokenEnabled` setting is false. That can happen after root disables
-subtoken trading on a subnet, when a client targets the wrong subnet for a pool-backed action, or
-when a move-stake call crosses into a subnet with trading disabled
-([Subnet Hyperparameters: SubtokenEnabled](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+This error appears when a wallet tries to add stake or move stake through a subnet whose
+`SubtokenEnabled` setting is false. That can happen after root disables subtoken trading on a
+subnet, when a client targets the wrong subnet for a pool-backed action, or when a move-stake call
+crosses into a subnet with trading disabled
+([Subnet Hyperparameters: SubtokenEnabled](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#subtokenenabled),
 [Managing Your Stakes](https://docs.learnbittensor.org/staking-and-delegation/managing-stake-sdk)).
 
-For a reader, the practical meaning is narrow: subtoken trading is off for that subnet. The problem
-is not that the subnet does not exist, that free balance cannot fund an add-stake call, or that the
-pool lacks liquidity for the conversion
-([Subtensor Standard Errors: SubnetNotExists](https://docs.learnbittensor.org/errors/subtensor#subnetnotexists),
-[Subtensor Standard Errors: NotEnoughBalanceToStake](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake),
-[Insufficient Liquidity](https://docs.learnbittensor.org/errors/subtensor#insufficientliquidity)).
+The practical meaning is narrow: subtoken trading is off for that subnet.
 
 ## Distinction from Transfer Disallowed
 
@@ -63,35 +62,34 @@ different switches. `SubtokenDisabled` means the subnet's `SubtokenEnabled` sett
 subtoken trading altogether. `TransferDisallowed` means the subnet's transfer toggle has blocked
 stake transfers even though other staking rules may still apply
 ([Subtensor Standard Errors: TransferDisallowed](https://docs.learnbittensor.org/errors/subtensor#transferdisallowed),
-[Subnet Hyperparameters: SubtokenEnabled](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+[Subnet Hyperparameters: SubtokenEnabled](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#subtokenenabled)).
 
 - **SubtokenDisabled** — subtoken trading is disabled on the subnet.
 - **TransferDisallowed** — stake transfers are disallowed on the subnet.
 
 ## Distinction from Not Enough Balance To Stake
 
-`SubtokenDisabled` and `NotEnoughBalanceToStake` both appear on add-stake calls, but at different
-stages. `SubtokenDisabled` is the early subnet-toggle rejection when `SubtokenEnabled` is false.
-`NotEnoughBalanceToStake` is the later funding check when free balance cannot cover the requested
-TAO amount
-([Not Enough Balance To Stake](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake),
-[Subtensor source: stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)).
+`SubtokenDisabled` and `NotEnoughBalanceToStake` both appear on add-stake calls, but they reject
+different problems. `SubtokenDisabled` means subtoken trading is disabled on the targeted subnet.
+`NotEnoughBalanceToStake` means the signing coldkey does not have enough free TAO to fund the
+requested stake amount
+([Subtensor Standard Errors: NotEnoughBalanceToStake](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake)).
 
 - **SubtokenDisabled** — subtoken trading is disabled on the subnet.
 - **NotEnoughBalanceToStake** — free balance cannot fund the requested stake amount.
 
 ## Reader Boundary
 
-This page defines the meaning of the error label and the `SubtokenEnabled` gate that raises it. It
-does not describe why root disabled trading on a subnet, how to query the live setting for a
-specific netuid, or every extrinsic that touches `SubtokenEnabled`; those are documented separately
+This page defines the meaning of the error label and the disabled `SubtokenEnabled` condition that
+raises it. It does not describe why root disabled trading on a subnet, how to query the live setting
+for a specific netuid, or every extrinsic that touches `SubtokenEnabled`; those are separate topics
 ([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
 [Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage)).
 
 ## Further Reading
 
 - [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#subtokendisabled)
-- [Subnet Hyperparameters: SubtokenEnabled](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
-- [Not Enough Balance To Stake](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake)
-- [Subtensor source: lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/lib.rs)
-- [Subtensor source: stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)
+- [Subnet Hyperparameters: SubtokenEnabled](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#subtokenenabled)
+- [Subtensor Standard Errors: NotEnoughBalanceToStake](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake)
+- [Subtensor Standard Errors: TransferDisallowed](https://docs.learnbittensor.org/errors/subtensor#transferdisallowed)
+- [Managing Your Stakes](https://docs.learnbittensor.org/staking-and-delegation/managing-stake-sdk)
