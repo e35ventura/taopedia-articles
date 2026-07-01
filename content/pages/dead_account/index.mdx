@@ -1,0 +1,70 @@
+---
+title: "Dead Account"
+summary:
+  "How the DeadAccount error blocks a deposit when the operation requires the destination account to
+  already exist on-chain but no on-chain record is found for it."
+category: "Wallets"
+tags: ["Wallets", "Errors", "Security"]
+infoboxTitle: Dead Account
+infoboxCaption:
+  Error raised when a deposit targets an account that does not yet exist and the operation requires
+  a pre-existing account.
+infoboxRows:
+  - label: Error
+    value: DeadAccount
+  - label: Pallet
+    value: balances
+  - label: Trigger
+    value: Deposit into an account that has no on-chain record
+  - label: Check type
+    value: Account existence check on the deposit path
+---
+
+# Dead Account
+
+`DeadAccount` is a balances pallet error raised when a deposit is directed at an account that does
+not yet exist on-chain and the operation requires the beneficiary to be pre-existing. The pallet
+source describes it as "Beneficiary account must pre-exist"
+([Subtensor API Errors: DeadAccount](https://docs.learnbittensor.org/subtensor-api/errors#deadaccount)).
+
+## What It Means
+
+Certain balance operations require the destination account to already have an on-chain record before
+funds can be deposited into it. If no record exists for the beneficiary, the operation fails with
+`DeadAccount`. Creating a new account requires sending at least the existential deposit via an
+operation that permits account creation
+([Subtensor API Errors: DeadAccount](https://docs.learnbittensor.org/subtensor-api/errors#deadaccount)).
+
+`DeadAccount` fires when a deposit-into-existing operation is called for a beneficiary that has
+never held an on-chain balance or whose record was reaped
+([Subtensor API Errors: DeadAccount](https://docs.learnbittensor.org/subtensor-api/errors#deadaccount)).
+
+## Why It Appears
+
+This error appears when the destination account has no on-chain presence and the deposit path
+explicitly requires the account to exist first. Common causes include specifying an address that has
+never received funds, or specifying an address whose account was reaped after its balance fell below
+the existential deposit
+([Subtensor API Errors: DeadAccount](https://docs.learnbittensor.org/subtensor-api/errors#deadaccount)).
+
+## Distinction from Existential Deposit
+
+`DeadAccount` and `ExistentialDeposit` both involve account creation, but they fire under different
+conditions. `ExistentialDeposit` fires when an operation would create a new account but the amount
+to be deposited is below the minimum required to keep an account alive. `DeadAccount` fires when the
+operation requires the account to already exist and it does not
+([Subtensor API Errors: ExistentialDeposit](https://docs.learnbittensor.org/subtensor-api/errors#existentialdeposit)).
+
+- **ExistentialDeposit** — new account cannot be created; deposit amount is too low.
+- **DeadAccount** — account does not exist; this operation requires it to pre-exist.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the account existence check that raises it. It
+does not report whether a specific account currently has an on-chain record; that is live chain
+state ([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: DeadAccount](https://docs.learnbittensor.org/subtensor-api/errors#deadaccount)
+- [Subtensor API Errors: ExistentialDeposit](https://docs.learnbittensor.org/subtensor-api/errors#existentialdeposit)
