@@ -1,0 +1,74 @@
+---
+title: "Beneficiary Does Not Own Hotkey"
+summary:
+  "How the BeneficiaryDoesNotOwnHotkey error blocks a lease termination when the hotkey supplied for
+  subnet ownership transfer is not owned by the lease beneficiary."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Beneficiary Does Not Own Hotkey
+infoboxCaption: Error raised when the supplied hotkey is not owned by the lease beneficiary.
+infoboxRows:
+  - label: Error
+    value: BeneficiaryDoesNotOwnHotkey
+  - label: Trigger
+    value: Supplied hotkey is not associated with the lease beneficiary's coldkey
+  - label: Checked in
+    value: do_terminate_lease, called by terminate_lease
+  - label: Check type
+    value: Coldkey-hotkey ownership check
+---
+
+# Beneficiary Does Not Own Hotkey
+
+`BeneficiaryDoesNotOwnHotkey` is a documented Subtensor standard error raised in
+`do_terminate_lease`, the helper called by the `terminate_lease` extrinsic when a
+[subnet lease](https://docs.learnbittensor.org/subnets/crowdloans)'s beneficiary claims ownership
+once the lease has ended. The error reference describes it as "Beneficiary does not own hotkey"
+([Subtensor API: Errors](https://docs.learnbittensor.org/subtensor-api/errors)).
+
+## What It Means
+
+Terminating a lease transfers the leased subnet's ownership to the beneficiary. The caller supplies
+a hotkey to become the subnet's registered owner hotkey after the transfer. Before that transfer
+runs, `do_terminate_lease` confirms the beneficiary's coldkey actually owns the supplied hotkey and
+raises `BeneficiaryDoesNotOwnHotkey` when it does not
+([Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+This is one of the later checks in the termination sequence: it runs after the lease has been found,
+the caller has been confirmed as the beneficiary, and the end-block timing has been validated, but
+before the subnet ownership is actually written
+([Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+## Why It Appears
+
+The hotkey argument is supplied by the caller at the time of the termination call, separate from the
+beneficiary identity recorded at registration. A hotkey that belongs to a different coldkey than the
+lease's beneficiary, or one that is not registered at all, fails this ownership check and prevents
+the transfer
+([Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+## Distinction from Expected Beneficiary Origin
+
+`BeneficiaryDoesNotOwnHotkey` and `ExpectedBeneficiaryOrigin` both gate the same termination path by
+checking account associations, but at different stages. `ExpectedBeneficiaryOrigin` is an earlier
+check confirming the transaction signer is the beneficiary recorded on the lease.
+`BeneficiaryDoesNotOwnHotkey` is a later check confirming the hotkey argument the beneficiary
+supplied for the ownership transfer is actually owned by that same beneficiary
+([Subtensor Standard Errors: ExpectedBeneficiaryOrigin](https://docs.learnbittensor.org/errors/subtensor#expectedbeneficiaryorigin),
+[Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+- **ExpectedBeneficiaryOrigin** — the transaction signer is not the lease's beneficiary.
+- **BeneficiaryDoesNotOwnHotkey** — the beneficiary's supplied hotkey isn't owned by them.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the ownership check that raises it. It does not
+describe the rest of the lease termination flow; that is documented separately
+([Subnet Lease](https://docs.learnbittensor.org/subnets/crowdloans)).
+
+## Further Reading
+
+- [Subtensor API: Errors](https://docs.learnbittensor.org/subtensor-api/errors)
+- [Subtensor Standard Errors: ExpectedBeneficiaryOrigin](https://docs.learnbittensor.org/errors/subtensor#expectedbeneficiaryorigin)
+- [Subnet Lease](https://docs.learnbittensor.org/subnets/crowdloans)
+- [Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)
