@@ -1,0 +1,89 @@
+---
+title: "Already Noted"
+summary:
+  "How the AlreadyNoted error blocks a preimage note request when the preimage is already on-chain."
+category: "Core Concepts"
+tags: ["Transactions", "Errors"]
+infoboxTitle: Already Noted
+infoboxCaption:
+  Error raised when the runtime rejects a preimage note request for a hash that is already on-chain.
+infoboxRows:
+  - label: Error
+    value: AlreadyNoted
+  - label: Pallet
+    value: preimage
+  - label: Trigger
+    value: Preimage note request submitted for a hash that is already on-chain
+  - label: Check type
+    value: Already-on-chain guard on the note path
+---
+
+# Already Noted
+
+`AlreadyNoted` is a preimage pallet error raised when a preimage note request is submitted for a
+hash that is already on-chain. The API errors reference summarizes it as "Preimage has already been
+noted on-chain."
+([Subtensor API Errors: AlreadyNoted](https://docs.learnbittensor.org/subtensor-api/errors#alreadynoted)).
+
+## What It Means
+
+Subtensor uses the preimage pallet to track the bytes behind a runtime call before that call becomes
+dispatchable. Each preimage has a hash, and the runtime stores a status with that hash to indicate
+whether the preimage is already noted and, if so, with what depositor. `AlreadyNoted` means the note
+request reached a hash whose on-chain status already has a depositor, so the runtime rejects the new
+request rather than overwriting the existing depositor
+([Subtensor API Errors: AlreadyNoted](https://docs.learnbittensor.org/subtensor-api/errors#alreadynoted)).
+
+This is the already-on-chain guard on the preimage note path. It does not, by itself, mean the
+preimage bytes were too large to store, that the preimage had been requested but not yet noted, or
+that an outstanding preimage request was blocking removal.
+
+## Why It Appears
+
+This error appears when the preimage pallet receives a note request whose hash is already on-chain
+with a depositor. The preimage pallet source confirms the guard: the runtime matches the existing
+status against a few possible shapes and rejects the request with `Error::<T>::AlreadyNoted` when
+the existing status already has a depositor
+([opentensor/polkadot-sdk: substrate/frame/preimage/src/lib.rs#L342](https://github.com/opentensor/polkadot-sdk/blob/7cc54bf2d50ae3921d718736dfeb0de9468539c7/substrate/frame/preimage/src/lib.rs#L342)).
+
+The practical meaning is narrow: the preimage you tried to note is already on-chain with an existing
+depositor, so the new note request is rejected.
+
+## Distinction from Too Few
+
+`AlreadyNoted` and `TooFew` are both preimage pallet errors but they fire at different checks.
+`AlreadyNoted` is the already-on-chain guard on the note path, rejecting the request because the
+preimage is already on-chain. `TooFew` is the non-empty-list guard on the bulk-upgrade path,
+rejecting the request because the submitted hash list was empty
+([Subtensor API Errors: AlreadyNoted](https://docs.learnbittensor.org/subtensor-api/errors#alreadynoted),
+[Subtensor API Errors: TooFew](https://docs.learnbittensor.org/subtensor-api/errors#toofew)).
+
+- **AlreadyNoted** — the preimage is already on-chain with a depositor.
+- **TooFew** — the bulk-upgrade request listed no preimage hashes.
+
+## Distinction from Too Many
+
+`AlreadyNoted` and `TooMany` are both preimage pallet errors but they fire at different checks.
+`AlreadyNoted` is the already-on-chain guard on the note path, rejecting the request because the
+preimage is already on-chain. `TooMany` is the upper-bound guard on the bulk-upgrade path, rejecting
+the request because the submitted hash list exceeded the bulk-upgrade size limit
+([Subtensor API Errors: AlreadyNoted](https://docs.learnbittensor.org/subtensor-api/errors#alreadynoted),
+[Subtensor API Errors: TooMany](https://docs.learnbittensor.org/subtensor-api/errors#toomany)).
+
+- **AlreadyNoted** — the preimage is already on-chain.
+- **TooMany** — the bulk-upgrade request exceeded the size limit.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the already-on-chain guard it represents on the
+preimage note path. It does not report which preimage hashes are currently on-chain on a network or
+describe how to update the depositor on an existing preimage
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks),
+[Subtensor API Errors: AlreadyNoted](https://docs.learnbittensor.org/subtensor-api/errors#alreadynoted)).
+
+## Further Reading
+
+- [Subtensor API Errors: AlreadyNoted](https://docs.learnbittensor.org/subtensor-api/errors#alreadynoted)
+- [Subtensor API Errors: TooFew](https://docs.learnbittensor.org/subtensor-api/errors#toofew)
+- [Subtensor API Errors: TooMany](https://docs.learnbittensor.org/subtensor-api/errors#toomany)
+- [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)
