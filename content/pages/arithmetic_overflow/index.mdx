@@ -1,0 +1,64 @@
+---
+title: "Arithmetic Overflow"
+summary:
+  "How the ArithmeticOverflow error blocks a batched limit-order execution when converting the
+  total buy volume from TAO to alpha overflows the fixed-point range."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Arithmetic Overflow
+infoboxCaption: Error raised when a TAO-to-alpha price conversion overflows fixed-point arithmetic.
+infoboxRows:
+  - label: Error
+    value: ArithmeticOverflow
+  - label: Trigger
+    value: checked_div returns None in tao_to_alpha fixed-point conversion
+  - label: Checked in
+    value: tao_to_alpha, called by do_execute_batched_orders
+  - label: Check type
+    value: Fixed-point division overflow guard
+---
+
+# Arithmetic Overflow
+
+`ArithmeticOverflow` is a Subtensor standard error raised by the limit-orders pallet when
+converting a TAO amount to alpha using fixed-point arithmetic overflows the representable range.
+The pallet defines it as "A TAO -> alpha conversion overflowed the fixed-point range"
+([Subtensor API: Errors](https://docs.learnbittensor.org/subtensor-api/errors)).
+
+## What It Means
+
+`do_execute_batched_orders`, the helper called by the `execute_batched_orders` extrinsic, converts
+the total buy volume from TAO to alpha at the current price to compute the net residual for the
+pool swap. This conversion is performed by the `tao_to_alpha` helper, which uses `U64F64`
+fixed-point arithmetic: it divides the TAO amount by the current alpha price using
+`checked_div`. If that division overflows the fixed-point range, `checked_div` returns `None`
+and the helper propagates `ArithmeticOverflow`, aborting the entire batch dispatch
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+A zero price is handled separately and does not trigger this error: `tao_to_alpha` returns
+`Ok(0)` when the price is zero, meaning no alpha is purchasable at that price
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+## Distinction from Swap Returned Zero
+
+`ArithmeticOverflow` and `SwapReturnedZero` both abort batched order execution, but they detect
+different failure conditions. `SwapReturnedZero` fires when the pool swap itself returns zero
+total output. `ArithmeticOverflow` fires before the swap, during the price-conversion arithmetic
+used to compute the buy-side TAO equivalent
+([Subtensor Standard Errors: SwapReturnedZero](https://docs.learnbittensor.org/subtensor-api/errors),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+- **ArithmeticOverflow** — fixed-point TAO-to-alpha division overflowed before the pool swap.
+- **SwapReturnedZero** — the pool swap completed but returned zero output.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the fixed-point overflow guard in
+`tao_to_alpha`. It does not describe how the alpha price is determined or the rest of the batched
+order execution sequence
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+## Further Reading
+
+- [Subtensor API: Errors](https://docs.learnbittensor.org/subtensor-api/errors)
+- [Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)
