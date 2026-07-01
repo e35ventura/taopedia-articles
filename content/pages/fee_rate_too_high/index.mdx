@@ -1,0 +1,79 @@
+---
+title: "Fee Rate Too High"
+summary:
+  "How the FeeRateTooHigh error blocks a set_fee_rate call when the submitted swap fee rate exceeds
+  the runtime maximum."
+category: "Tokenomics"
+tags: ["Tokenomics", "Errors"]
+infoboxTitle: Fee Rate Too High
+infoboxCaption: Error raised when set_fee_rate is submitted with a rate above the runtime maximum.
+infoboxRows:
+  - label: Error
+    value: FeeRateTooHigh
+  - label: Trigger
+    value: set_fee_rate submitted with a rate above MaxFeeRate
+  - label: Checked in
+    value: set_fee_rate extrinsic
+  - label: Check type
+    value: Upper-bound check against MaxFeeRate
+---
+
+# Fee Rate Too High
+
+`FeeRateTooHigh` is a swap pallet error raised by the `set_fee_rate` extrinsic when the submitted
+swap fee rate is above the runtime's maximum allowed rate. The Subtensor API errors reference lists
+it under the swap pallet
+([Subtensor API Errors: FeeRateTooHigh](https://docs.learnbittensor.org/subtensor-api/errors#feeratetoohigh)).
+
+## What It Means
+
+The swap pallet runs the automated market maker used to exchange between TAO and a subnet's alpha.
+`set_fee_rate` configures the swap fee rate for a subnet, expressed as a normalized `u16` value
+where roughly `196` represents about `0.3%`. Before storing the value, the runtime checks it against
+`MaxFeeRate`, the configured upper bound on the fee rate. When the submitted rate is greater than
+`MaxFeeRate`, the call stops with `FeeRateTooHigh` and the fee rate is left unchanged
+([Subtensor source: swap/mod.rs](https://github.com/opentensor/subtensor/blob/main/pallets/swap/src/pallet/mod.rs)).
+
+This is an upper-bound check on the submitted value, not a statement about the current fee rate,
+liquidity, or reserves. The call is rejected only because the requested rate is above the allowed
+ceiling
+([Subtensor API Errors: FeeRateTooHigh](https://docs.learnbittensor.org/subtensor-api/errors#feeratetoohigh),
+[Subtensor source: swap/mod.rs](https://github.com/opentensor/subtensor/blob/main/pallets/swap/src/pallet/mod.rs)).
+
+## Why It Appears
+
+This error is reproducible by submitting `set_fee_rate` with a rate value greater than `MaxFeeRate`.
+It typically comes from a misconfigured value or from treating the rate as a plain percentage rather
+than the normalized `u16` the extrinsic expects, which can push the number well past the ceiling
+([Subtensor source: swap/mod.rs](https://github.com/opentensor/subtensor/blob/main/pallets/swap/src/pallet/mod.rs)).
+
+`set_fee_rate` is an admin call: it requires the root origin, then checks that the target subnet
+exists, and only then compares the rate against `MaxFeeRate`. So `FeeRateTooHigh` is returned after
+the origin and subnet-existence checks have already passed
+([Subtensor source: swap/mod.rs](https://github.com/opentensor/subtensor/blob/main/pallets/swap/src/pallet/mod.rs)).
+
+## Distinction from Mechanism Does Not Exist
+
+`FeeRateTooHigh` and `MechanismDoesNotExist` can both reject a `set_fee_rate` call, and they run in
+a fixed order. `MechanismDoesNotExist` is returned first when the target subnet does not exist.
+`FeeRateTooHigh` is returned afterward, when the subnet exists but the submitted rate is above the
+ceiling
+([Subtensor API Errors: MechanismDoesNotExist](https://docs.learnbittensor.org/subtensor-api/errors#mechanismdoesnotexist),
+[Subtensor source: swap/mod.rs](https://github.com/opentensor/subtensor/blob/main/pallets/swap/src/pallet/mod.rs)).
+
+- **MechanismDoesNotExist** — the target subnet does not exist.
+- **FeeRateTooHigh** — the subnet exists, but the requested fee rate is above `MaxFeeRate`.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the upper-bound check on `set_fee_rate`. It
+does not document how the fee rate is applied to individual swaps, how `MaxFeeRate` is configured,
+or how the normalized rate maps to a percentage across every value; those are separate parts of the
+swap pallet
+([Subtensor source: swap/mod.rs](https://github.com/opentensor/subtensor/blob/main/pallets/swap/src/pallet/mod.rs)).
+
+## Further Reading
+
+- [Subtensor API Errors: FeeRateTooHigh](https://docs.learnbittensor.org/subtensor-api/errors#feeratetoohigh)
+- [Subtensor API Errors: MechanismDoesNotExist](https://docs.learnbittensor.org/subtensor-api/errors#mechanismdoesnotexist)
+- [Subtensor source: swap/mod.rs](https://github.com/opentensor/subtensor/blob/main/pallets/swap/src/pallet/mod.rs)
