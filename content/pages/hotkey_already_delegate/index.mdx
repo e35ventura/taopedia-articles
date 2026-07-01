@@ -1,0 +1,98 @@
+---
+title: "Hotkey Already Delegate"
+summary:
+  "How the HotKeyAlreadyDelegate error blocks become_delegate when the target hotkey is already
+  registered as a delegate on the chain."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Hotkey Already Delegate
+infoboxCaption: Error raised when a hotkey tries to register as a delegate again.
+infoboxRows:
+  - label: Error
+    value: HotKeyAlreadyDelegate
+  - label: Trigger
+    value: become_delegate called for an existing delegate hotkey
+  - label: Extrinsic
+    value: become_delegate
+  - label: Related concept
+    value: Delegate
+---
+
+# Hotkey Already Delegate
+
+`HotKeyAlreadyDelegate` means a `become_delegate` call targeted a hotkey that is already registered
+as a delegate. The standard-errors reference describes it as "The hotkey is attempting to become a
+delegate when already a delegate"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#hotkeyalreadydelegate)).
+
+The Subtensor API errors reference summarizes the same label as the hotkey already being registered
+as a delegate
+([Subtensor API Errors: HotKeyAlreadyDelegate](https://docs.learnbittensor.org/subtensor-api/errors#hotkeyalreadydelegate)).
+
+## What It Means
+
+A delegate is a subnet validator that can receive staked TAO from nominators
+([Glossary: Delegate](https://docs.learnbittensor.org/resources/glossary#delegate),
+[Staking and Delegation](https://docs.learnbittensor.org/staking-and-delegation/delegation)).
+
+`HotKeyAlreadyDelegate` is a one-time registration gate on the delegate path. It means the hotkey
+already appears in delegate storage, so a second `become_delegate` call cannot register it again
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#hotkeyalreadydelegate)).
+
+This is a delegate-status rejection, not a subnet UID registration failure and not a delegate-take
+bound failure on an increase or decrease call.
+
+## Why It Appears
+
+This error appears when a hotkey submits `become_delegate` after delegate registration has already
+succeeded. That can happen when automation retries the registration call, when a client resubmits an
+outdated extrinsic, or when operators assume delegate status must be renewed on each session
+([Subtensor API Errors: HotKeyAlreadyDelegate](https://docs.learnbittensor.org/subtensor-api/errors#hotkeyalreadydelegate),
+[Subtensor Extrinsics](https://docs.learnbittensor.org/navigating-subtensor/subtensor-extrinsics)).
+
+When debugging, rule out subnet registration and take-update failures first.
+`HotKeyAlreadyRegisteredInSubNet` means the hotkey already holds a UID on a named subnet.
+`DelegateTakeTooLow` and `DelegateTakeTooHigh` apply to `increase_take` and `decrease_take` when a
+delegate changes commission, not to first-time delegate registration
+([Subtensor Standard Errors: HotKeyAlreadyRegisteredInSubNet](https://docs.learnbittensor.org/errors/subtensor#hotkeyalreadyregisteredinsubnet),
+[Subtensor Standard Errors: DelegateTakeTooLow](https://docs.learnbittensor.org/errors/subtensor#delegatetaketoolow),
+[Subtensor Standard Errors: DelegateTakeTooHigh](https://docs.learnbittensor.org/errors/subtensor#delegatetakehigh)).
+
+The practical meaning is narrow: the hotkey is already a delegate.
+
+## Distinction from Hotkey Already Registered In Subnet
+
+`HotKeyAlreadyDelegate` and `HotKeyAlreadyRegisteredInSubNet` both block redundant registration
+calls, but on different paths. `HotKeyAlreadyDelegate` means the hotkey is already a delegate.
+`HotKeyAlreadyRegisteredInSubNet` means the hotkey already holds a neuron UID on the named subnet
+([Subtensor Standard Errors: HotKeyAlreadyRegisteredInSubNet](https://docs.learnbittensor.org/errors/subtensor#hotkeyalreadyregisteredinsubnet)).
+
+- **HotKeyAlreadyDelegate** — the hotkey is already registered as a delegate.
+- **HotKeyAlreadyRegisteredInSubNet** — the hotkey already has a UID on the subnet.
+
+## Distinction from Delegate Take Too Low
+
+`HotKeyAlreadyDelegate` and `DelegateTakeTooLow` both appear in delegate workflows, but on different
+calls. `HotKeyAlreadyDelegate` blocks a second `become_delegate` registration. `DelegateTakeTooLow`
+blocks an `increase_take` or `decrease_take` update when the submitted commission fails the
+direction or minimum checks for that path
+([Subtensor Standard Errors: DelegateTakeTooLow](https://docs.learnbittensor.org/errors/subtensor#delegatetaketoolow)).
+
+- **HotKeyAlreadyDelegate** — delegate registration is already complete.
+- **DelegateTakeTooLow** — the submitted delegate take fails the update checks.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the one-time delegate registration gate it
+represents. It does not report whether a particular hotkey is currently listed as a delegate; that
+status is chain state readers can query through the storage patterns described in the Subtensor
+documentation
+([Subtensor Storage Query Examples](https://docs.learnbittensor.org/subtensor-nodes/subtensor-storage-query-examples),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor Standard Errors: HotKeyAlreadyDelegate](https://docs.learnbittensor.org/errors/subtensor#hotkeyalreadydelegate)
+- [Glossary: Delegate](https://docs.learnbittensor.org/resources/glossary#delegate)
+- [Staking and Delegation](https://docs.learnbittensor.org/staking-and-delegation/delegation)
+- [Subtensor API Errors: HotKeyAlreadyDelegate](https://docs.learnbittensor.org/subtensor-api/errors#hotkeyalreadydelegate)
