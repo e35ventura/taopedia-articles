@@ -1,0 +1,100 @@
+---
+title: "Invalid Identity"
+summary:
+  "How the InvalidIdentity error blocks set_identity, set_subnet_identity, or optional subnet
+  registration metadata when submitted identity fields fail the chain's byte-limit validation."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Invalid Identity
+infoboxCaption: Error raised when identity metadata fields fail validation.
+infoboxRows:
+  - label: Error
+    value: InvalidIdentity
+  - label: Trigger
+    value: Identity fields exceed per-field or combined byte limits
+  - label: Checked in
+    value: is_valid_identity and is_valid_subnet_identity
+  - label: Check type
+    value: Identity metadata byte-limit validation
+---
+
+# Invalid Identity
+
+`InvalidIdentity` is a documented Subtensor standard error raised when submitted identity metadata
+fails the chain's byte-limit checks. The standard-errors reference describes it as "Invalid
+identity"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#invalididentity)).
+
+## What It Means
+
+Bittensor stores optional identity metadata for coldkeys and subnets as byte vectors. Before that
+metadata is written to chain state, the runtime validates each field against per-field ceilings and
+a combined total-length ceiling. `InvalidIdentity` is the rejection when either check fails
+([Subtensor source: identity.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/identity.rs)).
+
+On coldkey identity paths, `do_set_identity` builds a `ChainIdentityOfV2` struct and passes it to
+`is_valid_identity`. On subnet identity paths, `do_set_subnet_identity` and the optional identity
+step in `do_register_network` build a `SubnetIdentityOfV3` struct and pass it to
+`is_valid_subnet_identity`. Each helper returns false when any field or the combined payload exceeds
+its limit, and the caller maps that result to `InvalidIdentity`
+([Subtensor source: identity.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/identity.rs),
+[Subtensor source: subnet.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/subnet.rs)).
+
+This is a metadata-format rejection. Authorization checks run earlier on their respective extrinsics
+and surface different errors when they fail.
+
+## Why It Appears
+
+This error appears when a wallet or integration submits identity fields that are too large for the
+limits enforced in `is_valid_identity` or `is_valid_subnet_identity`. That can happen when a client
+concatenates oversized URLs or descriptions, copies unbounded text into a field, or exceeds the
+combined byte budget across all fields in one call
+([Subtensor source: identity.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/identity.rs)).
+
+For a reader, the practical meaning is narrow: the identity payload itself is invalid under the
+chain's byte-limit rules. This is a format check, not a signer-authorization check — other errors
+apply when the caller lacks the required registration or when a signature recovers the wrong address
+([Subtensor Standard Errors: HotKeyNotRegisteredInNetwork](https://docs.learnbittensor.org/errors/subtensor#hotkeynotregisteredinnetwork),
+[Invalid Recovered Public Key](https://docs.learnbittensor.org/errors/subtensor#invalidrecoveredpublickey)).
+
+## Distinction from Hot Key Not Registered In Network
+
+`InvalidIdentity` and `HotKeyNotRegisteredInNetwork` both appear on `set_identity`, but on different
+prerequisites. `HotKeyNotRegisteredInNetwork` requires the coldkey to have at least one hotkey
+registered on a network before identity metadata can be stored. `InvalidIdentity` is the separate
+byte-limit check on the submitted identity fields
+([Subtensor Standard Errors: HotKeyNotRegisteredInNetwork](https://docs.learnbittensor.org/errors/subtensor#hotkeynotregisteredinnetwork),
+[Subtensor source: identity.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/identity.rs)).
+
+- **HotKeyNotRegisteredInNetwork** — the coldkey has no registered hotkey.
+- **InvalidIdentity** — the identity fields fail byte-limit validation.
+
+## Distinction from Invalid Recovered Public Key
+
+`InvalidIdentity` and `InvalidRecoveredPublicKey` share the same error enum label on different
+extrinsics. On identity-metadata paths, `InvalidIdentity` means the submitted name, URL, or related
+fields failed `is_valid_identity` or `is_valid_subnet_identity`. On `associate_evm_key`, the runtime
+also uses `InvalidIdentity` when signature recovery returns no usable key material, while
+`InvalidRecoveredPublicKey` means recovery succeeded but proved a different address than the one
+claimed
+([Unable To Recover Public Key](https://docs.learnbittensor.org/errors/subtensor#unabletorecoverpublickey),
+[Invalid Recovered Public Key](https://docs.learnbittensor.org/errors/subtensor#invalidrecoveredpublickey),
+[Subtensor source: evm.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/evm.rs)).
+
+- **InvalidIdentity** — identity metadata fields fail byte-limit validation.
+- **InvalidRecoveredPublicKey** — recovered EVM key does not match the claimed address.
+
+## Reader Boundary
+
+This page defines the meaning of the error label on identity-metadata paths and the validation
+helpers that raise it. It does not list every field's live byte ceiling or describe EVM association
+recovery in full; those are documented separately
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#invalididentity),
+[Unable To Recover Public Key](https://docs.learnbittensor.org/errors/subtensor#unabletorecoverpublickey)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#invalididentity)
+- [Subtensor Standard Errors: HotKeyNotRegisteredInNetwork](https://docs.learnbittensor.org/errors/subtensor#hotkeynotregisteredinnetwork)
+- [Invalid Recovered Public Key](https://docs.learnbittensor.org/errors/subtensor#invalidrecoveredpublickey)
+- [Subtensor source: identity.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/identity.rs)
