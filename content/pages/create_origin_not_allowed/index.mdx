@@ -1,0 +1,84 @@
+---
+title: "Create Origin Not Allowed"
+summary:
+  "How the CreateOriginNotAllowed error blocks EVM contract deployment when the sending address is
+  not permitted to deploy via CREATE or CALL(CREATE)."
+category: "Wallets"
+tags: ["Wallets", "Errors", "EVM"]
+infoboxTitle: Create Origin Not Allowed
+infoboxCaption: Error raised when an address is not allowed to deploy EVM contracts.
+infoboxRows:
+  - label: Error
+    value: CreateOriginNotAllowed
+  - label: Pallet
+    value: evm
+  - label: Trigger
+    value: Sender is not allowed to deploy contracts via CREATE or CALL(CREATE)
+  - label: Check type
+    value: EVM contract-deployment origin permission
+---
+
+# Create Origin Not Allowed
+
+`CreateOriginNotAllowed` is an EVM pallet error raised when the sending address is not permitted to
+deploy contracts. The API errors reference describes it as "Address not allowed to deploy contracts
+either via CREATE or CALL(CREATE)"
+([Subtensor API Errors: CreateOriginNotAllowed](https://docs.learnbittensor.org/subtensor-api/errors#createoriginnotallowed)).
+
+## What It Means
+
+Bittensor's EVM layer supports Ethereum-compatible contract deployment on Subtensor. Before a
+deployment proceeds, the runtime checks whether the sending address is allowed to create contracts
+through either a direct `CREATE` or a `CALL` that uses `CREATE`. `CreateOriginNotAllowed` means that
+origin permission check failed, so the deployment path stops before the contract is written
+([Bittensor EVM Smart Contracts](https://docs.learnbittensor.org/evm-tutorials),
+[Subtensor API Errors: CreateOriginNotAllowed](https://docs.learnbittensor.org/subtensor-api/errors#createoriginnotallowed)).
+
+This is a deployment-origin permission rejection. It does not, by itself, mean the chain ID was
+invalid, that the account nonce was wrong, or that the account lacked balance to pay the fee.
+
+## Why It Appears
+
+This error appears when a wallet, script, or integration attempts contract deployment from an
+address the runtime does not treat as an allowed deployer. The practical meaning is narrow: use an
+address permitted for EVM contract creation on the target network, or submit a non-deployment call
+instead
+([Subtensor API Errors: CreateOriginNotAllowed](https://docs.learnbittensor.org/subtensor-api/errors#createoriginnotallowed),
+[Token Bridging](https://docs.learnbittensor.org/evm-tutorials/bridge-vtao)).
+
+## Distinction from Invalid Chain ID
+
+`CreateOriginNotAllowed` and `InvalidChainId` both block EVM submissions, but at different checks.
+`InvalidChainId` means the submitted chain ID failed validation. `CreateOriginNotAllowed` means the
+sending address is not allowed to deploy contracts on the validated network
+([Subtensor API Errors: InvalidChainId](https://docs.learnbittensor.org/subtensor-api/errors#invalidchainid),
+[Subtensor API Errors: CreateOriginNotAllowed](https://docs.learnbittensor.org/subtensor-api/errors#createoriginnotallowed)).
+
+- **CreateOriginNotAllowed** — the sender is not allowed to deploy contracts.
+- **InvalidChainId** — the submitted chain ID is invalid.
+
+## Distinction from Balance Low
+
+`CreateOriginNotAllowed` and `BalanceLow` both stop an EVM call before it completes, but at
+different stages. `CreateOriginNotAllowed` is rejected on the deployment-origin permission check.
+`BalanceLow` means fee withdrawal failed because the mapped account balance was too low
+([Subtensor API Errors: BalanceLow](https://docs.learnbittensor.org/subtensor-api/errors#balancelow),
+[Subtensor API Errors: CreateOriginNotAllowed](https://docs.learnbittensor.org/subtensor-api/errors#createoriginnotallowed)).
+
+- **CreateOriginNotAllowed** — the sender is not allowed to deploy contracts.
+- **BalanceLow** — the account cannot fund the required fee withdrawal.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the deployment-origin permission check it
+represents on EVM paths. It does not list which addresses are currently allowed to deploy on a
+network or document full contract-deployment workflows; those depend on runtime policy and tooling
+at observation time ([Bittensor EVM Smart Contracts](https://docs.learnbittensor.org/evm-tutorials),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: CreateOriginNotAllowed](https://docs.learnbittensor.org/subtensor-api/errors#createoriginnotallowed)
+- [Subtensor API Errors: InvalidChainId](https://docs.learnbittensor.org/subtensor-api/errors#invalidchainid)
+- [Subtensor API Errors: BalanceLow](https://docs.learnbittensor.org/subtensor-api/errors#balancelow)
+- [Bittensor EVM Smart Contracts](https://docs.learnbittensor.org/evm-tutorials)
