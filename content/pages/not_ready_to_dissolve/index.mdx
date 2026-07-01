@@ -1,0 +1,110 @@
+---
+title: "Not Ready to Dissolve"
+summary:
+  "How the NotReadyToDissolve error blocks crowdloan dissolution when contributor balances still
+  remain outside the creator's recorded contribution."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Not Ready to Dissolve
+infoboxCaption:
+  Error raised when dissolve runs before every non-creator contribution has been cleared.
+infoboxRows:
+  - label: Error
+    value: NotReadyToDissolve
+  - label: Trigger
+    value: creator_contribution != crowdloan.raised on dissolve
+  - label: Checked in
+    value: dissolve extrinsic
+  - label: Check type
+    value: Creator-contribution comparison against total raised
+---
+
+# Not Ready to Dissolve
+
+`NotReadyToDissolve` is a crowdloan pallet error raised by the `dissolve` extrinsic. The pallet
+defines it as "The crowdloan is not ready to be dissolved, it still has contributions"
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+## What It Means
+
+On a non-finalized [crowdloan](https://docs.learnbittensor.org/subnets/crowdloans), the creator can
+call `dissolve` to recover the creator deposit and remove campaign storage once contributor balances
+are cleared. Before that cleanup runs, `dissolve` compares the creator's remaining contribution
+record against total raised and returns `NotReadyToDissolve` when the two amounts differ
+([Crowdloans: Crowdloan Lifecycle](https://docs.learnbittensor.org/subnets/crowdloans#crowdloan-lifecycle),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+That comparison means non-creator balances still count toward total raised. The campaign is ready
+for dissolution only when every other contributor has been cleared and raised equals the creator's
+remaining contribution, typically the creator deposit left after refunds.
+
+This is a refund-completion rejection on the dissolve path, not proof that the campaign was
+finalized, that the caller is not the creator, or that the creator has no contribution record at
+all.
+
+## Why It Appears
+
+This error appears when the crowdloan creator calls `dissolve` before contributor refunds have fully
+cleared non-creator balances. That can happen after a partial `refund` batch, when a client assumes
+one refund call cleared everyone, or when `dissolve` is submitted while contributor records still
+remain
+([Crowdloans: What happens if the cap is not reached?](https://docs.learnbittensor.org/subnets/crowdloans#what-happens-if-the-cap-is-not-reached),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+When debugging, compare against other rejections on the same call. `AlreadyFinalized` means the
+campaign already completed finalization. `InvalidOrigin` means the signer is not the crowdloan
+creator. `NoContribution` means the creator has no contribution record for this crowdloan, which is
+checked before the raised comparison
+([Already Finalized](https://docs.learnbittensor.org/errors/subtensor#alreadyfinalized),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+The practical meaning is narrow: finish clearing contributor balances, calling `refund` again if
+needed, then retry `dissolve` once raised equals the creator's remaining contribution.
+
+## Distinction from Already Finalized
+
+`NotReadyToDissolve` and `AlreadyFinalized` both block `dissolve`, but at different checks.
+`AlreadyFinalized` means the campaign already completed finalization and cannot be dissolved through
+this path. `NotReadyToDissolve` means the campaign is still non-finalized but contributor balances
+have not yet been fully cleared
+([Already Finalized](https://docs.learnbittensor.org/errors/subtensor#alreadyfinalized),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+- **NotReadyToDissolve** — contributor refunds are not yet complete for dissolution.
+- **AlreadyFinalized** — the campaign was already finalized.
+
+## Distinction from No Contribution
+
+`NotReadyToDissolve` and `NoContribution` both appear on `dissolve`, but at different checks.
+`NoContribution` means the creator has no contribution record for this crowdloan.
+`NotReadyToDissolve` means the creator does have a contribution record, but that amount still does
+not equal total raised
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+- **NotReadyToDissolve** — non-creator balances still remain in total raised.
+- **NoContribution** — the creator has no contribution record for this crowdloan.
+
+## Distinction from Invalid Origin
+
+`NotReadyToDissolve` and `InvalidOrigin` both block `dissolve`, but at different checks.
+`InvalidOrigin` means the signing account is not the crowdloan creator. `NotReadyToDissolve` means
+the creator signed the call but contributor balances still prevent cleanup
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+- **NotReadyToDissolve** — contributor refunds are not yet complete for dissolution.
+- **InvalidOrigin** — the signer is not the crowdloan creator.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the creator-contribution comparison on
+`dissolve`. It does not report a particular crowdloan's live raised amount or contributor balances
+on any network; those are campaign state readers can query separately
+([Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Crowdloans: Crowdloan Lifecycle](https://docs.learnbittensor.org/subnets/crowdloans#crowdloan-lifecycle)
+- [Crowdloans: What happens if the cap is not reached?](https://docs.learnbittensor.org/subnets/crowdloans#what-happens-if-the-cap-is-not-reached)
+- [Already Finalized](https://docs.learnbittensor.org/errors/subtensor#alreadyfinalized)
+- [Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)
