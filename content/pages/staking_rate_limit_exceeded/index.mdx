@@ -1,0 +1,87 @@
+---
+title: "Staking Rate Limit Exceeded"
+summary:
+  "How the StakingRateLimitExceeded error blocks a staking or unstaking call when the per-account
+  staking cooldown has not yet cleared."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Staking Rate Limit Exceeded
+infoboxCaption: Error raised when a staking or unstaking call is retried too soon.
+infoboxRows:
+  - label: Error
+    value: StakingRateLimitExceeded
+  - label: Trigger
+    value: Staking call retried before the per-account cooldown clears
+  - label: Scope
+    value: Per-account staking pacing
+  - label: Related reference
+    value: Chain rate limits
+---
+
+# Staking Rate Limit Exceeded
+
+`StakingRateLimitExceeded` is a documented Subtensor standard error raised when a staking or
+unstaking call is retried before its per-account cooldown has cleared. The standard-errors reference
+describes it as "Staking rate limit exceeded"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#stakingratelimitexceeded),
+[Subtensor API Errors: StakingRateLimitExceeded](https://docs.learnbittensor.org/subtensor-api/errors#stakingratelimitexceeded)).
+
+## What It Means
+
+Bittensor paces staking and unstaking operations through a per-account cooldown to prevent rapid
+stake churning. The chain rate limits reference documents this pacing alongside other rate-limited
+extrinsic families ([Chain Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+
+`StakingRateLimitExceeded` is the rejection when a stake or unstake call is submitted before that
+cooldown has elapsed. The error names a timing breach on the staking path, not proof that the signer
+lacks delegation permission, that the hotkey is unregistered, or that the requested amount exceeds
+the staked balance.
+
+## Why It Appears
+
+This error appears when a wallet or automation retries a staking or unstaking call within the same
+cooldown window. Common cases include submitting multiple add-stake or remove-stake transactions in
+quick succession, retrying a failed stake attempt without waiting for the block cooldown to clear,
+or running automation that issues staking calls faster than the chain allows
+([Chain Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#stakingratelimitexceeded)).
+
+The practical meaning is narrow: wait for the cooldown period to pass before resubmitting the
+staking or unstaking call.
+
+## Distinction from Tx Rate Limit Exceeded
+
+`StakingRateLimitExceeded` and `TxRateLimitExceeded` both enforce per-account transaction pacing,
+but on different extrinsic families. `TxRateLimitExceeded` is the default label for subnet-scoped
+cooldowns on many transaction types. `StakingRateLimitExceeded` is the dedicated rejection for
+staking and unstaking calls specifically
+([Subtensor Standard Errors: TxRateLimitExceeded](https://docs.learnbittensor.org/errors/subtensor#txratelimitexceeded),
+[Chain Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+
+- **StakingRateLimitExceeded** — the staking-specific cooldown has not cleared.
+- **TxRateLimitExceeded** — a different transaction type's cooldown has not cleared.
+
+## Distinction from Delegate Tx Rate Limit Exceeded
+
+`StakingRateLimitExceeded` and `DelegateTxRateLimitExceeded` both pace staking-related operations,
+but on different calls. `DelegateTxRateLimitExceeded` specifically gates delegate registration and
+take-change operations. `StakingRateLimitExceeded` gates stake and unstake calls on the main staking
+path
+([Subtensor Standard Errors: DelegateTxRateLimitExceeded](https://docs.learnbittensor.org/errors/subtensor#delegatetxratelimitexceeded)).
+
+- **StakingRateLimitExceeded** — staking or unstaking retried too soon.
+- **DelegateTxRateLimitExceeded** — a delegate registration or take update retried too soon.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the staking cooldown that raises it. It does
+not report the live cooldown length in blocks or the current block height; those depend on chain
+state at the time of the call
+([Chain Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#stakingratelimitexceeded)
+- [Subtensor API Errors: StakingRateLimitExceeded](https://docs.learnbittensor.org/subtensor-api/errors#stakingratelimitexceeded)
+- [Chain Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)
