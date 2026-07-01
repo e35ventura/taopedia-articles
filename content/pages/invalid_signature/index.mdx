@@ -1,0 +1,113 @@
+---
+title: "Invalid Signature"
+summary:
+  "How the InvalidSignature error blocks limit-order execution when the submitted Sr25519 signature
+  does not verify against the order payload and signer."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Invalid Signature
+infoboxCaption: Error raised when a limit order's signature fails verification.
+infoboxRows:
+  - label: Error
+    value: InvalidSignature
+  - label: Trigger
+    value: Signature is not Sr25519 or does not verify for the order signer
+  - label: Checked in
+    value: is_order_valid, called by execute_orders and execute_batched_orders
+  - label: Check type
+    value: Sr25519 signature verification
+---
+
+# Invalid Signature
+
+`InvalidSignature` is a documented limit-orders error raised when a signed limit order cannot pass
+signature verification. The Subtensor API error reference describes it as "The provided signature
+does not match the order payload and signer"
+([Subtensor API Errors: InvalidSignature](https://docs.learnbittensor.org/subtensor-api/errors#invalidsignature)).
+
+## What It Means
+
+Limit orders are submitted as signed payloads. Before an order can be fulfilled, the
+`is_order_valid` helper — used by both `execute_orders` and `execute_batched_orders` — checks that
+the signature is Sr25519 and that it verifies against the encoded order body and the signer field
+stored in that order. `InvalidSignature` means that verification failed
+([Subnet Liquidity Pools](https://docs.learnbittensor.org/subnets/understanding-subnets#liquidity-pools),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+The check runs after the order is confirmed not to target the root subnet and after the chain ID
+comparison, and before processed-state, expiry, and price-condition checks
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+This is a signature-authenticity rejection on the execution path, not proof that the order expired,
+was already fulfilled, or failed a price-condition check.
+
+## Why It Appears
+
+This error appears when a relayer submits an order whose signature does not match the payload and
+claimed signer. That can happen when the order fields were changed after signing, when the wrong
+signing key was used, or when a non-Sr25519 signature type was attached
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+When debugging, compare against earlier rejections on the same validation path.
+`RootNetUidNotAllowed` means the order targets the root subnet. `ChainIdMismatch` means the order
+was signed for a different network than the one executing it
+([Chain Id Mismatch](https://docs.learnbittensor.org/errors/subtensor#chainidmismatch),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+Later rejections on the same path include `OrderAlreadyProcessed` for fulfilled orders,
+`OrderCancelled` for cancelled orders, `OrderExpired` when the expiry timestamp has passed, and
+`PriceConditionNotMet` when the current market price does not satisfy the order's limit
+([Order Already Processed](https://docs.learnbittensor.org/errors/subtensor#orderalreadyprocessed),
+[Order Cancelled](https://docs.learnbittensor.org/errors/subtensor#ordercancelled),
+[Order Expired](https://docs.learnbittensor.org/errors/subtensor#orderexpired),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+## Distinction from Chain Id Mismatch
+
+`InvalidSignature` and `ChainIdMismatch` are both raised by `is_order_valid`, but at different
+checks. `ChainIdMismatch` compares the order's chain ID field against the runtime chain ID before
+signature verification runs. `InvalidSignature` means the chain ID check passed but the Sr25519
+signature did not verify for the order payload and signer
+([Chain Id Mismatch](https://docs.learnbittensor.org/errors/subtensor#chainidmismatch),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+- **ChainIdMismatch** — the order was signed for a different network.
+- **InvalidSignature** — the signature does not verify for the payload and signer.
+
+## Distinction from Order Already Processed
+
+`InvalidSignature` and `OrderAlreadyProcessed` are both execution rejections, but at different
+stages. `InvalidSignature` is returned before the runtime reads whether the derived order ID is
+already marked fulfilled. `OrderAlreadyProcessed` means the order ID already has fulfilled status in
+storage
+([Order Already Processed](https://docs.learnbittensor.org/errors/subtensor#orderalreadyprocessed),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+- **InvalidSignature** — the signature does not verify.
+- **OrderAlreadyProcessed** — the order was already fulfilled.
+
+## Distinction from Order Expired
+
+`InvalidSignature` and `OrderExpired` are both raised by `is_order_valid`, but at different checks.
+`InvalidSignature` is returned during signature verification before expiry is evaluated.
+`OrderExpired` means the current timestamp is past the order's expiry field
+([Order Expired](https://docs.learnbittensor.org/errors/subtensor#orderexpired),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+- **InvalidSignature** — the signature does not verify.
+- **OrderExpired** — the order's expiry timestamp has passed.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the signature verification step that raises it.
+It does not describe how to construct or sign limit orders off chain; that workflow is documented
+separately
+([Subnet Liquidity Pools](https://docs.learnbittensor.org/subnets/understanding-subnets#liquidity-pools),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+## Further Reading
+
+- [Subtensor API Errors: InvalidSignature](https://docs.learnbittensor.org/subtensor-api/errors#invalidsignature)
+- [Chain Id Mismatch](https://docs.learnbittensor.org/errors/subtensor#chainidmismatch)
+- [Order Expired](https://docs.learnbittensor.org/errors/subtensor#orderexpired)
+- [Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)
