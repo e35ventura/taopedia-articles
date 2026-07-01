@@ -1,0 +1,113 @@
+---
+title: "Mechanism Does Not Exist"
+summary:
+  "How the MechanismDoesNotExist error blocks mechanism-scoped extrinsics when the targeted subnet
+  is missing or the submitted mechanism index is not configured on that subnet."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Mechanism Does Not Exist
+infoboxCaption: Error raised when a mechanism index is invalid for the subnet.
+infoboxRows:
+  - label: Error
+    value: MechanismDoesNotExist
+  - label: Trigger
+    value: Subnet missing or mechanism index is out of range
+  - label: Checked in
+    value: ensure_mechanism_exists
+  - label: Related hyperparameter
+    value: MechanismCount
+---
+
+# Mechanism Does Not Exist
+
+`MechanismDoesNotExist` means a mechanism-scoped call named a subnet or mechanism index the chain
+does not recognize. The standard-errors reference describes it as "Trying to register a subnet into
+a mechanism that does not exist"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#mechanismdoesnotexist)).
+
+The check runs early on mechanism-aware weight and commit paths before storage-index resolution and
+later weight-shape validation
+([Subtensor source: mechanism.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/mechanism.rs),
+[Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+## What It Means
+
+Subnets can run multiple incentive mechanisms, each identified by a mechanism index. In
+`ensure_mechanism_exists`, the runtime first confirms the base subnet exists and then checks that
+the submitted mechanism index is below the subnet's current mechanism count stored in
+`MechanismCountCurrent`. Either failure returns `MechanismDoesNotExist`
+([Subtensor source: mechanism.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/mechanism.rs),
+[Subnet Hyperparameters: MechanismCount](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#mechanismcount)).
+
+Mechanism-scoped weight submission uses this helper before resolving the storage index that maps a
+`(netuid, mechanism index)` pair into epoch and weight storage
+([Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets),
+[Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+## Why It Appears
+
+This error appears when a caller submits a mechanism index that the subnet has not configured, or
+when the base subnet itself is absent from chain state. That can happen after a client hard-codes
+mechanism index zero on a subnet that has not enabled multiple mechanisms, when automation targets
+the wrong netuid, or when a weight call still references a mechanism slot that was never created
+([Subtensor source: mechanism.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/mechanism.rs)).
+
+When debugging, rule out later weight-path failures on the same extrinsic. `NeuronNoValidatorPermit`
+means the signing hotkey lacks validator permission. `NotEnoughStakeToSetWeights` means stake weight
+is below the threshold. `WeightVecLengthIsLow` means the submitted vector is too short
+([Subtensor Standard Errors: NeuronNoValidatorPermit](https://docs.learnbittensor.org/errors/subtensor#neuronnovalidatorpermit),
+[Subtensor Standard Errors: NotEnoughStakeToSetWeights](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketosetweights),
+[Subtensor Standard Errors: WeightVecLengthIsLow](https://docs.learnbittensor.org/errors/subtensor#weightveclengthislow)).
+
+The practical meaning is narrow: the named subnet-mechanism pair is not valid on chain.
+
+## Distinction from Subnet Not Exists
+
+`MechanismDoesNotExist` and `SubnetNotExists` both involve invalid subnet targeting, but on
+different validation paths. `MechanismDoesNotExist` is returned by `ensure_mechanism_exists` when
+the base subnet is missing or the mechanism index is out of range. `SubnetNotExists` is the separate
+error used on extrinsics that perform an explicit subnet-existence check with that label
+([Subtensor Standard Errors: SubnetNotExists](https://docs.learnbittensor.org/errors/subtensor#subnetnotexists),
+[Subtensor source: mechanism.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/mechanism.rs)).
+
+- **MechanismDoesNotExist** — the subnet-mechanism pair is invalid for mechanism-scoped calls.
+- **SubnetNotExists** — the extrinsic's explicit subnet lookup failed.
+
+## Distinction from Mechanism Count
+
+Mechanism count is the per-subnet hyperparameter that sets how many incentive mechanisms a subnet
+runs. `MechanismDoesNotExist` is the runtime rejection when a call names a mechanism index at or
+above the configured count, or when the base subnet is absent
+([Subnet Hyperparameters: MechanismCount](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#mechanismcount),
+[Subtensor source: mechanism.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/mechanism.rs)).
+
+- **Mechanism count** — the configured number of mechanisms on a subnet.
+- **MechanismDoesNotExist** — the submitted mechanism index is outside that configuration.
+
+## Distinction from Incorrect Weight Version Key
+
+`MechanismDoesNotExist` and `IncorrectWeightVersionKey` both appear on weight-setting paths, but at
+different stages. `MechanismDoesNotExist` is the early subnet-and-mechanism identity check.
+`IncorrectWeightVersionKey` is a later version-key rejection after the mechanism has already been
+accepted
+([Subtensor Standard Errors: IncorrectWeightVersionKey](https://docs.learnbittensor.org/errors/subtensor#incorrectweightversionkey),
+[Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+- **MechanismDoesNotExist** — the subnet-mechanism pair is invalid.
+- **IncorrectWeightVersionKey** — the submitted weight version key does not match the chain.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the checks in `ensure_mechanism_exists`. It
+does not describe how to configure mechanism count, how emissions split across mechanisms, or how to
+read the live mechanism count for a subnet; those are documented separately
+([Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets),
+[Subnet Hyperparameters: MechanismCount](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#mechanismcount)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#mechanismdoesnotexist)
+- [Subnet Hyperparameters: MechanismCount](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#mechanismcount)
+- [Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets)
+- [Subtensor source: mechanism.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/mechanism.rs)
+- [Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)
