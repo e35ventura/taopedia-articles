@@ -1,0 +1,68 @@
+---
+title: "Unexpected Unreserve Leftover"
+summary:
+  "How the UnexpectedUnreserveLeftover error signals an internal balance accounting inconsistency
+  when set_commitment releases excess deposit and the unreserve operation returns a non-zero
+  unreleasable remainder."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Unexpected Unreserve Leftover
+infoboxCaption: Error raised when unreserving excess deposit leaves a non-zero unreleasable amount.
+infoboxRows:
+  - label: Error
+    value: UnexpectedUnreserveLeftover
+  - label: Trigger
+    value: Currency::unreserve returns non-zero leftover on deposit reduction
+  - label: Checked in
+    value: set_commitment extrinsic, deposit adjustment path
+  - label: Check type
+    value: Balance accounting invariant check
+---
+
+# Unexpected Unreserve Leftover
+
+`UnexpectedUnreserveLeftover` is a commitments pallet error raised by the `set_commitment` extrinsic
+when releasing excess reserved deposit produces a non-zero unreleasable remainder. The pallet
+defines it as "Indicates that unreserve returned a leftover, which is unexpected"
+([Subtensor source: commitments/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/commitments/src/lib.rs)).
+
+## What It Means
+
+`set_commitment` reserves a deposit proportional to the number of fields in the commitment. When an
+updated commitment has fewer fields than the previous one, the required deposit decreases and the
+pallet calls `Currency::unreserve` to release the difference. `Currency::unreserve` returns any
+amount it could not release — for example because the account's reserved balance was already lower
+than expected. If that returned remainder is non-zero, `UnexpectedUnreserveLeftover` fires, aborting
+the call
+([Subtensor source: commitments/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/commitments/src/lib.rs)).
+
+This is an internal balance accounting invariant check. Under normal operation, the reserved balance
+matches what the pallet previously recorded, and `unreserve` returns zero. A non-zero leftover
+indicates that the account's reserved balance was not what the pallet expected, which represents a
+state inconsistency
+([Subtensor source: commitments/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/commitments/src/lib.rs)).
+
+## Distinction from Space Limit Exceeded
+
+`UnexpectedUnreserveLeftover` and `SpaceLimitExceeded` both block `set_commitment`, but they detect
+entirely different conditions. `SpaceLimitExceeded` is a rate-limit rejection fired before any
+deposit adjustment occurs, when the caller has exceeded their per-epoch data allowance.
+`UnexpectedUnreserveLeftover` is a balance accounting guard fired during the deposit adjustment
+step, only on the path where the new deposit is lower than the previous one
+([Space Limit Exceeded](https://docs.learnbittensor.org/errors/subtensor#spacelimitexceeded),
+[Subtensor source: commitments/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/commitments/src/lib.rs)).
+
+- **SpaceLimitExceeded** — the per-epoch data allowance is exhausted.
+- **UnexpectedUnreserveLeftover** — releasing excess deposit returned an unreleasable remainder.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the unreserve invariant check that raises it.
+It does not describe the deposit calculation formula or how reserved balances work in the Substrate
+currency model
+([Subtensor source: commitments/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/commitments/src/lib.rs)).
+
+## Further Reading
+
+- [Space Limit Exceeded](https://docs.learnbittensor.org/errors/subtensor#spacelimitexceeded)
+- [Subtensor source: commitments/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/commitments/src/lib.rs)
