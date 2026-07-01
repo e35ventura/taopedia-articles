@@ -1,0 +1,123 @@
+---
+title: "Registration Price Limit Exceeded"
+summary:
+  "How the RegistrationPriceLimitExceeded error blocks register_limit when the subnet's current
+  registration burn cost is higher than the caller's limit_price cap."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Registration Price Limit Exceeded
+infoboxCaption: Error raised when the live burn cost exceeds the submitted cap.
+infoboxRows:
+  - label: Error
+    value: RegistrationPriceLimitExceeded
+  - label: Trigger
+    value: Current registration burn exceeds limit_price
+  - label: Checked in
+    value: do_register_limit
+  - label: Extrinsic
+    value: register_limit
+---
+
+# Registration Price Limit Exceeded
+
+`RegistrationPriceLimitExceeded` means a `register_limit` call named a maximum acceptable
+registration burn that is below the subnet's current burn cost at submission time. The Subtensor API
+errors reference summarizes it as "Registration Price Limit Exceeded"
+([Subtensor API Errors: RegistrationPriceLimitExceeded](https://docs.learnbittensor.org/subtensor-api/errors#registrationpricelimitexceeded)).
+
+Neuron registration on a subnet recycles TAO through a dynamic burn price that rises after
+successful registrations and decays over time
+([Understanding Neurons](https://docs.learnbittensor.org/learn/neurons),
+[Subtensor source: registration.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)).
+
+## What It Means
+
+`register_limit` registers a hotkey on a subnet only when the on-chain burn cost for that netuid is
+at or below the caller's `limit_price` cap. Before entering the shared registration flow, the
+runtime reads the current burn with `get_burn(netuid)` and compares it against the submitted limit.
+`RegistrationPriceLimitExceeded` means the live burn cost is higher than the cap
+([Subtensor source: registration.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs),
+[Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)).
+
+`limit_price` uses the same balance units as the subnet burn price. The check is a price-protection
+rejection on the `register_limit` path, not proof that the coldkey lacks enough TAO to pay the burn
+or that the hotkey is already registered.
+
+## Why It Appears
+
+This error appears when a coldkey submits `register_limit` with a `limit_price` below the subnet's
+current registration burn. That can happen when demand pushed the burn up between quote and
+submission, when automation reused an old cap after another registration succeeded on the subnet, or
+when the client set a conservative maximum to avoid paying more than intended
+([Understanding Neurons](https://docs.learnbittensor.org/learn/neurons),
+[Neuron Precompile: registerLimit](https://docs.learnbittensor.org/evm-tutorials/neuron-precompile#registerlimit)).
+
+When debugging, compare against other registration rejections on related calls.
+`NotEnoughBalanceToStake` means the coldkey cannot fund the current burn even when no cap is set.
+`HotKeyAlreadyRegisteredInSubNet` means the hotkey already holds a UID on the subnet.
+`SubNetRegistrationDisabled` means registration is turned off on the netuid
+([Subtensor Standard Errors: NotEnoughBalanceToStake](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake),
+[Subtensor Standard Errors: HotKeyAlreadyRegisteredInSubNet](https://docs.learnbittensor.org/errors/subtensor#hotkeyalreadyregisteredinsubnet),
+[Subtensor Standard Errors: SubNetRegistrationDisabled](https://docs.learnbittensor.org/errors/subtensor#subnetregistrationdisabled)).
+
+The practical meaning is narrow: raise `limit_price`, wait for the burn to decay, or use an uncapped
+registration path if paying the live burn is acceptable.
+
+## Distinction from Not Enough Balance To Stake
+
+`RegistrationPriceLimitExceeded` and `NotEnoughBalanceToStake` both involve registration burn
+pricing, but they test different conditions. `RegistrationPriceLimitExceeded` is raised in
+`do_register_limit` when the live burn exceeds the caller's cap. `NotEnoughBalanceToStake` is raised
+later in `do_register` when the coldkey cannot remove enough free balance to pay the burn
+([Subtensor source: registration.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)).
+
+- **RegistrationPriceLimitExceeded** — the live burn cost exceeds `limit_price`.
+- **NotEnoughBalanceToStake** — the coldkey cannot fund the registration burn.
+
+## Distinction from Hotkey Already Registered In Subnet
+
+`RegistrationPriceLimitExceeded` and `HotKeyAlreadyRegisteredInSubNet` both block registration, but
+at different stages. `RegistrationPriceLimitExceeded` is the burn-cap check on `register_limit`
+before the shared flow begins. `HotKeyAlreadyRegisteredInSubNet` means the hotkey already occupies a
+UID on the subnet
+([Subtensor Standard Errors: HotKeyAlreadyRegisteredInSubNet](https://docs.learnbittensor.org/errors/subtensor#hotkeyalreadyregisteredinsubnet)).
+
+- **RegistrationPriceLimitExceeded** — the submitted burn cap is too low for the current price.
+- **HotKeyAlreadyRegisteredInSubNet** — the hotkey already has a UID on the subnet.
+
+## Distinction from Subnet Not Exists
+
+`RegistrationPriceLimitExceeded` and `SubnetNotExists` both appear on `register_limit`, but at
+different steps. `SubnetNotExists` means the submitted netuid does not name a live subnet.
+`RegistrationPriceLimitExceeded` means the subnet exists but its current burn exceeds the cap
+([Subtensor source: registration.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)).
+
+- **RegistrationPriceLimitExceeded** — burn cost exceeds `limit_price`.
+- **SubnetNotExists** — the submitted netuid is not a live subnet.
+
+## Distinction from Registration Not Permitted On Root Subnet
+
+`RegistrationPriceLimitExceeded` and `RegistrationNotPermittedOnRootSubnet` both block
+`register_limit`, but for different reasons. `RegistrationNotPermittedOnRootSubnet` means the call
+targeted the Root Subnet, which does not use this burn-registration path.
+`RegistrationPriceLimitExceeded` applies on ordinary mining subnets when the live burn exceeds the
+submitted cap
+([Registration Not Permitted On Root Subnet](https://docs.learnbittensor.org/errors/subtensor#registrationnotpermittedonrootsubnet)).
+
+- **RegistrationPriceLimitExceeded** — the burn cap is below the live registration cost.
+- **RegistrationNotPermittedOnRootSubnet** — the call targeted the Root Subnet.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the burn-cap comparison on the `register_limit`
+path. It does not report the live registration burn on any particular netuid; that value is subnet
+chain state readers can query at observation time
+([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: RegistrationPriceLimitExceeded](https://docs.learnbittensor.org/subtensor-api/errors#registrationpricelimitexceeded)
+- [Understanding Neurons](https://docs.learnbittensor.org/learn/neurons)
+- [Neuron Precompile: registerLimit](https://docs.learnbittensor.org/evm-tutorials/neuron-precompile#registerlimit)
+- [Subtensor source: registration.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)
