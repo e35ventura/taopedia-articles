@@ -1,0 +1,101 @@
+---
+title: "Arithmetic Overflow"
+summary:
+  "How the ArithmeticOverflow error blocks execute_batched_orders when TAO-to-alpha fixed-point
+  conversion overflows in limit-orders batch math."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Arithmetic Overflow
+infoboxCaption: Error raised when batched TAO-to-alpha conversion overflows fixed-point math.
+infoboxRows:
+  - label: Error
+    value: ArithmeticOverflow
+  - label: Trigger
+    value: tao_to_alpha checked_div returns None on fixed-point conversion
+  - label: Checked in
+    value: tao_to_alpha helper used by batched limit-order execution
+  - label: Check type
+    value: Fixed-point conversion overflow guard
+---
+
+# Arithmetic Overflow
+
+`ArithmeticOverflow` is a documented limit-orders error raised when batched execution cannot safely
+convert TAO amounts into alpha units in fixed-point math. The Subtensor API error reference
+describes it as "A TAO -> alpha conversion overflowed the fixed-point range"
+([Subtensor API Errors: ArithmeticOverflow](https://docs.learnbittensor.org/subtensor-api/errors#arithmeticoverflow)).
+
+## What It Means
+
+The limit-orders batched path converts aggregate TAO amounts into alpha equivalents at current price
+for netting, distribution, and summary calculations. Those TAO-to-alpha conversions use a
+`tao_to_alpha` helper that performs fixed-point division and returns `ArithmeticOverflow` when the
+conversion cannot be represented safely
+([Subnet Liquidity Pools](https://docs.learnbittensor.org/subnets/understanding-subnets#liquidity-pools),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+The helper is used from multiple batched execution steps, including net-side calculations and event
+summary math. A conversion failure aborts the dispatch rather than continuing with corrupted
+intermediate values
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+The same helper explicitly returns zero when price is zero, so `ArithmeticOverflow` is not the
+zero-price case on that path
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+This is a fixed-point conversion safety rejection in batched order math, not proof that an order's
+signature failed or that a residual swap returned zero output.
+
+## Why It Appears
+
+This error appears when batched calculations call `tao_to_alpha` and the fixed-point division cannot
+produce a safe representable result. Because `execute_batched_orders` is all-or-nothing, that
+failure aborts the call instead of finalizing partial state
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+When debugging, compare against nearby batched failures with different stages. `SwapReturnedZero` is
+a residual swap-output guard later in net swap execution. `ZeroShareInBatch` is a later distribution
+guard when a computed per-order share floors to zero. `PriceConditionNotMet` is an earlier per-order
+validation failure before batch net math
+([Swap Returned Zero](https://docs.learnbittensor.org/errors/subtensor#swapreturnedzero),
+[Zero Share In Batch](https://docs.learnbittensor.org/errors/subtensor#zeroshareinbatch),
+[Price Condition Not Met](https://docs.learnbittensor.org/errors/subtensor#priceconditionnotmet),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+## Distinction from Swap Returned Zero
+
+`ArithmeticOverflow` and `SwapReturnedZero` both block `execute_batched_orders`, but at different
+stages. `ArithmeticOverflow` is raised during TAO-to-alpha conversion in batch math.
+`SwapReturnedZero` is raised during residual pool swap when non-zero net input yields zero output
+([Swap Returned Zero](https://docs.learnbittensor.org/errors/subtensor#swapreturnedzero),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+- **ArithmeticOverflow** — TAO-to-alpha conversion cannot be represented safely.
+- **SwapReturnedZero** — residual pool swap output is zero.
+
+## Distinction from Zero Share In Batch
+
+`ArithmeticOverflow` and `ZeroShareInBatch` both involve batched arithmetic safeguards, but for
+different invariants. `ArithmeticOverflow` protects fixed-point conversion safety.
+`ZeroShareInBatch` protects fairness of per-order pro-rata distribution when integer flooring would
+allocate zero to an included order
+([Zero Share In Batch](https://docs.learnbittensor.org/errors/subtensor#zeroshareinbatch),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+- **ArithmeticOverflow** — conversion math fails safely.
+- **ZeroShareInBatch** — distribution math yields zero share for an order.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the TAO-to-alpha overflow guard used by batched
+execution math. It does not report live pool state, price snapshots, or aggregate batch amounts for
+a given execution
+([Subnet Liquidity Pools](https://docs.learnbittensor.org/subnets/understanding-subnets#liquidity-pools),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: ArithmeticOverflow](https://docs.learnbittensor.org/subtensor-api/errors#arithmeticoverflow)
+- [Swap Returned Zero](https://docs.learnbittensor.org/errors/subtensor#swapreturnedzero)
+- [Zero Share In Batch](https://docs.learnbittensor.org/errors/subtensor#zeroshareinbatch)
+- [Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)
