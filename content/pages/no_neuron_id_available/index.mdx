@@ -1,0 +1,112 @@
+---
+title: "No Neuron Id Available"
+summary:
+  "How the NoNeuronIdAvailable error blocks do_register when a subnet has no free UID slot and no
+  pruneable neuron to replace."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: No Neuron Id Available
+infoboxCaption: Error raised when a subnet has no assignable UID.
+infoboxRows:
+  - label: Error
+    value: NoNeuronIdAvailable
+  - label: Trigger
+    value: Subnet is at capacity with no prune candidate
+  - label: Checked in
+    value: do_register and register_neuron
+  - label: Related hyperparameter
+    value: MaxAllowedUids
+---
+
+# No Neuron Id Available
+
+`NoNeuronIdAvailable` means a registration call reached the subnet capacity stage and found no UID
+that could be assigned. The standard-errors reference describes it as "No neuron ID is available in
+the subnet"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#noneuronidavailable)).
+
+The check runs after registration-policy, hotkey-membership, burn-price, and balance gates have
+already passed
+([Subtensor source: registration.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)).
+
+## What It Means
+
+Neuron registration assigns each hotkey a UID slot on a subnet up to the subnet's `MaxAllowedUids`
+limit. In `do_register`, the runtime rejects the call with `NoNeuronIdAvailable` when
+`get_max_allowed_uids` is zero, or when the subnet is already at capacity and `get_neuron_to_prune`
+returns no replacement candidate
+([Subtensor source: registration.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs),
+[Subnet Hyperparameters: MaxAllowedUids](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#maxalloweduids)).
+
+Inside `register_neuron`, the same error is returned when the subnet is full and pruning logic
+cannot select a UID to replace, so no slot can be handed to the registering hotkey
+([Subtensor source: registration.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)).
+
+## Why It Appears
+
+This error appears when a coldkey signs a registration call on a subnet that is already full and has
+no eligible prune target, or when the configured UID cap for that subnet is zero. That can happen
+during high competition for slots, when every existing UID is protected from pruning, or when
+automation retries registration against a saturated subnet
+([Subtensor source: registration.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)).
+
+When debugging, rule out earlier gates on the same extrinsic first. `SubNetRegistrationDisabled`
+means registration is turned off on the subnet. `HotKeyAlreadyRegisteredInSubNet` means the hotkey
+already holds a UID there. `NotEnoughBalanceToStake` means the coldkey cannot fund the current burn
+price
+([Subtensor Standard Errors: SubNetRegistrationDisabled](https://docs.learnbittensor.org/errors/subtensor#subnetregistrationdisabled),
+[Subtensor Standard Errors: HotKeyAlreadyRegisteredInSubNet](https://docs.learnbittensor.org/errors/subtensor#hotkeyalreadyregisteredinsubnet),
+[Subtensor Standard Errors: NotEnoughBalanceToStake](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake)).
+
+The practical meaning is narrow: the subnet has no UID slot available for a new registration.
+
+## Distinction from Subnet Registration Disabled
+
+`NoNeuronIdAvailable` and `SubNetRegistrationDisabled` both block registration, but at different
+stages. `SubNetRegistrationDisabled` is the policy gate when `NetworkRegistrationAllowed` is false.
+`NoNeuronIdAvailable` is the capacity rejection after registration is allowed and the caller has
+passed earlier funding and membership checks
+([Subtensor Standard Errors: SubNetRegistrationDisabled](https://docs.learnbittensor.org/errors/subtensor#subnetregistrationdisabled),
+[Subtensor source: registration.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)).
+
+- **SubNetRegistrationDisabled** — registration is turned off on the subnet.
+- **NoNeuronIdAvailable** — registration is allowed but no UID slot is available.
+
+## Distinction from Hotkey Already Registered In Subnet
+
+`NoNeuronIdAvailable` and `HotKeyAlreadyRegisteredInSubNet` are both registration failures, but they
+describe opposite slot states. `HotKeyAlreadyRegisteredInSubNet` means the signing hotkey already
+occupies a UID on that subnet. `NoNeuronIdAvailable` means the subnet cannot assign a new UID to any
+hotkey because capacity is exhausted
+([Subtensor Standard Errors: HotKeyAlreadyRegisteredInSubNet](https://docs.learnbittensor.org/errors/subtensor#hotkeyalreadyregisteredinsubnet),
+[Subtensor source: registration.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)).
+
+- **HotKeyAlreadyRegisteredInSubNet** — the hotkey already has a UID on the subnet.
+- **NoNeuronIdAvailable** — the subnet has no free or replaceable UID slot.
+
+## Distinction from Not Enough Balance To Stake
+
+`NoNeuronIdAvailable` and `NotEnoughBalanceToStake` can both appear on `do_register`, but they
+reject different problems. `NotEnoughBalanceToStake` is the funding check against the current
+registration burn price. `NoNeuronIdAvailable` is the later capacity check after burn pricing and
+coldkey-hotkey pairing have already passed
+([Subtensor Standard Errors: NotEnoughBalanceToStake](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake),
+[Subtensor source: registration.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)).
+
+- **NotEnoughBalanceToStake** — the coldkey cannot fund the registration burn.
+- **NoNeuronIdAvailable** — the subnet has no assignable UID slot.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the capacity checks that raise it in
+`do_register` and `register_neuron`. It does not describe pruning-score rules, immunity windows, or
+how to read the live UID count for a subnet; those are documented separately
+([UID Trimming](https://docs.learnbittensor.org/resources/glossary#uid),
+[Subnet Hyperparameters: MaxAllowedUids](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#maxalloweduids)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#noneuronidavailable)
+- [Subtensor Standard Errors: SubNetRegistrationDisabled](https://docs.learnbittensor.org/errors/subtensor#subnetregistrationdisabled)
+- [Subnet Hyperparameters: MaxAllowedUids](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#maxalloweduids)
+- [Subtensor source: registration.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)
