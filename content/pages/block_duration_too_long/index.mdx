@@ -1,0 +1,69 @@
+---
+title: "Block Duration Too Long"
+summary:
+  "How the BlockDurationTooLong error blocks creating or updating a crowdloan when the interval
+  between now and the supplied end block exceeds the maximum allowed crowdloan duration."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Block Duration Too Long
+infoboxCaption: Error raised when a crowdloan's duration exceeds the maximum block limit.
+infoboxRows:
+  - label: Error
+    value: BlockDurationTooLong
+  - label: Trigger
+    value: end block − current block > MaximumBlockDuration
+  - label: Checked in
+    value: create and update_end extrinsics, via ensure_valid_end
+  - label: Check type
+    value: Duration comparison against a fixed maximum constant
+---
+
+# Block Duration Too Long
+
+`BlockDurationTooLong` is a documented Subtensor standard error raised by crowdloan creation and end
+updates. The Subtensor API error reference describes it as "The block duration is too long"
+([Subtensor API: Errors](https://docs.learnbittensor.org/subtensor-api/errors)).
+
+## What It Means
+
+Both the `create` extrinsic and the `update_end` extrinsic route the supplied end block through the
+shared `ensure_valid_end` helper. After confirming the end block is in the future, the helper
+computes the duration from the current block to the end block and compares it against
+`MaximumBlockDuration`, a fixed runtime constant. `BlockDurationTooLong` fires when that duration
+exceeds the maximum
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+The maximum is a compile-time constant, not per-crowdloan state, so the same ceiling applies to
+every crowdloan regardless of how it was configured
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+## Why It Appears
+
+This is the last of the three checks `ensure_valid_end` runs, after confirming the end block is in
+the future and after confirming the duration meets the minimum. A crowdloan whose end block extends
+too far into the future fails here
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+## Distinction from Block Duration Too Short
+
+`BlockDurationTooLong` and `BlockDurationTooShort` are both raised by `ensure_valid_end` against the
+same computed duration. `BlockDurationTooShort` fires when the duration falls below the minimum
+constant. `BlockDurationTooLong` fires when it exceeds the maximum constant. One guards against
+crowdloans that are too brief; the other guards against crowdloans that run too long
+([Subtensor Standard Errors: BlockDurationTooShort](https://docs.learnbittensor.org/subtensor-api/errors),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+- **BlockDurationTooShort** — duration is below the minimum allowed crowdloan length.
+- **BlockDurationTooLong** — duration exceeds the maximum allowed crowdloan length.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the maximum-duration check that raises it. It
+does not describe the minimum duration limit or the rest of the crowdloan creation flow; those are
+documented separately ([Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans)).
+
+## Further Reading
+
+- [Subtensor API: Errors](https://docs.learnbittensor.org/subtensor-api/errors)
+- [Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans)
+- [Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)
