@@ -1,0 +1,77 @@
+---
+title: "Not Owner"
+summary:
+  "How the NotOwner error blocks a multisig cancellation or deposit update when the caller is not
+  the original depositor of the pending operation, which is the only account allowed to cancel or
+  reclaim the reserved deposit."
+category: "Wallets"
+tags: ["Wallets", "Errors", "Security"]
+infoboxTitle: Not Owner
+infoboxCaption:
+  Error raised when a non-depositor account attempts to cancel or update a pending multisig
+  operation.
+infoboxRows:
+  - label: Error
+    value: NotOwner
+  - label: Pallet
+    value: multisig
+  - label: Trigger
+    value: Caller is not the account that originally deposited and started the multisig operation
+  - label: Check type
+    value: Identity check — caller must match the stored depositor for the pending operation
+---
+
+# Not Owner
+
+`NotOwner` is a multisig pallet error raised when the caller attempts to cancel a pending multisig
+operation or update its deposit but is not the original depositor who started that operation. The
+API errors reference describes it as "Only the account that originally created the multisig is able
+to cancel it or update its deposits"
+([Subtensor API Errors: NotOwner](https://docs.learnbittensor.org/subtensor-api/errors#notowner)).
+
+## What It Means
+
+When a multisig operation begins, the first signatory reserves a deposit against their account and
+is recorded as the depositor for that operation. The depositor is the only account that may cancel
+the operation via `cancel_as_multi` and reclaim the reserved deposit. No other signatory, even one
+who has already approved the call, can cancel the operation
+([Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)).
+
+`NotOwner` fires when a `cancel_as_multi` call is submitted by an account that is not the stored
+depositor for the pending operation. The pallet compares the caller's identity against the depositor
+recorded when the operation was first created and rejects the call if they do not match
+([Subtensor API Errors: NotOwner](https://docs.learnbittensor.org/subtensor-api/errors#notowner),
+[Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)).
+
+## Why It Appears
+
+This error appears when a signatory who did not initiate the multisig operation attempts to cancel
+it. The depositor restriction exists because cancellation returns the reserved deposit to its owner
+and removes the on-chain record. Allowing any signatory to cancel would let non-depositors trigger
+deposit refunds and abort operations they did not fund
+([Subtensor API Errors: NotOwner](https://docs.learnbittensor.org/subtensor-api/errors#notowner)).
+
+## Distinction from Not Found
+
+`NotOwner` and `NotFound` both block `cancel_as_multi`, but they detect different problems.
+`NotFound` fires when no on-chain record exists for the given multisig address and call hash — the
+operation was never started or has already been executed or cancelled. `NotOwner` fires when a
+record does exist but the caller is not its depositor
+([Subtensor API Errors: NotFound](https://docs.learnbittensor.org/subtensor-api/errors#notfound),
+[Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)).
+
+- **NotFound** — no pending operation exists for this call hash.
+- **NotOwner** — a pending operation exists, but the caller did not start it.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the depositor identity check that raises it. It
+does not report who the depositor is for any specific pending multisig operation on chain; that is
+live chain state ([Multisig Wallets](https://docs.learnbittensor.org/keys/multisig),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: NotOwner](https://docs.learnbittensor.org/subtensor-api/errors#notowner)
+- [Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)
+- [Subtensor API Errors: NotFound](https://docs.learnbittensor.org/subtensor-api/errors#notfound)
