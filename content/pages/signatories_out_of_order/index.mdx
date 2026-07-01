@@ -1,0 +1,90 @@
+---
+title: "Signatories Out Of Order"
+summary:
+  "How the SignatoriesOutOfOrder error blocks a multisig call when the other_signatories list is not
+  provided in sorted order."
+category: "Wallets"
+tags: ["Wallets", "Errors", "Security"]
+infoboxTitle: Signatories Out Of Order
+infoboxCaption: Error raised when the multisig other_signatories list is not in sorted order.
+infoboxRows:
+  - label: Error
+    value: SignatoriesOutOfOrder
+  - label: Pallet
+    value: multisig
+  - label: Trigger
+    value: other_signatories list is not provided in sorted order
+  - label: Check type
+    value: Sort-order validation on the other_signatories parameter
+---
+
+# Signatories Out Of Order
+
+`SignatoriesOutOfOrder` is a multisig pallet error raised when the `other_signatories` list supplied
+to a multisig call is not in sorted order. The API errors reference describes it as "The signatories
+were provided out of order; they should be ordered"
+([Subtensor API Errors: SignatoriesOutOfOrder](https://docs.learnbittensor.org/subtensor-api/errors#signatoriesoutoforder)).
+
+## What It Means
+
+Bittensor multisig operations identify the co-signing accounts through the `other_signatories`
+parameter. The multisig pallet requires this list to be provided in a consistent sorted order so
+that the set of signatories can be identified and stored deterministically
+([Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)).
+
+`SignatoriesOutOfOrder` fires when the submitted `other_signatories` list contains the correct
+accounts but they are not arranged in the required sorted order
+([Subtensor API Errors: SignatoriesOutOfOrder](https://docs.learnbittensor.org/subtensor-api/errors#signatoriesoutoforder),
+[Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)).
+
+This is a list-ordering rejection, not proof that the wrong accounts are listed, that the sender is
+in the list, or that the list has too few or too many entries.
+
+## Why It Appears
+
+This error appears when the `other_signatories` list is submitted with accounts in an order that
+does not match the sorted sequence the pallet expects. The pallet uses a sorted list to identify the
+signatory set consistently across multiple approval submissions from different co-signers
+([Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)).
+
+The practical meaning is narrow: sort the `other_signatories` list before submitting the multisig
+call.
+
+## Distinction from Sender In Signatories
+
+`SignatoriesOutOfOrder` and `SenderInSignatories` both block multisig calls on the
+`other_signatories` list, but they catch different problems. `SenderInSignatories` fires when the
+sender's own address appears in the list. `SignatoriesOutOfOrder` fires when the accounts in the
+list are correct but not in the required sorted order
+([Subtensor API Errors: SenderInSignatories](https://docs.learnbittensor.org/subtensor-api/errors#senderinsignatories),
+[Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)).
+
+- **SignatoriesOutOfOrder** — correct accounts, but not in sorted order.
+- **SenderInSignatories** — sender's own address is present in the list.
+
+## Distinction from Too Few Signatories
+
+`SignatoriesOutOfOrder` and `TooFewSignatories` both block multisig calls on the signatories list,
+but at different checks. `TooFewSignatories` fires when the list does not contain enough entries.
+`SignatoriesOutOfOrder` fires when the list has the right number of entries but they are not in
+sorted order
+([Subtensor API Errors: TooFewSignatories](https://docs.learnbittensor.org/subtensor-api/errors#toofewsignatories),
+[Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)).
+
+- **SignatoriesOutOfOrder** — correct count, but list is not sorted.
+- **TooFewSignatories** — list does not have enough entries.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the sort-order check that raises it. It does
+not report the expected sort order of signatories for any specific multisig on chain; that depends
+on the account addresses involved
+([Multisig Wallets](https://docs.learnbittensor.org/keys/multisig),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: SignatoriesOutOfOrder](https://docs.learnbittensor.org/subtensor-api/errors#signatoriesoutoforder)
+- [Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)
+- [Subtensor API Errors: SenderInSignatories](https://docs.learnbittensor.org/subtensor-api/errors#senderinsignatories)
+- [Subtensor API Errors: TooFewSignatories](https://docs.learnbittensor.org/subtensor-api/errors#toofewsignatories)
