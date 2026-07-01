@@ -1,0 +1,92 @@
+---
+title: "Bonds Moving Average Max Reached"
+summary:
+  "How the BondsMovingAverageMaxReached error blocks sudo_set_bonds_moving_average when a non-root
+  caller submits a value above the fixed ceiling."
+category: "Consensus"
+tags: ["Consensus", "Errors"]
+infoboxTitle: Bonds Moving Average Max Reached
+infoboxCaption: Error raised when a non-root bonds moving average update exceeds the ceiling.
+infoboxRows:
+  - label: Error
+    value: BondsMovingAverageMaxReached
+  - label: Trigger
+    value: Non-root caller submits a value above the bonds moving average ceiling
+  - label: Checked in
+    value: sudo_set_bonds_moving_average, non-root path
+  - label: Related hyperparameter
+    value: BondsMovingAverage
+---
+
+# Bonds Moving Average Max Reached
+
+`BondsMovingAverageMaxReached` is a documented Subtensor standard error raised when
+`sudo_set_bonds_moving_average` is called by a non-root origin with a value above the allowed
+ceiling. The standard-errors reference lists it as a range check on the bonds moving average
+hyperparameter
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#bondsmovingaveragemaxreached),
+[Subtensor API Errors: BondsMovingAverageMaxReached](https://docs.learnbittensor.org/subtensor-api/errors#bondsmovingaveragemaxreached)).
+
+## What It Means
+
+The bonds moving average is a per-subnet hyperparameter used in computing the EMA alpha that governs
+how quickly validator-miner bond weights update each epoch. The runtime derives the smoothing alpha
+as one minus the scaled bonds moving average value, so a higher bonds moving average means more
+smoothing and slower bond changes, while a lower value means faster movement toward current weight
+targets
+([Subnet Hyperparameters: BondsMovingAverage](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#bondsmovingaverage)).
+
+`BondsMovingAverageMaxReached` is the range rejection on the non-root path when the submitted value
+exceeds the fixed ceiling. The call is rejected before any state change occurs. Root origin is not
+subject to the same ceiling check on this path.
+
+This is a bounds check on a submitted parameter value for non-root callers, not proof that the
+caller lacks any permission or that liquid alpha is disabled on the subnet.
+
+## Why It Appears
+
+This error appears when `sudo_set_bonds_moving_average` is called by a non-root origin with a value
+above the ceiling. That can happen when automation passes an unclamped integer, when a client scales
+the value incorrectly before submission, or when a configuration tool generates an out-of-range
+default
+([Subnet Hyperparameters: BondsMovingAverage](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#bondsmovingaverage)).
+
+The practical meaning is narrow: non-root callers must submit a value at or below the fixed ceiling
+for the call to succeed.
+
+## Distinction from Negative Sigmoid Steepness
+
+`BondsMovingAverageMaxReached` and `NegativeSigmoidSteepness` both appear on liquid-alpha
+hyperparameter setter paths for non-root callers, but they guard different parameters and different
+bounds. `BondsMovingAverageMaxReached` is the upper-bound rejection on `BondsMovingAverage`.
+`NegativeSigmoidSteepness` is the sign rejection on `AlphaSigmoidSteepness`
+([Subtensor Standard Errors: NegativeSigmoidSteepness](https://docs.learnbittensor.org/errors/subtensor#negativesigmoidsteepness)).
+
+- **BondsMovingAverageMaxReached** — bonds moving average value exceeds the non-root ceiling.
+- **NegativeSigmoidSteepness** — steepness value is negative for a non-root caller.
+
+## Distinction from Alpha Low Out Of Range
+
+`BondsMovingAverageMaxReached` and `AlphaLowOutOfRange` both block liquid-alpha related
+hyperparameter updates for out-of-range values, but on different parameters. `AlphaLowOutOfRange`
+rejects an `alpha_low` value outside the allowed interval on the alpha-values setter.
+`BondsMovingAverageMaxReached` rejects a `bonds_moving_average` value above the fixed ceiling on the
+non-root path
+([Subtensor Standard Errors: AlphaLowOutOfRange](https://docs.learnbittensor.org/errors/subtensor#alphalowoutofrange)).
+
+- **BondsMovingAverageMaxReached** — bonds moving average exceeds its non-root ceiling.
+- **AlphaLowOutOfRange** — alpha low is outside its allowed interval.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the upper-bound check that raises it on the
+non-root path. The ceiling is a fixed constant in the implementation rather than a live chain-state
+value. Readers can verify the current hyperparameter value and the allowed range through the
+hyperparameter reference
+([Subnet Hyperparameters: BondsMovingAverage](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#bondsmovingaverage)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#bondsmovingaveragemaxreached)
+- [Subtensor API Errors: BondsMovingAverageMaxReached](https://docs.learnbittensor.org/subtensor-api/errors#bondsmovingaveragemaxreached)
+- [Subnet Hyperparameters: BondsMovingAverage](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#bondsmovingaverage)
