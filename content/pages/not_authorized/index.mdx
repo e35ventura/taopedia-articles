@@ -1,0 +1,91 @@
+---
+title: "Not Authorized"
+summary:
+  "How the NotAuthorized error blocks a preimage clear request when the caller is not permitted to
+  remove the stored preimage entry."
+category: "Core Concepts"
+tags: ["Transactions", "Errors"]
+infoboxTitle: Not Authorized
+infoboxCaption:
+  Error raised when the runtime rejects a preimage clear request from an account that is not allowed
+  to remove that entry.
+infoboxRows:
+  - label: Error
+    value: NotAuthorized
+  - label: Pallet
+    value: preimage
+  - label: Trigger
+    value:
+      Preimage clear request submitted by an account that does not match the stored authorization
+      check
+  - label: Check type
+    value: Authorization guard on the unnote path
+---
+
+# Not Authorized
+
+`NotAuthorized` is a preimage pallet error raised when a preimage clear request comes from an
+account that is not permitted to remove that preimage entry. The API errors reference summarizes it
+as "The user is not authorized to perform this action."
+([Subtensor API Errors: NotAuthorized](https://docs.learnbittensor.org/subtensor-api/errors#notauthorized)).
+
+## What It Means
+
+Subtensor uses the preimage pallet to track the bytes behind a runtime call before other workflows
+refer to that call by hash. `NotAuthorized` means the runtime found a preimage entry for the hash,
+but the caller did not satisfy the authorization check for clearing that entry, so the unnote path
+stopped before the preimage was removed
+([Subtensor API Errors: NotAuthorized](https://docs.learnbittensor.org/subtensor-api/errors#notauthorized)).
+
+This is an authorization failure on the preimage clear path. It does not, by itself, mean the
+preimage was never noted, that the preimage was already on-chain from a prior note request, or that
+the preimage bytes were too large to store.
+
+## Why It Appears
+
+This error appears on the preimage pallet's `unnote_preimage` path when the stored status says a
+different account controls removal, or when the runtime expects the request to proceed without an
+owner check and the call does not match that expectation. The upstream preimage pallet source shows
+that `do_unnote_preimage` returns `Error::<T>::NotAuthorized` when the caller fails the stored
+authorization check for the current request status
+([opentensor/polkadot-sdk: substrate/frame/preimage/src/lib.rs#L397-L417](https://github.com/opentensor/polkadot-sdk/blob/7cc54bf2d50ae3921d718736dfeb0de9468539c7/substrate/frame/preimage/src/lib.rs#L397-L417),
+[opentensor/polkadot-sdk: substrate/frame/preimage/src/lib.rs#L215-L217](https://github.com/opentensor/polkadot-sdk/blob/7cc54bf2d50ae3921d718736dfeb0de9468539c7/substrate/frame/preimage/src/lib.rs#L215-L217)).
+
+The practical meaning is narrow: the hash exists on a clearable preimage path, but this caller is
+not the account the pallet accepts for removing it.
+
+## Distinction from Not Noted
+
+`NotAuthorized` and `NotNoted` can both appear on preimage clear workflows, but they fail at
+different checks. `NotAuthorized` means a matching preimage status exists and the caller failed the
+authorization check. `NotNoted` means there was no noted preimage status to clear in the first place
+([Subtensor API Errors: NotAuthorized](https://docs.learnbittensor.org/subtensor-api/errors#notauthorized),
+[Subtensor API Errors: NotNoted](https://docs.learnbittensor.org/subtensor-api/errors#notnoted)).
+
+- **NotAuthorized** — the preimage status exists, but this caller is not allowed to clear it.
+- **NotNoted** — there is no noted preimage status to clear for that hash.
+
+## Distinction from Already Noted
+
+`NotAuthorized` and `AlreadyNoted` both involve preimages that are already present in storage, but
+they fail on opposite operations. `AlreadyNoted` rejects a new note request because the preimage is
+already on-chain. `NotAuthorized` rejects a clear request because the caller is not permitted to
+remove the existing entry
+([Subtensor API Errors: NotAuthorized](https://docs.learnbittensor.org/subtensor-api/errors#notauthorized),
+[Subtensor API Errors: AlreadyNoted](https://docs.learnbittensor.org/subtensor-api/errors#alreadynoted)).
+
+- **NotAuthorized** — the existing preimage entry cannot be cleared by this caller.
+- **AlreadyNoted** — the preimage cannot be noted again because it is already on-chain.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the authorization guard it represents on the
+preimage clear path. It does not identify which account currently controls a given preimage entry or
+list every upstream workflow that may later refer to the same preimage hash
+([Subtensor API Errors: NotAuthorized](https://docs.learnbittensor.org/subtensor-api/errors#notauthorized)).
+
+## Further Reading
+
+- [Subtensor API Errors: NotAuthorized](https://docs.learnbittensor.org/subtensor-api/errors#notauthorized)
+- [Subtensor API Errors: NotNoted](https://docs.learnbittensor.org/subtensor-api/errors#notnoted)
+- [Subtensor API Errors: AlreadyNoted](https://docs.learnbittensor.org/subtensor-api/errors#alreadynoted)
