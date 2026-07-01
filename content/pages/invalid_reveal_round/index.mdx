@@ -1,0 +1,101 @@
+---
+title: "Invalid Reveal Round"
+summary:
+  "How the InvalidRevealRound error blocks a timelocked weight commit when its requested Drand
+  reveal round is older than the most recently stored round on chain."
+category: "Validation"
+tags: ["Validation", "Errors"]
+infoboxTitle: Invalid Reveal Round
+infoboxCaption: Error raised when a timelocked commit names a stale Drand reveal round.
+infoboxRows:
+  - label: Error
+    value: InvalidRevealRound
+  - label: Trigger
+    value: reveal_round is older than the chain's latest stored Drand round
+  - label: Checked in
+    value: CheckWeights dispatch extension
+  - label: Related flow
+    value: Timelocked commit-reveal weight submission
+---
+
+# Invalid Reveal Round
+
+`InvalidRevealRound` is a documented Subtensor standard error raised on timelocked commit-reveal
+weight submissions. The runtime source and tests show the practical meaning directly: the error is
+returned when a timelocked commit names a `reveal_round` older than the most recently stored Drand
+round
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#invalidrevealround),
+[Subtensor API Errors](https://docs.learnbittensor.org/subtensor-api/errors#invalidrevealround),
+[Subtensor source: check_weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/guards/check_weights.rs)).
+
+## What It Means
+
+Timelocked commit-reveal calls depend on a future Drand beacon round so committed weights stay
+unreadable until the chosen round arrives
+([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)).
+
+`InvalidRevealRound` is the guard that rejects a timelocked commit when its submitted `reveal_round`
+is already behind the chain's latest stored Drand round. In `CheckWeights`, the runtime checks
+`commit_timelocked_weights`, `commit_timelocked_mechanism_weights`, and
+`commit_crv3_mechanism_weights`, and returns `InvalidRevealRound` if
+`reveal_round < LastStoredRound`
+([Subtensor source: check_weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/guards/check_weights.rs)).
+
+The practical meaning is narrow: the caller asked the chain to reveal against a Drand round that is
+already stale, so the timelocked commit is rejected before dispatch continues.
+
+## Why It Appears
+
+This error appears when a client builds a timelocked commit with a reveal target that has already
+been passed by the chain's stored Drand state. A cached reveal round, delayed submission, or stale
+local round read can all produce that shape of failure
+([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
+[Subtensor source: check_weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/guards/check_weights.rs)).
+
+The runtime test `invalid_reveal_round_is_blocked` shows the exact boundary. With `LastStoredRound`
+set to `1000`, timelocked commit calls that submit `reveal_round: 999` fail with
+`InvalidRevealRound`
+([Subtensor source: check_weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/guards/check_weights.rs)).
+
+This is not a weight-value error, not a validator-stake error, and not a generic rate-limit
+rejection. The failure is specifically about the chosen Drand reveal target being older than the
+chain's currently stored round.
+
+## Distinction from Incorrect Commit Reveal Version
+
+`InvalidRevealRound` and `IncorrectCommitRevealVersion` are both early checks on timelocked
+commit-reveal submissions, but they reject different fields. `IncorrectCommitRevealVersion` means
+the submitted `commit_reveal_version` does not match the runtime's current version tag.
+`InvalidRevealRound` means the submitted `reveal_round` is already older than the latest stored
+Drand round
+([Subtensor Standard Errors: IncorrectCommitRevealVersion](https://docs.learnbittensor.org/errors/subtensor#incorrectcommitrevealversion),
+[Subtensor source: check_weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/guards/check_weights.rs)).
+
+- **InvalidRevealRound** — the requested Drand reveal round is stale.
+- **IncorrectCommitRevealVersion** — the commit-reveal version tag is wrong.
+
+## Distinction from Reveal Too Early
+
+`InvalidRevealRound` and `RevealTooEarly` both mention reveal timing, but at different stages.
+`InvalidRevealRound` is a timelocked commit error on the submitted future beacon target.
+`RevealTooEarly` is the later reveal-path error when a validator tries to reveal committed weights
+before the allowed reveal window has opened
+([Subtensor Standard Errors: RevealTooEarly](https://docs.learnbittensor.org/errors/subtensor#revealtooearly),
+[Subtensor source: check_weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/guards/check_weights.rs)).
+
+- **InvalidRevealRound** — the timelocked commit names an already-past Drand round.
+- **RevealTooEarly** — the reveal call arrived before the reveal window opened.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the stale-round check that raises it. It does
+not tell a reader which Drand round should be chosen for a live subnet at observation time, because
+that depends on current chain state and the latest stored beacon round when the commit is built
+([Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#invalidrevealround)
+- [Subtensor API Errors](https://docs.learnbittensor.org/subtensor-api/errors#invalidrevealround)
+- [Commit Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)
+- [Subtensor source: check_weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/guards/check_weights.rs)
