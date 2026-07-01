@@ -1,0 +1,89 @@
+---
+title: "Not Noted"
+summary:
+  "How the NotNoted error blocks a preimage clear request when the preimage is not currently
+  on-chain."
+category: "Core Concepts"
+tags: ["Transactions", "Errors"]
+infoboxTitle: Not Noted
+infoboxCaption:
+  Error raised when a preimage clear request targets a hash that has no on-chain status.
+infoboxRows:
+  - label: Error
+    value: NotNoted
+  - label: Pallet
+    value: preimage
+  - label: Trigger
+    value: Preimage clear request submitted for a hash that is not on-chain
+  - label: Check type
+    value: Has-on-chain-status guard on the clear path
+---
+
+# Not Noted
+
+`NotNoted` is a preimage pallet error raised when a preimage clear request targets a hash that has
+no on-chain status record. The API errors reference summarizes it as "The preimage cannot be removed
+since it has not yet been noted."
+([Subtensor API Errors: NotNoted](https://docs.learnbittensor.org/subtensor-api/errors#notnoted)).
+
+## What It Means
+
+Subtensor uses the preimage pallet to track the bytes behind a runtime call before that call becomes
+dispatchable. Each preimage has a hash, and the runtime stores a status record with that hash only
+after a note request has been processed. `NotNoted` means a clear request reached a hash that has no
+on-chain status record, so there is nothing to clear
+([Subtensor API Errors: NotNoted](https://docs.learnbittensor.org/subtensor-api/errors#notnoted)).
+
+This is the has-on-chain-status guard on the preimage clear path. It does not, by itself, mean the
+preimage bytes were too large to note, that the request was malformed, or that the preimage was
+already cleared by a different transaction.
+
+## Why It Appears
+
+This error appears when the preimage pallet receives a clear request whose hash has no on-chain
+status record. The preimage pallet source confirms the guard: the runtime looks up the existing
+status for the submitted hash and rejects the request with `Error::<T>::NotNoted` when the lookup
+finds no record
+([opentensor/polkadot-sdk: substrate/frame/preimage/src/lib.rs#L401](https://github.com/opentensor/polkadot-sdk/blob/7cc54bf2d50ae3921d718736dfeb0de9468539c7/substrate/frame/preimage/src/lib.rs#L401)).
+
+The practical meaning is narrow: the preimage you tried to clear was never noted, so the clear
+request is rejected.
+
+## Distinction from Already Noted
+
+`NotNoted` and `AlreadyNoted` are both preimage pallet errors but they fire at opposite ends of the
+note path. `NotNoted` is the has-on-chain-status guard on the clear path, rejecting the request
+because the preimage has no on-chain status record. `AlreadyNoted` is the already-on-chain guard on
+the note path, rejecting the request because the preimage is already on-chain
+([Subtensor API Errors: NotNoted](https://docs.learnbittensor.org/subtensor-api/errors#notnoted),
+[Subtensor API Errors: AlreadyNoted](https://docs.learnbittensor.org/subtensor-api/errors#alreadynoted)).
+
+- **NotNoted** — the preimage has no on-chain status record.
+- **AlreadyNoted** — the preimage is already on-chain.
+
+## Distinction from Too Few
+
+`NotNoted` and `TooFew` are both preimage pallet errors but they fire at different checks.
+`NotNoted` is the has-on-chain-status guard on the clear path, rejecting the request because the
+preimage has no on-chain status record. `TooFew` is the non-empty-list guard on the bulk-upgrade
+path, rejecting the request because the submitted hash list was empty
+([Subtensor API Errors: NotNoted](https://docs.learnbittensor.org/subtensor-api/errors#notnoted),
+[Subtensor API Errors: TooFew](https://docs.learnbittensor.org/subtensor-api/errors#toofew)).
+
+- **NotNoted** — the preimage has no on-chain status record.
+- **TooFew** — the bulk-upgrade request listed no preimage hashes.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the has-on-chain-status guard it represents on
+the preimage clear path. It does not report which preimage hashes are currently on-chain on a
+network or describe how to note a preimage that does not yet have an on-chain status record
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks),
+[Subtensor API Errors: NotNoted](https://docs.learnbittensor.org/subtensor-api/errors#notnoted)).
+
+## Further Reading
+
+- [Subtensor API Errors: NotNoted](https://docs.learnbittensor.org/subtensor-api/errors#notnoted)
+- [Subtensor API Errors: AlreadyNoted](https://docs.learnbittensor.org/subtensor-api/errors#alreadynoted)
+- [Subtensor API Errors: TooFew](https://docs.learnbittensor.org/subtensor-api/errors#toofew)
+- [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)
