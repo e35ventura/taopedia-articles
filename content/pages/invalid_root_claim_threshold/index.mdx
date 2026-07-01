@@ -1,0 +1,87 @@
+---
+title: "Invalid Root Claim Threshold"
+summary:
+  "How the InvalidRootClaimThreshold error blocks sudo_set_root_claim_threshold when the submitted
+  threshold exceeds the runtime's maximum allowed root-claim threshold value."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Invalid Root Claim Threshold
+infoboxCaption: Error raised when a root-claim threshold exceeds the allowed maximum.
+infoboxRows:
+  - label: Error
+    value: InvalidRootClaimThreshold
+  - label: Trigger
+    value: Submitted root-claim threshold is above the runtime maximum
+  - label: Checked in
+    value: sudo_set_root_claim_threshold
+  - label: Related concept
+    value: Root claims
+---
+
+# Invalid Root Claim Threshold
+
+`InvalidRootClaimThreshold` is a documented Subtensor error on the root-claims configuration path.
+The Subtensor API errors reference summarizes it as `Invalid value of root claim threshold`
+([Subtensor API Errors](https://docs.learnbittensor.org/subtensor-api/errors#invalidrootclaimthreshold)).
+
+## What It Means
+
+Root claims handle alpha dividends earned through Root Subnet staking. Automatic claims only process
+when accumulated dividends clear a configurable minimum threshold on a subnet
+([Root Claims](https://docs.learnbittensor.org/staking-and-delegation/root-claims)).
+
+`InvalidRootClaimThreshold` is the guard that rejects a threshold update when the submitted value
+exceeds the runtime's documented maximum. The `sudo_set_root_claim_threshold` call checks that the
+proposed threshold does not exceed the allowed ceiling before storing the new setting
+([Subtensor API Errors](https://docs.learnbittensor.org/subtensor-api/errors#invalidrootclaimthreshold),
+[Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)).
+
+The practical meaning is narrow: the call tried to set the root-claim threshold above the value the
+runtime accepts.
+
+## Why It Appears
+
+`InvalidRootClaimThreshold` is returned when `sudo_set_root_claim_threshold` receives a threshold
+value above the documented ceiling. Testing confirms the boundary directly: calls within range
+succeed, while a call above the maximum returns this error
+([Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs),
+[Subtensor test: claim_root.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/tests/claim_root.rs)).
+
+This is not a claim-execution error and not proof that root claims are disabled. It is the specific
+rejection for an out-of-range threshold configuration value.
+
+## Distinction from Invalid Num Root Claim
+
+`InvalidRootClaimThreshold` and `InvalidNumRootClaim` both appear on root-claims administration
+paths, but they reject different parameters. `InvalidNumRootClaim` is the bound check on the count
+configured through `sudo_set_num_root_claims`. `InvalidRootClaimThreshold` is the separate bound
+check on the threshold configured through `sudo_set_root_claim_threshold`
+([Subtensor API Errors: InvalidNumRootClaim](https://docs.learnbittensor.org/subtensor-api/errors#invalidnumrootclaim)).
+
+- **InvalidRootClaimThreshold** — the threshold value is above the allowed maximum.
+- **InvalidNumRootClaim** — the configured number of root claims is above the allowed maximum.
+
+## Distinction from Root Claims
+
+`InvalidRootClaimThreshold` and root claims are related, but they are different layers. Root claims
+name the dividend-processing flow for Root Subnet staking. `InvalidRootClaimThreshold` is the
+configuration error for one threshold that governs when automatic processing can occur on a subnet
+([Root Claims](https://docs.learnbittensor.org/staking-and-delegation/root-claims)).
+
+- **Root claims** — the flow that processes accumulated root-staking dividends.
+- **InvalidRootClaimThreshold** — the rejection for an out-of-range threshold setting on that flow.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the threshold-range check that raises it. It
+does not tell a reader what threshold value to choose in practice or when a live automatic claim
+will next occur; those depend on network state and the configured root-claims policy
+([Root Claims](https://docs.learnbittensor.org/staking-and-delegation/root-claims)).
+
+## Further Reading
+
+- [Subtensor API Errors](https://docs.learnbittensor.org/subtensor-api/errors#invalidrootclaimthreshold)
+- [Root Claims](https://docs.learnbittensor.org/staking-and-delegation/root-claims)
+- [Subtensor API Errors: InvalidNumRootClaim](https://docs.learnbittensor.org/subtensor-api/errors#invalidnumrootclaim)
+- [Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)
+- [Subtensor test: claim_root.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/tests/claim_root.rs)
