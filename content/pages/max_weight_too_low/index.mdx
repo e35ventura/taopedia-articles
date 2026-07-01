@@ -1,0 +1,92 @@
+---
+title: "Max Weight Too Low"
+summary:
+  "How the MaxWeightTooLow error blocks a multisig call execution when the maximum weight the caller
+  is willing to pay is insufficient to cover the dispatch weight of the stored call."
+category: "Wallets"
+tags: ["Wallets", "Errors", "Security"]
+infoboxTitle: Max Weight Too Low
+infoboxCaption:
+  Error raised when the caller's weight limit is below the stored call's dispatch weight.
+infoboxRows:
+  - label: Error
+    value: MaxWeightTooLow
+  - label: Pallet
+    value: multisig
+  - label: Trigger
+    value: Caller's maximum weight is below the dispatch weight of the stored multisig call
+  - label: Check type
+    value: Weight ceiling validation against stored call dispatch weight
+---
+
+# Max Weight Too Low
+
+`MaxWeightTooLow` is a multisig pallet error raised when the maximum weight a caller specifies they
+are willing to pay for executing a pending multisig call is less than the actual dispatch weight the
+stored call requires. The API errors reference describes it as "The maximum weight information
+provided was too low"
+([Subtensor API Errors: MaxWeightTooLow](https://docs.learnbittensor.org/subtensor-api/errors#maxweighttoolow)).
+
+## What It Means
+
+When the final signatory executes a pending multisig call, they submit a maximum weight parameter
+that caps the weight they accept responsibility for. The multisig pallet compares this ceiling
+against the actual dispatch weight of the stored call before executing. If the ceiling is too low,
+the call is rejected rather than executed at an uncapped cost
+([Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)).
+
+`MaxWeightTooLow` fires when the caller's specified maximum weight falls below the dispatch weight
+of the stored call
+([Subtensor API Errors: MaxWeightTooLow](https://docs.learnbittensor.org/subtensor-api/errors#maxweighttoolow),
+[Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)).
+
+This is a weight-ceiling rejection, not proof that the call does not exist, that approvals are
+insufficient, or that the timepoint is wrong.
+
+## Why It Appears
+
+This error appears when the maximum weight submitted by the executing signatory is set too low
+relative to the actual weight the stored call would consume. The multisig pallet uses this check to
+prevent the caller from inadvertently authorizing a call that costs more weight — and therefore more
+fees — than they expected ([Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)).
+
+The practical meaning is narrow: increase the maximum weight parameter to at least the dispatch
+weight of the stored call before resubmitting.
+
+## Distinction from Already Approved
+
+`MaxWeightTooLow` and `AlreadyApproved` both block actions on a pending multisig operation, but they
+check different things. `AlreadyApproved` fires when a signatory attempts to approve a call they
+have already approved. `MaxWeightTooLow` fires when the executing signatory's weight ceiling is too
+low for the stored call — an execution-phase check, not an approval-phase check
+([Subtensor API Errors: AlreadyApproved](https://docs.learnbittensor.org/subtensor-api/errors#alreadyapproved),
+[Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)).
+
+- **MaxWeightTooLow** — weight ceiling is below the stored call's dispatch weight at execution.
+- **AlreadyApproved** — this signatory has already approved the pending call.
+
+## Distinction from Wrong Timepoint
+
+`MaxWeightTooLow` and `WrongTimepoint` both block the execution of a pending multisig call, but on
+different parameters. `WrongTimepoint` fires when the timepoint the caller supplies does not match
+the block number and extrinsic index recorded when the operation was first submitted.
+`MaxWeightTooLow` fires when the timepoint matches but the caller's weight ceiling is insufficient
+([Subtensor API Errors: WrongTimepoint](https://docs.learnbittensor.org/subtensor-api/errors#wrongtimepoint),
+[Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)).
+
+- **MaxWeightTooLow** — timepoint is correct but the weight ceiling is too low.
+- **WrongTimepoint** — the supplied timepoint does not match the stored operation's timepoint.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the weight-ceiling check that raises it. It
+does not report the dispatch weight of any specific stored multisig call on chain; that is live
+chain state ([Multisig Wallets](https://docs.learnbittensor.org/keys/multisig),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: MaxWeightTooLow](https://docs.learnbittensor.org/subtensor-api/errors#maxweighttoolow)
+- [Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)
+- [Subtensor API Errors: AlreadyApproved](https://docs.learnbittensor.org/subtensor-api/errors#alreadyapproved)
+- [Subtensor API Errors: WrongTimepoint](https://docs.learnbittensor.org/subtensor-api/errors#wrongtimepoint)
