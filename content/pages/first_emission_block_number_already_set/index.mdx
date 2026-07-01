@@ -1,0 +1,127 @@
+---
+title: "First Emission Block Number Already Set"
+summary:
+  "How the FirstEmissionBlockNumberAlreadySet error blocks a repeat start call on a subnet whose
+  first emission block has already been recorded in chain state."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: First Emission Block Number Already Set
+infoboxCaption: Error raised when a subnet's start call has already been applied.
+infoboxRows:
+  - label: Error
+    value: FirstEmissionBlockNumberAlreadySet
+  - label: Trigger
+    value: FirstEmissionBlockNumber is already stored for the netuid
+  - label: Checked in
+    value: start_call path
+  - label: Related concept
+    value: Start call
+---
+
+# First Emission Block Number Already Set
+
+`FirstEmissionBlockNumberAlreadySet` means a start call targeted a subnet whose first emission block
+has already been written to chain state. The standard-errors reference describes it as "First
+emission block number already set"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#firstemissionblocknumberalreadyset)).
+
+The start call is the subnet-owner activation step that begins a subnet's first emission period.
+Once that block number is stored, the subnet's emission path is armed and a second start call on the
+same netuid is rejected at this gate
+([Start Call](https://docs.learnbittensor.org/subnets/create-a-subnet),
+[Subnet Is Active](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## What It Means
+
+Subnet registration and emission startup are separate milestones. Registration creates the subnet
+slot, owner, and initial state, while the start call records when emissions should begin for that
+netuid. `FirstEmissionBlockNumberAlreadySet` means that activation record is already present, so the
+chain will not accept another start call for the same subnet
+([Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet),
+[Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)).
+
+This is a one-time activation guard. The failure means the subnet has already passed the start-call
+step, not that registration is disabled or that the caller lacks subnet-owner permission.
+
+## Why It Appears
+
+This error appears when a subnet owner or automation submits a second start call on a netuid whose
+`FirstEmissionBlockNumber` storage entry is already set. That can happen when a client retries an
+activation that already succeeded, when scripts do not check whether emissions have started, or when
+a copied extrinsic targets an already-live subnet such as netuid 1 on Finney
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#firstemissionblocknumberalreadyset),
+[Subnet 1 on TaoStats](https://taostats.io/subnets/1)).
+
+When debugging a failed start call on a newly registered subnet, rule out earlier gates first.
+`SubnetNotExists` means the netuid has no subnet record. `BadOrigin` and `NotSubnetOwner` mean the
+signer is not authorized as the subnet owner. `NeedWaitingMoreBlocksToStarCall` means the
+registration-to-activation delay has not elapsed yet
+([Subtensor Standard Errors: SubnetNotExists](https://docs.learnbittensor.org/errors/subtensor#subnetnotexists),
+[Subtensor Standard Errors: BadOrigin](https://docs.learnbittensor.org/errors/subtensor#badorigin),
+[Subtensor Standard Errors: NotSubnetOwner](https://docs.learnbittensor.org/errors/subtensor#notsubnetowner),
+[Subtensor Standard Errors: NeedWaitingMoreBlocksToStarCall](https://docs.learnbittensor.org/errors/subtensor#needwaitingmoreblockstostarcall)).
+
+The practical meaning is narrow: the subnet's first emission block is already set, so another start
+call is not accepted.
+
+## Distinction from Need Waiting More Blocks To Start Call
+
+`FirstEmissionBlockNumberAlreadySet` and `NeedWaitingMoreBlocksToStarCall` both block start calls,
+but at opposite points in the activation lifecycle. `NeedWaitingMoreBlocksToStarCall` means the
+subnet exists and the owner is authorized, but the configured start-call delay after registration
+has not passed yet. `FirstEmissionBlockNumberAlreadySet` means the delay has already been satisfied
+and the first emission block was recorded, so activation cannot run again
+([Subtensor Standard Errors: NeedWaitingMoreBlocksToStarCall](https://docs.learnbittensor.org/errors/subtensor#needwaitingmoreblockstostarcall)).
+
+- **NeedWaitingMoreBlocksToStarCall** — the start call arrived before the activation delay ended.
+- **FirstEmissionBlockNumberAlreadySet** — the start call already succeeded once.
+
+## Distinction from Subnet Not Exists
+
+`FirstEmissionBlockNumberAlreadySet` and `SubnetNotExists` both appear when a start call names a
+problematic netuid, but they reject different conditions. `SubnetNotExists` means the targeted
+subnet is absent from chain state. `FirstEmissionBlockNumberAlreadySet` means the subnet exists and
+already has a stored first emission block
+([Subtensor Standard Errors: SubnetNotExists](https://docs.learnbittensor.org/errors/subtensor#subnetnotexists)).
+
+- **SubnetNotExists** — the targeted subnet does not exist.
+- **FirstEmissionBlockNumberAlreadySet** — the subnet exists and is already activated.
+
+## Distinction from Subnet Is Active
+
+`FirstEmissionBlockNumberAlreadySet` is the runtime rejection on a duplicate start call.
+`SubnetIsActive` is the hyperparameter flag that reports whether a subnet's emissions have started
+on a live netuid. A reader who sees this error on netuid 1 can treat the subnet as past activation
+and read the current active flag through subnet hyperparameter queries rather than resubmitting
+start call
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters),
+[Subnet Is Active](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+- **FirstEmissionBlockNumberAlreadySet** — a second start call was rejected.
+- **Subnet is active** — the boolean flag reporting whether emissions have started.
+
+## Distinction from Subnet Registration Disabled
+
+`FirstEmissionBlockNumberAlreadySet` and `SubNetRegistrationDisabled` both involve subnet lifecycle
+gates, but on different extrinsics. `FirstEmissionBlockNumberAlreadySet` is specific to the
+subnet-owner start call after registration. `SubNetRegistrationDisabled` blocks neuron registration
+on an existing subnet whose registration toggle is off
+([Subtensor Standard Errors: SubNetRegistrationDisabled](https://docs.learnbittensor.org/errors/subtensor#subnetregistrationdisabled)).
+
+- **FirstEmissionBlockNumberAlreadySet** — the subnet's start call already ran.
+- **SubNetRegistrationDisabled** — neuron registration is disabled on the subnet.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the one-time start-call guard it represents. It
+does not report whether a particular netuid has activated emissions, what block number was stored,
+or how to query live subnet hyperparameters; those depend on chain state at observation time
+([Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#firstemissionblocknumberalreadyset)
+- [Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet)
+- [Subtensor Standard Errors: NeedWaitingMoreBlocksToStarCall](https://docs.learnbittensor.org/errors/subtensor#needwaitingmoreblockstostarcall)
+- [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
