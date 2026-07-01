@@ -1,0 +1,72 @@
+---
+title: "Too Few Signatories"
+summary:
+  "How the TooFewSignatories error blocks a multisig call when the other_signatories list is empty,
+  leaving only the caller and making a multi-signature arrangement impossible."
+category: "Wallets"
+tags: ["Wallets", "Errors", "Security"]
+infoboxTitle: Too Few Signatories
+infoboxCaption: Error raised when the other_signatories list in a multisig call contains no entries.
+infoboxRows:
+  - label: Error
+    value: TooFewSignatories
+  - label: Pallet
+    value: multisig
+  - label: Trigger
+    value: other_signatories list is empty
+  - label: Check type
+    value: Non-empty check on the co-signer list
+---
+
+# Too Few Signatories
+
+`TooFewSignatories` is a multisig pallet error raised when a multisig call is submitted with an
+empty co-signer list. The API errors reference describes it as "There are too few signatories in the
+list"
+([Subtensor API Errors: TooFewSignatories](https://docs.learnbittensor.org/subtensor-api/errors#toofewsignatories)).
+
+## What It Means
+
+Every multisig call — whether submitting an approval via `as_multi` or `approve_as_multi`, or
+cancelling via `cancel_as_multi` — requires a list of the other accounts that are part of the
+multisig arrangement, passed as `other_signatories`. The multisig address is derived from this list
+together with the caller and the threshold. If `other_signatories` is empty, the caller is the only
+signer, which means no multi-signature arrangement can exist
+([Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)).
+
+`TooFewSignatories` fires when `other_signatories` is provided as an empty list. A valid multisig
+arrangement must include at least one other account alongside the caller
+([Subtensor API Errors: TooFewSignatories](https://docs.learnbittensor.org/subtensor-api/errors#toofewsignatories),
+[Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)).
+
+## Why It Appears
+
+This error appears when the `other_signatories` parameter contains no entries. The minimum valid
+configuration for a multisig is two accounts: the caller plus at least one other signatory. A call
+with zero other signatories is a single-signer call and does not meet that minimum
+([Subtensor API Errors: TooFewSignatories](https://docs.learnbittensor.org/subtensor-api/errors#toofewsignatories)).
+
+## Distinction from Too Many Signatories
+
+`TooFewSignatories` and `TooManySignatories` both block multisig calls based on the size of the
+co-signer list, but at opposite ends. `TooFewSignatories` fires when `other_signatories` is empty.
+`TooManySignatories` fires when `other_signatories` contains more entries than the network's
+configured maximum number of signatories
+([Subtensor API Errors: TooManySignatories](https://docs.learnbittensor.org/subtensor-api/errors#toomanysignatories),
+[Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)).
+
+- **TooFewSignatories** — other_signatories is empty; at least one co-signer is required.
+- **TooManySignatories** — other_signatories exceeds the network maximum.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the non-empty check on the co-signer list that
+raises it. It does not describe how the multisig address is derived from the signatory list or what
+threshold values are valid ([Multisig Wallets](https://docs.learnbittensor.org/keys/multisig),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: TooFewSignatories](https://docs.learnbittensor.org/subtensor-api/errors#toofewsignatories)
+- [Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)
+- [Subtensor API Errors: TooManySignatories](https://docs.learnbittensor.org/subtensor-api/errors#toomanysignatories)
