@@ -1,0 +1,94 @@
+---
+title: "Duplicate Offence Report"
+summary:
+  "How the DuplicateOffenceReport error blocks a GRANDPA equivocation report when the same
+  equivocation has already been reported."
+category: "Consensus"
+tags: ["Consensus", "Errors"]
+infoboxTitle: Duplicate Offence Report
+infoboxCaption: Error raised when a GRANDPA equivocation has already been reported.
+infoboxRows:
+  - label: Error
+    value: DuplicateOffenceReport
+  - label: Pallet
+    value: grandpa
+  - label: Trigger
+    value: Equivocation report submitted for an equivocation already on record
+  - label: Check type
+    value: Already-on-record guard on the equivocation report path
+---
+
+# Duplicate Offence Report
+
+`DuplicateOffenceReport` is a grandpa pallet error raised when a GRANDPA equivocation report covers
+an equivocation that has already been reported. The API errors reference summarizes it as "A given
+equivocation report is valid but already previously reported."
+([Subtensor API Errors: DuplicateOffenceReport](https://docs.learnbittensor.org/subtensor-api/errors#duplicateoffencereport)).
+
+## What It Means
+
+GRANDPA is the block finality gadget on Subtensor. When a validator produces two conflicting
+finality votes for the same round, that pair of votes is an equivocation, and a reporter can submit
+an equivocation report describing the offence. The chain keeps a record of each equivocation it has
+already processed. `DuplicateOffenceReport` means the submitted report describes an equivocation the
+chain has already recorded, so the chain rejects the duplicate report rather than processing the
+same offence twice
+([Subtensor API Errors: DuplicateOffenceReport](https://docs.learnbittensor.org/subtensor-api/errors#duplicateoffencereport)).
+
+This is the already-on-record guard on the equivocation report path. It does not, by itself, mean
+the equivocation proof was invalid, that the key ownership proof was invalid, or that the
+equivocation was reported through a different extrinsic.
+
+## Why It Appears
+
+This error appears when a GRANDPA equivocation report is processed and the chain already has a
+record of the same equivocation. The pinned grandpa-pallet source describes the check: after the
+equivocation proof and key ownership proof are validated, the report path submits the offence to the
+chain's offence reporting system. When that submission returns an error because the offence is
+already on record, the report path maps the error to `Error::<T>::DuplicateOffenceReport`
+([opentensor/polkadot-sdk: substrate/frame/grandpa/src/equivocation.rs#L231](https://github.com/opentensor/polkadot-sdk/blob/7cc54bf2d50ae3921d718736dfeb0de9468539c7/substrate/frame/grandpa/src/equivocation.rs#L231)).
+
+The practical meaning is narrow: the equivocation you reported has already been processed by the
+chain, so the duplicate report is rejected.
+
+## Distinction from Invalid Equivocation Proof
+
+`DuplicateOffenceReport` and `InvalidEquivocationProof` are both grandpa-pallet errors on the
+equivocation report path, but they fire at different stages. `DuplicateOffenceReport` is the
+already-on-record guard that fires after the equivocation proof is validated.
+`InvalidEquivocationProof` is the equivocation-proof-validation guard that fires when the submitted
+proof is structurally invalid
+([Subtensor API Errors: DuplicateOffenceReport](https://docs.learnbittensor.org/subtensor-api/errors#duplicateoffencereport),
+[Subtensor API Errors: InvalidEquivocationProof](https://docs.learnbittensor.org/subtensor-api/errors#invalidequivocationproof)).
+
+- **DuplicateOffenceReport** — the equivocation proof is valid but the equivocation is already on
+  record.
+- **InvalidEquivocationProof** — the equivocation proof itself is invalid.
+
+## Distinction from Invalid Key Ownership Proof
+
+`DuplicateOffenceReport` and `InvalidKeyOwnershipProof` are both grandpa-pallet errors on the
+equivocation report path, but they fire at different stages. `DuplicateOffenceReport` is the
+already-on-record guard that fires after both proofs are validated. `InvalidKeyOwnershipProof` is
+the key-ownership-proof-validation guard that fires when the submitted key ownership proof is
+structurally invalid
+([Subtensor API Errors: DuplicateOffenceReport](https://docs.learnbittensor.org/subtensor-api/errors#duplicateoffencereport),
+[Subtensor API Errors: InvalidKeyOwnershipProof](https://docs.learnbittensor.org/subtensor-api/errors#invalidkeyownershipproof)).
+
+- **DuplicateOffenceReport** — both proofs are valid but the equivocation is already on record.
+- **InvalidKeyOwnershipProof** — the key ownership proof itself is invalid.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the already-on-record guard it represents on
+the GRANDPA equivocation report path. It does not report which equivocations the chain currently has
+on record, list the equivocation-report extrinsic, or describe the offence reporting system's policy
+for handling repeats
+([Subtensor API Errors: DuplicateOffenceReport](https://docs.learnbittensor.org/subtensor-api/errors#duplicateoffencereport)).
+
+## Further Reading
+
+- [Subtensor API Errors: DuplicateOffenceReport](https://docs.learnbittensor.org/subtensor-api/errors#duplicateoffencereport)
+- [Subtensor API Errors: InvalidEquivocationProof](https://docs.learnbittensor.org/subtensor-api/errors#invalidequivocationproof)
+- [Subtensor API Errors: InvalidKeyOwnershipProof](https://docs.learnbittensor.org/subtensor-api/errors#invalidkeyownershipproof)
+- [opentensor/polkadot-sdk: frame/grandpa/src/equivocation.rs#L231](https://github.com/opentensor/polkadot-sdk/blob/7cc54bf2d50ae3921d718736dfeb0de9468539c7/substrate/frame/grandpa/src/equivocation.rs#L231)
