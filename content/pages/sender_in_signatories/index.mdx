@@ -1,0 +1,92 @@
+---
+title: "Sender In Signatories"
+summary:
+  "How the SenderInSignatories error blocks a multisig call when the sender's own address appears in
+  the other_signatories list."
+category: "Wallets"
+tags: ["Wallets", "Errors", "Security"]
+infoboxTitle: Sender In Signatories
+infoboxCaption:
+  Error raised when the multisig proposer includes their own address in other_signatories.
+infoboxRows:
+  - label: Error
+    value: SenderInSignatories
+  - label: Pallet
+    value: multisig
+  - label: Trigger
+    value: Sender's address appears in the other_signatories list
+  - label: Check type
+    value: Sender exclusion from other_signatories
+---
+
+# Sender In Signatories
+
+`SenderInSignatories` is a multisig pallet error raised when the account submitting a multisig call
+includes its own address in the `other_signatories` parameter. The API errors reference describes it
+as "The sender was contained in the other signatories; it shouldn't be"
+([Subtensor API Errors: SenderInSignatories](https://docs.learnbittensor.org/subtensor-api/errors#senderinsignatories)).
+
+## What It Means
+
+In a Bittensor multisig, one signatory proposes the call and the remaining co-signatories — the
+"others" — provide their approvals until the threshold is reached. The multisig documentation
+describes this as the action being "agreed by some threshold of others" after the proposer initiates
+it ([Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)).
+
+Because the proposer is already the sender of the call, they are not one of the "others." Including
+the sender's own address in `other_signatories` conflicts with that separation and raises
+`SenderInSignatories`
+([Subtensor API Errors: SenderInSignatories](https://docs.learnbittensor.org/subtensor-api/errors#senderinsignatories),
+[Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)).
+
+This is a sender-exclusion rejection, not proof that the signatories list is empty, that the
+signatories are out of order, or that the threshold is below the minimum.
+
+## Why It Appears
+
+This error appears when the `other_signatories` list supplied to the multisig call contains the
+sender's own account address. The multisig system tracks the proposer as the initiating account and
+the remaining co-signatories separately; a signatory listed in `other_signatories` should be a
+different account from the sender
+([Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)).
+
+The practical meaning is narrow: remove the sender's own address from the `other_signatories` list
+before submitting.
+
+## Distinction from Signatories Out of Order
+
+`SenderInSignatories` and `SignatoriesOutOfOrder` both block multisig calls on the signatories list,
+but they catch different problems. `SignatoriesOutOfOrder` fires when the `other_signatories` list
+contains the correct accounts but they are not in the required order. `SenderInSignatories` fires
+when the sender's own address is present in the list, regardless of ordering
+([Subtensor API Errors: SignatoriesOutOfOrder](https://docs.learnbittensor.org/subtensor-api/errors#signatoriesoutoforder),
+[Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)).
+
+- **SenderInSignatories** — the sender's own address is in other_signatories.
+- **SignatoriesOutOfOrder** — correct accounts listed but not in required order.
+
+## Distinction from Already Approved
+
+`SenderInSignatories` and `AlreadyApproved` both block multisig approval actions, but at different
+conditions. `AlreadyApproved` fires when a signatory has already approved the call and tries to
+approve it again. `SenderInSignatories` fires when the sender's address appears in
+`other_signatories`, before any approval state is checked
+([Subtensor API Errors: AlreadyApproved](https://docs.learnbittensor.org/subtensor-api/errors#alreadyapproved),
+[Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)).
+
+- **SenderInSignatories** — sender's address is listed among the other signatories.
+- **AlreadyApproved** — this signatory has already approved the pending call.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the sender-exclusion check that raises it. It
+does not report the current approval state of any multisig call on chain; that is live chain state
+([Multisig Wallets](https://docs.learnbittensor.org/keys/multisig),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: SenderInSignatories](https://docs.learnbittensor.org/subtensor-api/errors#senderinsignatories)
+- [Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)
+- [Subtensor API Errors: SignatoriesOutOfOrder](https://docs.learnbittensor.org/subtensor-api/errors#signatoriesoutoforder)
+- [Subtensor API Errors: AlreadyApproved](https://docs.learnbittensor.org/subtensor-api/errors#alreadyapproved)
