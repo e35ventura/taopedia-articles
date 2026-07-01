@@ -1,0 +1,99 @@
+---
+title: "Alpha Values"
+summary:
+  "How the AlphaValues subnet hyperparameter stores the paired alpha low and alpha high bounds that
+  define the liquid alpha range on a Bittensor subnet."
+category: "Consensus"
+tags: ["Consensus", "Subnets"]
+infoboxTitle: Alpha Values
+infoboxCaption: Paired lower and upper bounds for liquid alpha on a subnet.
+infoboxRows:
+  - label: Parameter
+    value: AlphaValues
+  - label: Type
+    value: Paired alpha_low and alpha_high
+  - label: Set by
+    value: Subnet owner
+  - label: Setter
+    value: sudo_set_alpha_values
+  - label: Example
+    value: netuid 1
+---
+
+# Alpha Values
+
+Alpha values is the per-subnet hyperparameter, listed in the documentation as `AlphaValues`, that
+stores the paired `alpha_low` and `alpha_high` bounds for liquid alpha on a subnet. The reference
+describes it as the setting that sets the values for liquid alpha and notes that modifying it
+requires supplying both bounds together
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## What It Controls
+
+Liquid alpha varies the bond-smoothing factor by how well a validator's weights align with
+consensus. `AlphaValues` is the combined storage for the lower and upper endpoints of that range.
+The bounds do not turn liquid alpha on by themselves; they define the range the feature may use once
+[liquid alpha enabled](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#liquidalphaenabled)
+is true on the subnet
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)).
+
+The reference documents the setter as `sudo_set_alpha_values`, exposed in tooling as
+`btcli sudo set --param sudo_set_alpha_values`, with subnet-owner permission required. Because both
+endpoints are written in one update, a change to either bound is submitted as a paired edit of the
+whole range rather than as an isolated change to one endpoint alone
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## Distinction from Alpha Low and Alpha High
+
+Alpha low and alpha high are the readable endpoints of the same paired setting. `AlphaValues` is the
+combined hyperparameter row that stores both bounds together, while alpha low and alpha high name
+the lower and upper ends readers see in a subnet's hyperparameter table
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+- **Alpha values** — the paired lower and upper bound setting.
+- **Alpha low / alpha high** — the two endpoints of that range.
+
+## Distinction from Liquid Alpha Enabled
+
+Liquid alpha enabled is the per-subnet toggle that turns variable bond smoothing on or off.
+`AlphaValues` only defines the range that feature may use after the toggle is true. A subnet can
+store tuned bounds while liquid alpha remains disabled, in which case the bounds are configured but
+not consulted on the bond path
+([Subnet Hyperparameters: LiquidAlphaEnabled](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#liquidalphaenabled),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+- **Liquid alpha enabled** — whether variable bond-smoothing alpha is active.
+- **Alpha values** — the paired bounds that bracket the range when the feature is on.
+
+## Distinction from Alpha Sigmoid Steepness
+
+Alpha values fixes where the liquid-alpha coefficient may land, while alpha sigmoid steepness shapes
+how sharply alignment maps into movement inside that range. Changing the bounds moves the endpoints;
+changing steepness changes the response curve between them
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)).
+
+- **Alpha values** — the lower and upper endpoints of the liquid-alpha range.
+- **Alpha sigmoid steepness** — the sharpness of the alignment response inside that range.
+
+## Chain Reads for netuid 1
+
+Readers can verify the live paired bounds for the documented example netuid with
+`btcli subnet hyperparameters --netuid 1 --network finney`, which lists `alpha_low` and `alpha_high`
+among the per-subnet values for that netuid
+([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Reader Boundary
+
+This page defines the `AlphaValues` hyperparameter and the paired-update rule for its bounds. It
+does not report the live bound values on any particular subnet or whether liquid alpha is enabled
+there; those are separate per-netuid reads
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## Further Reading
+
+- [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+- [Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)
+- [Glossary: Validator-Miner Bonds](https://docs.learnbittensor.org/resources/glossary#validator-miner-bonds)
