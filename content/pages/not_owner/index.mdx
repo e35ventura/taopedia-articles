@@ -1,0 +1,76 @@
+---
+title: "Not Owner"
+summary:
+  "How the NotOwner error blocks a multisig cancellation or deposit update when the caller is not
+  the account that originally created the pending operation."
+category: "Wallets"
+tags: ["Wallets", "Errors", "Security"]
+infoboxTitle: Not Owner
+infoboxCaption:
+  Error raised when a non-creator account attempts to cancel or update a pending multisig operation.
+infoboxRows:
+  - label: Error
+    value: NotOwner
+  - label: Pallet
+    value: multisig
+  - label: Trigger
+    value: Caller is not the account that originally created the pending multisig operation
+  - label: Check type
+    value: Creator identity check on cancel or deposit-update paths
+---
+
+# Not Owner
+
+`NotOwner` is a multisig pallet error raised when an account attempts to cancel a pending multisig
+operation or update its deposit but is not the account that originally created that operation. The
+API errors reference describes it as "Only the account that originally created the multisig is able
+to cancel it or update its deposits"
+([Subtensor API Errors: NotOwner](https://docs.learnbittensor.org/subtensor-api/errors#notowner)).
+
+## What It Means
+
+Bittensor multisig wallets let a group of signatories approve a pending call before it executes
+([Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)). When a multisig operation
+starts, one account is recorded as its creator. `NotOwner` fires when a different account tries to
+cancel that operation through `cancelAsMulti` or update its reserved deposit through `pokeDeposit`
+([Subtensor API Errors: NotOwner](https://docs.learnbittensor.org/subtensor-api/errors#notowner),
+[Subtensor API Extrinsics: cancelAsMulti](https://docs.learnbittensor.org/subtensor-api/extrinsics#cancelasmulti-threshold-u16-other_signatories-vec-timepoint-timepoint-blocknumberfor-call_hash-u8-32),
+[Subtensor API Extrinsics: pokeDeposit](https://docs.learnbittensor.org/subtensor-api/extrinsics#pokedeposit-threshold-u16-other_signatories-vec-call_hash-u8-32)).
+
+This is a creator-identity rejection, not proof that the pending operation does not exist or that
+the caller is not a registered signatory.
+
+## Why It Appears
+
+This error appears when a signatory or other account submits `cancelAsMulti` or `pokeDeposit` for a
+pending multisig operation they did not create
+([Subtensor API Errors: NotOwner](https://docs.learnbittensor.org/subtensor-api/errors#notowner),
+[Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)).
+
+The practical meaning is narrow: only the original creator can cancel the operation or adjust its
+deposit.
+
+## Distinction from Not Found
+
+`NotOwner` and `NotFound` both block multisig cancellation paths, but they name different failures.
+`NotFound` means the multisig operation is not present in storage. `NotOwner` means an operation
+does exist, but the caller is not its creator
+([Subtensor API Errors: NotFound](https://docs.learnbittensor.org/subtensor-api/errors#notfound),
+[Subtensor API Errors: NotOwner](https://docs.learnbittensor.org/subtensor-api/errors#notowner)).
+
+- **NotFound** — no matching multisig operation is stored for the call hash.
+- **NotOwner** — a matching operation exists, but the caller did not create it.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the creator check that raises it. It does not
+report who created any specific pending multisig operation on chain; that is live chain state
+([Multisig Wallets](https://docs.learnbittensor.org/keys/multisig),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: NotOwner](https://docs.learnbittensor.org/subtensor-api/errors#notowner)
+- [Subtensor API Errors: NotFound](https://docs.learnbittensor.org/subtensor-api/errors#notfound)
+- [Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)
+- [Subtensor API Extrinsics: multisig](https://docs.learnbittensor.org/subtensor-api/extrinsics#multisig)
