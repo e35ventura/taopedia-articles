@@ -12,15 +12,15 @@ infoboxRows:
     value: TransferDisallowed
   - label: Trigger
     value: Transfer toggle is off for the origin or destination subnet
-  - label: Checked in
-    value: transfer_stake and related move paths
+  - label: Scope
+    value: Coldkey-to-coldkey stake transfers
   - label: Related concept
     value: ToggleTransfer hyperparameter
 ---
 
 # Transfer Disallowed
 
-`TransferDisallowed` means a stake-transfer call tried to move delegated alpha between coldkeys on a
+TransferDisallowed means a stake-transfer call tried to move delegated alpha between coldkeys on a
 subnet where the transfer toggle was off. The standard-errors reference describes it as "Transfers
 are disallowed on this subnet"
 ([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#transferdisallowed),
@@ -31,13 +31,13 @@ are disallowed on this subnet"
 Transferring stake changes which coldkey owns a staked position without unstaking and restaking
 ([Transferring Stake](https://docs.learnbittensor.org/staking-and-delegation/delegation)).
 
-Each subnet exposes a transfer toggle through the `ToggleTransfer` hyperparameter. When that setting
+Each subnet exposes a transfer toggle through the ToggleTransfer hyperparameter. When that setting
 is false on a netuid, coldkey-to-coldkey stake transfers are blocked there
 ([Subnet Hyperparameters: ToggleTransfer](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#toggletransfer)).
 
-`TransferDisallowed` is the policy rejection when a transfer call names such a subnet. On
-within-subnet transfers, the runtime checks the origin netuid. On cross-subnet transfers, it checks
-both the origin and destination netuids before the move proceeds
+TransferDisallowed is the policy rejection when a transfer call names such a subnet. Within-subnet
+transfers depend on the origin netuid toggle. Cross-subnet transfers require the toggle to allow
+transfers on both the origin and destination netuids
 ([Subnet Hyperparameters: ToggleTransfer](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#toggletransfer)).
 
 This is a subnet policy gate, not proof that the signing coldkey lacks permission for the hotkey or
@@ -56,10 +56,11 @@ Readers can confirm the live transfer toggle for a subnet through the hyperparam
 retrying a stake transfer
 ([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
 
-When debugging, compare against other stake-move rejections. `SubtokenDisabled` means subtoken
-trading is turned off on the subnet. `AccountRejectsLockedAlpha` means the destination coldkey has
-not opted in to receive incoming locked alpha. `NonAssociatedColdKey` means the signing coldkey does
-not own the hotkey named in the call
+When debugging, compare against other stake-move rejections. [[subtoken_disabled|Subtoken Disabled]]
+means subtoken trading is turned off on the subnet.
+[[account_rejects_locked_alpha|Account Rejects Locked Alpha]] means the destination coldkey has not
+opted in to receive incoming locked alpha. [[non_associated_cold_key|Non Associated Cold Key]] means
+the signing coldkey does not own the hotkey named in the call
 ([Subtensor Standard Errors: SubtokenDisabled](https://docs.learnbittensor.org/errors/subtensor#subtokendisabled),
 [Subtensor Standard Errors: NonAssociatedColdKey](https://docs.learnbittensor.org/errors/subtensor#nonassociatedcoldkey)).
 
@@ -68,35 +69,27 @@ call.
 
 ## Distinction from Subtoken Disabled
 
-`TransferDisallowed` and `SubtokenDisabled` both block stake-management calls, but they test
-different subnet switches. `SubtokenDisabled` means `SubtokenEnabled` is false and pool-backed
-subtoken trading is unavailable on the subnet. `TransferDisallowed` means the transfer toggle is off
+TransferDisallowed and [[subtoken_disabled|Subtoken Disabled]] both block stake-management calls,
+but they test different subnet switches. Subtoken Disabled means subtoken trading is unavailable on
+the subnet because SubtokenEnabled is false. Transfer Disallowed means the transfer toggle is off
 and coldkey-to-coldkey stake transfers are blocked even when other stake actions may still be open
 ([Subtensor Standard Errors: SubtokenDisabled](https://docs.learnbittensor.org/errors/subtensor#subtokendisabled)).
 
-- **TransferDisallowed** — the transfer toggle blocks coldkey stake transfers.
-- **SubtokenDisabled** — subtoken trading is disabled on the subnet.
-
 ## Distinction from Account Rejects Locked Alpha
 
-`TransferDisallowed` and `AccountRejectsLockedAlpha` both stop stake moves, but at different layers.
-`TransferDisallowed` is the subnet-wide transfer toggle. `AccountRejectsLockedAlpha` means the
-destination coldkey rejects incoming locked alpha on an otherwise permitted transfer path
+TransferDisallowed and [[account_rejects_locked_alpha|Account Rejects Locked Alpha]] both stop stake
+moves, but at different layers. Transfer Disallowed is the subnet-wide transfer toggle. Account
+Rejects Locked Alpha means the destination coldkey rejects incoming locked alpha on an otherwise
+permitted transfer path
 ([Subtensor Standard Errors: AccountRejectsLockedAlpha](https://docs.learnbittensor.org/errors/subtensor#accountrejectslockedalpha)).
-
-- **TransferDisallowed** — stake transfers are disabled on the subnet.
-- **AccountRejectsLockedAlpha** — the destination coldkey rejects incoming locked alpha.
 
 ## Distinction from Non Associated Cold Key
 
-`TransferDisallowed` and `NonAssociatedColdKey` both block stake-transfer calls, but at different
-stages. `NonAssociatedColdKey` means the signing coldkey is not paired with the hotkey named in the
-call. `TransferDisallowed` means the subnet policy forbids transfers even when coldkey-hotkey
-pairing would otherwise pass
+TransferDisallowed and [[non_associated_cold_key|Non Associated Cold Key]] both block stake-transfer
+calls, but for different reasons. Non Associated Cold Key means the signing coldkey is not paired
+with the hotkey named in the call. Transfer Disallowed means the subnet policy forbids transfers
+even when coldkey-hotkey pairing would otherwise pass
 ([Subtensor Standard Errors: NonAssociatedColdKey](https://docs.learnbittensor.org/errors/subtensor#nonassociatedcoldkey)).
-
-- **TransferDisallowed** — the subnet transfer toggle is off.
-- **NonAssociatedColdKey** — the coldkey does not own the named hotkey.
 
 ## Reader Boundary
 
