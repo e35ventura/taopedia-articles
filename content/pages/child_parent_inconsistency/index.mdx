@@ -1,0 +1,116 @@
+---
+title: "Child Parent Inconsistency"
+summary:
+  "How the ChildParentInconsistency error blocks a set_children call when a submitted hotkey would
+  hold both parent and child roles for the same pivot on a subnet."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Child Parent Inconsistency
+infoboxCaption:
+  Error raised when a hotkey would be both a child and a parent of the same pivot on a subnet.
+infoboxRows:
+  - label: Error
+    value: ChildParentInconsistency
+  - label: Trigger
+    value: A listed hotkey overlaps the pivot's opposite role set
+  - label: Checked in
+    value: set_children extrinsic
+  - label: Scope
+    value: Per-subnet parent-child relations (e.g. netuid 1)
+---
+
+# Child Parent Inconsistency
+
+`ChildParentInconsistency` means a child-hotkey update would place the same hotkey on both sides of
+a parent-child relationship for one pivot on a subnet. The Subtensor API errors reference summarizes
+it as "Violating the rules of Childkey-Parentkey consistency"
+([Subtensor API Errors: ChildParentInconsistency](https://docs.learnbittensor.org/subtensor-api/errors#childparentinconsistency)).
+
+[Child hotkeys](https://docs.learnbittensor.org/subnets/child-hotkeys) let a parent delegate a share
+of stake to separate validating keys per subnet. The chain stores those roles per netuid so a pivot
+hotkey can have its own child list and parent list without mixing the two directions on the same
+account ([Child Hotkeys](https://docs.learnbittensor.org/subnets/child-hotkeys)).
+
+## What It Means
+
+When a parent submits a new child list through `set_children`, the runtime checks that none of the
+listed children also appear among the pivot's existing parents on that netuid. The same bipartite
+rule applies when parent links are updated: a hotkey cannot sit in both role sets for the same pivot
+on the same subnet
+([Subtensor API Errors: ChildParentInconsistency](https://docs.learnbittensor.org/subtensor-api/errors#childparentinconsistency),
+[Child Hotkeys](https://docs.learnbittensor.org/subnets/child-hotkeys)).
+
+So when this error appears on netuid 1 or any other subnet, the immediate meaning is narrow: the
+call would assign overlapping parent and child roles to at least one hotkey relative to the signing
+pivot. It does not, by itself, say anything about duplicate entries, list length, or proportion
+totals.
+
+## Why It Appears
+
+This error appears when automation or a wallet submits a child-hotkey list that names a hotkey the
+pivot already treats as a parent on that netuid, or when a parent-side update would reverse that
+overlap. That can happen when lists are merged from different sources, when a hotkey that already
+delegates upward is also added as a downward child, or when role state changed between planning and
+submission ([Child Hotkeys](https://docs.learnbittensor.org/subnets/child-hotkeys)).
+
+When debugging a failed `set_children` call on a subnet such as netuid 1, rule out role overlap
+before assuming a duplicate-entry, self-loop, count, or proportion failure. `InvalidChild` means the
+parent hotkey was included in its own child list. `DuplicateChild` means the same child hotkey was
+listed twice. `TooManyChildren` means more than five children were submitted. `ProportionOverflow`
+means the combined proportions do not fit
+([Subtensor Standard Errors: InvalidChild](https://docs.learnbittensor.org/errors/subtensor#invalidchild),
+[Subtensor Standard Errors: DuplicateChild](https://docs.learnbittensor.org/errors/subtensor#duplicatechild),
+[Subtensor Standard Errors: TooManyChildren](https://docs.learnbittensor.org/errors/subtensor#toomanychildren),
+[Subtensor Standard Errors: ProportionOverflow](https://docs.learnbittensor.org/errors/subtensor#proportionoverflow)).
+
+The practical meaning is narrow: one hotkey cannot simultaneously be a child and a parent of the
+same pivot on that subnet.
+
+## Distinction from Invalid Child
+
+`ChildParentInconsistency` and `InvalidChild` both involve hotkey identity in a submitted child
+list, but they reject different defects. `InvalidChild` means the pivot hotkey was included as its
+own child, creating a self-loop. `ChildParentInconsistency` means a different hotkey would occupy
+both the child and parent role sets for the same pivot
+([Subtensor Standard Errors: InvalidChild](https://docs.learnbittensor.org/errors/subtensor#invalidchild)).
+
+- **ChildParentInconsistency** — a hotkey would be both child and parent of the pivot.
+- **InvalidChild** — the pivot hotkey appears in its own child list.
+
+## Distinction from Duplicate Child
+
+`ChildParentInconsistency` and `DuplicateChild` both block invalid child lists, but at different
+checks. `DuplicateChild` means the same child hotkey was named more than once inside one submitted
+list. `ChildParentInconsistency` means a listed hotkey already holds the opposite parent-child role
+relative to the pivot on that netuid
+([Subtensor Standard Errors: DuplicateChild](https://docs.learnbittensor.org/errors/subtensor#duplicatechild)).
+
+- **ChildParentInconsistency** — a hotkey overlaps the pivot's opposite role set.
+- **DuplicateChild** — the same child hotkey is listed more than once.
+
+## Distinction from Too Many Children
+
+`ChildParentInconsistency` and `TooManyChildren` are both raised while validating a submitted child
+list, but they guard different properties. `TooManyChildren` rejects lists with more than five child
+entries. `ChildParentInconsistency` rejects role overlap between the submitted children and the
+pivot's existing parents
+([Subtensor Standard Errors: TooManyChildren](https://docs.learnbittensor.org/errors/subtensor#toomanychildren)).
+
+- **ChildParentInconsistency** — a hotkey would hold both roles for the pivot.
+- **TooManyChildren** — the child list has more than five entries.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the bipartite role-separation check that raises
+it. It does not describe childkey take, minimum parent stake requirements, or the live child list on
+a subnet; those are separate topics
+([Child Hotkeys](https://docs.learnbittensor.org/subnets/child-hotkeys),
+[Chain Rate Limits: Child hotkey operations rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#child-hotkey-operations-rate-limit)).
+
+## Further Reading
+
+- [Subtensor API Errors: ChildParentInconsistency](https://docs.learnbittensor.org/subtensor-api/errors#childparentinconsistency)
+- [Subtensor Standard Errors: InvalidChild](https://docs.learnbittensor.org/errors/subtensor#invalidchild)
+- [Subtensor Standard Errors: DuplicateChild](https://docs.learnbittensor.org/errors/subtensor#duplicatechild)
+- [Subtensor Standard Errors: TooManyChildren](https://docs.learnbittensor.org/errors/subtensor#toomanychildren)
+- [Child Hotkeys](https://docs.learnbittensor.org/subnets/child-hotkeys)
