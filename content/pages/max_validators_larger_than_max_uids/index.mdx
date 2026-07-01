@@ -1,0 +1,113 @@
+---
+title: "Max Validators Larger Than Max UIDs"
+summary:
+  "How the MaxValidatorsLargerThanMaxUIds error blocks sudo_set_max_allowed_validators when the
+  submitted validator cap exceeds the subnet's maximum allowed UIDs."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Max Validators Larger Than Max UIDs
+infoboxCaption: Error raised when the validator cap is above the subnet's max-UID ceiling.
+infoboxRows:
+  - label: Error
+    value: MaxValidatorsLargerThanMaxUIds
+  - label: Trigger
+    value: max_allowed_validators > get_max_allowed_uids(netuid)
+  - label: Checked in
+    value: sudo_set_max_allowed_validators extrinsic
+  - label: Check type
+    value: Validator-cap comparison against max allowed UIDs
+---
+
+# Max Validators Larger Than Max UIDs
+
+`MaxValidatorsLargerThanMaxUIds` is an admin-utils pallet error raised by
+`sudo_set_max_allowed_validators`. The pallet defines it as "The maximum number of subnet validators
+must be less than the maximum number of allowed UIDs in the subnet"
+([Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+## What It Means
+
+Each subnet stores both a maximum allowed UID count and a maximum allowed validator count. The
+`sudo_set_max_allowed_validators` extrinsic compares the submitted validator cap against the
+subnet's current `get_max_allowed_uids` value and returns `MaxValidatorsLargerThanMaxUIds` when the
+validator cap is larger
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+The check requires the validator cap to be less than or equal to the max-UID ceiling already stored
+for that netuid. A submitted value above that ceiling is rejected before the new validator cap is
+written
+([Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+This is a composition rejection between two subnet caps, not proof that the submitted netuid has no
+subnet record or that the caller lacks root permission.
+
+## Why It Appears
+
+This error appears when a root-signed `sudo_set_max_allowed_validators` call names a validator cap
+above the subnet's stored max-UID limit. That can happen when a client updates the validator ceiling
+before checking the current max-UID value for the same netuid, or when the two parameters are edited
+in the wrong order
+([Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+When debugging, compare against other rejections on the same call. `SubnetDoesNotExist` means the
+submitted netuid has no subnet record. `MaxAllowedUIdsLessThanCurrentUIds` is the separate rejection
+on `sudo_set_max_allowed_uids` when the proposed max-UID value is below the subnet's current UID
+count ([Subnet Does Not Exist](https://docs.learnbittensor.org/errors/subtensor#subnetdoesnotexist),
+[Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+The practical meaning is narrow: lower the validator cap or raise max allowed UIDs before retrying
+`sudo_set_max_allowed_validators`.
+
+## Distinction from Subnet Does Not Exist
+
+`MaxValidatorsLargerThanMaxUIds` and `SubnetDoesNotExist` both appear on
+`sudo_set_max_allowed_validators`, but at different checks. `SubnetDoesNotExist` means the submitted
+netuid has no subnet record. `MaxValidatorsLargerThanMaxUIds` means the netuid exists but the
+validator cap exceeds the stored max-UID ceiling
+([Subnet Does Not Exist](https://docs.learnbittensor.org/errors/subtensor#subnetdoesnotexist),
+[Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+- **MaxValidatorsLargerThanMaxUIds** — the validator cap exceeds max allowed UIDs.
+- **SubnetDoesNotExist** — the submitted netuid has no subnet record.
+
+## Distinction from Max Allowed UIDs Less Than Current UIDs
+
+`MaxValidatorsLargerThanMaxUIds` and `MaxAllowedUIdsLessThanCurrentUIds` both involve UID and
+validator limits, but on different setters. `MaxValidatorsLargerThanMaxUIds` is raised by
+`sudo_set_max_allowed_validators` when the validator cap exceeds the stored max-UID ceiling.
+`MaxAllowedUIdsLessThanCurrentUIds` is raised by `sudo_set_max_allowed_uids` when the proposed
+max-UID value is below the subnet's current UID count
+([Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+- **MaxValidatorsLargerThanMaxUIds** — validator cap exceeds max allowed UIDs on the validator
+  setter.
+- **MaxAllowedUIdsLessThanCurrentUIds** — proposed max UIDs are below current UID count on the UID
+  setter.
+
+## Distinction from Value Not In Bounds
+
+`MaxValidatorsLargerThanMaxUIds` and `ValueNotInBounds` both block admin-utils hyperparameter
+updates, but on different validation rules. `MaxValidatorsLargerThanMaxUIds` is the specific
+rejection when the validator cap exceeds the subnet's stored max-UID ceiling. `ValueNotInBounds` is
+the separate fixed-range rejection used by other setters such as `sudo_set_max_epochs_per_block`
+([Value Not In Bounds](https://docs.learnbittensor.org/errors/subtensor#valuenotinbounds),
+[Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+- **MaxValidatorsLargerThanMaxUIds** — validator cap exceeds max allowed UIDs.
+- **ValueNotInBounds** — the submitted value is outside a setter's fixed allowed range.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the validator-cap comparison on
+`sudo_set_max_allowed_validators`. It does not report live max-UID or validator-cap values for any
+netuid on any network; those are chain state readers can query separately
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+- [Subnet Does Not Exist](https://docs.learnbittensor.org/errors/subtensor#subnetdoesnotexist)
+- [Value Not In Bounds](https://docs.learnbittensor.org/errors/subtensor#valuenotinbounds)
+- [Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)
