@@ -1,0 +1,67 @@
+---
+title: "Contribution Too Low"
+summary:
+  "How the ContributionTooLow error blocks a crowdloan contribution when the submitted amount is
+  below the crowdloan's minimum contribution."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Contribution Too Low
+infoboxCaption: Error raised when a crowdloan contribution is below the minimum amount.
+infoboxRows:
+  - label: Error
+    value: ContributionTooLow
+  - label: Trigger
+    value: amount < crowdloan.min_contribution
+  - label: Checked in
+    value: contribute extrinsic
+  - label: Check type
+    value: Amount comparison against the crowdloan's minimum
+---
+
+# Contribution Too Low
+
+`ContributionTooLow` is a documented Subtensor standard error raised by the `contribute` extrinsic
+in the crowdloan pallet. The Subtensor API error reference describes it as "The contribution is too
+low" ([Subtensor API: Errors](https://docs.learnbittensor.org/subtensor-api/errors)).
+
+## What It Means
+
+Each [crowdloan](https://docs.learnbittensor.org/subnets/crowdloans) sets a minimum contribution at
+creation. The `contribute` extrinsic compares the submitted amount against that minimum and raises
+`ContributionTooLow` when the submitted amount is below it
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+The minimum is per crowdloan, not a network-wide constant, so the threshold a contribution must
+clear depends on the specific crowdloan being contributed to
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+## Why It Appears
+
+This check runs after confirming the contribution deadline has not passed and the funding cap has
+not been reached, but before the contributor count limit is checked. A contribution that clears the
+deadline and cap checks but is below the crowdloan's own minimum amount fails here
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+## Distinction from Cap Raised
+
+`ContributionTooLow` and `CapRaised` both fire during the `contribute` call, but they check
+different conditions. `CapRaised` fires because the crowdloan has already collected its full funding
+target. `ContributionTooLow` fires because the submitted amount is individually too small,
+regardless of how much total funding has been raised
+([Subtensor Standard Errors: CapRaised](https://docs.learnbittensor.org/subtensor-api/errors),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+- **CapRaised** — the crowdloan's total funding cap has been reached.
+- **ContributionTooLow** — the individual contribution amount is below the minimum.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the minimum-amount check that raises it. It
+does not describe how crowdloan minimums are set or the rest of the contribution flow; those are
+documented separately ([Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans)).
+
+## Further Reading
+
+- [Subtensor API: Errors](https://docs.learnbittensor.org/subtensor-api/errors)
+- [Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans)
+- [Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)
