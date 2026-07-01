@@ -1,0 +1,101 @@
+---
+title: "Invalid Derived Account Id"
+summary:
+  "How the InvalidDerivedAccountId error blocks pure-proxy paths when the runtime cannot decode a
+  derived pure account identifier from the submitted creation parameters."
+category: "Wallets"
+tags: ["Wallets", "Errors"]
+infoboxTitle: Invalid Derived Account Id
+infoboxCaption: Error raised when a pure proxy account ID cannot be decoded.
+infoboxRows:
+  - label: Error
+    value: InvalidDerivedAccountId
+  - label: Trigger
+    value: derived pure account bytes cannot decode into Runtime AccountId
+  - label: Checked in
+    value: create_pure and kill_pure
+  - label: Check type
+    value: Pure proxy account ID decode failure
+---
+
+# Invalid Derived Account Id
+
+`InvalidDerivedAccountId` is a documented proxy-pallet error raised when the runtime cannot decode a
+derived pure proxy account identifier. The Subtensor API errors reference summarizes it as: "Failed
+to derive a valid account id from the provided entropy"
+([Subtensor API Errors: InvalidDerivedAccountId](https://docs.learnbittensor.org/subtensor-api/errors#invalidderivedaccountid)).
+
+## What It Means
+
+Pure proxies are derived accounts created through the proxy pallet rather than imported as ordinary
+keypairs. Before `create_pure` can register a new pure proxy, and before `kill_pure` can verify the
+removal target, the runtime derives the pure account address from the spawner, proxy type,
+disambiguation index, and the creation context for that call. `InvalidDerivedAccountId` means that
+derivation produced bytes the runtime could not decode into a valid `AccountId`
+([Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs),
+[Glossary: Pure Proxies](https://docs.learnbittensor.org/resources/glossary#pure-proxies)).
+
+On `create_pure`, the derivation uses the current block context when the extrinsic runs. On
+`kill_pure`, the derivation replays the block height and extrinsic index from the original
+`create_pure` call so the runtime can reconstruct the same pure account before checking removal
+permission
+([Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs)).
+
+This is a pure-account decode failure, not proof that the caller lacks permission to remove a pure
+proxy and not proof that the delegator tried to register itself as its own proxy.
+
+## Why It Appears
+
+This error appears when pure-proxy tooling supplies derivation inputs that do not produce a
+decodable account identifier for the runtime's configured `AccountId` type. That is uncommon in
+normal wallet flows, but it marks the boundary where the proxy pallet refuses to continue because it
+cannot materialize the pure account address it needs for the next step
+([Subtensor API Errors: InvalidDerivedAccountId](https://docs.learnbittensor.org/subtensor-api/errors#invalidderivedaccountid),
+[Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs)).
+
+When debugging on `kill_pure`, compare against the permission check that runs after derivation.
+`NoPermission` means the derived pure account does not match the signing account, while
+`InvalidDerivedAccountId` means the runtime could not decode the derived address at all
+([Subtensor API Errors: NoPermission](https://docs.learnbittensor.org/subtensor-api/errors#nopermission),
+[Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs)).
+
+## Distinction from Invalid Derived Account
+
+`InvalidDerivedAccountId` and `InvalidDerivedAccount` are similarly named decode failures, but they
+belong to different pallets. `InvalidDerivedAccountId` is returned by proxy pure-account derivation
+used on `create_pure` and `kill_pure`. `InvalidDerivedAccount` is returned by utility derivative-
+account derivation used on `as_derivative`
+([Invalid Derived Account](https://docs.learnbittensor.org/subtensor-api/errors#invalidderivedaccount),
+[Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs),
+[Subtensor source: utility/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/utility/src/lib.rs)).
+
+- **InvalidDerivedAccountId** — a pure proxy account ID cannot be decoded on proxy paths.
+- **InvalidDerivedAccount** — a utility derivative account ID cannot be decoded on `as_derivative`.
+
+## Distinction from No Self Proxy
+
+`InvalidDerivedAccountId` and `NoSelfProxy` both appear in proxy setup flows, but they reject
+different conditions. `NoSelfProxy` is returned when a standard proxy registration uses the same
+account as both delegator and delegatee. `InvalidDerivedAccountId` is returned when pure-account
+derivation fails before registration or removal can proceed
+([Subtensor API Errors: NoSelfProxy](https://docs.learnbittensor.org/subtensor-api/errors#noselfproxy),
+[Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs)).
+
+- **NoSelfProxy** — the proxy relationship points an account to itself.
+- **InvalidDerivedAccountId** — the pure proxy account ID cannot be decoded.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the pure-account decode failure on
+`create_pure` and `kill_pure`. It does not report which pure proxy accounts exist on any live
+network; readers can inspect proxy storage separately for the accounts they manage
+([Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs),
+[Glossary: Pure Proxies](https://docs.learnbittensor.org/resources/glossary#pure-proxies)).
+
+## Further Reading
+
+- [Subtensor API Errors: InvalidDerivedAccountId](https://docs.learnbittensor.org/subtensor-api/errors#invalidderivedaccountid)
+- [Subtensor API Errors: InvalidDerivedAccount](https://docs.learnbittensor.org/subtensor-api/errors#invalidderivedaccount)
+- [Subtensor API Errors: NoSelfProxy](https://docs.learnbittensor.org/subtensor-api/errors#noselfproxy)
+- [Glossary: Pure Proxies](https://docs.learnbittensor.org/resources/glossary#pure-proxies)
+- [Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs)
