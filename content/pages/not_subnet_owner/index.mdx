@@ -1,0 +1,116 @@
+---
+title: "Not Subnet Owner"
+summary:
+  "How the NotSubnetOwner error blocks set_subnet_identity when the signing coldkey does not match
+  the SubnetOwner record for the submitted netuid."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Not Subnet Owner
+infoboxCaption: Error raised when set_subnet_identity is signed by the wrong coldkey.
+infoboxRows:
+  - label: Error
+    value: NotSubnetOwner
+  - label: Trigger
+    value: Signer coldkey does not match SubnetOwner for netuid
+  - label: Checked in
+    value: do_set_subnet_identity
+  - label: Related storage
+    value: SubnetOwner
+---
+
+# Not Subnet Owner
+
+`NotSubnetOwner` means `set_subnet_identity` was signed by a coldkey that does not match the
+`SubnetOwner` record for the submitted netuid. The standard-errors reference describes it as "Not a
+subnet owner"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notsubnetowner)).
+
+The check compares the signer against on-chain owner storage before identity validation runs
+([Subtensor source: identity.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/identity.rs)).
+
+## What It Means
+
+Each subnet stores an owning coldkey in the `SubnetOwner` map keyed by netuid. In
+`do_set_subnet_identity`, the runtime reads that value with `get_subnet_owner(netuid)` and returns
+`NotSubnetOwner` when the signing coldkey is different
+([Subtensor source: identity.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/identity.rs),
+[Subtensor Storage: SubnetOwner](https://docs.learnbittensor.org/subtensor-api/storage)).
+
+This is an ownership gate on subnet metadata updates. It runs before the identity payload is
+validated or written to `SubnetIdentitiesV3`
+([Subtensor source: identity.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/identity.rs)).
+
+## Why It Appears
+
+This error appears when `set_subnet_identity` is submitted with a netuid whose `SubnetOwner` record
+does not equal the signing coldkey. That can happen when automation passes the wrong netuid
+argument, when a copied extrinsic still names an old owner after subnet ownership changed, or when a
+caller confuses subnet participation with subnet ownership
+([Subtensor source: identity.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/identity.rs)).
+
+When debugging netuid 1 on Finney mainnet, confirm the recorded owner through the documented
+hyperparameter read path before retrying the extrinsic:
+`btcli subnet hyperparameters --netuid 1 --network finney`
+([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters),
+[Subtensor Storage: SubnetOwner](https://docs.learnbittensor.org/subtensor-api/storage)).
+
+Rule out later validation failures on the same extrinsic. `InvalidIdentity` means the submitted
+subnet identity fields failed length or format checks after ownership already passed. `BadOrigin` is
+the rejection label used on some other owner-only paths that route authorization through
+`ensure_subnet_owner` instead of this explicit error
+([Subtensor Standard Errors: InvalidIdentity](https://docs.learnbittensor.org/errors/subtensor#invalididentity),
+[Subtensor Standard Errors: BadOrigin](https://docs.learnbittensor.org/errors/subtensor#badorigin),
+[Subtensor source: misc.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/misc.rs)).
+
+The practical meaning is narrow: the signing coldkey is not the recorded owner for that netuid.
+
+## Distinction from Bad Origin
+
+`NotSubnetOwner` and `BadOrigin` both signal failed owner authorization, but on different paths.
+`NotSubnetOwner` is the explicit comparison in `do_set_subnet_identity` when
+`get_subnet_owner(netuid)` does not equal the signer. `BadOrigin` is returned by
+`ensure_subnet_owner` when a signed caller is present but is not the subnet owner
+([Subtensor source: identity.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/identity.rs),
+[Subtensor source: misc.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/misc.rs)).
+
+- **NotSubnetOwner** — the signer is not the recorded subnet owner on `set_subnet_identity`.
+- **BadOrigin** — the signer lacks owner authorization on paths that use `ensure_subnet_owner`.
+
+## Distinction from Invalid Identity
+
+`NotSubnetOwner` and `InvalidIdentity` are both checks in `do_set_subnet_identity`, but at different
+stages. `NotSubnetOwner` is the ownership gate before any identity payload is accepted.
+`InvalidIdentity` means the submitted subnet identity fields failed validation after ownership
+already passed
+([Subtensor Standard Errors: InvalidIdentity](https://docs.learnbittensor.org/errors/subtensor#invalididentity),
+[Subtensor source: identity.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/identity.rs)).
+
+- **NotSubnetOwner** — the signing coldkey is not the subnet owner.
+- **InvalidIdentity** — the identity payload failed validation.
+
+## Distinction from Hotkey Not Registered In Network
+
+`NotSubnetOwner` and `HotKeyNotRegisteredInNetwork` both appear in identity-setting paths, but on
+different extrinsics. `NotSubnetOwner` gates `set_subnet_identity` to the owning coldkey.
+`HotKeyNotRegisteredInNetwork` gates `set_identity` to coldkeys that have at least one registered
+hotkey on the network
+([Subtensor Standard Errors: HotKeyNotRegisteredInNetwork](https://docs.learnbittensor.org/errors/subtensor#hotkeynotregisteredinnetwork),
+[Subtensor source: identity.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/identity.rs)).
+
+- **NotSubnetOwner** — the signer is not the subnet owner on `set_subnet_identity`.
+- **HotKeyNotRegisteredInNetwork** — the signer has no registered hotkey on any subnet.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the ownership check in
+`do_set_subnet_identity`. It does not describe how subnet ownership is assigned or which other
+hyperparameter setters require owner permission; those are documented separately
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notsubnetowner)
+- [Subtensor Standard Errors: BadOrigin](https://docs.learnbittensor.org/errors/subtensor#badorigin)
+- [Subtensor Standard Errors: InvalidIdentity](https://docs.learnbittensor.org/errors/subtensor#invalididentity)
+- [Subtensor source: identity.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/identity.rs)
+- [Subtensor source: misc.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/misc.rs)
