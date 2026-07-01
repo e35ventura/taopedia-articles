@@ -1,0 +1,117 @@
+---
+title: "Root Netuid Not Allowed"
+summary:
+  "How the RootNetUidNotAllowed error blocks limit-order execution when an order or batched
+  execution targets the Root Subnet."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Root Netuid Not Allowed
+infoboxCaption: Error raised when a limit order targets the Root Subnet.
+infoboxRows:
+  - label: Error
+    value: RootNetUidNotAllowed
+  - label: Trigger
+    value: netuid.is_root() on the order or batch parameter
+  - label: Checked in
+    value: is_order_valid and do_execute_batched_orders
+  - label: Check type
+    value: Root Subnet rejection on limit-order paths
+---
+
+# Root Netuid Not Allowed
+
+`RootNetUidNotAllowed` is a documented limit-orders error raised when a limit order targets the Root
+Subnet. The Subtensor API error reference describes it as "Root netuid (0) is not allowed for limit
+orders"
+([Subtensor API Errors: RootNetUidNotAllowed](https://docs.learnbittensor.org/subtensor-api/errors#rootnetuidnotallowed)).
+
+## What It Means
+
+Limit orders are scoped to ordinary subnets. The runtime rejects Root Subnet targeting on two
+limit-order paths that both return `RootNetUidNotAllowed`
+([Root Subnet / Subnet Zero](https://docs.learnbittensor.org/resources/glossary#root-subnetsubnet-zero),
+[Subnet Liquidity Pools](https://docs.learnbittensor.org/subnets/understanding-subnets#liquidity-pools),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+In `is_order_valid`, used by both `execute_orders` and `execute_batched_orders`, the first check
+compares the order's stored netuid field against the Root Subnet and returns `RootNetUidNotAllowed`
+when that field is root
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+In `do_execute_batched_orders`, the runtime performs the same root check on the batch netuid
+argument before it validates or classifies any orders in the batch
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+This is a Root Subnet scope rejection on limit-order execution, not proof that the signature is
+invalid, that the chain ID is wrong, or that the batch netuid mismatches an individual order on a
+non-root subnet.
+
+## Why It Appears
+
+On the per-order path, this error appears when a signed limit order's payload names the Root Subnet
+as its target. On the batched path, it appears when `execute_batched_orders` is called with the Root
+Subnet as its batch netuid argument, even before individual orders are classified
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+When debugging the per-order path, compare against the next rejection on the same validation
+sequence. `ChainIdMismatch` means the order's chain ID field does not match the executing network.
+`InvalidSignature` means the Sr25519 signature did not verify
+([Chain Id Mismatch](https://docs.learnbittensor.org/errors/subtensor#chainidmismatch),
+[Invalid Signature](https://docs.learnbittensor.org/errors/subtensor#invalidsignature),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+On a non-root batched call, `OrderNetUidMismatch` is the separate error when an order inside the
+batch targets a different ordinary subnet than the batch netuid parameter
+([Order Netuid Mismatch](https://docs.learnbittensor.org/errors/subtensor#ordernetuidmismatch),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+## Distinction from Chain Id Mismatch on is_order_valid
+
+`RootNetUidNotAllowed` and `ChainIdMismatch` both appear on `is_order_valid`, but at different
+checks. `RootNetUidNotAllowed` is the first gate and means the order targets the Root Subnet.
+`ChainIdMismatch` means the order was signed for a different network than the one executing it
+([Chain Id Mismatch](https://docs.learnbittensor.org/errors/subtensor#chainidmismatch),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+- **RootNetUidNotAllowed** — the order targets the Root Subnet.
+- **ChainIdMismatch** — the order was signed for a different network.
+
+## Distinction from Order Netuid Mismatch on execute_batched_orders
+
+`RootNetUidNotAllowed` and `OrderNetUidMismatch` both involve netuid arguments on batched execution,
+but at different checks. `RootNetUidNotAllowed` on `do_execute_batched_orders` means the batch
+netuid parameter itself is the Root Subnet. `OrderNetUidMismatch` means the batch netuid is an
+ordinary subnet but at least one order inside the batch names a different subnet
+([Order Netuid Mismatch](https://docs.learnbittensor.org/errors/subtensor#ordernetuidmismatch),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+- **RootNetUidNotAllowed** — the batch or order targets the Root Subnet.
+- **OrderNetUidMismatch** — an order targets a different ordinary subnet than the batch parameter.
+
+## Distinction from Not Permitted On Root Subnet
+
+`RootNetUidNotAllowed` and `NotPermittedOnRootSubnet` both involve the Root Subnet, but on different
+pallets and extrinsics. `RootNetUidNotAllowed` blocks limit-order execution paths in the
+limit-orders pallet. `NotPermittedOnRootSubnet` blocks selected admin-utils hyperparameter setters
+when the submitted netuid is root
+([Not Permitted On Root Subnet](https://docs.learnbittensor.org/errors/subtensor#notpermittedonrootsubnet),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs),
+[Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+- **RootNetUidNotAllowed** — limit orders cannot target the Root Subnet.
+- **NotPermittedOnRootSubnet** — selected admin-utils setters cannot target the Root Subnet.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the Root Subnet checks that raise it on
+limit-order paths. It does not describe Root Subnet staking or registration rules beyond this
+execution restriction
+([Root Subnet / Subnet Zero](https://docs.learnbittensor.org/resources/glossary#root-subnetsubnet-zero),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+## Further Reading
+
+- [Subtensor API Errors: RootNetUidNotAllowed](https://docs.learnbittensor.org/subtensor-api/errors#rootnetuidnotallowed)
+- [Chain Id Mismatch](https://docs.learnbittensor.org/errors/subtensor#chainidmismatch)
+- [Order Netuid Mismatch](https://docs.learnbittensor.org/errors/subtensor#ordernetuidmismatch)
+- [Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)
