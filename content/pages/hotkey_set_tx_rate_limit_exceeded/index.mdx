@@ -1,102 +1,109 @@
 ---
 title: "Hotkey Set Tx Rate Limit Exceeded"
 summary:
-  "How the HotKeySetTxRateLimitExceeded error blocks a hotkey swap when the calling coldkey retries
-  the operation before the short general transaction rate limit has elapsed."
+  "How the HotKeySetTxRateLimitExceeded error blocks hotkey swap calls that retry before the
+  swap-cooldown block has elapsed."
 category: "Wallets"
 tags: ["Wallets", "Errors"]
 infoboxTitle: Hotkey Set Tx Rate Limit Exceeded
-infoboxCaption: Error raised when a hotkey swap hits the coldkey-level transaction cooldown.
+infoboxCaption: Error raised when a hotkey swap is retried too soon.
 infoboxRows:
   - label: Error
     value: HotKeySetTxRateLimitExceeded
-  - label: Related limit
-    value: TxRateLimit
-  - label: Scope
-    value: Coldkey-level hotkey swap pacing
   - label: Trigger
-    value: Hotkey swap retried before the short tx cooldown clears
+    value: Hotkey swap retried before the general transaction cooldown clears
+  - label: Scope
+    value: Coldkey-scoped pacing on hotkey swap
+  - label: Related limit
+    value: General transaction rate limit
 ---
 
 # Hotkey Set Tx Rate Limit Exceeded
 
-`HotKeySetTxRateLimitExceeded` is a documented Subtensor standard error raised by the hotkey swap
-extrinsic. The standard-errors reference describes it as "Rate limit exceeded for setting/swapping
-hotkey," and the rate-limits reference ties hotkey swaps to the general transaction rate limit
+`HotKeySetTxRateLimitExceeded` means a hotkey swap call was retried before the swap cooldown had
+cleared for that coldkey. The standard-errors reference describes it as "Rate limit exceeded for
+setting/swapping hotkey," and the API errors reference lists the same runtime label
 ([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#hotkeysettxratelimitexceeded),
-[Chain Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits),
-[Tx Rate Limit](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+[Subtensor API Errors: HotKeySetTxRateLimitExceeded](https://docs.learnbittensor.org/subtensor-api/errors#hotkeysettxratelimitexceeded)).
+
+The chain rate-limits reference makes the scope explicit: the current general transaction rate limit
+applies to hotkey swaps, with a documented cooldown of one block, about 12 seconds
+([Chain Rate Limits: General transaction rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#general-transaction-rate-limit)).
 
 ## What It Means
 
-[Hotkey swap](https://docs.learnbittensor.org/keys/coldkey-hotkey-security) moves subnet
-participation from one hotkey to another owned by the same coldkey. Before any subnet-specific swap
-logic runs, the chain checks whether the calling coldkey has cleared the short general transaction
-rate limit tracked in `TxRateLimit`. `HotKeySetTxRateLimitExceeded` is the rejection when that
-coldkey-level cooldown has not elapsed
-([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#hotkeysettxratelimitexceeded),
-[Subtensor source: swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs),
-[Subtensor source: rate_limiting.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/rate_limiting.rs)).
+This error is a pacing rejection on the hotkey swap path, not a statement that the old hotkey is
+wrong, that the new hotkey is invalid, or that the caller lacks ownership of the hotkey being
+replaced. In `do_swap_hotkey`, the runtime reads the coldkey's last transaction block and returns
+`HotKeySetTxRateLimitExceeded` when the swap is submitted again before that short cooldown clears
+([Subtensor source: swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs#L66-L70)).
 
-In `swap_hotkey.rs`, the hotkey swap path compares the current block against the coldkey's last
-transaction block through `exceeds_tx_rate_limit` and returns `HotKeySetTxRateLimitExceeded` when
-the limit has not cleared
-([Subtensor source: swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs)).
-
-The rate-limits reference documents the general transaction rate limit as a short cooldown,
-currently one block on Finney, distinct from the much longer per-subnet hotkey swap interval
-([Chain Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits),
-[Hotkey Swap On Subnet Interval](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+The practical meaning is narrow: the same coldkey needs to wait for the swap cooldown to expire
+before trying another hotkey set or swap transaction
+([Chain Rate Limits: General transaction rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#general-transaction-rate-limit)).
 
 ## Why It Appears
 
-This error appears when a coldkey submits another hotkey swap before the short `TxRateLimit` window
-has passed since its last rate-limited transaction for this path. It is checked once at the start of
-the swap flow, before per-subnet cooldown checks or registration checks on individual subnets
-([Subtensor source: swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs)).
+This error appears on the hotkey swap path after signature and ownership checks pass, but before the
+runtime evaluates whether the replacement hotkey is already registered or whether a root-touching
+swap is otherwise allowed
+([Subtensor source: swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs#L24-L30),
+[Subtensor source: swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs#L66-L88)).
 
-For a reader, the practical meaning is narrow: the coldkey retried the swap too soon at the account
-level. The problem is not that a specific subnet's longer swap cooldown has failed to clear
-([Hotkey Swap On Subnet Interval Not Passed](https://docs.learnbittensor.org/errors/subtensor#hotkeyswaponsubnetintervalnotpassed)).
-
-## Distinction from Hotkey Swap On Subnet Interval Not Passed
-
-`HotKeySetTxRateLimitExceeded` and `HotKeySwapOnSubnetIntervalNotPassed` both gate hotkey swaps, but
-at different scopes. `HotKeySetTxRateLimitExceeded` is the short, coldkey-level check against
-`TxRateLimit` that runs before subnet-specific logic. `HotKeySwapOnSubnetIntervalNotPassed` is the
-separate, longer per-subnet cooldown checked for each subnet the swap would touch
-([Hotkey Swap On Subnet Interval Not Passed](https://docs.learnbittensor.org/errors/subtensor#hotkeyswaponsubnetintervalnotpassed),
-[Subtensor source: swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs)).
-
-- **HotKeySetTxRateLimitExceeded** — short, coldkey-level transaction cooldown.
-- **HotKeySwapOnSubnetIntervalNotPassed** — longer, per-subnet swap cooldown.
+So when this label appears, the immediate issue is timing. The coldkey retried a hotkey set or swap
+operation too soon.
 
 ## Distinction from Tx Rate Limit Exceeded
 
-`HotKeySetTxRateLimitExceeded` and `TxRateLimitExceeded` both relate to the general transaction rate
-limit, but they are documented as separate error labels on different extrinsic paths.
-`HotKeySetTxRateLimitExceeded` is the hotkey-set and hotkey-swap rejection. `TxRateLimitExceeded` is
-the broader default transaction-rate-limit error used on other rate-limited calls
-([Subtensor Standard Errors: TxRateLimitExceeded](https://docs.learnbittensor.org/errors/subtensor#txratelimitexceeded),
+`HotKeySetTxRateLimitExceeded` and `TxRateLimitExceeded` both describe pacing failures, but they are
+not the same article topic. `HotKeySetTxRateLimitExceeded` is the dedicated hotkey-swap label on the
+general transaction cooldown. `TxRateLimitExceeded` is the broader default label used on other
+rate-limited extrinsic families
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#hotkeysettxratelimitexceeded),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#txratelimitexceeded),
 [Chain Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
 
-- **HotKeySetTxRateLimitExceeded** — hotkey swap blocked by the short coldkey cooldown.
-- **TxRateLimitExceeded** — default transaction-rate-limit breach on other paths.
+- **HotKeySetTxRateLimitExceeded** — hotkey set or swap retried before the short swap cooldown
+  clears.
+- **TxRateLimitExceeded** — another transaction family hit its own documented pacing rule.
+
+## Distinction from Hotkey Swap On Subnet Interval Not Passed
+
+`HotKeySetTxRateLimitExceeded` and `HotKeySwapOnSubnetIntervalNotPassed` can both block hotkey-swap
+activity, but they guard different timing rules. `HotKeySetTxRateLimitExceeded` is the short general
+transaction cooldown for the coldkey submitting the swap. `HotKeySwapOnSubnetIntervalNotPassed` is
+the separate rule for attempting a hotkey swap on the same subnet too frequently
+([Chain Rate Limits: General transaction rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#general-transaction-rate-limit),
+[Subtensor Standard Errors: HotKeySwapOnSubnetIntervalNotPassed](https://docs.learnbittensor.org/errors/subtensor#hotkeyswaponsubnetintervalnotpassed)).
+
+- **HotKeySetTxRateLimitExceeded** — the coldkey retried the swap transaction too soon.
+- **HotKeySwapOnSubnetIntervalNotPassed** — the subnet-specific hotkey-swap interval has not cleared
+  yet.
+
+## Distinction from New Hotkey Is Same With Old
+
+`HotKeySetTxRateLimitExceeded` and `NewHotKeyIsSameWithOld` both appear on `do_swap_hotkey`, but
+they fail for different reasons. `HotKeySetTxRateLimitExceeded` is a timing rejection after the
+runtime reads the last transaction block. `NewHotKeyIsSameWithOld` means the submitted replacement
+key is identical to the current one, so there is no real swap to perform
+([Subtensor source: swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs#L60-L70),
+[Subtensor Standard Errors: NewHotKeyIsSameWithOld](https://docs.learnbittensor.org/errors/subtensor#newhotkeyissamewithold)).
+
+- **HotKeySetTxRateLimitExceeded** — retry happened before the cooldown cleared.
+- **NewHotKeyIsSameWithOld** — the proposed replacement hotkey is the same key.
 
 ## Reader Boundary
 
-This page defines the meaning of the error label and the coldkey-level cooldown that raises it on
-hotkey swap. It does not describe swap fees, registration conflicts on the destination hotkey, or
-the length of the per-subnet swap interval; those are documented separately
-([Coldkey and Hotkey Workstation Security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security),
-[Hotkey Swap On Subnet Interval](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+This page defines the meaning of the error label and the cooldown gate it represents on hotkey swap.
+It does not tell a reader which new hotkey to choose, whether a root-touching swap is allowed, or
+the live last-transaction block for a specific coldkey
+([Subtensor source: swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs#L66-L88),
+[Chain Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
 
 ## Further Reading
 
 - [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#hotkeysettxratelimitexceeded)
+- [Subtensor API Errors: HotKeySetTxRateLimitExceeded](https://docs.learnbittensor.org/subtensor-api/errors#hotkeysettxratelimitexceeded)
+- [Chain Rate Limits: General transaction rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#general-transaction-rate-limit)
 - [Subtensor Standard Errors: HotKeySwapOnSubnetIntervalNotPassed](https://docs.learnbittensor.org/errors/subtensor#hotkeyswaponsubnetintervalnotpassed)
-- [Subtensor Standard Errors: TxRateLimitExceeded](https://docs.learnbittensor.org/errors/subtensor#txratelimitexceeded)
-- [Hotkey Swap On Subnet Interval](https://docs.learnbittensor.org/learn/chain-rate-limits)
-- [Coldkey and Hotkey Workstation Security](https://docs.learnbittensor.org/keys/coldkey-hotkey-security)
-- [Subtensor source: swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs)
-- [Subtensor source: rate_limiting.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/rate_limiting.rs)
+- [Subtensor source: swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs#L24-L88)
