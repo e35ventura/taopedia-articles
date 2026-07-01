@@ -1,0 +1,118 @@
+---
+title: "Value Not In Bounds"
+summary:
+  "How the ValueNotInBounds error blocks an admin-utils hyperparameter update when the submitted
+  value falls outside the allowed bounds for that setter."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Value Not In Bounds
+infoboxCaption: Error raised when a hyperparameter value is out of allowed bounds.
+infoboxRows:
+  - label: Error
+    value: ValueNotInBounds
+  - label: Trigger
+    value: Submitted value outside the setter's allowed range
+  - label: Checked in
+    value: admin-utils hyperparameter setters
+  - label: Example path
+    value: sudo_set_max_epochs_per_block
+---
+
+# Value Not In Bounds
+
+`ValueNotInBounds` means an admin-utils hyperparameter setter received a value outside the range
+that call accepts. The admin-utils pallet defines the error as "Value not in allowed bounds"
+([Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+## What It Means
+
+Many subnet configuration updates pass through admin-utils setters that compare a submitted number
+against fixed lower or upper bounds before writing storage. When that comparison fails,
+`ValueNotInBounds` is returned instead of updating the parameter
+([Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+One documented example is the global per-block epoch cap. The `sudo_set_max_epochs_per_block` setter
+requires root origin and rejects values below one, because the chain needs a positive cap on how
+many subnet epochs may execute in a single block
+([Subtensor Constants: initialMaxEpochsPerBlock](https://docs.learnbittensor.org/subtensor-api/constants#initialmaxepochsperblock),
+[Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase),
+[Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+The same error label also appears on registration-burn bound setters such as `sudo_set_min_burn` and
+`sudo_set_max_burn`, where the runtime checks the submitted burn floor or ceiling against configured
+lower and upper limits and against the paired min-max relationship on a netuid
+([Subnet Hyperparameters: MinBurn](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#minburn),
+[Subnet Hyperparameters: MaxBurn](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#maxburn),
+[Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+This is a numeric bounds rejection on the submitted value, not proof that the caller lacks
+authorization, that the targeted subnet is missing, or that a separate composition rule such as an
+immune-share ceiling has been violated.
+
+## Why It Appears
+
+This error appears when a hyperparameter update names a value outside the setter's allowed interval.
+That can happen when automation sends zero to a setter that requires a positive minimum, when a burn
+floor is set above its configured upper bound, or when a max-burn update falls below the chain's
+documented lower limit
+([Subnet Hyperparameters: MinBurn](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#minburn),
+[Subnet Hyperparameters: MaxBurn](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#maxburn),
+[Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+When debugging, compare against other rejections on the same call. `InvalidValue` is the separate
+admin-utils label for other out-of-range parameter input on different setters. Subtensor's own
+`InvalidValue` error covers bounds failures on subtensor-native paths rather than these admin-utils
+setters
+([Subtensor Standard Errors: InvalidValue](https://docs.learnbittensor.org/errors/subtensor#invalidvalue)).
+
+The practical meaning is narrow: submit a value inside the documented bounds for that setter.
+
+## Distinction from Invalid Value
+
+`ValueNotInBounds` and `InvalidValue` both signal out-of-range input in admin-utils and Subtensor
+code, but they are distinct labels. `ValueNotInBounds` is the admin-utils rejection when a submitted
+value fails an explicit bound check such as the minimum of one on `sudo_set_max_epochs_per_block` or
+the min-max burn relationship on a registration-burn setter. Subtensor's `InvalidValue` error is the
+generic label on subtensor-native parameter paths documented separately
+([Subtensor Standard Errors: InvalidValue](https://docs.learnbittensor.org/errors/subtensor#invalidvalue),
+[Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+- **ValueNotInBounds** — the admin-utils setter's explicit bound check failed.
+- **InvalidValue** — a generic out-of-range parameter on a subtensor-native path.
+
+## Distinction from Min Burn
+
+`ValueNotInBounds` and min burn are related but different layers. Min burn is the registration-burn
+floor hyperparameter documented on each subnet. `ValueNotInBounds` is the error returned when a
+`sudo_set_min_burn` call names a value outside the allowed bounds for that setter, such as above the
+configured upper limit or above the current max-burn ceiling
+([Subnet Hyperparameters: MinBurn](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#minburn)).
+
+- **ValueNotInBounds** — the submitted min-burn value is out of allowed bounds.
+- **Min burn** — the hyperparameter that sets the registration-burn floor.
+
+## Distinction from Max Burn
+
+`ValueNotInBounds` and max burn are related but different layers. Max burn is the registration-burn
+ceiling hyperparameter documented on each subnet. `ValueNotInBounds` is the error returned when a
+`sudo_set_max_burn` call names a value outside the allowed bounds for that setter, such as below the
+documented lower limit or below the current min-burn floor
+([Subnet Hyperparameters: MaxBurn](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#maxburn)).
+
+- **ValueNotInBounds** — the submitted max-burn value is out of allowed bounds.
+- **Max burn** — the hyperparameter that sets the registration-burn ceiling.
+
+## Reader Boundary
+
+This page defines the meaning of the `ValueNotInBounds` label and the explicit bound checks that
+raise it on admin-utils setters. It does not report the live allowed interval for every setter on
+every network; those limits are chain configuration and subnet state readers should query separately
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor Constants: initialMaxEpochsPerBlock](https://docs.learnbittensor.org/subtensor-api/constants#initialmaxepochsperblock)
+- [Subnet Hyperparameters: MinBurn](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#minburn)
+- [Subnet Hyperparameters: MaxBurn](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#maxburn)
+- [Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)
