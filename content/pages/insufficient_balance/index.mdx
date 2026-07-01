@@ -1,0 +1,102 @@
+---
+title: "Insufficient Balance"
+summary:
+  "How the InsufficientBalance error blocks a coldkey balance operation when the signing account
+  cannot fund the requested TAO amount for the attempted transfer or withdrawal."
+category: "Wallets"
+tags: ["Wallets", "Errors"]
+infoboxTitle: Insufficient Balance
+infoboxCaption: Error raised when a coldkey cannot fund the requested TAO amount.
+infoboxRows:
+  - label: Error
+    value: InsufficientBalance
+  - label: Trigger
+    value: Requested TAO exceeds spendable coldkey balance
+  - label: Checked in
+    value: TAO transfer and balance-move paths
+  - label: Related concept
+    value: Transfer
+---
+
+# Insufficient Balance
+
+`InsufficientBalance` means a coldkey-signed balance operation named more TAO than the account could
+spend for that action. The standard-errors reference describes it as "The caller does not have
+enough balance for the operation"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#insufficientbalance)).
+
+## What It Means
+
+Many wallet operations move free TAO from a coldkey account. `InsufficientBalance` means the runtime
+rejected the call because the requested amount could not be withdrawn from that coldkey balance
+under the preservation rules for the path
+([Glossary: Transfer](https://docs.learnbittensor.org/resources/glossary#transfer),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#insufficientbalance)).
+
+This is a funding gate on the coldkey account. The failure concerns how much free TAO the signer can
+move, not whether a hotkey is registered on a subnet or whether a subnet pool can complete a swap.
+
+## Why It Appears
+
+This error appears when a transfer or other coldkey balance move names more TAO than the account can
+spend. That can happen when fees or earlier transactions reduced free balance after the client built
+the call, when the amount ignores the transaction fee reserve, or when the extrinsic simply requests
+more TAO than the coldkey holds
+([Glossary: Transfer](https://docs.learnbittensor.org/resources/glossary#transfer),
+[Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees)).
+
+When debugging, compare against staking-specific balance errors on other extrinsics.
+`NotEnoughBalanceToStake` means an add-stake call could not fund the requested stake amount.
+`AmountTooLow` means a staking amount fell below the chain's minimum increment rather than exceeding
+available balance
+([Subtensor Standard Errors: NotEnoughBalanceToStake](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake),
+[Subtensor Standard Errors: AmountTooLow](https://docs.learnbittensor.org/errors/subtensor#amounttoolow)).
+
+The practical meaning is narrow: the coldkey cannot fund the requested TAO amount for the operation.
+
+## Distinction from Not Enough Balance To Stake
+
+`InsufficientBalance` and `NotEnoughBalanceToStake` both involve coldkey funding failures, but on
+different extrinsic families. `InsufficientBalance` is the general balance rejection on TAO transfer
+and related coldkey withdrawal paths. `NotEnoughBalanceToStake` is the add-stake rejection when free
+balance cannot cover the stake amount named in that extrinsic
+([Subtensor Standard Errors: NotEnoughBalanceToStake](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake)).
+
+- **InsufficientBalance** — the coldkey cannot fund the requested TAO for the balance operation.
+- **NotEnoughBalanceToStake** — the coldkey cannot fund the requested add-stake amount.
+
+## Distinction from Zero Balance After Withdrawn
+
+`InsufficientBalance` and `ZeroBalanceAfterWithdrawn` both involve coldkey withdrawals, but they
+reject different problems. `InsufficientBalance` means the account cannot fund the requested amount
+under the path's spend rules. `ZeroBalanceAfterWithdrawn` means the withdrawal would leave the
+account with zero balance in a way the chain does not allow
+([Subtensor Standard Errors: ZeroBalanceAfterWithdrawn](https://docs.learnbittensor.org/errors/subtensor#zerobalanceafterwithdrawn)).
+
+- **InsufficientBalance** — the coldkey cannot fund the requested amount.
+- **ZeroBalanceAfterWithdrawn** — the withdrawal would zero out the account.
+
+## Distinction from Insufficient Liquidity
+
+`InsufficientBalance` and `InsufficientLiquidity` both block value-moving calls, but at different
+layers. `InsufficientBalance` is a coldkey free-balance rejection. `InsufficientLiquidity` is a
+subnet pool rejection when a staking swap cannot be simulated or completed
+([Insufficient Liquidity](https://docs.learnbittensor.org/errors/subtensor#insufficientliquidity)).
+
+- **InsufficientBalance** — the coldkey lacks enough free TAO for the operation.
+- **InsufficientLiquidity** — the subnet pool cannot support the staking conversion.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the coldkey funding gate it represents. It does
+not report a wallet's live free balance, fee quote, or whether a particular transfer amount is
+spendable on a network; those depend on chain state at observation time
+([Glossary: Transfer](https://docs.learnbittensor.org/resources/glossary#transfer),
+[Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#insufficientbalance)
+- [Glossary: Transfer](https://docs.learnbittensor.org/resources/glossary#transfer)
+- [Subtensor Standard Errors: NotEnoughBalanceToStake](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake)
+- [Subtensor Standard Errors: ZeroBalanceAfterWithdrawn](https://docs.learnbittensor.org/errors/subtensor#zerobalanceafterwithdrawn)
