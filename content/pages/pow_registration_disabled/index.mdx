@@ -1,0 +1,113 @@
+---
+title: "Pow Registration Disabled"
+summary:
+  "How the POWRegistrationDisabled error blocks sudo_set_network_pow_registration_allowed because
+  proof-of-work registration is no longer an active neuron admission path."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Pow Registration Disabled
+infoboxCaption: Error raised when the legacy PoW registration setter is called.
+infoboxRows:
+  - label: Error
+    value: POWRegistrationDisabled
+  - label: Trigger
+    value: Call to set network PoW registration allowed
+  - label: Checked in
+    value: sudo_set_network_pow_registration_allowed
+  - label: Related parameter
+    value: NetworkPowRegistrationAllowed
+---
+
+# Pow Registration Disabled
+
+`POWRegistrationDisabled` means a call reached the legacy setter for the network proof-of-work
+registration flag and the runtime rejected it immediately. The admin-utils pallet defines the error
+as "POW Registration has been deprecated"
+([Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+## What It Means
+
+Bittensor neuron registration on mining subnets uses the burn-based path rather than the legacy
+proof-of-work toggle. The subnet hyperparameter reference lists `NetworkPowRegistrationAllowed` but
+states explicitly that it is not used for neuron registration because admission is governed by the
+registration burn rather than that flag
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Understanding Neurons](https://docs.learnbittensor.org/learn/neurons)).
+
+The `sudo_set_network_pow_registration_allowed` extrinsic still exists as a compatibility surface,
+but it now returns `POWRegistrationDisabled` instead of changing storage
+([Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+This is a deprecation rejection on a retired setter, not proof that registration is closed on an
+ordinary mining subnet, that a hotkey already holds a UID, or that a submitted proof-of-work sample
+failed validation.
+
+## Why It Appears
+
+This error appears when a wallet, script, or governance tool calls
+`sudo_set_network_pow_registration_allowed` expecting to toggle proof-of-work registration on a
+subnet. That can happen when automation still targets the legacy hyperparameter setter after
+burn-based registration replaced the proof-of-work toggle as the admission path
+([Subnet Hyperparameters: NetworkPowRegistrationAllowed](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#networkpowregistrationallowed),
+[Understanding Neurons](https://docs.learnbittensor.org/learn/neurons)).
+
+When debugging neuron admission, compare against the active registration path.
+`SubNetRegistrationDisabled` means registration is turned off on a targeted mining subnet.
+`HotKeyAlreadyRegisteredInSubNet` means the hotkey already holds a UID there. Faucet proof-of-work
+errors such as `InvalidDifficulty` belong to the separate faucet validation path, not this retired
+setter
+([Subtensor Standard Errors: SubNetRegistrationDisabled](https://docs.learnbittensor.org/errors/subtensor#subnetregistrationdisabled),
+[Subtensor Standard Errors: HotKeyAlreadyRegisteredInSubNet](https://docs.learnbittensor.org/errors/subtensor#hotkeyalreadyregisteredinsubnet),
+[Subtensor Standard Errors: InvalidDifficulty](https://docs.learnbittensor.org/errors/subtensor#invaliddifficulty)).
+
+The practical meaning is narrow: do not use the legacy PoW registration setter; neuron admission on
+mining subnets goes through the burn-based registration path instead.
+
+## Distinction from Deprecated
+
+`POWRegistrationDisabled` and `Deprecated` both block retired extrinsics, but on different surfaces.
+`Deprecated` is the generic Subtensor label for other runtime-retired calls such as legacy coldkey
+swap scheduling. `POWRegistrationDisabled` is the dedicated admin-utils rejection for the network
+PoW registration setter
+([Subtensor Standard Errors: Deprecated](https://docs.learnbittensor.org/errors/subtensor#deprecated),
+[Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+- **POWRegistrationDisabled** — the network PoW registration setter is retired.
+- **Deprecated** — another Subtensor extrinsic has been retired.
+
+## Distinction from Subnet Registration Disabled
+
+`POWRegistrationDisabled` and `SubNetRegistrationDisabled` both involve registration policy, but on
+different layers. `POWRegistrationDisabled` rejects the legacy setter for a proof-of-work flag that
+documentation says is not used for neuron registration. `SubNetRegistrationDisabled` blocks active
+burn-based registration on a mining subnet whose registration toggle is off
+([Subtensor Standard Errors: SubNetRegistrationDisabled](https://docs.learnbittensor.org/errors/subtensor#subnetregistrationdisabled)).
+
+- **POWRegistrationDisabled** — the legacy PoW registration setter is retired.
+- **SubNetRegistrationDisabled** — burn-based registration is disabled on the subnet.
+
+## Distinction from Invalid Difficulty
+
+`POWRegistrationDisabled` and `InvalidDifficulty` both mention proof-of-work, but on different
+paths. `POWRegistrationDisabled` means the caller used the retired network PoW registration setter.
+`InvalidDifficulty` means a faucet proof-of-work submission did not meet the required difficulty
+threshold
+([Subtensor Standard Errors: InvalidDifficulty](https://docs.learnbittensor.org/errors/subtensor#invaliddifficulty)).
+
+- **POWRegistrationDisabled** — the legacy PoW registration setter was called.
+- **InvalidDifficulty** — a faucet proof-of-work sample failed the difficulty check.
+
+## Reader Boundary
+
+This page defines the meaning of the `POWRegistrationDisabled` label and the retired setter it
+represents. It does not report the live value of `NetworkPowRegistrationAllowed` on any subnet or
+the current registration burn on a network; those are separate hyperparameter and chain-state reads
+([Subnet Hyperparameters: NetworkPowRegistrationAllowed](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#networkpowregistrationallowed),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subnet Hyperparameters: NetworkPowRegistrationAllowed](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#networkpowregistrationallowed)
+- [Understanding Neurons](https://docs.learnbittensor.org/learn/neurons)
+- [Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)
+- [Subtensor Standard Errors: SubNetRegistrationDisabled](https://docs.learnbittensor.org/errors/subtensor#subnetregistrationdisabled)
