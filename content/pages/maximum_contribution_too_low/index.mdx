@@ -1,0 +1,100 @@
+---
+title: "Maximum Contribution Too Low"
+summary:
+  "How the MaximumContributionTooLow error blocks a crowdloan maximum-contribution update when the
+  submitted maximum would fall below the crowdloan minimum or the creator's existing contribution."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Maximum Contribution Too Low
+infoboxCaption:
+  Error raised when a crowdloan maximum would be set below required contribution bounds.
+infoboxRows:
+  - label: Error
+    value: MaximumContributionTooLow
+  - label: Trigger
+    value: max_contribution < min_contribution or creator_contribution
+  - label: Checked in
+    value: set_max_contribution extrinsic
+  - label: Check type
+    value: Maximum-contribution lower-bound consistency
+---
+
+# Maximum Contribution Too Low
+
+`MaximumContributionTooLow` is a documented crowdloan error on the maximum-contribution update path.
+The Subtensor API errors reference lists it under the crowdloan pallet
+([Subtensor API Errors: MaximumContributionTooLow](https://docs.learnbittensor.org/subtensor-api/errors#maximumcontributiontoolow)).
+
+## What It Means
+
+A crowdloan can set an optional maximum cumulative contribution per contributor. The runtime uses
+`MaximumContributionTooLow` when a proposed maximum would be too small to remain consistent with the
+crowdloan's current contribution rules or existing creator stake
+([Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+In `set_max_contribution`, Subtensor reads the crowdloan's stored minimum contribution and the
+creator's existing contribution, then rejects the update unless the new maximum is at least as large
+as both. If the submitted maximum is lower than the crowdloan minimum or lower than what the creator
+has already contributed, the call returns `MaximumContributionTooLow`
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+The practical meaning is narrow: the crowdloan's proposed per-contributor ceiling would be below a
+required lower bound already implied by current state.
+
+## Why It Appears
+
+This error appears when a crowdloan creator tries to set a maximum contribution that contradicts
+existing bounds on that same crowdloan
+([Subtensor API Errors: MaximumContributionTooLow](https://docs.learnbittensor.org/subtensor-api/errors#maximumcontributiontoolow),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+The tests show the boundary directly. A crowdloan created with a minimum contribution of `10` fails
+when the creator later tries to set a maximum contribution of `40` in a state where that proposed
+maximum is below the required bound checked by `set_max_contribution`
+([Subtensor test: crowdloan/tests.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/tests.rs)).
+
+This is not the error for a minimum contribution that is too high or too low. It is the specific
+rejection for a maximum contribution that would be inconsistent with the crowdloan's current
+minimum-contribution or creator-contribution state.
+
+## Distinction from Minimum Contribution Too High
+
+`MaximumContributionTooLow` and `MinimumContributionTooHigh` both protect consistency between a
+crowdloan's minimum and maximum contribution bounds, but they fire on opposite update paths.
+`MinimumContributionTooHigh` is raised by `update_min_contribution` when a new minimum would exceed
+an already stored maximum. `MaximumContributionTooLow` is raised by `set_max_contribution` when a
+new maximum would sit below the stored minimum or creator contribution
+([Subtensor API Errors: MinimumContributionTooHigh](https://docs.learnbittensor.org/subtensor-api/errors#minimumcontributiontoohigh),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+- **MinimumContributionTooHigh** — the minimum would be set above the current maximum.
+- **MaximumContributionTooLow** — the maximum would be set below the current minimum or creator
+  contribution.
+
+## Distinction from Minimum Contribution Too Low
+
+`MaximumContributionTooLow` and `MinimumContributionTooLow` both involve contribution bounds, but
+they reject different lower limits. `MinimumContributionTooLow` means the submitted minimum is below
+the runtime's absolute minimum contribution floor. `MaximumContributionTooLow` means the submitted
+maximum is below a crowdloan-specific lower bound defined by existing state
+([Subtensor API Errors: MinimumContributionTooLow](https://docs.learnbittensor.org/subtensor-api/errors#minimumcontributiontoolow),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+- **MinimumContributionTooLow** — the minimum is below the runtime-wide floor.
+- **MaximumContributionTooLow** — the maximum is below the crowdloan's required lower bound.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the consistency check that raises it. It does
+not describe every crowdloan creation, update, or finalization rule; those are separate parts of the
+crowdloan flow ([Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans)).
+
+## Further Reading
+
+- [Subtensor API Errors: MaximumContributionTooLow](https://docs.learnbittensor.org/subtensor-api/errors#maximumcontributiontoolow)
+- [Subtensor API Errors: MinimumContributionTooHigh](https://docs.learnbittensor.org/subtensor-api/errors#minimumcontributiontoohigh)
+- [Subtensor API Errors: MinimumContributionTooLow](https://docs.learnbittensor.org/subtensor-api/errors#minimumcontributiontoolow)
+- [Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans)
+- [Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)
+- [Subtensor test: crowdloan/tests.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/tests.rs)
