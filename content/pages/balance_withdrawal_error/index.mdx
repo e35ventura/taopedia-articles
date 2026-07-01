@@ -1,0 +1,138 @@
+---
+title: "Balance Withdrawal Error"
+summary:
+  "How the BalanceWithdrawalError signals that a coldkey TAO withdrawal failed at the balances
+  pallet after earlier affordability checks had already passed."
+category: "Wallets"
+tags: ["Wallets", "Errors"]
+infoboxTitle: Balance Withdrawal Error
+infoboxCaption: Error raised when a coldkey TAO withdrawal cannot complete.
+infoboxRows:
+  - label: Error
+    value: BalanceWithdrawalError
+  - label: Trigger
+    value: Currency withdraw fails after pre-checks pass
+  - label: Checked in
+    value: recycle_tao
+  - label: Check type
+    value: Balances-pallet withdrawal failure
+---
+
+# Balance Withdrawal Error
+
+`BalanceWithdrawalError` means the runtime attempted to withdraw TAO from a coldkey account and the
+balances pallet rejected the operation. The standard-errors reference describes it as "Could not
+withdraw from coldkey account"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#balancewithdrawalerror)).
+
+In `tao.rs`, `recycle_tao` is the explicit raise site. The helper first checks that the requested
+amount fits within the coldkey's reducible balance under preservation rules, then calls
+`Currency::withdraw` and maps a failed withdrawal to `BalanceWithdrawalError`
+([Subtensor source: tao.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/tao.rs)).
+
+## What It Means
+
+`recycle_tao` permanently removes TAO from circulation and reduces Subtensor total issuance. Before
+calling withdraw, the function ensures the amount does not exceed the coldkey's reducible balance
+while preserving the existential deposit. If that pre-check passes but the underlying withdraw still
+fails, the extrinsic returns `BalanceWithdrawalError`
+([Subtensor source: tao.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/tao.rs)).
+
+The error therefore names a runtime withdrawal failure, not a simple "insufficient balance"
+comparison on free TAO. Earlier gates on the same path can still reject the call before withdraw is
+attempted.
+
+Subnet-registration and add-stake extrinsics document `BalanceWithdrawalError` as a possible coldkey
+withdrawal failure on TAO-moving paths that depend on the balances pallet
+([Subtensor source: subnet.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/subnet.rs),
+[Subtensor source: add_stake.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/add_stake.rs)).
+
+During subnet registration, excess lock TAO can be recycled through `recycle_tao` after TAO is
+transferred into the new subnet account
+([Subtensor source: subnet.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/subnet.rs)).
+
+## Why It Appears
+
+This error appears when a TAO recycle or other withdraw-based path reaches `Currency::withdraw` and
+the balances pallet returns an error even though the Subtensor pre-check accepted the amount. That
+can happen when account state changed between validation and execution, when preservation rules
+block the exact withdraw mode requested, or when the underlying currency operation fails for reasons
+not captured by the earlier reducible-balance test
+([Subtensor source: tao.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/tao.rs)).
+
+When debugging, compare against earlier funding gates on the same extrinsic. `InsufficientBalance`
+means the requested TAO amount failed a transfer or recycle pre-check before withdraw was attempted.
+`NotEnoughBalanceToStake` means add-stake validation found the coldkey could not fund the named
+stake amount. `CannotAffordLockCost` means subnet registration failed the earlier lock-cost
+affordability check in `do_register_network`
+([Subtensor Standard Errors: InsufficientBalance](https://docs.learnbittensor.org/errors/subtensor#insufficientbalance),
+[Subtensor Standard Errors: NotEnoughBalanceToStake](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake)).
+
+The practical meaning is narrow: the coldkey withdrawal could not be completed at execution time.
+
+## Distinction from Insufficient Balance
+
+`BalanceWithdrawalError` and `InsufficientBalance` both involve coldkey TAO movement, but at
+different failure points. `InsufficientBalance` is raised when a transfer or recycle pre-check
+determines the account cannot fund the requested amount while preserving required balance rules.
+`BalanceWithdrawalError` is raised later when `Currency::withdraw` itself fails after that pre-check
+has already passed
+([Subtensor source: tao.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/tao.rs),
+[Subtensor Standard Errors: InsufficientBalance](https://docs.learnbittensor.org/errors/subtensor#insufficientbalance)).
+
+- **BalanceWithdrawalError** — the balances-pallet withdraw failed at execution time.
+- **InsufficientBalance** — the requested amount failed an earlier affordability pre-check.
+
+## Distinction from Not Enough Balance To Stake
+
+`BalanceWithdrawalError` and `NotEnoughBalanceToStake` both appear on staking-related paths, but
+they test different conditions. `NotEnoughBalanceToStake` is the validation rejection when
+`can_remove_balance_from_coldkey_account` fails during add-stake input checks.
+`BalanceWithdrawalError` is the later runtime withdrawal failure on recycle and related withdraw
+paths
+([Subtensor source: stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs),
+[Subtensor Standard Errors: NotEnoughBalanceToStake](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake)).
+
+- **NotEnoughBalanceToStake** — add-stake validation found insufficient coldkey funding.
+- **BalanceWithdrawalError** — a withdraw call failed after reaching execution.
+
+## Distinction from Cannot Afford Lock Cost
+
+`BalanceWithdrawalError` and `CannotAffordLockCost` both involve TAO leaving a coldkey during subnet
+creation, but at different stages and with different checks. `CannotAffordLockCost` is the step-6
+affordability gate in `do_register_network` before lock transfer and pruning proceed.
+`BalanceWithdrawalError` is the documented withdrawal failure when a recycle or withdraw operation
+cannot complete through the balances pallet
+([Subtensor source: subnet.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/subnet.rs),
+[Subtensor source: tao.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/tao.rs)).
+
+- **CannotAffordLockCost** — the coldkey cannot afford the quoted subnet lock cost.
+- **BalanceWithdrawalError** — a coldkey TAO withdrawal failed at execution time.
+
+## Distinction from Zero Balance After Withdrawn
+
+`BalanceWithdrawalError` and `ZeroBalanceAfterWithdrawn` both concern coldkey withdrawals, but they
+name different rejection reasons. `ZeroBalanceAfterWithdrawn` means the withdrawal would leave the
+account with zero balance in a way the chain does not allow. `BalanceWithdrawalError` means the
+balances pallet rejected the withdraw operation itself
+([Subtensor Standard Errors: ZeroBalanceAfterWithdrawn](https://docs.learnbittensor.org/errors/subtensor#zerobalanceafterwithdrawn),
+[Subtensor source: tao.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/tao.rs)).
+
+- **ZeroBalanceAfterWithdrawn** — the withdrawal would zero out the account.
+- **BalanceWithdrawalError** — the withdraw call failed at execution time.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the withdraw failure surfaced by `recycle_tao`.
+It does not report a wallet's live free balance, fee reserve, or whether a particular withdrawal
+amount is safe on a network; those depend on chain state at observation time
+([Glossary: Transfer](https://docs.learnbittensor.org/resources/glossary#transfer),
+[Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#balancewithdrawalerror)
+- [Subtensor source: tao.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/tao.rs)
+- [Subtensor source: subnet.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/subnet.rs)
+- [Subtensor Standard Errors: InsufficientBalance](https://docs.learnbittensor.org/errors/subtensor#insufficientbalance)
+- [Subtensor Standard Errors: ZeroBalanceAfterWithdrawn](https://docs.learnbittensor.org/errors/subtensor#zerobalanceafterwithdrawn)
