@@ -1,0 +1,95 @@
+---
+title: "Announcement Deposit Invariant Violated"
+summary:
+  "How the AnnouncementDepositInvariantViolated error blocks announce when announcement deposit
+  recomputation fails after a new pending announcement is recorded."
+category: "Wallets"
+tags: ["Wallets", "Errors"]
+infoboxTitle: Announcement Deposit Invariant Violated
+infoboxCaption: Error raised when announcement deposit accounting fails after a new record is added.
+infoboxRows:
+  - label: Error
+    value: AnnouncementDepositInvariantViolated
+  - label: Trigger
+    value: announcement deposit recomputation returns no value after push
+  - label: Checked in
+    value: announce
+  - label: Check type
+    value: Announcement deposit accounting invariant
+---
+
+# Announcement Deposit Invariant Violated
+
+`AnnouncementDepositInvariantViolated` is a documented proxy-pallet error. The pallet defines it as
+"Invariant violated: deposit recomputation returned None after updating announcements", and the
+Subtensor API errors reference lists it under proxy errors
+([Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs),
+[Subtensor API Errors: AnnouncementDepositInvariantViolated](https://docs.learnbittensor.org/subtensor-api/errors#announcementdepositinvariantviolated)).
+
+## What It Means
+
+Delayed proxy workflows require a proxy delegate to publish an announcement before a delayed call
+may execute. The `announce` extrinsic records that pending announcement and updates the reserved
+announcement deposit for the delegate account. After the new announcement is added to storage, the
+runtime recomputes how much deposit should be held for the enlarged pending list.
+`AnnouncementDepositInvariantViolated` is returned when that recomputation step fails the pallet's
+invariant and returns no deposit value even though a pending announcement was just recorded
+([Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs)).
+
+This is an internal announcement-deposit accounting invariant failure on `announce`, not proof that
+the signer lacks a proxy relationship for the targeted account and not proof that the pending-
+announcement queue is already full.
+
+## Why It Appears
+
+Under normal operation, adding an announcement increases the required announcement deposit and the
+runtime stores the updated reserved amount. This error appears when that post-update deposit step
+fails the pallet's invariant instead of producing a valid deposit value
+([Subtensor API Errors: AnnouncementDepositInvariantViolated](https://docs.learnbittensor.org/subtensor-api/errors#announcementdepositinvariantviolated),
+[Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs)).
+
+When debugging on `announce`, compare against the checks that run earlier on the same extrinsic.
+`NotProxy` means the signer is not registered as a proxy for the targeted real account, and
+`TooMany` means the pending-announcement queue is already at its runtime maximum before the deposit
+step runs
+([Subtensor API Errors: NotProxy](https://docs.learnbittensor.org/subtensor-api/errors#notproxy),
+[Subtensor API Errors: TooMany](https://docs.learnbittensor.org/subtensor-api/errors#toomany),
+[Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs)).
+
+## Distinction from Too Many
+
+`AnnouncementDepositInvariantViolated` and `TooMany` both block `announce`, but they indicate
+different failures. `TooMany` means the pending-announcement list is already at capacity before the
+new record can be added. `AnnouncementDepositInvariantViolated` means the announcement record was
+accepted into storage, but the follow-up deposit recomputation failed the pallet invariant
+([Subtensor API Errors: TooMany](https://docs.learnbittensor.org/subtensor-api/errors#toomany),
+[Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs)).
+
+- **TooMany** — pending-announcement queue is at its runtime maximum.
+- **AnnouncementDepositInvariantViolated** — announcement deposit recomputation failed after push.
+
+## Distinction from Not Proxy
+
+`AnnouncementDepositInvariantViolated` and `NotProxy` both appear on `announce`, but at different
+steps. `NotProxy` is returned when the signer is not a registered proxy for the targeted real
+account. `AnnouncementDepositInvariantViolated` is returned later, after proxy validation and queue
+insertion succeed, when announcement deposit accounting fails
+([Subtensor API Errors: NotProxy](https://docs.learnbittensor.org/subtensor-api/errors#notproxy),
+[Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs)).
+
+- **NotProxy** — the required proxy relationship is not found.
+- **AnnouncementDepositInvariantViolated** — announcement deposit accounting failed after push.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the deposit invariant check on `announce`. It
+does not describe the full delayed-proxy announcement lifecycle or every proxy-type filter; it
+focuses on the accounting failure that raises `AnnouncementDepositInvariantViolated`
+([Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs)).
+
+## Further Reading
+
+- [Subtensor API Errors: AnnouncementDepositInvariantViolated](https://docs.learnbittensor.org/subtensor-api/errors#announcementdepositinvariantviolated)
+- [Subtensor API Errors: TooMany](https://docs.learnbittensor.org/subtensor-api/errors#toomany)
+- [Subtensor API Errors: NotProxy](https://docs.learnbittensor.org/subtensor-api/errors#notproxy)
+- [Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs)
