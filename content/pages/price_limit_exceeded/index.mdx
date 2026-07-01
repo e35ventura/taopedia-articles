@@ -1,0 +1,113 @@
+---
+title: "Price Limit Exceeded"
+summary:
+  "How the PriceLimitExceeded error blocks dynamic-subnet swap-backed staking paths when the
+  submitted limit price is not executable against the current pool price."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Price Limit Exceeded
+infoboxCaption: Error raised when a swap-backed staking limit price is not executable.
+infoboxRows:
+  - label: Error
+    value: PriceLimitExceeded
+  - label: Trigger
+    value: Submitted limit price fails the current-price check on the swap path
+  - label: Checked in
+    value: swap_inner, reached from dynamic add-stake, remove-stake, and move-stake paths
+  - label: Related concept
+    value: Slippage and pool price bounds
+---
+
+# Price Limit Exceeded
+
+`PriceLimitExceeded` is a documented swap-pallet error raised when a dynamic-subnet swap-backed
+staking path reaches the pool with a limit price that does not clear the current price check. The
+Subtensor API errors reference describes it as "The operation would exceed the price limit"
+([Subtensor API Errors: PriceLimitExceeded](https://docs.learnbittensor.org/subtensor-api/errors#pricelimitexceeded)).
+
+## What It Means
+
+Dynamic staking flows use the subnet pool to convert between TAO and alpha. On that path, the swap
+runtime checks whether the submitted `limit_price` is on the executable side of the pool's current
+price before running the swap step. `PriceLimitExceeded` means that check failed, so the conversion
+stops before the pool trade executes
+([Understanding Slippage](https://docs.learnbittensor.org/learn/slippage),
+[Subtensor source: swap impls](https://github.com/opentensor/subtensor/blob/main/pallets/swap/src/pallet/impls.rs)).
+
+This check appears on the dynamic-subnet limit-price helpers behind staking actions such as
+`get_max_amount_add`, `get_max_amount_remove`, and `get_max_amount_move`
+([Subtensor source: add_stake.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/add_stake.rs),
+[Subtensor source: remove_stake.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/remove_stake.rs),
+[Subtensor source: move_stake.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/move_stake.rs)).
+
+The practical meaning is narrow: the caller's price bound is incompatible with the pool's current
+price for the requested direction. It is not, by itself, proof that the subnet lacks liquidity, that
+the stake amount is below minimum size, or that the caller's balance is too small.
+
+## Why It Appears
+
+This error appears when a wallet or integration supplies a limit price that is stricter than the
+current pool can satisfy on a dynamic subnet. The staking test suite shows the pattern on several
+paths: add-side helpers reject zero or too-low limits, remove-side helpers reject too-high limits,
+and move-stake helpers reject cross-subnet limits that imply an unexecutable price ratio
+([Subtensor staking tests](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/tests/staking.rs)).
+
+For a reader, the useful interpretation is that the runtime preserved the caller's stated price
+boundary. The pool may still exist and the subnet may still be healthy, but this specific conversion
+would move through a price the caller did not permit
+([Price Protection](https://docs.learnbittensor.org/learn/price-protection),
+[Understanding Slippage](https://docs.learnbittensor.org/learn/slippage)).
+
+## Distinction from Slippage Too High
+
+`PriceLimitExceeded` and `SlippageTooHigh` both protect callers against adverse pool movement, but
+they fire at different stages. `PriceLimitExceeded` is the swap-path current-price gate used when
+the runtime computes what a limit price can execute on a dynamic subnet. `SlippageTooHigh` is the
+later staking-path rejection that fires when the submitted amount exceeds the computed `max_amount`
+and partial execution is disabled
+([Slippage Too High](https://docs.learnbittensor.org/errors/subtensor#slippagetoohigh),
+[Subtensor source: stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)).
+
+- **PriceLimitExceeded** — the submitted price bound does not clear the current pool price check.
+- **SlippageTooHigh** — the requested amount exceeds the allowed post-check execution cap.
+
+## Distinction from Reserves Too Low
+
+`PriceLimitExceeded` and `ReservesTooLow` both stop a pool-backed conversion before execution, but
+they guard different failures. `ReservesTooLow` means the output-side reserve is already below the
+minimum reserve needed for safe swap math. `PriceLimitExceeded` means reserves cleared that basic
+guard, but the caller's own limit price still blocks the trade
+([Subtensor API Errors: ReservesTooLow](https://docs.learnbittensor.org/subtensor-api/errors#reservestoolow),
+[Subtensor source: swap impls](https://github.com/opentensor/subtensor/blob/main/pallets/swap/src/pallet/impls.rs)).
+
+- **ReservesTooLow** — the pool does not meet the minimum reserve guard.
+- **PriceLimitExceeded** — the pool exists, but the caller's limit price rejects the current price.
+
+## Distinction from Registration Price Limit Exceeded
+
+`PriceLimitExceeded` and `RegistrationPriceLimitExceeded` both involve a caller-supplied price cap,
+but they belong to different systems. `RegistrationPriceLimitExceeded` compares a registration burn
+cap against the subnet's current registration cost on `register_limit`. `PriceLimitExceeded`
+compares a staking or move-stake swap bound against the current subnet-pool price
+([Registration Price Limit Exceeded](https://docs.learnbittensor.org/errors/subtensor#registrationpricelimitexceeded),
+[Understanding Neurons](https://docs.learnbittensor.org/learn/neurons)).
+
+- **RegistrationPriceLimitExceeded** — registration burn cost exceeds a burn cap.
+- **PriceLimitExceeded** — swap execution would cross a staking-path price bound.
+
+## Reader Boundary
+
+This page defines the meaning of the error label on dynamic-subnet swap-backed staking paths. It
+does not report a live subnet price, a current executable limit, or the exact limit-price value a
+wallet should choose for a specific trade; those are runtime-state and user-intent details readers
+must query at the time of submission
+([Understanding Slippage](https://docs.learnbittensor.org/learn/slippage),
+[Price Protection](https://docs.learnbittensor.org/learn/price-protection)).
+
+## Further Reading
+
+- [Subtensor API Errors: PriceLimitExceeded](https://docs.learnbittensor.org/subtensor-api/errors#pricelimitexceeded)
+- [Understanding Slippage](https://docs.learnbittensor.org/learn/slippage)
+- [Price Protection](https://docs.learnbittensor.org/learn/price-protection)
+- [Slippage Too High](https://docs.learnbittensor.org/errors/subtensor#slippagetoohigh)
+- [Subtensor staking tests](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/tests/staking.rs)
