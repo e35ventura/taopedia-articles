@@ -1,0 +1,105 @@
+---
+title: "Overflow"
+summary:
+  "How the Overflow error blocks finalizing a crowdloan into a subnet lease when the chain cannot
+  allocate the next subnet lease ID."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Overflow
+infoboxCaption: Error raised when the subnet lease ID counter cannot increment safely.
+infoboxRows:
+  - label: Error
+    value: Overflow
+  - label: Trigger
+    value: NextSubnetLeaseId cannot increment past u64::MAX
+  - label: Checked in
+    value: get_next_lease_id, called by do_register_leased_network
+  - label: Check type
+    value: Lease ID counter increment
+---
+
+# Overflow
+
+`Overflow` is a documented Subtensor standard error raised when the chain cannot safely increment
+the subnet lease ID counter during leased-network registration. The standard-errors reference
+describes it as "An overflow occurred"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#overflow)).
+
+## What It Means
+
+`do_register_leased_network` finalizes a
+[crowdloan](https://docs.learnbittensor.org/subnets/crowdloans) into a registered
+[subnet lease](https://docs.learnbittensor.org/subnets/crowdloans). After the caller and optional
+end-block checks pass, it calls `get_next_lease_id` to reserve the next lease ID from
+`NextSubnetLeaseId` storage. `Overflow` is raised when that counter cannot increment without
+exceeding `u64::MAX`
+([Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+This is a counter-safety rejection, not a crowdloan balance, beneficiary identity, or end-block
+timing failure. Lease coldkey and hotkey derivation, fund transfer, subnet registration, and lease
+record storage only run after a lease ID has been allocated successfully
+([Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+## Why It Appears
+
+`get_next_lease_id` reads the current `NextSubnetLeaseId` value and uses checked addition to compute
+the next ID. When the stored counter is already at the maximum representable lease ID, incrementing
+it would overflow and the call returns `Overflow` instead of continuing
+([Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+In ordinary network use this is an extreme edge case: each successful leased-network registration
+advances the counter by one. A reader seeing `Overflow` on `register_leased_network` should treat it
+as the lease-ID allocator being exhausted rather than a mis-signed crowdloan or an invalid end block
+([Subnet Lease](https://docs.learnbittensor.org/subnets/crowdloans),
+[Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+## Distinction from Invalid Lease Beneficiary
+
+`Overflow` and `InvalidLeaseBeneficiary` are both early rejections on the leased-network
+registration path, but they guard different properties. `InvalidLeaseBeneficiary` is the first
+check, confirming the caller is the crowdloan creator. `Overflow` is reached only after that creator
+match and any optional end-block validation succeed, when the lease ID counter itself cannot advance
+([Subtensor Standard Errors: InvalidLeaseBeneficiary](https://docs.learnbittensor.org/errors/subtensor#invalidleasebeneficiary),
+[Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+- **InvalidLeaseBeneficiary** — the caller is not the crowdloan creator.
+- **Overflow** — the next subnet lease ID cannot be allocated.
+
+## Distinction from Lease Cannot End In The Past
+
+`Overflow` and `LeaseCannotEndInThePast` both appear while registering a leased network, but on
+different inputs. `LeaseCannotEndInThePast` compares a supplied optional end block against the
+current block. `Overflow` is unrelated to block timing: it means the lease ID counter has reached
+the representable maximum
+([Subtensor Standard Errors: LeaseCannotEndInThePast](https://docs.learnbittensor.org/errors/subtensor#leasecannotendinthepast),
+[Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+- **LeaseCannotEndInThePast** — the supplied end block is not in the future.
+- **Overflow** — the lease ID counter cannot increment.
+
+## Distinction from Proportion Overflow
+
+`Overflow` and `ProportionOverflow` both use overflow wording, but on separate extrinsics.
+`ProportionOverflow` blocks child-hotkey scheduling when combined stake proportions exceed what the
+chain can represent. `Overflow` blocks leased-network registration when the subnet lease ID counter
+cannot advance
+([Subtensor Standard Errors: ProportionOverflow](https://docs.learnbittensor.org/errors/subtensor#proportionoverflow),
+[Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+- **ProportionOverflow** — child stake proportions do not fit.
+- **Overflow** — the subnet lease ID counter is exhausted.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the lease ID increment that raises it. It does
+not describe crowdloan contribution rules, dividend distribution, or lease termination; those are
+documented separately ([Subnet Lease](https://docs.learnbittensor.org/subnets/crowdloans)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#overflow)
+- [Subtensor Standard Errors: InvalidLeaseBeneficiary](https://docs.learnbittensor.org/errors/subtensor#invalidleasebeneficiary)
+- [Subtensor Standard Errors: LeaseCannotEndInThePast](https://docs.learnbittensor.org/errors/subtensor#leasecannotendinthepast)
+- [Subtensor Standard Errors: ProportionOverflow](https://docs.learnbittensor.org/errors/subtensor#proportionoverflow)
+- [Subnet Lease](https://docs.learnbittensor.org/subnets/crowdloans)
+- [Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)
