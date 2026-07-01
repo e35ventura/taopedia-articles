@@ -1,73 +1,107 @@
 ---
 title: "New Hotkey Is Same With Old"
 summary:
-  "How the NewHotKeyIsSameWithOld error blocks a hotkey swap when the new hotkey submitted is
-  identical to the hotkey it would replace."
+  "How the NewHotKeyIsSameWithOld error blocks a hotkey swap when the replacement hotkey address is
+  identical to the hotkey being replaced."
 category: "Wallets"
 tags: ["Wallets", "Errors"]
 infoboxTitle: New Hotkey Is Same With Old
-infoboxCaption: Error raised when a hotkey swap's new and old hotkeys are identical.
+infoboxCaption: Error raised when a hotkey swap names the same account as both old and new hotkey.
 infoboxRows:
   - label: Error
     value: NewHotKeyIsSameWithOld
   - label: Trigger
-    value: old_hotkey == new_hotkey in a hotkey swap call
+    value: New hotkey address equals the old hotkey address
   - label: Checked in
-    value: do_swap_hotkey
-  - label: Check type
-    value: Pure key-equality comparison
+    value: Hotkey swap extrinsic
+  - label: Related concept
+    value: Hotkey swap
 ---
 
 # New Hotkey Is Same With Old
 
-`NewHotKeyIsSameWithOld` is a documented Subtensor standard error raised by the hotkey swap
-extrinsic. The standard-errors reference describes it as "The new hotkey is the same as old one"
+`NewHotKeyIsSameWithOld` means a hotkey swap named the same account as both the source and
+destination hotkey. The standard-errors reference describes it as "The new hotkey is the same as old
+one"
 ([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#newhotkeyissamewithold)).
+
+A [hotkey swap](https://docs.learnbittensor.org/keys/coldkey-hotkey-security) moves subnet
+participation from one hotkey to another under the same coldkey. The call must name two different
+hotkey accounts for that move to mean anything
+([Glossary: Hotkey](https://docs.learnbittensor.org/resources/glossary#hotkey)).
 
 ## What It Means
 
-A hotkey swap replaces a coldkey's hotkey with a different hotkey, moving stake and registrations
-over to the new key. `do_swap_hotkey` compares the submitted new hotkey against the old hotkey being
-replaced, and raises `NewHotKeyIsSameWithOld` when the two are identical, since a swap to the same
-key would not change anything
-([Subtensor source: swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs)).
+Hotkey swaps transfer registrations, stake routing, and related state from an old hotkey to a new
+one. `NewHotKeyIsSameWithOld` is the early rejection when those two submitted addresses are
+identical, so there is no replacement key to receive the swap
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#newhotkeyissamewithold),
+[Hotkey Swap](https://docs.learnbittensor.org/keys/coldkey-hotkey-security)).
 
-The comparison is a single equality check on the two submitted account values. It does not depend on
-ownership, registration, or any other property of either key, only on whether they are the same
-account
-([Subtensor source: swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs)).
+This is an identity check on the submitted pair. The error does not, by itself, say anything about
+coldkey ownership, swap fees, subnet registration, or root-side claim state on the hotkeys.
 
 ## Why It Appears
 
-`do_swap_hotkey` runs this check after confirming the calling coldkey owns the old hotkey, and after
-confirming the coldkey also owns the new hotkey when that new hotkey already exists on chain. Both
-of those earlier checks can pass even when the two hotkeys are identical, so this separate equality
-check is what specifically catches a same-key swap attempt
-([Subtensor source: swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs)).
+This error appears when a wallet or script submits a hotkey swap with matching old and new hotkey
+fields. That can happen when a form reuses one address for both inputs, when automation copies the
+current hotkey into the destination field by mistake, or when a retry resubmits the same pair
+without changing the destination key
+([Hotkey Swap](https://docs.learnbittensor.org/keys/coldkey-hotkey-security)).
+
+When debugging, rule out this identity failure before reading later swap rejections.
+`NonAssociatedColdKey` means the signing coldkey does not own the old hotkey.
+`HotKeySetTxRateLimitExceeded` means the coldkey retried the swap before the short transaction
+cooldown cleared. `HotKeyAlreadyRegisteredInSubNet` means the new hotkey already holds a UID on a
+subnet included in the swap
+([Subtensor Standard Errors: NonAssociatedColdKey](https://docs.learnbittensor.org/errors/subtensor#nonassociatedcoldkey),
+[Subtensor Standard Errors: HotKeySetTxRateLimitExceeded](https://docs.learnbittensor.org/errors/subtensor#hotkeysettxratelimitexceeded),
+[Subtensor Standard Errors: HotKeyAlreadyRegisteredInSubNet](https://docs.learnbittensor.org/errors/subtensor#hotkeyalreadyregisteredinsubnet)).
+
+The practical meaning is narrow: the swap must name two different hotkey accounts.
+
+## Distinction from New Hotkey Not Clean For Root Swap
+
+`NewHotKeyIsSameWithOld` and `NewHotKeyNotCleanForRootSwap` both appear on hotkey swap calls, but
+they reject different problems. `NewHotKeyIsSameWithOld` means the submitted old and new hotkeys are
+the same account. `NewHotKeyNotCleanForRootSwap` means the replacement hotkey still carries root
+claimable balance or root stake on a root-touching swap
+([Subtensor Standard Errors: NewHotKeyNotCleanForRootSwap](https://docs.learnbittensor.org/errors/subtensor#newhotkeynotcleanforrootswap)).
+
+- **NewHotKeyIsSameWithOld** — the old and new hotkeys are the same account.
+- **NewHotKeyNotCleanForRootSwap** — the new hotkey is not clear for a root-touching swap.
+
+## Distinction from Hotkey Already Registered In Subnet
+
+`NewHotKeyIsSameWithOld` and `HotKeyAlreadyRegisteredInSubNet` both involve the replacement hotkey
+on a swap path, but at different stages. `NewHotKeyIsSameWithOld` is the identity check that fails
+when no replacement account was provided. `HotKeyAlreadyRegisteredInSubNet` means the new hotkey
+already has a UID on a subnet the swap would move into
+([Subtensor Standard Errors: HotKeyAlreadyRegisteredInSubNet](https://docs.learnbittensor.org/errors/subtensor#hotkeyalreadyregisteredinsubnet)).
+
+- **NewHotKeyIsSameWithOld** — the old and new hotkeys are identical.
+- **HotKeyAlreadyRegisteredInSubNet** — the new hotkey already has a UID on the subnet.
 
 ## Distinction from Non Associated Cold Key
 
-`NewHotKeyIsSameWithOld` and `NonAssociatedColdKey` are both checked early in `do_swap_hotkey`, but
-they guard different properties of the call. The ownership checks confirm the calling coldkey
-actually controls the old hotkey, and the new hotkey if it already exists, and raise
-`NonAssociatedColdKey` when that ownership is missing. `NewHotKeyIsSameWithOld` runs after those
-ownership checks pass and catches the separate case where the submitted hotkeys are identical
-([Non Associated Cold Key](https://docs.learnbittensor.org/errors/subtensor#nonassociatedcoldkey),
-[Subtensor source: swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs)).
+`NewHotKeyIsSameWithOld` and `NonAssociatedColdKey` are both early hotkey swap rejections, but they
+test different inputs. `NonAssociatedColdKey` means the signing coldkey does not own the old hotkey
+named in the swap. `NewHotKeyIsSameWithOld` means the old and new hotkey addresses match
+([Subtensor Standard Errors: NonAssociatedColdKey](https://docs.learnbittensor.org/errors/subtensor#nonassociatedcoldkey)).
 
-- **NonAssociatedColdKey** — the caller does not own the old or new hotkey.
-- **NewHotKeyIsSameWithOld** — the new and old hotkeys are the same account.
+- **NewHotKeyIsSameWithOld** — the submitted hotkeys are the same account.
+- **NonAssociatedColdKey** — the coldkey does not own the old hotkey.
 
 ## Reader Boundary
 
-This page defines the meaning of the error label and the equality check that raises it. It does not
-describe the rest of the hotkey swap validation sequence, such as the transaction rate limit or
-per-subnet registration checks that run afterward; those are separate checks with their own error
-labels
-([Subtensor source: swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs)).
+This page defines the meaning of the error label and the same-address check that raises it. It does
+not describe swap fees, per-subnet cooldowns, or the full hotkey rotation workflow; those are
+documented separately ([Hotkey Swap](https://docs.learnbittensor.org/keys/coldkey-hotkey-security),
+[Chain Rate Limits: Hotkey swap rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#hotkey-swap-rate-limit)).
 
 ## Further Reading
 
 - [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#newhotkeyissamewithold)
-- [Subtensor Standard Errors: NonAssociatedColdKey](https://docs.learnbittensor.org/errors/subtensor#nonassociatedcoldkey)
-- [Subtensor source: swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs)
+- [Subtensor Standard Errors: NewHotKeyNotCleanForRootSwap](https://docs.learnbittensor.org/errors/subtensor#newhotkeynotcleanforrootswap)
+- [Subtensor Standard Errors: HotKeyAlreadyRegisteredInSubNet](https://docs.learnbittensor.org/errors/subtensor#hotkeyalreadyregisteredinsubnet)
+- [Hotkey Swap](https://docs.learnbittensor.org/keys/coldkey-hotkey-security)
