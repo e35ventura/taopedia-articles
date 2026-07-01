@@ -1,0 +1,99 @@
+---
+title: "All Networks In Immunity"
+summary:
+  "How the AllNetworksInImmunity error blocks subnet-limit pruning when every eligible subnet is
+  still inside the network immunity window."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: All Networks In Immunity
+infoboxCaption:
+  Error raised when subnet pruning cannot choose a candidate because every subnet is still immune.
+infoboxRows:
+  - label: Error
+    value: AllNetworksInImmunity
+  - label: Trigger
+    value: Subnet-limit pruning finds no non-immune subnet
+  - label: Checked in
+    value: Network pruning path
+  - label: Related concept
+    value: Network immunity period
+---
+
+# All Networks In Immunity
+
+`AllNetworksInImmunity` is a documented Subtensor error on the subnet-management path. The Subtensor
+API errors reference lists it under `subtensorModule`
+([Subtensor API Errors: AllNetworksInImmunity](https://docs.learnbittensor.org/subtensor-api/errors#allnetworksinimmunity),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#allnetworksinimmunity)).
+
+## What It Means
+
+Bittensor protects newly added subnets with a network immunity window. During that period, the
+runtime does not treat the subnet as a pruning candidate
+([Subtensor source: root.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/root.rs),
+[Subtensor test: networks.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/tests/networks.rs)).
+
+`AllNetworksInImmunity` means the pruning step needed an eligible subnet but every non-root subnet
+was still inside that immunity window, so the runtime could not select one. In
+`get_network_to_prune`, Subtensor skips any subnet whose registration block is still within
+`get_network_immunity_period()` and returns no pruning candidate until at least one subnet ages out
+of immunity
+([Subtensor source: root.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/root.rs)).
+
+The practical meaning is narrow: pruning is blocked because the candidate set is empty for immunity
+reasons, not because prices, emissions, or registration inputs are malformed.
+
+## Why It Appears
+
+This error appears on subnet-limit flows that need to prune an existing subnet before proceeding,
+but cannot do so because every available non-root subnet is still protected by the network immunity
+period
+([Subtensor API Errors: AllNetworksInImmunity](https://docs.learnbittensor.org/subtensor-api/errors#allnetworksinimmunity),
+[Subtensor source: root.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/root.rs)).
+
+The tests show the boundary directly. When two fresh dynamic subnets are still inside immunity,
+`get_network_to_prune()` returns `None`. After the chain advances beyond the immunity period, the
+runtime can choose the lowest-priced eligible subnet instead of stalling on immunity
+([Subtensor test: networks.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/tests/networks.rs)).
+
+This is not a root-subnet registration ban and not a generic subnet-cap failure. It is the specific
+rejection for a subnet-limit decision where every pruning candidate is still immune.
+
+## Distinction from Subnet Limit Reached
+
+`AllNetworksInImmunity` and `SubnetLimitReached` both belong to subnet-cap management, but they mark
+different failure states. `SubnetLimitReached` means the subnet limit is hit and there is no
+eligible subnet to prune. `AllNetworksInImmunity` is the narrower case where the lack of an eligible
+candidate is specifically caused by the immunity window still covering every subnet
+([Subtensor API Errors: SubnetLimitReached](https://docs.learnbittensor.org/subtensor-api/errors#subnetlimitreached),
+[Subtensor source: root.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/root.rs)).
+
+- **AllNetworksInImmunity** — pruning is blocked because every subnet is still immune.
+- **SubnetLimitReached** — the subnet cap is reached and no subnet can be pruned.
+
+## Distinction from Registration Not Permitted On Root Subnet
+
+`AllNetworksInImmunity` and `RegistrationNotPermittedOnRootSubnet` block different subnet
+operations. `RegistrationNotPermittedOnRootSubnet` rejects neuron registration on the root subnet.
+`AllNetworksInImmunity` belongs to subnet-pruning selection and says the runtime cannot choose any
+non-root subnet for pruning yet
+([Subtensor API Errors: RegistrationNotPermittedOnRootSubnet](https://docs.learnbittensor.org/subtensor-api/errors#registrationnotpermittedonrootsubnet),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#registrationnotpermittedonrootsubnet)).
+
+- **AllNetworksInImmunity** — every prune candidate is still under network immunity.
+- **RegistrationNotPermittedOnRootSubnet** — root subnet registration is disallowed.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the immunity gate behind subnet-pruning
+selection. It does not identify which live subnets are currently immune on any network, because that
+depends on the current block height and each subnet's recorded registration time
+([Subtensor source: root.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/root.rs)).
+
+## Further Reading
+
+- [Subtensor API Errors: AllNetworksInImmunity](https://docs.learnbittensor.org/subtensor-api/errors#allnetworksinimmunity)
+- [Subtensor Standard Errors: AllNetworksInImmunity](https://docs.learnbittensor.org/errors/subtensor#allnetworksinimmunity)
+- [Subtensor API Errors: SubnetLimitReached](https://docs.learnbittensor.org/subtensor-api/errors#subnetlimitreached)
+- [Subtensor source: root.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/root.rs)
+- [Subtensor test: networks.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/tests/networks.rs)
