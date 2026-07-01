@@ -1,0 +1,79 @@
+---
+title: "Deprecated"
+summary:
+  "How the Deprecated error signals that a caller invoked the schedule_swap_coldkey extrinsic, which
+  the runtime now rejects for all callers and redirects to the announce-then-execute coldkey-swap
+  flow."
+category: "Wallets"
+tags: ["Wallets", "Errors"]
+infoboxTitle: Deprecated
+infoboxCaption: Error raised when a deprecated extrinsic is invoked.
+infoboxRows:
+  - label: Error
+    value: Deprecated
+  - label: Trigger
+    value: Caller submits the deprecated schedule_swap_coldkey extrinsic
+  - label: Checked in
+    value: schedule_swap_coldkey
+  - label: Check type
+    value: Static rejection of a deprecated call path
+---
+
+# Deprecated
+
+`Deprecated` is a documented Subtensor standard error. The standard-errors reference describes it as
+"Deprecated call"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#deprecated)).
+
+## What It Means
+
+Coldkey swaps go through a two-step flow: announce the swap first, then execute it after the
+configured delay ([Coldkey Swap](https://docs.learnbittensor.org/keys/coldkey-swap)).
+
+`Deprecated` means the caller attempted the older one-step path that bundled those steps together.
+The runtime rejects every call to that older path and tells the caller, by raising this error, to
+migrate to the announce-then-execute flow
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#deprecated),
+[Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)).
+
+## Why It Appears
+
+The error appears whenever a wallet or client still submits the old bundled-swap extrinsic. The
+runtime always rejects this call, regardless of the caller's intent, the new coldkey, or the current
+block. The rejection happens immediately on dispatch, before any swap state is read or written
+([Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)).
+
+For a reader, the practical meaning is narrow: the caller reached for the old swap path instead of
+the new two-step flow. Fixing the call by switching to the announce-then-execute sequence is the
+only way through this rejection
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#deprecated),
+[Coldkey Swap](https://docs.learnbittensor.org/keys/coldkey-swap)).
+
+## Distinction from Coldkey Swap Announcement Not Found
+
+`Deprecated` and `ColdkeySwapAnnouncementNotFound` both surface from the coldkey-swap flow but fire
+under different conditions. `Deprecated` is the static rejection of an old one-step extrinsic that
+the runtime no longer accepts. `ColdkeySwapAnnouncementNotFound` fires from the new extrinsic when
+the caller has not yet created an announcement to execute
+([Subtensor Standard Errors: ColdkeySwapAnnouncementNotFound](https://docs.learnbittensor.org/errors/subtensor#coldkeyswapannouncementnotfound),
+[Coldkey Swap](https://docs.learnbittensor.org/keys/coldkey-swap)).
+
+- **Deprecated** — the call uses the old one-step extrinsic.
+- **ColdkeySwapAnnouncementNotFound** — the call uses the new flow, but there is no announcement to
+  execute.
+
+## Reader Boundary
+
+This page defines the meaning of the `Deprecated` error label and the static rejection of the old
+one-step coldkey-swap extrinsic. It does not describe the announcement flow, the dispute path, the
+reannouncement delay, or the cooldown on coldkey changes; those are documented separately
+([Coldkey Swap](https://docs.learnbittensor.org/keys/coldkey-swap),
+[Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#deprecated)
+- [Subtensor Standard Errors: ColdkeySwapAnnouncementNotFound](https://docs.learnbittensor.org/errors/subtensor#coldkeyswapannouncementnotfound)
+- [Subtensor source: errors.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/errors.rs)
+- [Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)
+- [Coldkey Swap](https://docs.learnbittensor.org/keys/coldkey-swap)
