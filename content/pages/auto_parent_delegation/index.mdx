@@ -1,0 +1,87 @@
+---
+title: "Auto Parent Delegation"
+summary:
+  "How the AutoParentDelegationEnabled flag lets a root validator opt into automatically becoming a
+  parent of a new subnet owner's hotkey when a subnet is registered, routing full stake proportion
+  to the owner hotkey on that subnet."
+category: "Staking"
+tags: ["Staking", "Validation"]
+infoboxTitle: Auto Parent Delegation
+infoboxCaption:
+  Per-hotkey flag that opts a root validator into automatic parent-child setup on new subnets.
+infoboxRows:
+  - label: Flag
+    value: AutoParentDelegationEnabled
+  - label: Scope
+    value: Root validators (netuid 0)
+  - label: Default
+    value: Disabled (opt-out)
+  - label: Set by
+    value: set_auto_parent_delegation_enabled extrinsic
+---
+
+# Auto Parent Delegation
+
+Auto parent delegation is a per-hotkey opt-in flag that controls whether a root validator
+automatically becomes a parent of a new subnet owner's hotkey when a subnet is registered. The
+Subtensor source describes it as allowing "a root validator to toggle auto parent delegation for new
+subnets owner hotkey"
+([Subtensor source: subtensor/dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)).
+
+## What It Does
+
+When a new subnet is registered, Subtensor calls an internal setup function that iterates over all
+root validators and schedules each one as a parent of the new subnet's owner hotkey on that subnet.
+For each root validator, the runtime checks the `AutoParentDelegationEnabled` storage item. If the
+flag is `true` for that validator's hotkey, the setup proceeds and the root validator is scheduled
+as a parent with full proportion (`u64::MAX`). If the flag is `false`, the validator is skipped and
+no parent-child relationship is created for it on the new subnet
+([Subtensor source: subtensor/set_children.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/set_children.rs)).
+
+The relationship assigns the full stake proportion to the subnet owner hotkey as a child, meaning
+the opted-in root validator delegates its entire validation weight on that subnet to the owner
+hotkey automatically
+([Subtensor source: subtensor/set_children.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/set_children.rs)).
+
+## Default Behavior
+
+The flag defaults to `false`, so root validators are opted out by default. A root validator must
+explicitly call `set_auto_parent_delegation_enabled` to enable this behavior. A validator that has
+not set the flag does not become a parent of newly registered subnet owner hotkeys automatically
+([Subtensor source: subtensor/dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)).
+
+## Who Can Set It
+
+Only a hotkey registered on the root network (netuid 0) can use
+`set_auto_parent_delegation_enabled`. The extrinsic requires the caller's coldkey to own the hotkey,
+and the hotkey must be registered on the root subnet. Attempting to set the flag for a hotkey that
+is not registered on root returns `HotKeyNotRegisteredInSubNet`
+([Subtensor source: subtensor/dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)).
+
+## Distinction from Manual Child Hotkey Assignment
+
+Auto parent delegation and manual child hotkey assignment both create parent-child relationships,
+but they differ in when and how the relationship is established. Manual assignment via
+`set_children` is initiated explicitly by the parent hotkey at any time, for any subnet, with chosen
+proportion values. Auto parent delegation is triggered automatically by the chain at subnet
+registration, targets the new subnet's owner hotkey as the child, and always uses full proportion. A
+root validator using auto parent delegation does not need to call `set_children` for each new subnet
+individually
+([Subtensor source: subtensor/set_children.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/set_children.rs),
+[Subtensor source: subtensor/dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)).
+
+- **set_children** — explicit, per-call, caller-chosen subnet and proportion.
+- **AutoParentDelegationEnabled** — automatic on subnet registration, always full proportion to the
+  new owner hotkey.
+
+## Reader Boundary
+
+This page describes the flag and what the chain does when it is enabled. It does not describe the
+broader child-hotkey mechanism, how conviction or stake weight flows through parent-child
+relationships, or how subnet registration proceeds beyond the auto parent delegation step
+([Subtensor source: subtensor/set_children.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/set_children.rs)).
+
+## Further Reading
+
+- [Subtensor source: subtensor/dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)
+- [Subtensor source: subtensor/set_children.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/set_children.rs)
