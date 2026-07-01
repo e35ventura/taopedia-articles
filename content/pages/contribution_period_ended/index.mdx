@@ -1,0 +1,70 @@
+---
+title: "Contribution Period Ended"
+summary:
+  "How the ContributionPeriodEnded error blocks a crowdloan contribution when the crowdloan's
+  deadline block has already been reached."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Contribution Period Ended
+infoboxCaption: Error raised when a crowdloan's contribution deadline has already passed.
+infoboxRows:
+  - label: Error
+    value: ContributionPeriodEnded
+  - label: Trigger
+    value: Current block >= crowdloan.end
+  - label: Checked in
+    value: contribute extrinsic, first check
+  - label: Check type
+    value: Block-number comparison against the crowdloan's end block
+---
+
+# Contribution Period Ended
+
+`ContributionPeriodEnded` is a documented Subtensor standard error raised by the `contribute`
+extrinsic in the crowdloan pallet. The Subtensor API error reference describes it as "The
+contribution period has ended"
+([Subtensor API: Errors](https://docs.learnbittensor.org/subtensor-api/errors)).
+
+## What It Means
+
+Each [crowdloan](https://docs.learnbittensor.org/subnets/crowdloans) has a deadline — a block number
+after which contributions are no longer accepted. The `contribute` extrinsic checks whether the
+current block is still before that deadline and raises `ContributionPeriodEnded` when the deadline
+has already been reached or passed
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+This is the first check `contribute` runs. If the deadline has passed, the call fails here before
+any of the other contribution checks, such as whether the crowdloan's funding cap has been reached
+or how many contributors it already has
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+## Why It Appears
+
+The deadline is set per crowdloan at creation and is measured in blocks rather than clock time. A
+contribution submitted after that block has been produced fails this check regardless of any other
+property of the crowdloan or the contribution
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+## Distinction from Cap Raised
+
+`ContributionPeriodEnded` and `CapRaised` both block the `contribute` extrinsic, but they check
+different conditions. `ContributionPeriodEnded` is the earlier check and fires solely because the
+deadline block has passed. `CapRaised` fires because the total amount raised has reached the
+crowdloan's funding target, and is only reached after the deadline check succeeds
+([Subtensor Standard Errors: CapRaised](https://docs.learnbittensor.org/subtensor-api/errors),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+- **ContributionPeriodEnded** — the crowdloan's deadline block has passed.
+- **CapRaised** — the crowdloan's total funding cap has been reached.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the deadline comparison that raises it. It does
+not describe how crowdloan deadlines are set or the rest of the contribution flow; those are
+documented separately ([Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans)).
+
+## Further Reading
+
+- [Subtensor API: Errors](https://docs.learnbittensor.org/subtensor-api/errors)
+- [Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans)
+- [Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)
