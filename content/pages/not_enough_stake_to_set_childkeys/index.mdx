@@ -1,0 +1,126 @@
+---
+title: "Not Enough Stake To Set Childkeys"
+summary:
+  "How the NotEnoughStakeToSetChildkeys error blocks set_children when the parent hotkey's total
+  stake is below StakeThreshold and the call assigns a non-empty child list."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Not Enough Stake To Set Childkeys
+infoboxCaption: Error raised when parent stake is too low to assign children.
+infoboxRows:
+  - label: Error
+    value: NotEnoughStakeToSetChildkeys
+  - label: Trigger
+    value: Parent total stake is below StakeThreshold with children listed
+  - label: Checked in
+    value: set_children
+  - label: Related parameter
+    value: StakeThreshold
+---
+
+# Not Enough Stake To Set Childkeys
+
+`NotEnoughStakeToSetChildkeys` means a `set_children` call tried to assign a non-empty child list
+while the parent hotkey's total stake fell below the global minimum. The Subtensor API errors
+reference summarizes it as "The parent hotkey doesn't have enough own stake to set childkeys"
+([Subtensor API Errors: NotEnoughStakeToSetChildkeys](https://docs.learnbittensor.org/subtensor-api/errors#notenoughstaketosetchildkeys),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketosetchildkeys)).
+
+## What It Means
+
+A [child hotkey](https://docs.learnbittensor.org/validators/child-hotkeys) lets a parent delegate a
+share of its stake to separate validating keys on a subnet. `set_children` submits the full child
+list a parent wants on one netuid, each paired with a stake proportion
+([Child Hotkeys](https://docs.learnbittensor.org/validators/child-hotkeys)).
+
+Before the child list is scheduled or applied, the runtime checks the parent hotkey's total stake
+against the global `StakeThreshold` parameter when the submitted list is not empty. The subnet owner
+hotkey for that netuid is exempt from this floor, matching the documented minimum-stake requirement
+for assigning children
+([Child Hotkeys: Minimum stake requirement](https://docs.learnbittensor.org/validators/child-hotkeys#minimum-stake-requirement),
+[Subtensor source: set_children.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/set_children.rs)).
+
+`NotEnoughStakeToSetChildkeys` means the parent hotkey did not meet that total-stake floor and is
+not the subnet owner hotkey on the submitted netuid. An empty child list clears assignments without
+triggering this check.
+
+This is a parent-stake floor rejection, not proof that a listed child hotkey is unregistered or that
+the child proportions overflow.
+
+## Why It Appears
+
+This error appears when a coldkey signs `set_children` with at least one child entry while the
+parent hotkey's total stake sits below `StakeThreshold`. That can happen after unstaking reduced the
+parent's cross-subnet stake, when a new parent tries to delegate before meeting the documented
+minimum, or when automation submits children against a hotkey that no longer qualifies
+([Child Hotkeys: Minimum stake requirement](https://docs.learnbittensor.org/validators/child-hotkeys#minimum-stake-requirement)).
+
+When debugging, compare against other `set_children` rejections on the same call.
+`NonAssociatedColdKey` means the signing coldkey does not own the parent hotkey. `TooManyChildren`
+means the list has more than five entries. `ProportionOverflow` means the combined proportions do
+not fit the chain's accounting limits
+([Subtensor Standard Errors: NonAssociatedColdKey](https://docs.learnbittensor.org/errors/subtensor#nonassociatedcoldkey),
+[Subtensor Standard Errors: TooManyChildren](https://docs.learnbittensor.org/errors/subtensor#toomanychildren),
+[Subtensor Standard Errors: ProportionOverflow](https://docs.learnbittensor.org/errors/subtensor#proportionoverflow)).
+
+The practical meaning is narrow: raise the parent hotkey's total stake, clear children with an empty
+list instead of assigning new ones, or confirm the parent is the subnet owner hotkey on that netuid.
+
+## Distinction from Not Enough Stake To Set Weights
+
+`NotEnoughStakeToSetChildkeys` and `NotEnoughStakeToSetWeights` both compare stake against
+`StakeThreshold`, but on different extrinsics. `NotEnoughStakeToSetWeights` blocks weight submission
+when stake weight on the targeted subnet is below the threshold. `NotEnoughStakeToSetChildkeys`
+blocks assigning a non-empty child list when the parent's total stake is below the threshold
+([Not Enough Stake To Set Weights](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketosetweights)).
+
+- **NotEnoughStakeToSetChildkeys** — parent total stake is too low to assign children.
+- **NotEnoughStakeToSetWeights** — subnet stake weight is too low to submit weights.
+
+## Distinction from Not Enough Stake To Withdraw
+
+`NotEnoughStakeToSetChildkeys` and `NotEnoughStakeToWithdraw` both involve stake balances, but on
+different operations. `NotEnoughStakeToWithdraw` means a remove-stake call names more alpha than the
+hotkey-coldkey pair holds on a subnet. `NotEnoughStakeToSetChildkeys` means the parent hotkey's
+total stake is below the floor required to assign children
+([Subtensor Standard Errors: NotEnoughStakeToWithdraw](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketowithdraw)).
+
+- **NotEnoughStakeToSetChildkeys** — parent total stake is below the child-assignment floor.
+- **NotEnoughStakeToWithdraw** — the pair lacks enough staked alpha for the unstake request.
+
+## Distinction from Non Associated Cold Key
+
+`NotEnoughStakeToSetChildkeys` and `NonAssociatedColdKey` both appear on `set_children`, but at
+different checks. `NonAssociatedColdKey` means the signing coldkey does not own the parent hotkey.
+`NotEnoughStakeToSetChildkeys` means ownership passed but the parent hotkey's total stake is too low
+to assign the submitted children
+([Subtensor Standard Errors: NonAssociatedColdKey](https://docs.learnbittensor.org/errors/subtensor#nonassociatedcoldkey)).
+
+- **NotEnoughStakeToSetChildkeys** — parent total stake is below `StakeThreshold`.
+- **NonAssociatedColdKey** — the coldkey does not own the parent hotkey.
+
+## Distinction from Too Many Children
+
+`NotEnoughStakeToSetChildkeys` and `TooManyChildren` both block child assignment, but for different
+reasons. `TooManyChildren` means the submitted child list has more than five entries.
+`NotEnoughStakeToSetChildkeys` means the list size is acceptable but the parent hotkey's total stake
+is below the assignment floor
+([Subtensor Standard Errors: TooManyChildren](https://docs.learnbittensor.org/errors/subtensor#toomanychildren)).
+
+- **NotEnoughStakeToSetChildkeys** — parent total stake is too low.
+- **TooManyChildren** — the child list exceeds five entries.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the parent total-stake floor on non-empty child
+assignments. It does not report the live `StakeThreshold` value or a parent hotkey's current total
+stake on any network; those are chain parameters and account state readers can query separately
+([Child Hotkeys: Minimum stake requirement](https://docs.learnbittensor.org/validators/child-hotkeys#minimum-stake-requirement),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: NotEnoughStakeToSetChildkeys](https://docs.learnbittensor.org/subtensor-api/errors#notenoughstaketosetchildkeys)
+- [Child Hotkeys: Minimum stake requirement](https://docs.learnbittensor.org/validators/child-hotkeys#minimum-stake-requirement)
+- [Subtensor source: set_children.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/set_children.rs)
+- [Subtensor Standard Errors: NotEnoughStakeToSetWeights](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketosetweights)
