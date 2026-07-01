@@ -1,0 +1,59 @@
+---
+title: "Order Cancelled"
+summary:
+  "How the OrderCancelled error blocks executing a limit order that the signer has already
+  cancelled."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Order Cancelled
+infoboxCaption: Error raised when execution is attempted on a limit order that was cancelled.
+infoboxRows:
+  - label: Error
+    value: OrderCancelled
+  - label: Trigger
+    value: Order status is Cancelled in storage
+  - label: Checked in
+    value: is_order_valid, called by execute_orders and execute_batched_orders
+  - label: Check type
+    value: Status lookup
+---
+
+# Order Cancelled
+
+`OrderCancelled` is a documented Subtensor standard error raised when a limit order is executed
+after it has been cancelled. The Subtensor API error reference describes it as "Order has been
+cancelled" ([Subtensor API: Errors](https://docs.learnbittensor.org/subtensor-api/errors)).
+
+## What It Means
+
+Once a limit order is cancelled, its status is recorded in storage as `Cancelled`. The
+`is_order_valid` helper, called by both `execute_orders` and `execute_batched_orders`, looks up that
+status and raises `OrderCancelled` when it finds the order in that state, preventing execution of an
+order the signer has already revoked
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+This check runs after verifying the order is not already fulfilled, so `OrderAlreadyProcessed`
+(which covers fulfilled orders) fires before `OrderCancelled` in the same validation sequence
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+## Distinction from Order Already Processed
+
+`OrderCancelled` and `OrderAlreadyProcessed` both block execution of an order that was previously
+acted on, but they cover different final states. `OrderAlreadyProcessed` fires when the order was
+fulfilled. `OrderCancelled` fires when the order was explicitly cancelled before being filled
+([Subtensor Standard Errors: OrderAlreadyProcessed](https://docs.learnbittensor.org/subtensor-api/errors),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+- **OrderAlreadyProcessed** — the order was fulfilled.
+- **OrderCancelled** — the order was cancelled before being filled.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the status check that raises it. It does not
+describe how orders are cancelled or the rest of the order validation sequence
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+## Further Reading
+
+- [Subtensor API: Errors](https://docs.learnbittensor.org/subtensor-api/errors)
+- [Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)
