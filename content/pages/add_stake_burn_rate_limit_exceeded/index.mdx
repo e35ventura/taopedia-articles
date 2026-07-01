@@ -1,0 +1,102 @@
+---
+title: "Add Stake Burn Rate Limit Exceeded"
+summary:
+  "How the AddStakeBurnRateLimitExceeded error blocks a subnet-owner stake-burn call when an earlier
+  add_stake_burn on the same netuid already consumed the one-per-tempo rate limit."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Add Stake Burn Rate Limit Exceeded
+infoboxCaption: Error raised when stake burn is attempted too soon on the subnet.
+infoboxRows:
+  - label: Error
+    value: AddStakeBurnRateLimitExceeded
+  - label: Trigger
+    value: Second add_stake_burn within the same tempo
+  - label: Related concept
+    value: Subnet stake burn
+  - label: Example netuid
+    value: netuid 1
+---
+
+# Add Stake Burn Rate Limit Exceeded
+
+`AddStakeBurnRateLimitExceeded` means a subnet owner tried to run another stake-burn call on netuid
+1 or another named subnet before the per-tempo rate limit had cleared. The standard-errors reference
+describes it as "The stake burn operation has exceeded its rate limit. Try again in the next tempo"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#addstakeburnratelimitexceeded)).
+
+Subnet stake burn adds TAO to a subnet reserve while removing alpha from circulation
+([Subnet Stake Burn](https://docs.learnbittensor.org/concepts/stake-burn)).
+
+## What It Means
+
+The stake-burn reference documents that the `add_stake_burn` extrinsic is rate-limited per subnet to
+one call each tempo, about 360 blocks
+([Subnet Stake Burn](https://docs.learnbittensor.org/concepts/stake-burn),
+[Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo)).
+
+`AddStakeBurnRateLimitExceeded` is that tempo-paced pacing rejection. It means an earlier
+`add_stake_burn` on the same netuid already consumed the allowed call for the current tempo window
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#addstakeburnratelimitexceeded)).
+
+This is a rate-limit gate on stake-burn timing, not a rejection of the submitted TAO or alpha
+amounts and not an authorization failure when the signer otherwise has subnet-owner permission.
+
+## Why It Appears
+
+This error appears when a subnet owner submits a second `add_stake_burn` on the same netuid inside
+one tempo. That can happen when automation retries the burn call, when two operators act on the same
+subnet without coordinating, or when a client resubmits before the tempo boundary clears the limit
+([Subnet Stake Burn](https://docs.learnbittensor.org/concepts/stake-burn)).
+
+On netuid 1, readers can read the live tempo through the subnet hyperparameter reference and storage
+query patterns described in the Subtensor documentation to understand the burn cadence on that
+subnet
+([Subnet Hyperparameters: tempo](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#tempo),
+[Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
+
+When debugging, rule out authorization and other pacing failures first. `BadOrigin` and
+`NotSubnetOwner` mean the signer lacks subnet-owner permission. `StakingOperationRateLimitExceeded`
+is the separate per-block limit on ordinary add-stake, remove-stake, and move-stake operations
+([Subtensor Standard Errors: BadOrigin](https://docs.learnbittensor.org/errors/subtensor#badorigin),
+[Subtensor Standard Errors: NotSubnetOwner](https://docs.learnbittensor.org/errors/subtensor#notsubnetowner),
+[Staking Operation Rate Limit Exceeded](https://docs.learnbittensor.org/errors/subtensor#stakingoperationratelimitexceeded)).
+
+The practical meaning is narrow: the subnet's one-per-tempo stake-burn slot is already used.
+
+## Distinction from Staking Operation Rate Limit Exceeded
+
+`AddStakeBurnRateLimitExceeded` and `StakingOperationRateLimitExceeded` both pace staking-related
+calls on a subnet, but on different extrinsics and windows. `AddStakeBurnRateLimitExceeded` applies
+to the subnet-owner `add_stake_burn` path at one call per tempo. `StakingOperationRateLimitExceeded`
+applies to ordinary add-stake, remove-stake, and move-stake operations at one per block
+([Subtensor Standard Errors: StakingOperationRateLimitExceeded](https://docs.learnbittensor.org/errors/subtensor#stakingoperationratelimitexceeded),
+[Chain Rate Limits: Staking operations rate limits](https://docs.learnbittensor.org/learn/chain-rate-limits#staking-operations-rate-limits)).
+
+- **AddStakeBurnRateLimitExceeded** — stake burn already used this tempo on the netuid.
+- **StakingOperationRateLimitExceeded** — add, remove, or move stake arrived too soon this block.
+
+## Distinction from Cannot Burn Or Recycle On Root Subnet
+
+`AddStakeBurnRateLimitExceeded` and `CannotBurnOrRecycleOnRootSubnet` both involve burn-related
+rejections, but for different reasons. `AddStakeBurnRateLimitExceeded` means a permitted stake-burn
+call on a named subnet arrived before the tempo limit reset. `CannotBurnOrRecycleOnRootSubnet` means
+burn or recycle actions are not allowed on the root subnet at all
+([Subtensor Standard Errors: CannotBurnOrRecycleOnRootSubnet](https://docs.learnbittensor.org/errors/subtensor#cannotburnorrecycleonrootsubnet)).
+
+- **AddStakeBurnRateLimitExceeded** — stake burn on the netuid is tempo rate-limited.
+- **CannotBurnOrRecycleOnRootSubnet** — burn or recycle is disallowed on the root subnet.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the one-per-tempo stake-burn gate it
+represents. It does not report when the next tempo boundary occurs on a particular netuid; that
+timing is subnet chain state readers can query for the selected netuid
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor Standard Errors: AddStakeBurnRateLimitExceeded](https://docs.learnbittensor.org/errors/subtensor#addstakeburnratelimitexceeded)
+- [Subnet Stake Burn](https://docs.learnbittensor.org/concepts/stake-burn)
+- [Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo)
+- [Chain Rate Limits: Staking operations rate limits](https://docs.learnbittensor.org/learn/chain-rate-limits#staking-operations-rate-limits)
