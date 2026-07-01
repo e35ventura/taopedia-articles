@@ -1,0 +1,122 @@
+---
+title: "Min Allowed UIDs Greater Than Max Allowed UIDs"
+summary:
+  "How the MinAllowedUidsGreaterThanMaxAllowedUids error blocks sudo_set_min_allowed_uids when the
+  submitted min-UID floor is not below the subnet's stored maximum allowed UIDs."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Min Allowed UIDs Greater Than Max Allowed UIDs
+infoboxCaption:
+  Error raised when the proposed min-UID floor is at or above the stored max-UID ceiling.
+infoboxRows:
+  - label: Error
+    value: MinAllowedUidsGreaterThanMaxAllowedUids
+  - label: Trigger
+    value: min_allowed_uids >= get_max_allowed_uids(netuid)
+  - label: Checked in
+    value: sudo_set_min_allowed_uids extrinsic
+  - label: Check type
+    value: Min-versus-max allowed-UID comparison
+---
+
+# Min Allowed UIDs Greater Than Max Allowed UIDs
+
+`MinAllowedUidsGreaterThanMaxAllowedUids` is an admin-utils pallet error raised by
+`sudo_set_min_allowed_uids`. The pallet defines it as "The minimum allowed UIDs must be less than
+the maximum allowed UIDs"
+([Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+## What It Means
+
+Each subnet stores both a minimum and maximum allowed UID count. The `sudo_set_min_allowed_uids`
+extrinsic compares the submitted min-UID value against the subnet's stored `get_max_allowed_uids`
+value and returns `MinAllowedUidsGreaterThanMaxAllowedUids` when the proposed minimum is not below
+that maximum
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+The check requires the submitted minimum to be strictly less than the stored maximum for that
+netuid. A proposed min-UID value at or above that maximum is rejected before the new minimum is
+written
+([Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+This is a min-max consistency rejection on the min-UID setter, not proof that the submitted netuid
+has no subnet record or that the proposed minimum is not below the current filled UID count.
+
+## Why It Appears
+
+This error appears when a root-signed `sudo_set_min_allowed_uids` call names a min-UID value at or
+above the subnet's stored maximum allowed UIDs. That can happen when a client raises the minimum
+floor before checking the current maximum for the same netuid, or when the two bounds are edited in
+the wrong order
+([Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+When debugging, compare against other rejections on the same call. `SubnetDoesNotExist` means the
+submitted netuid has no subnet record. `MinAllowedUidsGreaterThanCurrentUids` means the proposed
+minimum is not below the current filled UID count. `MaxAllowedUidsLessThanMinAllowedUids` is the
+separate rejection on `sudo_set_max_allowed_uids` when the proposed maximum is below the stored
+minimum
+([Subnet Does Not Exist](https://docs.learnbittensor.org/errors/subtensor#subnetdoesnotexist),
+[Min Allowed UIDs Greater Than Current UIDs](https://docs.learnbittensor.org/errors/subtensor#minalloweduidsgreaterthancurrentuids),
+[Max Allowed UIDs Less Than Min Allowed UIDs](https://docs.learnbittensor.org/errors/subtensor#maxalloweduidslessthanminalloweduids),
+[Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+The practical meaning is narrow: lower the proposed min-UID value below the stored maximum before
+retrying `sudo_set_min_allowed_uids`.
+
+## Distinction from Subnet Does Not Exist
+
+`MinAllowedUidsGreaterThanMaxAllowedUids` and `SubnetDoesNotExist` both appear on
+`sudo_set_min_allowed_uids`, but at different checks. `SubnetDoesNotExist` means the submitted
+netuid has no subnet record. `MinAllowedUidsGreaterThanMaxAllowedUids` means the netuid exists but
+the proposed minimum is not below the stored maximum allowed UIDs
+([Subnet Does Not Exist](https://docs.learnbittensor.org/errors/subtensor#subnetdoesnotexist),
+[Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+- **MinAllowedUidsGreaterThanMaxAllowedUids** — proposed min UIDs are at or above the stored
+  maximum.
+- **SubnetDoesNotExist** — the submitted netuid has no subnet record.
+
+## Distinction from Min Allowed UIDs Greater Than Current UIDs
+
+`MinAllowedUidsGreaterThanMaxAllowedUids` and `MinAllowedUidsGreaterThanCurrentUids` both appear on
+`sudo_set_min_allowed_uids`, but at different checks. `MinAllowedUidsGreaterThanMaxAllowedUids`
+means the proposed minimum is not below the stored maximum allowed UIDs.
+`MinAllowedUidsGreaterThanCurrentUids` means the proposed minimum is not below the current filled
+UID count
+([Min Allowed UIDs Greater Than Current UIDs](https://docs.learnbittensor.org/errors/subtensor#minalloweduidsgreaterthancurrentuids),
+[Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+- **MinAllowedUidsGreaterThanMaxAllowedUids** — proposed min UIDs are at or above the stored
+  maximum.
+- **MinAllowedUidsGreaterThanCurrentUids** — proposed min UIDs are at or above the current filled
+  UID count.
+
+## Distinction from Max Allowed UIDs Less Than Min Allowed UIDs
+
+`MinAllowedUidsGreaterThanMaxAllowedUids` and `MaxAllowedUidsLessThanMinAllowedUids` both protect
+consistency between min and max UID bounds, but on opposite setters.
+`MinAllowedUidsGreaterThanMaxAllowedUids` is raised by `sudo_set_min_allowed_uids` when the proposed
+minimum is not below the stored maximum. `MaxAllowedUidsLessThanMinAllowedUids` is raised by
+`sudo_set_max_allowed_uids` when the proposed maximum is below the stored minimum
+([Max Allowed UIDs Less Than Min Allowed UIDs](https://docs.learnbittensor.org/errors/subtensor#maxalloweduidslessthanminalloweduids),
+[Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+- **MinAllowedUidsGreaterThanMaxAllowedUids** — proposed min UIDs are at or above the stored
+  maximum.
+- **MaxAllowedUidsLessThanMinAllowedUids** — proposed max UIDs are below the stored minimum.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the min-versus-max comparison on
+`sudo_set_min_allowed_uids`. It does not report live min or max allowed-UID values for any netuid on
+any network; those are chain state readers can query separately
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+- [Max Allowed UIDs Less Than Min Allowed UIDs](https://docs.learnbittensor.org/errors/subtensor#maxalloweduidslessthanminalloweduids)
+- [Min Allowed UIDs Greater Than Current UIDs](https://docs.learnbittensor.org/errors/subtensor#minalloweduidsgreaterthancurrentuids)
+- [Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)
