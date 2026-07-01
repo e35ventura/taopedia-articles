@@ -1,0 +1,104 @@
+---
+title: "Reserves Too Low"
+summary:
+  "How the ReservesTooLow error blocks subnet pool swaps when the output-side reserve is below the
+  runtime minimum or a swap step converts non-zero input into zero output."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Reserves Too Low
+infoboxCaption: Error raised when pool reserves are too thin for the swap operation.
+infoboxRows:
+  - label: Error
+    value: ReservesTooLow
+  - label: Trigger
+    value: output reserve below MinimumReserve or swap step yields zero output
+  - label: Checked in
+    value: swap_inner and swap step processing in do_swap
+  - label: Check type
+    value: Minimum-reserve and zero-output guards
+---
+
+# Reserves Too Low
+
+`ReservesTooLow` is a documented swap-pallet error. The pallet defines it as "Reserves too low for
+operation", and the Subtensor API errors reference lists it under swap errors
+([Subtensor source: swap mod.rs](https://github.com/opentensor/subtensor/blob/main/pallets/swap/src/pallet/mod.rs),
+[Subtensor API Errors: ReservesTooLow](https://docs.learnbittensor.org/subtensor-api/errors#reservestoolow)).
+
+## What It Means
+
+Dynamic subnet staking flows route TAO-alpha conversions through the subnet pool swap runtime inside
+`do_swap`. `ReservesTooLow` can appear at two different checks on that path.
+
+Before the swap step runs, `swap_inner` checks that the output-side reserve for the trade direction
+is at least the runtime `MinimumReserve` value. If the paying-out reserve is below that floor, the
+swap stops with `ReservesTooLow`
+([Subtensor source: swap impls.rs](https://github.com/opentensor/subtensor/blob/main/pallets/swap/src/pallet/impls.rs)).
+
+During swap step processing, the runtime converts the step's input delta into an output delta. When
+the input delta is non-zero but the converted output delta is zero, the step returns
+`ReservesTooLow` instead of proceeding with a zero-output trade
+([Subtensor source: swap step.rs](https://github.com/opentensor/subtensor/blob/main/pallets/swap/src/pallet/swap_step.rs)).
+
+This is a reserve-thinness rejection on a specific swap operation, not proof that the broader
+reserve relationship is too imbalanced for balancer math and not proof that the submitted limit
+price is too strict.
+
+## Why It Appears
+
+This error appears when a stake-related swap reaches the pool with too little output-side liquidity
+to satisfy the minimum-reserve guard, or when the swap math for a non-zero input produces zero
+output on the step being executed
+([Subtensor API Errors: ReservesTooLow](https://docs.learnbittensor.org/subtensor-api/errors#reservestoolow),
+[Subnet Liquidity Pools](https://docs.learnbittensor.org/subnets/understanding-subnets#liquidity-pools)).
+
+When debugging on the same swap path, compare against earlier and later rejections.
+`SwapInputTooLarge` runs before `swap_inner` when the net input exceeds the configured multiple of
+the input-side reserve. `PriceLimitExceeded` runs in `swap_inner` after the minimum-reserve check
+when the submitted limit price is not executable at the current pool price
+([Swap Input Too Large](https://docs.learnbittensor.org/subtensor-api/errors#swapinputtoolarge),
+[Price Limit Exceeded](https://docs.learnbittensor.org/subtensor-api/errors#pricelimitexceeded),
+[Subtensor source: swap impls.rs](https://github.com/opentensor/subtensor/blob/main/pallets/swap/src/pallet/impls.rs)).
+
+## Distinction from Reserves Out Of Balance
+
+`ReservesTooLow` and `ReservesOutOfBalance` both point to reserve-side pool problems, but they name
+different ones. `ReservesTooLow` is the minimum-reserve or zero-output guard on a specific swap
+operation. `ReservesOutOfBalance` means the broader reserve relationship is too imbalanced for the
+balancer state itself to be valid
+([Reserves Out Of Balance](https://docs.learnbittensor.org/subtensor-api/errors#reservesoutofbalance),
+[Subtensor source: swap impls.rs](https://github.com/opentensor/subtensor/blob/main/pallets/swap/src/pallet/impls.rs)).
+
+- **ReservesTooLow** — output-side reserve is too thin for the operation or the step yields zero
+  output.
+- **ReservesOutOfBalance** — the reserve relationship is too imbalanced for valid balancer math.
+
+## Distinction from Price Limit Exceeded
+
+`ReservesTooLow` and `PriceLimitExceeded` both block swap-backed paths inside `swap_inner`, but at
+different checks. `ReservesTooLow` is returned when the output-side reserve is below the runtime
+minimum or when step conversion yields zero output. `PriceLimitExceeded` is returned when the
+submitted limit price is not on the executable side of the pool's current price
+([Price Limit Exceeded](https://docs.learnbittensor.org/subtensor-api/errors#pricelimitexceeded),
+[Subtensor source: swap impls.rs](https://github.com/opentensor/subtensor/blob/main/pallets/swap/src/pallet/impls.rs),
+[Subtensor source: swap step.rs](https://github.com/opentensor/subtensor/blob/main/pallets/swap/src/pallet/swap_step.rs)).
+
+- **ReservesTooLow** — reserves are too thin for the swap operation to proceed.
+- **PriceLimitExceeded** — submitted limit price is not executable at the current pool price.
+
+## Reader Boundary
+
+This page defines the meaning of the error label on the minimum-reserve and zero-output checks in
+the swap runtime. It does not report live reserve levels for any subnet; readers can inspect pool
+state separately for the network they use
+([Subnet Liquidity Pools](https://docs.learnbittensor.org/subnets/understanding-subnets#liquidity-pools),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: ReservesTooLow](https://docs.learnbittensor.org/subtensor-api/errors#reservestoolow)
+- [Reserves Out Of Balance](https://docs.learnbittensor.org/subtensor-api/errors#reservesoutofbalance)
+- [Swap Input Too Large](https://docs.learnbittensor.org/subtensor-api/errors#swapinputtoolarge)
+- [Price Limit Exceeded](https://docs.learnbittensor.org/subtensor-api/errors#pricelimitexceeded)
+- [Subtensor source: swap impls.rs](https://github.com/opentensor/subtensor/blob/main/pallets/swap/src/pallet/impls.rs)
+- [Subtensor source: swap step.rs](https://github.com/opentensor/subtensor/blob/main/pallets/swap/src/pallet/swap_step.rs)
