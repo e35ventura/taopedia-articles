@@ -1,0 +1,94 @@
+---
+title: "Invalid Derived Account"
+summary:
+  "How the InvalidDerivedAccount error stops an as_derivative call when the runtime cannot decode a
+  valid account from the derivation entropy."
+category: "Protocol"
+tags: ["Transactions", "Errors"]
+infoboxTitle: Invalid Derived Account
+infoboxCaption:
+  Error raised when as_derivative cannot decode a valid account from the derivation entropy.
+infoboxRows:
+  - label: Error
+    value: InvalidDerivedAccount
+  - label: Trigger
+    value: Derived sub-account entropy fails to decode into a valid account
+  - label: Checked in
+    value: as_derivative (derivative_account_id)
+  - label: Check type
+    value: Derived-account decode check
+---
+
+# Invalid Derived Account
+
+`InvalidDerivedAccount` is a utility pallet error raised when the `as_derivative` extrinsic cannot
+turn its derivation input into a valid account identifier. The Subtensor API errors reference lists
+it under the utility pallet as `api.errors.utility.InvalidDerivedAccount`
+([Subtensor API Errors: InvalidDerivedAccount](https://docs.learnbittensor.org/subtensor-api/errors#invalidderivedaccount)).
+
+## What It Means
+
+The utility pallet exposes `as_derivative`, which dispatches an inner call from a deterministic
+sub-account of the signer. The runtime builds that sub-account with the `derivative_account_id`
+helper: it hashes a fixed prefix together with the signer and the supplied `index`, then decodes the
+resulting bytes into the runtime's account type. When that decode step fails, `as_derivative`
+returns `InvalidDerivedAccount` and the inner call never runs
+([Subtensor source: utility/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/utility/src/lib.rs)).
+
+This is a decode failure on the derived account, not proof that the signer lacks authority and not
+proof that the inner call itself is invalid. The extrinsic stops because it could not produce a
+usable derivative account to act as the inner origin
+([Subtensor API Errors: InvalidDerivedAccount](https://docs.learnbittensor.org/subtensor-api/errors#invalidderivedaccount),
+[Subtensor source: utility/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/utility/src/lib.rs)).
+
+## Why It Appears
+
+This error surfaces on the `as_derivative` path when the bytes derived from the signer and `index`
+cannot be decoded into the account type the runtime is configured with. It is specific to the
+derivation step that runs before the inner call is dispatched, so it is returned in place of, not
+alongside, any error the inner call would have produced
+([Subtensor source: utility/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/utility/src/lib.rs)).
+
+When debugging, treat it as a signal about the derivative-account setup rather than the wrapped
+action. The wrapped call was never reached, so its own authority, fee, and validity checks did not
+run
+([Subtensor source: utility/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/utility/src/lib.rs)).
+
+## Distinction from Too Many Calls
+
+`InvalidDerivedAccount` and `TooManyCalls` both belong to the utility pallet, but they apply to
+different extrinsics. `InvalidDerivedAccount` is returned from `as_derivative` when the derived
+account cannot be decoded. `TooManyCalls` is returned from the batch wrappers `batch`, `batch_all`,
+or `force_batch` when the submitted call list exceeds the runtime `batchedCallsLimit`
+([Subtensor API Errors: TooManyCalls](https://docs.learnbittensor.org/subtensor-api/errors#toomanycalls),
+[Subtensor source: utility/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/utility/src/lib.rs)).
+
+- **InvalidDerivedAccount** — `as_derivative` cannot build a valid derivative account.
+- **TooManyCalls** — a batch wrapper carries more inner calls than the runtime allows.
+
+## Distinction from Call Filtered
+
+`InvalidDerivedAccount` and `CallFiltered` can both stop an `as_derivative` call, but at different
+stages. `InvalidDerivedAccount` fails during account derivation, before the inner call is attempted.
+`CallFiltered` fails later, when the derived origin is set but the runtime's call filter does not
+permit the inner call for that origin
+([Subtensor API Errors: CallFiltered](https://docs.learnbittensor.org/subtensor-api/errors#callfiltered),
+[Subtensor source: utility/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/utility/src/lib.rs)).
+
+- **InvalidDerivedAccount** — the derivative account could not be produced.
+- **CallFiltered** — the derivative origin is valid, but the inner call is filtered out.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the derived-account decode check on
+`as_derivative`. It does not document the exact hashing prefix, the account type each runtime
+configures, or every derivative-account use; those are part of the utility pallet's account
+derivation and the runtime's type configuration
+([Subtensor source: utility/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/utility/src/lib.rs)).
+
+## Further Reading
+
+- [Subtensor API Errors: InvalidDerivedAccount](https://docs.learnbittensor.org/subtensor-api/errors#invalidderivedaccount)
+- [Subtensor API Errors: TooManyCalls](https://docs.learnbittensor.org/subtensor-api/errors#toomanycalls)
+- [Subtensor API Errors: CallFiltered](https://docs.learnbittensor.org/subtensor-api/errors#callfiltered)
+- [Subtensor source: utility/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/utility/src/lib.rs)
