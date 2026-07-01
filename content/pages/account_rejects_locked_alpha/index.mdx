@@ -1,0 +1,119 @@
+---
+title: "Account Rejects Locked Alpha"
+summary:
+  "How the AccountRejectsLockedAlpha error blocks a stake transfer or coldkey swap when the
+  destination coldkey has not opted in to receive incoming locked alpha."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Account Rejects Locked Alpha
+infoboxCaption: Error raised when the destination coldkey rejects locked alpha.
+infoboxRows:
+  - label: Error
+    value: AccountRejectsLockedAlpha
+  - label: Trigger
+    value: Destination coldkey rejects incoming locked alpha
+  - label: Checked in
+    value: transfer_lock and swap_coldkey_locks
+  - label: Related concept
+    value: Conviction and locked stake
+---
+
+# Account Rejects Locked Alpha
+
+`AccountRejectsLockedAlpha` means a call tried to move locked alpha to a coldkey that has not opted
+in to receive it. Subtensor coldkeys reject incoming locked alpha by default, and this error is
+returned when a transfer would send locked mass to such a destination
+([Subtensor source: lock.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/lock.rs),
+[Conviction and locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking)).
+
+## What It Means
+
+Conviction locks bind part of a coldkey's subnet alpha to a commitment signal
+([Conviction and locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking)).
+
+When stake moves between coldkeys on the same subnet, freely available alpha can transfer first and
+any remainder can carry lock state with it. Before that locked portion is accepted, the runtime
+checks whether the destination coldkey allows incoming locked alpha. `AccountRejectsLockedAlpha`
+means that destination has not opted in
+([Conviction and locked stake: Transferring locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking#transferring-locked-stake),
+[Subtensor source: lock.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/lock.rs)).
+
+The same rejection applies when a coldkey swap would move existing locks to a new coldkey that still
+rejects incoming locked alpha
+([Subtensor source: lock.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/lock.rs)).
+
+## Why It Appears
+
+This error appears when a stake transfer or coldkey swap would deliver locked alpha to a coldkey
+that rejects it. Coldkeys reject incoming locked alpha by default unless they opt in through the
+chain's reject-locked-alpha setting
+([Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)).
+
+When debugging, compare against other lock-related rejections on transfer paths.
+`LockHotkeyMismatch` means the destination coldkey already has a lock bound to a different hotkey.
+`StakeUnavailable` means the source coldkey cannot free enough unlocked alpha for an unstake or move
+request
+([Conviction and locked stake: Transferring locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking#transferring-locked-stake),
+[Subtensor source: lock.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/lock.rs)).
+
+The practical meaning is narrow: the destination coldkey will not accept incoming locked alpha.
+
+## Distinction from Lock Hotkey Mismatch
+
+`AccountRejectsLockedAlpha` and `LockHotkeyMismatch` both block same-subnet stake transfers that
+carry lock state, but they test different conditions. `LockHotkeyMismatch` means the destination
+coldkey already has a lock tied to another hotkey. `AccountRejectsLockedAlpha` means the destination
+coldkey rejects incoming locked alpha regardless of hotkey binding
+([Conviction and locked stake: Transferring locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking#transferring-locked-stake),
+[Subtensor source: lock.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/lock.rs)).
+
+- **AccountRejectsLockedAlpha** — the destination coldkey rejects incoming locked alpha.
+- **LockHotkeyMismatch** — the destination lock points at a different hotkey.
+
+## Distinction from Stake Unavailable
+
+`AccountRejectsLockedAlpha` and `StakeUnavailable` both involve locked stake, but on different sides
+of a move. `StakeUnavailable` means the source coldkey cannot supply enough unlocked alpha for the
+request. `AccountRejectsLockedAlpha` means the destination coldkey will not accept the locked
+portion that would follow the transfer
+([Subtensor source: lock.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/lock.rs)).
+
+- **StakeUnavailable** — the source lacks enough unlocked alpha for the request.
+- **AccountRejectsLockedAlpha** — the destination rejects incoming locked alpha.
+
+## Distinction from Transfer Disallowed
+
+`AccountRejectsLockedAlpha` and `TransferDisallowed` both stop stake moves, but at different layers.
+`TransferDisallowed` is the subnet transfer toggle that blocks coldkey-to-coldkey stake transfers on
+a netuid. `AccountRejectsLockedAlpha` is the destination-account rejection when locked alpha would
+be included in an otherwise permitted transfer
+([Subtensor Standard Errors: TransferDisallowed](https://docs.learnbittensor.org/errors/subtensor#transferdisallowed),
+[Subtensor source: lock.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/lock.rs)).
+
+- **TransferDisallowed** — stake transfers are disabled on the subnet.
+- **AccountRejectsLockedAlpha** — the destination coldkey rejects locked alpha.
+
+## Distinction from Insufficient Stake For Lock
+
+`AccountRejectsLockedAlpha` and `InsufficientStakeForLock` both concern conviction locks, but on
+different operations. `InsufficientStakeForLock` is raised when a coldkey tries to create or
+increase a lock without enough total alpha on the subnet. `AccountRejectsLockedAlpha` is raised when
+locked alpha would be sent to a coldkey that has not opted in to receive it
+([Subtensor source: lock.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/lock.rs)).
+
+- **InsufficientStakeForLock** — total alpha is too low for the lock request.
+- **AccountRejectsLockedAlpha** — the destination rejects incoming locked alpha.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the destination opt-in check for incoming
+locked alpha. It does not report whether a particular coldkey has opted in on a live network; that
+setting depends on chain state at observation time
+([Conviction and locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking)).
+
+## Further Reading
+
+- [Conviction and locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking)
+- [Subtensor source: lock.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/lock.rs)
+- [Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)
+- [Subtensor Standard Errors: TransferDisallowed](https://docs.learnbittensor.org/errors/subtensor#transferdisallowed)
