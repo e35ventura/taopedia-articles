@@ -1,0 +1,88 @@
+---
+title: "Change Pending"
+summary:
+  "How the ChangePending error blocks a GRANDPA authority-set change request when another change is
+  already pending."
+category: "Consensus"
+tags: ["Consensus", "Errors"]
+infoboxTitle: Change Pending
+infoboxCaption:
+  Error raised when a GRANDPA authority-set change request arrives while another change is pending.
+infoboxRows:
+  - label: Error
+    value: ChangePending
+  - label: Pallet
+    value: grandpa
+  - label: Trigger
+    value: Authority-set change request submitted while another change is already pending
+  - label: Check type
+    value: No-existing-change-pending guard on the authority-set change path
+---
+
+# Change Pending
+
+`ChangePending` is a grandpa pallet error raised when a GRANDPA authority-set change request arrives
+while another change is already pending. The API errors reference summarizes it as "Attempt to
+signal GRANDPA change with one already pending."
+([Subtensor API Errors: ChangePending](https://docs.learnbittensor.org/subtensor-api/errors#changepending)).
+
+## What It Means
+
+GRANDPA is the block finality gadget on Subtensor. The authority set that votes on finality can be
+changed at scheduled intervals, but the runtime only allows one authority-set change to be pending
+at a time. `ChangePending` means an authority-set change request reached the scheduling path when
+another change was already pending, so the runtime rejects the request rather than queue a
+conflicting change
+([Subtensor API Errors: ChangePending](https://docs.learnbittensor.org/subtensor-api/errors#changepending)).
+
+This is the no-existing-change-pending guard on the authority-set change path. It does not, by
+itself, mean the authority set was already paused, that a resume was already pending, or that the
+request arrived too soon after a forced change.
+
+## Why It Appears
+
+This error appears when a GRANDPA authority-set change request reaches the scheduling helper and
+another change is already pending. The pinned grandpa-pallet source describes the guard: the helper
+checks that no pending change is already stored before scheduling the new one, and returns
+`Error::<T>::ChangePending` when a pending change already exists
+([opentensor/polkadot-sdk: substrate/frame/grandpa/src/lib.rs#L546](https://github.com/opentensor/polkadot-sdk/blob/7cc54bf2d50ae3921d718736dfeb0de9468539c7/substrate/frame/grandpa/src/lib.rs#L546)).
+
+The practical meaning is narrow: only one authority-set change can be pending at a time. A request
+that arrives while another change is pending is rejected.
+
+## Distinction from Pause Failed
+
+`ChangePending` and `PauseFailed` are both grandpa-pallet errors that block an authority-set
+operation, but they fire at different checks. `ChangePending` is the no-existing-change-pending
+guard on the authority-set change path. `PauseFailed` is the live-state guard on the pause path
+([Subtensor API Errors: ChangePending](https://docs.learnbittensor.org/subtensor-api/errors#changepending),
+[Subtensor API Errors: PauseFailed](https://docs.learnbittensor.org/subtensor-api/errors#pausefailed)).
+
+- **ChangePending** — an authority-set change request arrived while another change is pending.
+- **PauseFailed** — a pause request arrived while the authority set is not live.
+
+## Distinction from Resume Failed
+
+`ChangePending` and `ResumeFailed` are both grandpa-pallet errors that block an authority-set
+operation, but they fire at different checks. `ChangePending` is the no-existing-change-pending
+guard on the authority-set change path. `ResumeFailed` is the paused-state guard on the resume path
+([Subtensor API Errors: ChangePending](https://docs.learnbittensor.org/subtensor-api/errors#changepending),
+[Subtensor API Errors: ResumeFailed](https://docs.learnbittensor.org/subtensor-api/errors#resumefailed)).
+
+- **ChangePending** — an authority-set change request arrived while another change is pending.
+- **ResumeFailed** — a resume request arrived while the authority set is not paused.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the no-existing-change-pending guard it
+represents on the GRANDPA authority-set change path. It does not report whether a change is
+currently pending, list the extrinsic that submits the change request, or describe the session
+framework that schedules authority-set transitions
+([Subtensor API Errors: ChangePending](https://docs.learnbittensor.org/subtensor-api/errors#changepending)).
+
+## Further Reading
+
+- [Subtensor API Errors: ChangePending](https://docs.learnbittensor.org/subtensor-api/errors#changepending)
+- [Subtensor API Errors: PauseFailed](https://docs.learnbittensor.org/subtensor-api/errors#pausefailed)
+- [Subtensor API Errors: ResumeFailed](https://docs.learnbittensor.org/subtensor-api/errors#resumefailed)
+- [opentensor/polkadot-sdk: frame/grandpa/src/lib.rs#L546](https://github.com/opentensor/polkadot-sdk/blob/7cc54bf2d50ae3921d718736dfeb0de9468539c7/substrate/frame/grandpa/src/lib.rs#L546)
