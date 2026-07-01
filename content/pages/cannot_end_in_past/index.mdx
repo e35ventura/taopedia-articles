@@ -1,0 +1,62 @@
+---
+title: "Cannot End In Past"
+summary:
+  "How the CannotEndInPast error blocks creating or updating a crowdloan when the supplied end block
+  has already passed."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Cannot End In Past
+infoboxCaption: Error raised when a crowdloan's end block is not in the future.
+infoboxRows:
+  - label: Error
+    value: CannotEndInPast
+  - label: Trigger
+    value: Supplied end block <= current block
+  - label: Checked in
+    value: create and update_end extrinsics, via ensure_valid_end
+  - label: Check type
+    value: Block-number comparison against the current block
+---
+
+# Cannot End In Past
+
+`CannotEndInPast` is a documented Subtensor standard error raised by crowdloan creation and end
+updates. The Subtensor API error reference describes it as "The crowdloan cannot end in the past"
+([Subtensor API: Errors](https://docs.learnbittensor.org/subtensor-api/errors)).
+
+## What It Means
+
+Both the `create` extrinsic and the `update_end` extrinsic route the supplied end block through the
+shared `ensure_valid_end` helper, which first checks whether the end block is strictly after the
+current block. `CannotEndInPast` fires when the supplied value is at or before the current block,
+meaning the crowdloan would end immediately or in the past
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+This is the first check `ensure_valid_end` runs. If the end block is in the past, the call fails
+here before the minimum and maximum duration checks that follow in the same helper
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+## Distinction from Block Duration Too Short
+
+`CannotEndInPast` and `BlockDurationTooShort` are both raised by `ensure_valid_end`, but they check
+different conditions on the same supplied end block. `CannotEndInPast` fires because the end block
+is at or before the current block at all. `BlockDurationTooShort` fires when the end block is in the
+future, but the duration between now and then is below the minimum required crowdloan length
+([Subtensor Standard Errors: BlockDurationTooShort](https://docs.learnbittensor.org/subtensor-api/errors),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+- **CannotEndInPast** — the end block is at or before the current block.
+- **BlockDurationTooShort** — the end block is in the future, but the crowdloan would be too short.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the initial timing check that raises it. It
+does not describe the minimum or maximum duration limits, or the rest of the crowdloan creation
+flow; those are documented separately
+([Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans)).
+
+## Further Reading
+
+- [Subtensor API: Errors](https://docs.learnbittensor.org/subtensor-api/errors)
+- [Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans)
+- [Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)
