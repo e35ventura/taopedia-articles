@@ -1,0 +1,110 @@
+---
+title: "New Hotkey Not Clean For Root Swap"
+summary:
+  "How the NewHotKeyNotCleanForRootSwap error blocks a hotkey swap when the replacement hotkey still
+  carries Root Subnet claimable balance or root stake that the swap cannot merge safely."
+category: "Wallets"
+tags: ["Wallets", "Errors"]
+infoboxTitle: New Hotkey Not Clean For Root Swap
+infoboxCaption: Error raised when the new hotkey is not clear for a root-touching swap.
+infoboxRows:
+  - label: Error
+    value: NewHotKeyNotCleanForRootSwap
+  - label: Trigger
+    value: New hotkey has root claimable entries or root stake
+  - label: Checked in
+    value: Hotkey swap paths that touch the Root Subnet
+  - label: Related concept
+    value: Root Subnet
+---
+
+# New Hotkey Not Clean For Root Swap
+
+`NewHotKeyNotCleanForRootSwap` means a hotkey swap that touches the Root Subnet named a replacement
+hotkey that still holds root claimable balance or root stake. The standard-errors reference
+describes the condition through the error name on root-touching swap paths
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#newhotkeynotcleanforrootswap)).
+
+A hotkey swap moves subnet participation from an old hotkey to a new hotkey under the same coldkey
+([Hotkey Swap](https://docs.learnbittensor.org/keys/coldkey-hotkey-security),
+[Glossary: Hotkey](https://docs.learnbittensor.org/resources/glossary#hotkey)).
+
+## What It Means
+
+Root Subnet staking and root claims use separate dividend bookkeeping from ordinary mining subnets.
+When a swap touches the Root Subnet, the chain requires the replacement hotkey to be clear of
+outstanding root claimable entries and root stake before the swap can proceed
+([Root Claims](https://docs.learnbittensor.org/staking-and-delegation/root-claims),
+[Root Subnet / Subnet Zero](https://docs.learnbittensor.org/resources/glossary#root-subnetsubnet-zero),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#newhotkeynotcleanforrootswap)).
+
+`NewHotKeyNotCleanForRootSwap` means that root-side clearance check failed on the new hotkey. The
+failure concerns root claim and stake state on the replacement key, not whether the coldkey can pay
+the swap fee or whether the old and new hotkeys are identical.
+
+## Why It Appears
+
+This error appears when a hotkey swap includes Root Subnet participation but the replacement hotkey
+still has root claimable balance, non-zero root stake, or other root-side claim state that blocks a
+safe merge. That can happen when the new hotkey was used for root staking or root claims before the
+swap, or when automation targets a hotkey that was not freshly created for the rotation
+([Root Claims](https://docs.learnbittensor.org/staking-and-delegation/root-claims),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#newhotkeynotcleanforrootswap)).
+
+When debugging, compare against earlier hotkey swap rejections on the same call.
+`NewHotKeyIsSameWithOld` means the submitted keys are identical. `NonAssociatedColdKey` means the
+signing coldkey does not own the old hotkey. `NotEnoughBalanceToPaySwapHotKey` means the coldkey
+cannot fund the swap cost
+([Subtensor Standard Errors: NewHotKeyIsSameWithOld](https://docs.learnbittensor.org/errors/subtensor#newhotkeyissamewithold),
+[Subtensor Standard Errors: NonAssociatedColdKey](https://docs.learnbittensor.org/errors/subtensor#nonassociatedcoldkey),
+[Subtensor Standard Errors: NotEnoughBalanceToPaySwapHotKey](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetopayswaphotkey)).
+
+The practical meaning is narrow: the replacement hotkey is not clear for a root-touching swap.
+
+## Distinction from New Hotkey Is Same With Old
+
+`NewHotKeyNotCleanForRootSwap` and `NewHotKeyIsSameWithOld` both appear on hotkey swap calls, but
+they reject different problems. `NewHotKeyIsSameWithOld` means the new and old hotkeys are the same
+account. `NewHotKeyNotCleanForRootSwap` means the new hotkey still carries root claimable or root
+stake state on a root-touching swap
+([Subtensor Standard Errors: NewHotKeyIsSameWithOld](https://docs.learnbittensor.org/errors/subtensor#newhotkeyissamewithold)).
+
+- **NewHotKeyIsSameWithOld** — the new and old hotkeys are the same account.
+- **NewHotKeyNotCleanForRootSwap** — the new hotkey is not clear for a root-touching swap.
+
+## Distinction from Not Enough Balance To Pay Swap Hotkey
+
+`NewHotKeyNotCleanForRootSwap` and `NotEnoughBalanceToPaySwapHotKey` both block hotkey swaps, but at
+different checks. `NewHotKeyNotCleanForRootSwap` is the root-side clearance rejection on the
+replacement hotkey. `NotEnoughBalanceToPaySwapHotKey` is the coldkey funding rejection against the
+swap cost
+([Subtensor Standard Errors: NotEnoughBalanceToPaySwapHotKey](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetopayswaphotkey)).
+
+- **NewHotKeyNotCleanForRootSwap** — the new hotkey still has root claim or stake state.
+- **NotEnoughBalanceToPaySwapHotKey** — the coldkey cannot pay the swap cost.
+
+## Distinction from Hotkey Already Registered In Subnet
+
+`NewHotKeyNotCleanForRootSwap` and `HotKeyAlreadyRegisteredInSubNet` both involve the replacement
+hotkey on a swap path, but they test different conditions. `HotKeyAlreadyRegisteredInSubNet` means
+the new hotkey already holds a UID on the targeted subnet. `NewHotKeyNotCleanForRootSwap` means the
+new hotkey still has root claimable or root stake state when the swap touches the Root Subnet
+([Subtensor Standard Errors: HotKeyAlreadyRegisteredInSubNet](https://docs.learnbittensor.org/errors/subtensor#hotkeyalreadyregisteredinsubnet)).
+
+- **HotKeyAlreadyRegisteredInSubNet** — the new hotkey already has a UID on the subnet.
+- **NewHotKeyNotCleanForRootSwap** — the new hotkey is not clear for a root-touching swap.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the root-side clearance gate it represents. It
+does not report whether a particular hotkey holds root stake or claimable balance on a live network;
+that state depends on chain reads for the submitted key at observation time
+([Root Claims](https://docs.learnbittensor.org/staking-and-delegation/root-claims),
+[Glossary: Hotkey](https://docs.learnbittensor.org/resources/glossary#hotkey)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#newhotkeynotcleanforrootswap)
+- [Root Claims](https://docs.learnbittensor.org/staking-and-delegation/root-claims)
+- [Hotkey Swap](https://docs.learnbittensor.org/keys/coldkey-hotkey-security)
+- [Subtensor Standard Errors: NotEnoughBalanceToPaySwapHotKey](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetopayswaphotkey)
