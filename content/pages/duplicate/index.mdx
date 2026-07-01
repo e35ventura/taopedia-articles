@@ -1,0 +1,97 @@
+---
+title: "Duplicate"
+summary:
+  "How the Duplicate error blocks proxy setup when a pure proxy account already exists or when the
+  same proxy relationship is registered twice."
+category: "Wallets"
+tags: ["Wallets", "Errors"]
+infoboxTitle: Duplicate
+infoboxCaption: Error raised when a proxy relationship or pure proxy already exists.
+infoboxRows:
+  - label: Error
+    value: Duplicate
+  - label: Trigger
+    value: matching pure proxy or proxy definition already registered
+  - label: Checked in
+    value: create_pure and add_proxy
+  - label: Check type
+    value: Duplicate proxy registration guard
+---
+
+# Duplicate
+
+`Duplicate` is a documented proxy-pallet error raised when proxy setup would register a relationship
+that already exists. The Subtensor API errors reference summarizes it as: "Account is already a
+proxy"
+([Subtensor API Errors: Duplicate](https://docs.learnbittensor.org/subtensor-api/errors#duplicate)).
+
+## What It Means
+
+The proxy pallet supports two setup paths that can both return `Duplicate`.
+
+On the pure-proxy path, `create_pure` derives a fresh account and registers the sender as its proxy.
+The runtime rejects the call when that derived pure account already has proxy storage, which means
+the same pure-proxy parameters were already used
+([Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs)).
+
+On the standard proxy path, `add_proxy` forwards to proxy registration logic that keeps each
+delegator's proxy list sorted and unique. `Duplicate` is returned when the submitted delegate, proxy
+type, and delay already match an existing entry for that delegator
+([Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs)).
+
+This is a duplicate-registration rejection, not proof that the caller tried to proxy itself and not
+proof that the delegator has reached the maximum number of allowed proxy entries.
+
+## Why It Appears
+
+This error appears when tooling retries proxy setup with unchanged parameters or when a workflow
+submits the same `create_pure` call twice in one batch. On `add_proxy`, it can also appear when a
+wallet attempts to register a delegate relationship that is already present for the same proxy type
+and delay
+([Subtensor API Errors: Duplicate](https://docs.learnbittensor.org/subtensor-api/errors#duplicate),
+[Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs)).
+
+When debugging, compare against other proxy setup failures on the same extrinsic family.
+`NoSelfProxy` means the delegator and delegatee are the same account, while `Duplicate` means the
+relationship or pure account already exists
+([No Self Proxy](https://docs.learnbittensor.org/subtensor-api/errors#noselfproxy),
+[Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs)).
+
+## Distinction from No Self Proxy
+
+`Duplicate` and `NoSelfProxy` both block proxy registration, but they detect different problems.
+`NoSelfProxy` is returned when the submitted delegator and delegatee are the same account.
+`Duplicate` is returned when the pure account already exists on `create_pure`, or when the same
+proxy definition is already registered on `add_proxy`
+([Subtensor API Errors: NoSelfProxy](https://docs.learnbittensor.org/subtensor-api/errors#noselfproxy),
+[Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs)).
+
+- **NoSelfProxy** — the proxy relationship points an account to itself.
+- **Duplicate** — the pure proxy or proxy definition is already registered.
+
+## Distinction from Too Many
+
+`Duplicate` and `TooMany` both belong to proxy registration flows, but they indicate different
+limits. `Duplicate` means the exact relationship or pure account already exists. `TooMany` means the
+delegator has reached the runtime cap on proxy entries or pending announcements
+([Subtensor API Errors: TooMany](https://docs.learnbittensor.org/subtensor-api/errors#toomany),
+[Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs)).
+
+- **Duplicate** — the proxy relationship or pure account is already present.
+- **TooMany** — the proxy or announcement list is at its runtime maximum.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the duplicate-registration checks on
+`create_pure` and `add_proxy`. It does not report which proxy relationships exist for any live
+account; readers can inspect proxy storage separately for the accounts they manage
+([Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs),
+[Glossary: Pure Proxies](https://docs.learnbittensor.org/resources/glossary#pure-proxies)).
+
+## Further Reading
+
+- [Subtensor API Errors: Duplicate](https://docs.learnbittensor.org/subtensor-api/errors#duplicate)
+- [Subtensor API Errors: NoSelfProxy](https://docs.learnbittensor.org/subtensor-api/errors#noselfproxy)
+- [Subtensor API Errors: TooMany](https://docs.learnbittensor.org/subtensor-api/errors#toomany)
+- [Glossary: Pure Proxies](https://docs.learnbittensor.org/resources/glossary#pure-proxies)
+- [Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs)
