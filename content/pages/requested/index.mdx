@@ -1,0 +1,86 @@
+---
+title: "Requested"
+summary:
+  "How the Requested error blocks removing a preimage when outstanding preimage requests still exist
+  for that hash."
+category: "Core Concepts"
+tags: ["Transactions", "Errors"]
+infoboxTitle: Requested
+infoboxCaption:
+  Error raised when a preimage clear request reaches a hash that still has outstanding requests.
+infoboxRows:
+  - label: Error
+    value: Requested
+  - label: Pallet
+    value: preimage
+  - label: Trigger
+    value: Preimage clear request submitted while the hash still has outstanding requests
+  - label: Check type
+    value: Outstanding-requests guard on the clear path
+---
+
+# Requested
+
+`Requested` is a preimage pallet error raised when a preimage clear request tries to remove a hash
+that still has outstanding preimage requests. The API errors reference summarizes it as "A preimage
+may not be removed when there are outstanding requests."
+([Subtensor API Errors: Requested](https://docs.learnbittensor.org/subtensor-api/errors#requested)).
+
+## What It Means
+
+Subtensor uses the preimage pallet to track the bytes behind a runtime call before other workflows
+refer to that call by hash. `Requested` means the hash still has active request count associated
+with it, so the runtime refuses to clear the preimage outright while that demand is still open
+([Subtensor API Errors: Requested](https://docs.learnbittensor.org/subtensor-api/errors#requested)).
+
+This is an outstanding-requests failure on the preimage clear path. It does not, by itself, mean the
+caller failed an authorization check, that the hash was never noted, or that the preimage bytes were
+too large to store.
+
+## Why It Appears
+
+This error appears on the preimage pallet's clear path when the stored status shows at least one
+outstanding request that still depends on that preimage. The upstream preimage pallet source shows
+that `do_unnote_preimage` reaches `do_unrequest_preimage`, and `do_unrequest_preimage` only clears
+the hash once the outstanding request count is fully reduced; until then, the preimage remains on
+the requested path rather than becoming removable
+([opentensor/polkadot-sdk: substrate/frame/preimage/src/lib.rs#L412-L415](https://github.com/opentensor/polkadot-sdk/blob/7cc54bf2d50ae3921d718736dfeb0de9468539c7/substrate/frame/preimage/src/lib.rs#L412-L415),
+[opentensor/polkadot-sdk: substrate/frame/preimage/src/lib.rs#L429-L459](https://github.com/opentensor/polkadot-sdk/blob/7cc54bf2d50ae3921d718736dfeb0de9468539c7/substrate/frame/preimage/src/lib.rs#L429-L459)).
+
+The practical meaning is narrow: the hash is still being requested somewhere on-chain, so the
+preimage cannot yet be removed.
+
+## Distinction from Not Requested
+
+`Requested` and `NotRequested` both concern preimage request state, but they fail at opposite
+conditions. `Requested` means outstanding requests still exist, so removal is blocked.
+`NotRequested` means the runtime was asked to remove a preimage request that no longer exists
+([Subtensor API Errors: Requested](https://docs.learnbittensor.org/subtensor-api/errors#requested),
+[Subtensor API Errors: NotRequested](https://docs.learnbittensor.org/subtensor-api/errors#notrequested)).
+
+- **Requested** — outstanding requests still exist for the hash.
+- **NotRequested** — no outstanding preimage request exists to remove.
+
+## Distinction from Not Authorized
+
+`Requested` and `NotAuthorized` can both block preimage clearing, but they fail at different checks.
+`Requested` is about open demand for the preimage. `NotAuthorized` is about whether the caller is
+permitted to remove the stored entry
+([Subtensor API Errors: Requested](https://docs.learnbittensor.org/subtensor-api/errors#requested),
+[Subtensor API Errors: NotAuthorized](https://docs.learnbittensor.org/subtensor-api/errors#notauthorized)).
+
+- **Requested** — the preimage still has outstanding requests.
+- **NotAuthorized** — the caller is not permitted to clear the entry.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the outstanding-requests guard it represents on
+the preimage clear path. It does not identify which downstream workflow requested the preimage or
+report the live request count for a specific hash
+([Subtensor API Errors: Requested](https://docs.learnbittensor.org/subtensor-api/errors#requested)).
+
+## Further Reading
+
+- [Subtensor API Errors: Requested](https://docs.learnbittensor.org/subtensor-api/errors#requested)
+- [Subtensor API Errors: NotRequested](https://docs.learnbittensor.org/subtensor-api/errors#notrequested)
+- [Subtensor API Errors: NotAuthorized](https://docs.learnbittensor.org/subtensor-api/errors#notauthorized)
