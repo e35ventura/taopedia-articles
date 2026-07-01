@@ -1,0 +1,91 @@
+---
+title: "Unproxyable"
+summary:
+  "How the Unproxyable error blocks a proxy call when the submitted call is not permitted by the
+  proxy type's filter."
+category: "Wallets"
+tags: ["Wallets", "Errors", "Security"]
+infoboxTitle: Unproxyable
+infoboxCaption: Error raised when a proxy call is blocked by the proxy type's call filter.
+infoboxRows:
+  - label: Error
+    value: Unproxyable
+  - label: Pallet
+    value: proxy
+  - label: Trigger
+    value: Call is not permitted by the proxy type's filter
+  - label: Check type
+    value: Proxy-type filter on the submitted call
+---
+
+# Unproxyable
+
+`Unproxyable` is a proxy pallet error raised when a proxy submits a call that the assigned proxy
+type does not permit. The API errors reference describes it as "A call which is incompatible with
+the proxy type's filter was attempted"
+([Subtensor API Errors: Unproxyable](https://docs.learnbittensor.org/subtensor-api/errors#unproxyable)).
+
+## What It Means
+
+Each Bittensor proxy is registered with a proxy type that restricts which calls the delegate may
+make on behalf of the real account. The proxy documentation lists scoped types such as `Staking`,
+`Transfer`, `SmallTransfer`, `Registration`, `Owner`, `NonTransfer`, `Governance`, and `Any`, each
+permitting a specific set of operations ([Proxies](https://docs.learnbittensor.org/keys/proxies)).
+
+`Unproxyable` fires when the submitted call does not pass the filter for the proxy type registered
+between the delegate and the real account. For example, a `Staking`-type proxy attempting a token
+transfer call would be blocked because transfers are outside the staking filter
+([Proxies](https://docs.learnbittensor.org/keys/proxies),
+[Subtensor API Errors: Unproxyable](https://docs.learnbittensor.org/subtensor-api/errors#unproxyable)).
+
+This is a call-filter rejection, not proof that the delegate is not registered as a proxy, that the
+proxy type is unrecognized, or that the account has too many proxies registered.
+
+## Why It Appears
+
+This error appears when a proxy delegate submits a call that falls outside the permitted set for its
+registered proxy type. The proxy documentation describes each type's scope: `Staking` limits
+delegates to stake management, `Transfer` limits to token movement, `Any` permits all calls, and
+each specialized type restricts to a narrower operation set
+([Proxies](https://docs.learnbittensor.org/keys/proxies)).
+
+The practical meaning is narrow: the submitted call must be within the call filter of the proxy type
+registered for the delegate-account pair.
+
+## Distinction from No Permission
+
+`Unproxyable` and `NoPermission` both block proxy calls, but at different filter stages.
+`NoPermission` fires when the proxy type permits the call category but the specific call would allow
+the proxy to escalate privileges beyond what is safe for a proxy to do. `Unproxyable` fires when the
+call category itself is outside the proxy type's filter before any privilege check
+([Subtensor API Errors: NoPermission](https://docs.learnbittensor.org/subtensor-api/errors#nopermission),
+[Proxies](https://docs.learnbittensor.org/keys/proxies)).
+
+- **Unproxyable** — the call category is not in the proxy type's permitted filter.
+- **NoPermission** — the call is in the filter but would escalate proxy privileges.
+
+## Distinction from Not Proxy
+
+`Unproxyable` and `NotProxy` both block proxy extrinsics, but they check different conditions.
+`NotProxy` fires when the sender is not registered as a proxy for the real account at all.
+`Unproxyable` fires when the sender is a registered proxy but the submitted call is outside the
+registered proxy type's filter
+([Subtensor API Errors: NotProxy](https://docs.learnbittensor.org/subtensor-api/errors#notproxy),
+[Proxies](https://docs.learnbittensor.org/keys/proxies)).
+
+- **Unproxyable** — registered proxy but call is outside the proxy type's filter.
+- **NotProxy** — sender is not registered as a proxy for the real account.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the proxy-type filter check that raises it. It
+does not report which proxy types are registered for any specific account pair; that is live chain
+state ([Proxies](https://docs.learnbittensor.org/keys/proxies),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: Unproxyable](https://docs.learnbittensor.org/subtensor-api/errors#unproxyable)
+- [Proxies](https://docs.learnbittensor.org/keys/proxies)
+- [Subtensor API Errors: NoPermission](https://docs.learnbittensor.org/subtensor-api/errors#nopermission)
+- [Subtensor API Errors: NotProxy](https://docs.learnbittensor.org/subtensor-api/errors#notproxy)
