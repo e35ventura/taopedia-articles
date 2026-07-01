@@ -1,0 +1,93 @@
+---
+title: "First Emission Block Number Already Set"
+summary:
+  "How the FirstEmissionBlockNumberAlreadySet error blocks a repeat start call when a subnet has
+  already recorded its first emission block."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: First Emission Block Number Already Set
+infoboxCaption: Error raised when a subnet's first emission block is already recorded.
+infoboxRows:
+  - label: Error
+    value: FirstEmissionBlockNumberAlreadySet
+  - label: Trigger
+    value: Second start call after first emission block is stored
+  - label: Checked in
+    value: start call
+  - label: Related concept
+    value: Subnet activation
+---
+
+# First Emission Block Number Already Set
+
+`FirstEmissionBlockNumberAlreadySet` means a subnet owner tried to run the start call again on a
+subnet that already stored its first emission block. The Subtensor API errors reference summarizes
+it as "FirstEmissionBlockNumber is already set"
+([Subtensor API Errors: FirstEmissionBlockNumberAlreadySet](https://docs.learnbittensor.org/subtensor-api/errors#firstemissionblocknumberalreadyset),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#firstemissionblocknumberalreadyset)).
+
+## What It Means
+
+Official subnet documentation separates subnet creation from the later start step. Newly created
+subnets are inactive by default and do not begin emitting until the subnet owner starts them
+([Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet)).
+
+The start call is the one-time activation step that records when a subnet's first emission period
+begins. `FirstEmissionBlockNumberAlreadySet` means that activation marker is already present, so a
+second start call on the same netuid is rejected. The failure is a duplicate-activation rejection,
+not proof that the subnet is missing or that the owner lacks permission.
+
+## Why It Appears
+
+This error appears when a subnet owner dispatches the start call after the subnet has already been
+activated. That can happen when automation retries the start step on every deploy, when a client
+replays an activation transaction, or when operators confuse registration with a still-pending start
+call on an already-live subnet
+([Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet),
+[Subtensor API Errors: FirstEmissionBlockNumberAlreadySet](https://docs.learnbittensor.org/subtensor-api/errors#firstemissionblocknumberalreadyset)).
+
+When debugging, compare against other start-call rejections on the same netuid.
+`NeedWaitingMoreBlocksToStarCall` means the post-registration delay has not cleared yet.
+`SubnetNotExists` means the targeted netuid is not present on chain
+([Subtensor API Errors: NeedWaitingMoreBlocksToStarCall](https://docs.learnbittensor.org/subtensor-api/errors#needwaitingmoreblockstostarcall),
+[Subtensor API Errors: SubnetNotExists](https://docs.learnbittensor.org/subtensor-api/errors#subnetnotexists)).
+
+The practical meaning is narrow: the subnet has already been started, so no second start call is
+required.
+
+## Distinction from Need Waiting More Blocks To Star Call
+
+`FirstEmissionBlockNumberAlreadySet` and `NeedWaitingMoreBlocksToStarCall` both appear on the start
+call path, but at different stages. `NeedWaitingMoreBlocksToStarCall` means the post-registration
+delay has not elapsed yet. `FirstEmissionBlockNumberAlreadySet` means the subnet has already
+recorded its first emission block
+([Subtensor API Errors: NeedWaitingMoreBlocksToStarCall](https://docs.learnbittensor.org/subtensor-api/errors#needwaitingmoreblockstostarcall)).
+
+- **FirstEmissionBlockNumberAlreadySet** — the subnet was already activated.
+- **NeedWaitingMoreBlocksToStarCall** — the registration delay has not cleared.
+
+## Distinction from Subnet Not Exists
+
+`FirstEmissionBlockNumberAlreadySet` and `SubnetNotExists` both block subnet-owner activation calls,
+but for different reasons. `SubnetNotExists` means the named netuid is not present on chain.
+`FirstEmissionBlockNumberAlreadySet` means the subnet exists and has already stored its first
+emission block
+([Subtensor API Errors: SubnetNotExists](https://docs.learnbittensor.org/subtensor-api/errors#subnetnotexists)).
+
+- **FirstEmissionBlockNumberAlreadySet** — activation already happened on the netuid.
+- **SubnetNotExists** — the targeted netuid is not present.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the one-time activation gate it represents. It
+does not report whether a particular netuid has started emitting on any live network; that state
+depends on chain reads for the subnet at observation time
+([Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: FirstEmissionBlockNumberAlreadySet](https://docs.learnbittensor.org/subtensor-api/errors#firstemissionblocknumberalreadyset)
+- [Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet)
+- [Subtensor API Errors: NeedWaitingMoreBlocksToStarCall](https://docs.learnbittensor.org/subtensor-api/errors#needwaitingmoreblockstostarcall)
+- [Subtensor API Errors: SubnetNotExists](https://docs.learnbittensor.org/subtensor-api/errors#subnetnotexists)
