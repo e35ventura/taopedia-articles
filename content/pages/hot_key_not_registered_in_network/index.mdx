@@ -1,0 +1,96 @@
+---
+title: "Hotkey Not Registered In Network"
+summary:
+  "How the HotKeyNotRegisteredInNetwork error blocks a call when the referenced hotkey is not
+  registered on any network accepted by that operation."
+category: "Wallets"
+tags: ["Wallets", "Errors"]
+infoboxTitle: Hotkey Not Registered In Network
+infoboxCaption:
+  Error raised when a call requires network registration for a hotkey and that registration is
+  absent.
+infoboxRows:
+  - label: Error
+    value: HotKeyNotRegisteredInNetwork
+  - label: Trigger
+    value:
+      The operation requires a hotkey registered on a network, but no accepted registration is found
+  - label: Checked in
+    value: Serving validation and identity update checks
+  - label: Check type
+    value: Network registration check
+---
+
+# Hotkey Not Registered In Network
+
+`HotKeyNotRegisteredInNetwork` is a documented Subtensor standard error raised when a call requires
+a hotkey to be registered on a network, but the runtime cannot find a qualifying network
+registration for that hotkey
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#hotkeynotregisteredinnetwork)).
+
+## What It Means
+
+Some Bittensor operations require more than the existence of a hotkey account. They also require
+that the hotkey already be registered on a network the operation accepts.
+`HotKeyNotRegisteredInNetwork` means that broader network-registration requirement failed, so the
+call stops before later validation can continue
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#hotkeynotregisteredinnetwork),
+[Subtensor source: serving.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/serving.rs)).
+
+The practical meaning is narrow: the hotkey may exist as an account, but it is not currently
+registered where this operation needs it to be.
+
+## Why It Appears
+
+This error appears on current paths that check network registration before accepting serving or
+identity-related updates. In the serving validation logic, the runtime rejects the call when the
+hotkey is not registered on the referenced network. In the identity update logic, the runtime
+rejects the call when none of the associated hotkeys is registered on any network
+([Subtensor source: serving.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/serving.rs),
+[Subtensor source: identity.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/identity.rs)).
+
+The current test coverage shows this exact failure on a serving-related path: a call that attempts
+to update chain identity data fails with `HotKeyNotRegisteredInNetwork` when the required network
+registration is absent
+([Subtensor test: serving.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/tests/serving.rs)).
+
+## Distinction from Hotkey Account Not Exists
+
+`HotKeyNotRegisteredInNetwork` and `HotKeyAccountNotExists` both block hotkey-related operations,
+but they fail at different layers. `HotKeyAccountNotExists` means the runtime cannot treat the named
+hotkey as an existing hotkey account. `HotKeyNotRegisteredInNetwork` means the hotkey can exist as
+an account, but it still lacks the network registration the operation requires
+([Subtensor Standard Errors: HotKeyAccountNotExists](https://docs.learnbittensor.org/errors/subtensor#hotkeyaccountnotexists),
+[Subtensor Standard Errors: HotKeyNotRegisteredInNetwork](https://docs.learnbittensor.org/errors/subtensor#hotkeynotregisteredinnetwork)).
+
+- `HotKeyAccountNotExists` means the named hotkey account itself is missing.
+- `HotKeyNotRegisteredInNetwork` means the hotkey exists, but lacks the needed network registration.
+
+## Distinction from Hotkey Not Registered In Subnet
+
+`HotKeyNotRegisteredInNetwork` and `HotKeyNotRegisteredInSubNet` are related, but they do not name
+the same boundary. `HotKeyNotRegisteredInSubNet` is the subnet-specific membership failure on a
+particular `netuid`. `HotKeyNotRegisteredInNetwork` is the broader network-registration failure used
+on current paths that require accepted registration before continuing
+([Subtensor Standard Errors: HotKeyNotRegisteredInSubNet](https://docs.learnbittensor.org/errors/subtensor#hotkeynotregisteredinsubnet),
+[Subtensor Standard Errors: HotKeyNotRegisteredInNetwork](https://docs.learnbittensor.org/errors/subtensor#hotkeynotregisteredinnetwork)).
+
+- `HotKeyNotRegisteredInSubNet` means the hotkey is not registered on the specific subnet.
+- `HotKeyNotRegisteredInNetwork` means the hotkey does not satisfy the network-registration
+  requirement for the call.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the network-registration checks that currently
+raise it. It does not identify whether a particular live hotkey should qualify on a given network at
+the moment of use; that depends on current chain state
+([Subtensor source: serving.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/serving.rs)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#hotkeynotregisteredinnetwork)
+- [Subtensor Standard Errors: HotKeyAccountNotExists](https://docs.learnbittensor.org/errors/subtensor#hotkeyaccountnotexists)
+- [Subtensor Standard Errors: HotKeyNotRegisteredInSubNet](https://docs.learnbittensor.org/errors/subtensor#hotkeynotregisteredinsubnet)
+- [Subtensor source: serving.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/serving.rs)
+- [Subtensor source: identity.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/identity.rs)
+- [Subtensor test: serving.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/tests/serving.rs)
