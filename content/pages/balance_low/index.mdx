@@ -1,0 +1,83 @@
+---
+title: "Balance Low"
+summary:
+  "How the BalanceLow error blocks an EVM action when the mapped account does not have enough
+  balance to pay the required fee."
+category: "Wallets"
+tags: ["Wallets", "Errors", "EVM"]
+infoboxTitle: Balance Low
+infoboxCaption: Error raised when an EVM account cannot fund the required fee withdrawal.
+infoboxRows:
+  - label: Error
+    value: BalanceLow
+  - label: Pallet
+    value: evm
+  - label: Trigger
+    value: Fee withdrawal fails because the account balance is too low
+  - label: Check type
+    value: EVM fee balance withdrawal
+---
+
+# Balance Low
+
+`BalanceLow` is an EVM pallet error raised when an account does not have enough balance to perform
+the action. The API errors reference summarizes it as "Not enough balance to perform action"
+([Subtensor API Errors: BalanceLow](https://docs.learnbittensor.org/subtensor-api/errors#balancelow)).
+
+## What It Means
+
+Bittensor's EVM layer executes Ethereum-compatible transactions on Subtensor and charges fees for
+those calls. `BalanceLow` means the fee withdrawal step could not take the required amount from the
+mapped account balance, so the EVM path stops before the action completes
+([Bittensor EVM Smart Contracts](https://docs.learnbittensor.org/evm-tutorials),
+[Subtensor API Errors: BalanceLow](https://docs.learnbittensor.org/subtensor-api/errors#balancelow)).
+
+This is a fee-funding rejection on the EVM balance path. It does not, by itself, mean the fee amount
+overflowed during conversion or that the transaction gas limit or gas price was invalid.
+
+## Why It Appears
+
+This error appears when an EVM transaction or contract call needs to withdraw a fee from the
+sender's mapped balance and that balance is too low to cover the charge. The practical meaning is
+narrow: the account backing the EVM address needs more spendable balance before the same call can
+succeed
+([Subtensor API Errors: BalanceLow](https://docs.learnbittensor.org/subtensor-api/errors#balancelow),
+[Token Bridging](https://docs.learnbittensor.org/evm-tutorials/bridge-vtao)).
+
+## Distinction from Fee Overflow
+
+`BalanceLow` and `FeeOverflow` both block EVM fee handling, but at different checks. `FeeOverflow`
+means calculating the total fee overflowed during conversion. `BalanceLow` means the converted fee
+could not be withdrawn because the account balance was too low
+([Subtensor API Errors: FeeOverflow](https://docs.learnbittensor.org/subtensor-api/errors#feeoverflow),
+[Subtensor API Errors: BalanceLow](https://docs.learnbittensor.org/subtensor-api/errors#balancelow)).
+
+- **BalanceLow** — the account cannot fund the required fee withdrawal.
+- **FeeOverflow** — fee calculation overflowed during conversion.
+
+## Distinction from Insufficient Balance
+
+`BalanceLow` and `InsufficientBalance` both involve too little spendable balance, but on different
+paths. `BalanceLow` is the EVM pallet label for fee funding on an EVM-mapped account.
+`InsufficientBalance` is the Subtensor standard error for coldkey balance operations outside that
+EVM fee-withdrawal step
+([Subtensor Standard Errors: InsufficientBalance](https://docs.learnbittensor.org/errors/subtensor#insufficientbalance),
+[Subtensor API Errors: BalanceLow](https://docs.learnbittensor.org/subtensor-api/errors#balancelow)).
+
+- **BalanceLow** — EVM fee withdrawal failed for lack of balance.
+- **InsufficientBalance** — a coldkey balance operation could not be funded.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the fee-funding check it represents on EVM
+paths. It does not report the live balance of any EVM address or whether a specific transaction's
+gas settings were valid; those depend on chain state and call parameters at submission time
+([Bittensor EVM Smart Contracts](https://docs.learnbittensor.org/evm-tutorials),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: BalanceLow](https://docs.learnbittensor.org/subtensor-api/errors#balancelow)
+- [Subtensor API Errors: FeeOverflow](https://docs.learnbittensor.org/subtensor-api/errors#feeoverflow)
+- [Bittensor EVM Smart Contracts](https://docs.learnbittensor.org/evm-tutorials)
+- [Token Bridging](https://docs.learnbittensor.org/evm-tutorials/bridge-vtao)
