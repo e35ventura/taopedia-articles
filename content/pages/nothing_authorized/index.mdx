@@ -1,0 +1,95 @@
+---
+title: "Nothing Authorized"
+summary:
+  "How the NothingAuthorized error blocks a runtime upgrade submission when no upgrade has been
+  authorized on the chain yet."
+category: "Core Concepts"
+tags: ["Transactions", "Errors"]
+infoboxTitle: Nothing Authorized
+infoboxCaption:
+  Error raised when a runtime upgrade submission arrives before any upgrade has been authorized.
+infoboxRows:
+  - label: Error
+    value: NothingAuthorized
+  - label: Pallet
+    value: system
+  - label: Trigger
+    value: Runtime upgrade submission arrives before any upgrade has been authorized
+  - label: Check type
+    value: Has-authorized-upgrade guard on the upgrade authorization path
+---
+
+# Nothing Authorized
+
+`NothingAuthorized` is a system pallet error raised when a runtime upgrade submission arrives before
+any upgrade has been authorized on the chain. The API errors reference summarizes it as "No upgrade
+authorized."
+([Subtensor API Errors: NothingAuthorized](https://docs.learnbittensor.org/subtensor-api/errors#nothingauthorized)).
+
+## What It Means
+
+Subtensor uses a two-step runtime upgrade flow: a root or governance call first authorizes a
+specific code hash for upgrade, and a separate submission then presents the authorized code bytes to
+the chain. `NothingAuthorized` means the runtime upgrade submission reached the authorization check
+before any upgrade has been authorized, so the chain has no authorized code hash to compare the
+submitted bytes against
+([Subtensor API Errors: NothingAuthorized](https://docs.learnbittensor.org/subtensor-api/errors#nothingauthorized)).
+
+This is the has-authorized-upgrade guard on the upgrade authorization path. It does not, by itself,
+mean the submitted code bytes were wrong, that the embedded version metadata failed any check, or
+that the upgrade extrinsic was dispatched in a way the runtime filter rejects.
+
+## Why It Appears
+
+This error appears when a runtime upgrade submission reaches the authorization check and the chain
+has no record of an authorized upgrade. The pinned frame-system source describes the check inside
+the `validate_code_is_authorized` helper: the runtime looks up the authorized upgrade record and
+rejects the submission with `Error::<T>::NothingAuthorized` when no record exists
+([opentensor/polkadot-sdk: substrate/frame/system/src/lib.rs#L2363](https://github.com/opentensor/polkadot-sdk/blob/7cc54bf2d50ae3921d718736dfeb0de9468539c7/substrate/frame/system/src/lib.rs#L2363)).
+
+The practical meaning is narrow: a separate authorization call must come first to register a code
+hash as eligible for upgrade before any subsequent upgrade submission can succeed.
+
+## Distinction from Unauthorized
+
+`NothingAuthorized` and `Unauthorized` both appear inside the same `validate_code_is_authorized`
+helper on the runtime upgrade authorization path, but they fire at different checks.
+`NothingAuthorized` is the has-authorized-upgrade guard that fires when the chain has no record of
+any authorized upgrade. `Unauthorized` is the hash-mismatch guard that fires when the chain has an
+authorized upgrade record but the submitted code bytes do not hash to the authorized code hash
+([Subtensor API Errors: NothingAuthorized](https://docs.learnbittensor.org/subtensor-api/errors#nothingauthorized),
+[Subtensor API Errors: Unauthorized](https://docs.learnbittensor.org/subtensor-api/errors#unauthorized)).
+
+- **NothingAuthorized** — the chain has no authorized upgrade record.
+- **Unauthorized** — the chain has an authorized upgrade record but the submitted bytes do not
+  match.
+
+## Distinction from Invalid Spec Name
+
+`NothingAuthorized` and `InvalidSpecName` are both system-pallet runtime-upgrade errors but they
+fire on different validation stages. `NothingAuthorized` is the has-authorized-upgrade guard on the
+authorization check that runs before any version comparison. `InvalidSpecName` is the `spec_name`
+equality check on the version validation that runs after the upgrade is authorized and the embedded
+version metadata is decoded
+([Subtensor API Errors: NothingAuthorized](https://docs.learnbittensor.org/subtensor-api/errors#nothingauthorized),
+[Subtensor API Errors: InvalidSpecName](https://docs.learnbittensor.org/subtensor-api/errors#invalidspecname)).
+
+- **NothingAuthorized** — no upgrade has been authorized yet.
+- **InvalidSpecName** — the upgrade was authorized and decoded, but the embedded `spec_name` did not
+  match.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the has-authorized-upgrade guard it represents
+on the runtime upgrade authorization path. It does not list the authorized upgrade extrinsic,
+document the governance or root flow that registers an upgrade, or describe how to identify which
+code hash is currently authorized
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks),
+[Subtensor API Errors: NothingAuthorized](https://docs.learnbittensor.org/subtensor-api/errors#nothingauthorized)).
+
+## Further Reading
+
+- [Subtensor API Errors: NothingAuthorized](https://docs.learnbittensor.org/subtensor-api/errors#nothingauthorized)
+- [Subtensor API Errors: Unauthorized](https://docs.learnbittensor.org/subtensor-api/errors#unauthorized)
+- [Subtensor API Errors: InvalidSpecName](https://docs.learnbittensor.org/subtensor-api/errors#invalidspecname)
+- [opentensor/polkadot-sdk: frame/system/src/lib.rs#L2363](https://github.com/opentensor/polkadot-sdk/blob/7cc54bf2d50ae3921d718736dfeb0de9468539c7/substrate/frame/system/src/lib.rs#L2363)
