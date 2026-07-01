@@ -1,0 +1,109 @@
+---
+title: "Registration Not Permitted On Root Subnet"
+summary:
+  "How the RegistrationNotPermittedOnRootSubnet error blocks do_register when the call targets
+  netuid 0, because neuron registration is reserved for non-root subnets."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Registration Not Permitted On Root Subnet
+infoboxCaption: Error raised when registration targets the root subnet.
+infoboxRows:
+  - label: Error
+    value: RegistrationNotPermittedOnRootSubnet
+  - label: Trigger
+    value: Submitted netuid is the root subnet
+  - label: Checked in
+    value: do_register
+  - label: Related concept
+    value: Root subnet identity
+---
+
+# Registration Not Permitted On Root Subnet
+
+`RegistrationNotPermittedOnRootSubnet` means a `do_register` call targeted the root subnet instead
+of an ordinary subnet. The standard-errors reference describes it as "Operation is not permitted on
+the root subnet"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#registrationnotpermittedonrootsubnet)).
+
+The check is the first network-validity gate in `do_register`, before subnet existence,
+registration-policy, and hotkey membership checks run
+([Subtensor source: registration.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)).
+
+## What It Means
+
+Burn-based neuron registration through `do_register` is scoped to non-root subnets. In
+`registration.rs`, the runtime calls `netuid.is_root()` and returns
+`RegistrationNotPermittedOnRootSubnet` when the submitted netuid is the root subnet
+([Subtensor source: registration.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs),
+[Root Subnet / Subnet Zero](https://docs.learnbittensor.org/resources/glossary#root-subnetsubnet-zero)).
+
+The root subnet uses a separate admission and staking path from ordinary subnets, so the standard
+burn-registration extrinsic is not accepted there
+([Root Subnet / Subnet Zero](https://docs.learnbittensor.org/resources/glossary#root-subnetsubnet-zero)).
+
+## Why It Appears
+
+This error appears when a coldkey signs a registration call with netuid 0 or another root-netuid
+value that resolves to the root subnet. That can happen from a hard-coded netuid in automation, a
+client default, or a copied extrinsic that pointed at the wrong network identifier
+([Subtensor source: registration.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)).
+
+When debugging, rule out the next gates on the same extrinsic. `SubnetNotExists` means the named
+subnet is not present. `SubNetRegistrationDisabled` means registration is turned off on a non-root
+subnet. `HotKeyAlreadyRegisteredInSubNet` means the hotkey already holds a UID on the targeted
+subnet
+([Subtensor Standard Errors: SubnetNotExists](https://docs.learnbittensor.org/errors/subtensor#subnetnotexists),
+[Subtensor Standard Errors: SubNetRegistrationDisabled](https://docs.learnbittensor.org/errors/subtensor#subnetregistrationdisabled),
+[Subtensor Standard Errors: HotKeyAlreadyRegisteredInSubNet](https://docs.learnbittensor.org/errors/subtensor#hotkeyalreadyregisteredinsubnet)).
+
+The practical meaning is narrow: burn-based registration cannot target the root subnet.
+
+## Distinction from Subnet Registration Disabled
+
+`RegistrationNotPermittedOnRootSubnet` and `SubNetRegistrationDisabled` both block registration, but
+they test different conditions. `RegistrationNotPermittedOnRootSubnet` rejects any `do_register`
+attempt on the root netuid. `SubNetRegistrationDisabled` applies to non-root subnets whose
+`NetworkRegistrationAllowed` setting is false
+([Subtensor Standard Errors: SubNetRegistrationDisabled](https://docs.learnbittensor.org/errors/subtensor#subnetregistrationdisabled),
+[Subtensor source: registration.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)).
+
+- **RegistrationNotPermittedOnRootSubnet** — registration was attempted on the root subnet.
+- **SubNetRegistrationDisabled** — registration is disabled on the targeted subnet.
+
+## Distinction from Can Not Set Root Network Weights
+
+`RegistrationNotPermittedOnRootSubnet` and `CanNotSetRootNetworkWeights` both involve the root
+subnet, but on different extrinsic families. `RegistrationNotPermittedOnRootSubnet` is the
+registration-path rejection when `do_register` names the root netuid. `CanNotSetRootNetworkWeights`
+is the weight-setting rejection when validator weight extrinsics target the root subnet
+([Subtensor Standard Errors: CanNotSetRootNetworkWeights](https://docs.learnbittensor.org/errors/subtensor#cannotsetrootnetworkweights),
+[Subtensor source: registration.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)).
+
+- **RegistrationNotPermittedOnRootSubnet** — registration targeted the root subnet.
+- **CanNotSetRootNetworkWeights** — weight submission targeted the root subnet.
+
+## Distinction from No Neuron Id Available
+
+`RegistrationNotPermittedOnRootSubnet` is an identity gate on which netuid may use `do_register`.
+`NoNeuronIdAvailable` is a later capacity rejection on non-root subnets after registration is
+allowed and earlier funding checks have passed
+([Subtensor Standard Errors: NoNeuronIdAvailable](https://docs.learnbittensor.org/errors/subtensor#noneuronidavailable),
+[Subtensor source: registration.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)).
+
+- **RegistrationNotPermittedOnRootSubnet** — registration targeted the root subnet.
+- **NoNeuronIdAvailable** — the subnet has no assignable UID slot.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the root-netuid rejection in `do_register`. It
+does not describe root-subnet staking, senate admission, or how non-root registration burn pricing
+works; those are documented separately
+([Root Subnet / Subnet Zero](https://docs.learnbittensor.org/resources/glossary#root-subnetsubnet-zero),
+[Register](https://docs.learnbittensor.org/miners)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#registrationnotpermittedonrootsubnet)
+- [Subtensor Standard Errors: SubNetRegistrationDisabled](https://docs.learnbittensor.org/errors/subtensor#subnetregistrationdisabled)
+- [Subtensor Standard Errors: CanNotSetRootNetworkWeights](https://docs.learnbittensor.org/errors/subtensor#cannotsetrootnetworkweights)
+- [Subtensor source: registration.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)
