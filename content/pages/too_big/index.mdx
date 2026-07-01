@@ -1,0 +1,82 @@
+---
+title: "Too Big"
+summary:
+  "How the TooBig error blocks storing a preimage when the submitted call bytes exceed the preimage
+  pallet's size limit."
+category: "Core Concepts"
+tags: ["Transactions", "Errors"]
+infoboxTitle: Too Big
+infoboxCaption: Error raised when a submitted preimage is larger than the pallet can store.
+infoboxRows:
+  - label: Error
+    value: TooBig
+  - label: Pallet
+    value: preimage
+  - label: Trigger
+    value: Submitted preimage bytes exceed the pallet storage limit
+  - label: Check type
+    value: Maximum-preimage-size guard on storage and note paths
+---
+
+# Too Big
+
+`TooBig` is a preimage pallet error raised when a submitted preimage is larger than the runtime will
+store on-chain. The API errors reference summarizes it as "Preimage is too large to store on-chain."
+([Subtensor API Errors: TooBig](https://docs.learnbittensor.org/subtensor-api/errors#toobig)).
+
+## What It Means
+
+Subtensor uses the preimage pallet to store the bytes behind a runtime call before other workflows
+refer to that call by hash. `TooBig` means the submitted preimage bytes exceeded the pallet's size
+limit, so the runtime rejected the storage attempt before it wrote the preimage
+([Subtensor API Errors: TooBig](https://docs.learnbittensor.org/subtensor-api/errors#toobig)).
+
+This is a size-limit failure on one preimage. It does not, by itself, mean the request listed too
+many hashes for a bulk upgrade, that the preimage was already stored, or that removal was blocked by
+an outstanding request.
+
+## Why It Appears
+
+This error appears when a note or storage path tries to submit preimage bytes that are larger than
+the pallet accepts. The upstream preimage pallet bounds stored bytes with `MAX_SIZE` and returns
+`Error::<T>::TooBig` when the submitted preimage length exceeds that limit
+([opentensor/polkadot-sdk: substrate/frame/preimage/src/lib.rs#L334](https://github.com/opentensor/polkadot-sdk/blob/7cc54bf2d50ae3921d718736dfeb0de9468539c7/substrate/frame/preimage/src/lib.rs#L334),
+[opentensor/polkadot-sdk: substrate/frame/preimage/src/lib.rs#L96](https://github.com/opentensor/polkadot-sdk/blob/7cc54bf2d50ae3921d718736dfeb0de9468539c7/substrate/frame/preimage/src/lib.rs#L96)).
+
+The practical meaning is narrow: the call data behind the preimage is too large for the pallet's
+storage guard, so the preimage must be made smaller or handled through a different path.
+
+## Distinction from Too Few
+
+`TooBig` and `TooFew` are both preimage pallet errors, but they guard different inputs. `TooBig`
+checks the size of one preimage's bytes. `TooFew` checks that a bulk-upgrade request names at least
+one hash
+([Subtensor API Errors: TooBig](https://docs.learnbittensor.org/subtensor-api/errors#toobig),
+[Subtensor API Errors: TooFew](https://docs.learnbittensor.org/subtensor-api/errors#toofew)).
+
+- **TooBig** — one preimage is too large to store on-chain.
+- **TooFew** — a bulk-upgrade request listed no hashes.
+
+## Distinction from Too Many
+
+`TooBig` and `TooMany` can both appear on preimage workflows, but they fail at different checks.
+`TooBig` rejects one oversized preimage. `TooMany` rejects a bulk-upgrade request that includes more
+hashes than the bulk path allows
+([Subtensor API Errors: TooBig](https://docs.learnbittensor.org/subtensor-api/errors#toobig),
+[Subtensor API Errors: TooMany](https://docs.learnbittensor.org/subtensor-api/errors#toomany)).
+
+- **TooBig** — one preimage exceeds the byte-size limit.
+- **TooMany** — the bulk-upgrade request includes too many hashes.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the size guard it represents on preimage
+storage paths. It does not identify which specific call payload was too large or list every
+operation that can note a preimage
+([Subtensor API Errors: TooBig](https://docs.learnbittensor.org/subtensor-api/errors#toobig)).
+
+## Further Reading
+
+- [Subtensor API Errors: TooBig](https://docs.learnbittensor.org/subtensor-api/errors#toobig)
+- [Subtensor API Errors: TooFew](https://docs.learnbittensor.org/subtensor-api/errors#toofew)
+- [Subtensor API Errors: TooMany](https://docs.learnbittensor.org/subtensor-api/errors#toomany)
