@@ -1,0 +1,105 @@
+---
+title: "Balance Withdrawal Error"
+summary:
+  "How the BalanceWithdrawalError signals that a coldkey balance move failed when the runtime could
+  not withdraw the requested TAO from the signing account."
+category: "Wallets"
+tags: ["Wallets", "Errors"]
+infoboxTitle: Balance Withdrawal Error
+infoboxCaption: Error raised when a coldkey withdrawal step fails.
+infoboxRows:
+  - label: Error
+    value: BalanceWithdrawalError
+  - label: Trigger
+    value: Coldkey withdraw step fails during the call
+  - label: Checked in
+    value: add_stake and subnet lock-transfer paths
+  - label: Related concept
+    value: Coldkey balance
+---
+
+# Balance Withdrawal Error
+
+`BalanceWithdrawalError` means a coldkey-signed call reached a withdrawal step that could not remove
+the requested TAO from the signing account. The standard-errors reference describes it as "Could not
+withdraw from coldkey account"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#balancewithdrawalerror)).
+
+## What It Means
+
+Several staking and subnet-creation paths move TAO out of a coldkey before later validation or pool
+steps run. `BalanceWithdrawalError` means that withdrawal step failed even though earlier checks on
+the same call may already have passed
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#balancewithdrawalerror),
+[Managing Your Stakes](https://docs.learnbittensor.org/staking-and-delegation/managing-stake-sdk)).
+
+This is a withdrawal failure on the coldkey account. The error names a failed balance move, not a
+subnet pool problem, a hotkey registration problem, or a later stake-size rule.
+
+## Why It Appears
+
+This error appears when the runtime attempts to withdraw TAO from the signing coldkey and the
+balances layer rejects the move. That can happen when account preservation rules block the exact
+withdraw amount, when balance state changed between client construction and submission, or when the
+withdrawal step fails for another balances-layer reason after earlier funding checks passed
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#balancewithdrawalerror),
+[Glossary: Coldkey](https://docs.learnbittensor.org/resources/glossary#coldkey)).
+
+When debugging, compare against earlier funding errors on the same extrinsic family.
+`NotEnoughBalanceToStake` means the add-stake path rejected the request because the coldkey could
+not fund the named stake amount. `InsufficientBalance` is the broader coldkey funding rejection on
+transfer-style balance moves. `CannotAffordLockCost` is the subnet-registration pre-check against
+the quoted lock cost
+([Subtensor Standard Errors: NotEnoughBalanceToStake](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake),
+[Subtensor Standard Errors: InsufficientBalance](https://docs.learnbittensor.org/errors/subtensor#insufficientbalance),
+[Cannot Afford Lock Cost](https://docs.learnbittensor.org/errors/subtensor#cannotaffordlockcost)).
+
+The practical meaning is narrow: the coldkey withdrawal step failed during the call.
+
+## Distinction from Not Enough Balance To Stake
+
+`BalanceWithdrawalError` and `NotEnoughBalanceToStake` both involve coldkey funding on add-stake
+paths, but they reject different stages. `NotEnoughBalanceToStake` is the earlier comparison against
+whether the coldkey can fund the requested stake amount. `BalanceWithdrawalError` is the later
+rejection when the actual withdrawal from the coldkey account fails
+([Subtensor Standard Errors: NotEnoughBalanceToStake](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake)).
+
+- **NotEnoughBalanceToStake** — the coldkey cannot fund the requested stake amount.
+- **BalanceWithdrawalError** — the coldkey withdrawal step failed.
+
+## Distinction from Insufficient Balance
+
+`BalanceWithdrawalError` and `InsufficientBalance` both mean a coldkey could not complete a balance
+move, but on different rejection layers. `InsufficientBalance` is the general funding rejection when
+the requested TAO exceeds what the account can spend for the operation. `BalanceWithdrawalError` is
+the documented withdrawal failure after the call reaches the withdraw step
+([Subtensor Standard Errors: InsufficientBalance](https://docs.learnbittensor.org/errors/subtensor#insufficientbalance)).
+
+- **InsufficientBalance** — the coldkey cannot fund the requested TAO amount.
+- **BalanceWithdrawalError** — the coldkey withdrawal step failed.
+
+## Distinction from Cannot Afford Lock Cost
+
+`BalanceWithdrawalError` and `CannotAffordLockCost` both appear around subnet registration funding,
+but at different stages. `CannotAffordLockCost` is the pre-check that the coldkey cannot afford the
+quoted subnet lock cost. `BalanceWithdrawalError` is the documented withdrawal failure when the
+runtime cannot remove TAO from the coldkey account during the later transfer step
+([Cannot Afford Lock Cost](https://docs.learnbittensor.org/errors/subtensor#cannotaffordlockcost)).
+
+- **CannotAffordLockCost** — the coldkey cannot afford the quoted lock cost.
+- **BalanceWithdrawalError** — the coldkey withdrawal step failed.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the failed coldkey withdrawal it represents. It
+does not report a wallet's live free balance or whether a particular amount is withdrawable on a
+network; those depend on chain state at observation time
+([Glossary: Coldkey](https://docs.learnbittensor.org/resources/glossary#coldkey),
+[Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#balancewithdrawalerror)
+- [Subtensor Standard Errors: NotEnoughBalanceToStake](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake)
+- [Subtensor Standard Errors: InsufficientBalance](https://docs.learnbittensor.org/errors/subtensor#insufficientbalance)
+- [Managing Your Stakes](https://docs.learnbittensor.org/staking-and-delegation/managing-stake-sdk)
