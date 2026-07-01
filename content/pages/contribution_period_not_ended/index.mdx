@@ -1,0 +1,85 @@
+---
+title: "Contribution Period Not Ended"
+summary:
+  "How the ContributionPeriodNotEnded error blocks a crowdloan operation that requires the
+  contribution period to have concluded before it can proceed."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Contribution Period Not Ended
+infoboxCaption: Error raised when an operation requires the contribution period to have closed.
+infoboxRows:
+  - label: Error
+    value: ContributionPeriodNotEnded
+  - label: Trigger
+    value: Current block is still before the crowdloan's end block
+  - label: Checked in
+    value: crowdloan pallet, post-period operations
+  - label: Related concept
+    value: Crowdloan lifecycle
+---
+
+# Contribution Period Not Ended
+
+`ContributionPeriodNotEnded` is a documented Subtensor standard error raised when a crowdloan
+operation that requires the contribution period to have concluded is attempted while the period is
+still active. The Subtensor API error reference describes it as "The crowdloan contribution period
+has not ended yet" ([Subtensor API: Errors](https://docs.learnbittensor.org/subtensor-api/errors)).
+
+## What It Means
+
+Each [crowdloan](https://docs.learnbittensor.org/subnets/crowdloans) has a deadline — a block number
+that marks the end of the contribution window. Certain crowdloan operations are gated on that
+deadline having passed, because they belong to the post-contribution phase of the lifecycle.
+`ContributionPeriodNotEnded` is returned when such an operation is submitted before the deadline
+block has been reached ([Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans)).
+
+This is a lifecycle-sequencing rejection, not proof that the crowdloan is invalid, that the cap has
+not been reached, or that the caller lacks creator permission.
+
+## Why It Appears
+
+This error appears when a client attempts a post-period operation while the crowdloan's end block
+has not yet been produced. That can happen when automation triggers a follow-up action too early,
+when a client estimates the end block incorrectly, or when the crowdloan's deadline was extended and
+the previous estimate is now stale
+([Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans),
+[Subtensor API: Errors](https://docs.learnbittensor.org/subtensor-api/errors)).
+
+The practical meaning is narrow: wait for the crowdloan's end block to be produced before attempting
+operations that require the contribution period to have closed.
+
+## Distinction from Contribution Period Ended
+
+`ContributionPeriodNotEnded` and `ContributionPeriodEnded` are symmetric lifecycle checks on the
+same crowdloan deadline, but they appear on opposite extrinsics. `ContributionPeriodEnded` blocks
+the `contribute` extrinsic when the deadline has passed and new contributions are no longer
+accepted. `ContributionPeriodNotEnded` blocks post-period operations when the deadline has not yet
+passed and the crowdloan is still in its contribution window
+([Subtensor API: Errors](https://docs.learnbittensor.org/subtensor-api/errors)).
+
+- **ContributionPeriodEnded** — deadline passed; contributions are no longer accepted.
+- **ContributionPeriodNotEnded** — deadline not yet reached; post-period operations cannot proceed.
+
+## Distinction from Already Finalized
+
+`ContributionPeriodNotEnded` and `AlreadyFinalized` both block crowdloan operations based on
+lifecycle state, but at different stages. `AlreadyFinalized` means the crowdloan has completed
+finalization and any pre-finalization calls are rejected. `ContributionPeriodNotEnded` means the
+crowdloan is still in its active contribution window and post-period calls cannot yet proceed
+([Subtensor API: Errors](https://docs.learnbittensor.org/subtensor-api/errors)).
+
+- **ContributionPeriodNotEnded** — still in the contribution window.
+- **AlreadyFinalized** — the crowdloan has already completed finalization.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the period-end check that raises it. It does
+not report the live end block for any specific crowdloan or the current block height; those are live
+chain state to check at the time of the call
+([Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API: Errors](https://docs.learnbittensor.org/subtensor-api/errors)
+- [Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans)
