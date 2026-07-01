@@ -1,0 +1,88 @@
+---
+title: "Not Subnet Owner"
+summary:
+  "How the NotSubnetOwner error blocks do_set_subnet_identity when get_subnet_owner for the
+  submitted netuid does not match the signing coldkey."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Not Subnet Owner
+infoboxCaption: Error raised when the signer is not the recorded subnet owner.
+infoboxRows:
+  - label: Error
+    value: NotSubnetOwner
+  - label: Trigger
+    value: signing coldkey != get_subnet_owner(netuid)
+  - label: Checked in
+    value: do_set_subnet_identity
+  - label: Example netuid
+    value: netuid 2
+---
+
+# Not Subnet Owner
+
+`NotSubnetOwner` means the signing coldkey does not match `get_subnet_owner(netuid)` on the
+`do_set_subnet_identity` path for netuid 2 or another named subnet. The standard-errors reference
+describes it as "Not a subnet owner"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notsubnetowner),
+[Subtensor source: identity.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/identity.rs)).
+
+## What It Means
+
+The `set_subnet_identity` extrinsic forwards to `do_set_subnet_identity`, which accepts a submitted
+`netuid` and metadata fields. Before later validation or storage steps run, the runtime compares the
+signing coldkey to `get_subnet_owner(netuid)` and returns `NotSubnetOwner` when they are not equal
+([Subtensor source: identity.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/identity.rs),
+[Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)).
+
+This ownership check runs before `is_valid_subnet_identity` on the same path
+([Subtensor source: identity.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/identity.rs)).
+
+This is an authorization rejection on the subnet-owner comparison, not proof that later field
+validation failed.
+
+## Why It Appears
+
+This error appears when `do_set_subnet_identity` is reached with a signing coldkey that does not
+match `get_subnet_owner` for the submitted `netuid`
+([Subtensor source: identity.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/identity.rs)).
+
+When debugging on netuid 2, compare against the next rejection on the same path. `InvalidIdentity`
+is returned later when `is_valid_subnet_identity` fails
+([Invalid Identity](https://docs.learnbittensor.org/errors/subtensor#invalididentity),
+[Subtensor source: identity.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/identity.rs)).
+
+## Distinction from Invalid Identity
+
+`NotSubnetOwner` and `InvalidIdentity` both appear on the `set_subnet_identity` path, but at
+different checks. `NotSubnetOwner` is returned when `get_subnet_owner(netuid)` does not equal the
+signing coldkey. `InvalidIdentity` is returned later when `is_valid_subnet_identity` fails
+([Invalid Identity](https://docs.learnbittensor.org/errors/subtensor#invalididentity),
+[Subtensor source: identity.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/identity.rs)).
+
+- **NotSubnetOwner** — signing coldkey does not match `get_subnet_owner(netuid)`.
+- **InvalidIdentity** — `is_valid_subnet_identity` failed.
+
+## Distinction from Bad Origin
+
+`NotSubnetOwner` and `BadOrigin` are both dispatch failures, but they indicate different conditions.
+`NotSubnetOwner` is a signed-caller ownership mismatch on `do_set_subnet_identity`. `BadOrigin`
+means the transaction origin does not satisfy the extrinsic's origin requirement
+([Subtensor Standard Errors: BadOrigin](https://docs.learnbittensor.org/errors/subtensor#badorigin),
+[Subtensor source: identity.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/identity.rs)).
+
+- **NotSubnetOwner** — signing coldkey does not match `get_subnet_owner(netuid)`.
+- **BadOrigin** — origin type does not satisfy extrinsic requirements.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the ownership comparison in
+`do_set_subnet_identity`. It does not report `get_subnet_owner` results for netuid 2 or any other
+live `netuid`; those depend on chain state at observation time
+([Subtensor source: identity.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/identity.rs),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor Standard Errors: NotSubnetOwner](https://docs.learnbittensor.org/errors/subtensor#notsubnetowner)
+- [Invalid Identity](https://docs.learnbittensor.org/errors/subtensor#invalididentity)
+- [Subtensor source: identity.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/identity.rs)
