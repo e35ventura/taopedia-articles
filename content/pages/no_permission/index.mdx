@@ -1,0 +1,79 @@
+---
+title: "No Permission"
+summary:
+  "How the NoPermission error blocks pure-proxy removal when the caller is not the specific pure
+  account created for that proxy definition."
+category: "Wallets"
+tags: ["Wallets", "Errors"]
+infoboxTitle: No Permission
+infoboxCaption: Error raised when a proxy call would exceed the authority the runtime expects.
+infoboxRows:
+  - label: Error
+    value: NoPermission
+  - label: Trigger
+    value: caller is not the expected pure proxy for the referenced definition
+  - label: Checked in
+    value: pure-proxy removal path
+  - label: Check type
+    value: Exact-account permission check
+---
+
+# No Permission
+
+`NoPermission` is a documented proxy-pallet error. The Subtensor API errors reference summarizes it
+as: "Call may not be made by proxy because it may escalate its privileges"
+([Subtensor API Errors: NoPermission](https://docs.learnbittensor.org/subtensor-api/errors#nopermission)).
+
+## What It Means
+
+In the proxy pallet's pure-proxy removal path, the runtime reconstructs the pure account that should
+correspond to the supplied creator, proxy type, index, and creation point. It then checks that the
+signing account is exactly that derived pure account. `NoPermission` is the rejection when the
+signer does not match the expected pure proxy
+([Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs)).
+
+This is not a missing-proxy-definition failure. The relevant pure-proxy definition can exist, but
+the runtime still rejects the call if the submitted origin is not the precise account authorized to
+remove that pure proxy
+([Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs),
+[Glossary: Pure Proxies](https://docs.learnbittensor.org/resources/glossary#pure-proxies)).
+
+## Why It Appears
+
+The current runtime path for `NoPermission` is the `kill_pure` extrinsic. That extrinsic is for
+removing a previously spawned pure proxy, and its code explicitly fails with `NoPermission` when the
+caller is not the previously created pure account that matches the referenced parameters
+([Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs)).
+
+The tests show both sides of that guard. A proxied `kill_pure` attempt can surface `NoPermission`
+through `ProxyExecuted` when the inner removal call is not authorized, and a direct `kill_pure` call
+from the wrong account also fails with `NoPermission`
+([Subtensor test: proxy/tests.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/tests.rs)).
+
+## Distinction from Not Proxy
+
+`NoPermission` and `NotProxy` both belong to proxy logic, but they fail at different checks.
+`NotProxy` means the runtime cannot find the required proxy relationship for the attempted action.
+`NoPermission` means the relevant pure-proxy context exists, but the submitted account is not the
+exact account allowed to perform that removal
+([Subtensor API Errors: NotProxy](https://docs.learnbittensor.org/subtensor-api/errors#notproxy),
+[Subtensor API Errors: NoPermission](https://docs.learnbittensor.org/subtensor-api/errors#nopermission)).
+
+- **NotProxy** — the required proxy relationship is not found.
+- **NoPermission** — the proxy context is present, but the submitted account lacks the exact
+  authority required for `kill_pure`.
+
+## Reader Boundary
+
+This page defines the current meaning of the error label in the proxy pallet's pure-proxy removal
+logic. It does not describe every pure-proxy lifecycle step or every proxy-type filter; it focuses
+on the exact-account permission check behind `NoPermission`
+([Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs)).
+
+## Further Reading
+
+- [Subtensor API Errors: NoPermission](https://docs.learnbittensor.org/subtensor-api/errors#nopermission)
+- [Subtensor API Errors: NotProxy](https://docs.learnbittensor.org/subtensor-api/errors#notproxy)
+- [Glossary: Pure Proxies](https://docs.learnbittensor.org/resources/glossary#pure-proxies)
+- [Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs)
+- [Subtensor test: proxy/tests.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/tests.rs)
