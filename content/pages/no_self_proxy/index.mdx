@@ -1,0 +1,92 @@
+---
+title: "No Self Proxy"
+summary:
+  "How the NoSelfProxy error blocks creating a proxy relationship when the delegator and delegatee
+  are the same account."
+category: "Wallets"
+tags: ["Wallets", "Errors"]
+infoboxTitle: No Self Proxy
+infoboxCaption: Error raised when a proxy relationship points an account to itself.
+infoboxRows:
+  - label: Error
+    value: NoSelfProxy
+  - label: Trigger
+    value: delegator equals delegatee
+  - label: Checked in
+    value: add_proxy_delegate
+  - label: Check type
+    value: Self-reference prevention for proxy setup
+---
+
+# No Self Proxy
+
+`NoSelfProxy` is a documented proxy-pallet error raised when a proxy relationship is configured with
+the same account on both sides. The Subtensor API errors reference lists it under proxy errors
+([Subtensor API Errors: NoSelfProxy](https://docs.learnbittensor.org/subtensor-api/errors#noselfproxy)).
+
+## What It Means
+
+A proxy relationship needs two distinct accounts: one delegator and one delegatee. `NoSelfProxy`
+means the submitted delegator and delegatee are the same account, so the runtime rejects the proxy
+setup instead of allowing an account to proxy itself
+([Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs)).
+
+This is a self-reference rejection on proxy creation, not a statement that the caller lacks proxy
+permission and not a statement that the delegate record is missing. The relationship is rejected
+because it would point an account back to itself
+([Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs)).
+
+The practical meaning is narrow: the attempted proxy relationship uses the same account as both
+ends.
+
+## Why It Appears
+
+This error appears when proxy setup tries to register an account as its own proxy delegate
+([Subtensor API Errors: NoSelfProxy](https://docs.learnbittensor.org/subtensor-api/errors#noselfproxy),
+[Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs)).
+
+The tests show this directly. A proxy-addition path fails with `NoSelfProxy` when the delegator and
+delegatee arguments are the same account
+([Subtensor test: proxy/tests.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/tests.rs)).
+
+This is not the rejection for a missing proxy record, and it is not the rejection for an invalid
+proxy-derived account identifier. It is the specific guard against self-proxying.
+
+## Distinction from Not Proxy
+
+`NoSelfProxy` and `NotProxy` both belong to proxy flows, but they reject different conditions.
+`NotProxy` means a required proxy relationship does not exist when the runtime looks it up.
+`NoSelfProxy` means the runtime refuses to create a proxy relationship where delegator and delegatee
+would be the same account
+([Subtensor API Errors: NotProxy](https://docs.learnbittensor.org/subtensor-api/errors#notproxy),
+[Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs)).
+
+- **NotProxy** — the required proxy relationship is not found.
+- **NoSelfProxy** — the proposed proxy relationship points an account to itself.
+
+## Distinction from Invalid Derived Account Id
+
+`NoSelfProxy` and `InvalidDerivedAccountId` can both appear in proxy-related paths, but they happen
+at different checks. `InvalidDerivedAccountId` means the runtime could not decode bytes into a valid
+proxy-derived account ID. `NoSelfProxy` means the submitted accounts already fail the simpler rule
+that delegator and delegatee must differ
+([Subtensor API Errors: InvalidDerivedAccountId](https://docs.learnbittensor.org/subtensor-api/errors#invalidderivedaccountid),
+[Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs)).
+
+- **InvalidDerivedAccountId** — a derived proxy account ID cannot be decoded.
+- **NoSelfProxy** — the proxy relationship uses the same account on both sides.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the self-reference check that raises it. It
+does not describe every other proxy validation rule or proxy execution path; those are separate
+parts of the proxy pallet's behavior
+([Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs)).
+
+## Further Reading
+
+- [Subtensor API Errors: NoSelfProxy](https://docs.learnbittensor.org/subtensor-api/errors#noselfproxy)
+- [Subtensor API Errors: NotProxy](https://docs.learnbittensor.org/subtensor-api/errors#notproxy)
+- [Subtensor API Errors: InvalidDerivedAccountId](https://docs.learnbittensor.org/subtensor-api/errors#invalidderivedaccountid)
+- [Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs)
+- [Subtensor test: proxy/tests.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/tests.rs)
