@@ -1,0 +1,109 @@
+---
+title: "Expected Beneficiary Origin"
+summary:
+  "How the ExpectedBeneficiaryOrigin error blocks subnet lease termination when the signing account
+  is not the stored lease beneficiary."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Expected Beneficiary Origin
+infoboxCaption: Error raised when a lease termination call is not signed by the beneficiary.
+infoboxRows:
+  - label: Error
+    value: ExpectedBeneficiaryOrigin
+  - label: Trigger
+    value: Signer is not the stored lease beneficiary
+  - label: Checked in
+    value: Lease termination
+  - label: Related concept
+    value: Subnet lease
+---
+
+# Expected Beneficiary Origin
+
+`ExpectedBeneficiaryOrigin` means a subnet lease termination call was signed by an account other
+than the lease's stored beneficiary. The standard-errors reference describes it as "Expected
+beneficiary origin"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#expectedbeneficiaryorigin)).
+
+A [subnet lease](https://docs.learnbittensor.org/subnets/crowdloans) created through a crowdloan
+names a beneficiary who receives operating rights through a scoped proxy while contributors hold
+emission shares. Crowdloan documentation states that the beneficiary may terminate the lease only
+after an optional end block has passed
+([Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans)).
+
+## What It Means
+
+Lease termination transfers subnet ownership from the lease arrangement to the beneficiary and
+closes out lease bookkeeping. `ExpectedBeneficiaryOrigin` is the first identity check on that path:
+the signing account must match the beneficiary recorded for the lease
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#expectedbeneficiaryorigin),
+[Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans)).
+
+This is a beneficiary-authorization rejection. It does not, by itself, say anything about whether
+the lease exists, whether an end block was configured, or whether the termination window has opened.
+
+## Why It Appears
+
+This error appears when a wallet other than the lease beneficiary submits a lease termination call.
+That can happen when automation uses a contributor coldkey, when a proxy wallet lacks beneficiary
+scope, or when the wrong lease record is targeted in a script
+([Subnet Lease](https://docs.learnbittensor.org/subnets/crowdloans)).
+
+When debugging, rule out identity failures before reading timing or hotkey errors on the same call.
+`LeaseDoesNotExist` means no lease record matches the submitted lease identifier. `LeaseHasNotEnded`
+means the beneficiary signed the call, but the current block is still before the lease's recorded
+end block. `BeneficiaryDoesNotOwnHotkey` means the beneficiary signed after timing checks passed,
+but the named hotkey is not owned by the beneficiary coldkey
+([Subtensor Standard Errors: LeaseDoesNotExist](https://docs.learnbittensor.org/errors/subtensor#leasedoesnotexist),
+[Subtensor Standard Errors: LeaseHasNotEnded](https://docs.learnbittensor.org/errors/subtensor#leasehasnotended),
+[Subtensor API Errors: BeneficiaryDoesNotOwnHotkey](https://docs.learnbittensor.org/subtensor-api/errors#beneficiarydoesnotownhotkey)).
+
+The practical meaning is narrow: only the stored lease beneficiary may sign the termination call.
+
+## Distinction from Invalid Lease Beneficiary
+
+`ExpectedBeneficiaryOrigin` and `InvalidLeaseBeneficiary` both involve beneficiary identity, but on
+different lease paths. `InvalidLeaseBeneficiary` blocks leased-network registration when the caller
+is not the crowdloan creator finalizing the crowdloan. `ExpectedBeneficiaryOrigin` blocks lease
+termination when the caller is not the stored beneficiary on an existing lease
+([Subtensor Standard Errors: InvalidLeaseBeneficiary](https://docs.learnbittensor.org/errors/subtensor#invalidleasebeneficiary)).
+
+- **ExpectedBeneficiaryOrigin** — the signer is not the stored lease beneficiary on termination.
+- **InvalidLeaseBeneficiary** — the signer is not the crowdloan creator on registration.
+
+## Distinction from Lease Has Not Ended
+
+`ExpectedBeneficiaryOrigin` and `LeaseHasNotEnded` both appear on lease termination calls, but at
+different stages. `ExpectedBeneficiaryOrigin` is the beneficiary-identity check that runs first.
+`LeaseHasNotEnded` means the beneficiary signed the call, but the lease's recorded end block has not
+been reached yet
+([Subtensor Standard Errors: LeaseHasNotEnded](https://docs.learnbittensor.org/errors/subtensor#leasehasnotended)).
+
+- **ExpectedBeneficiaryOrigin** — the signer is not the lease beneficiary.
+- **LeaseHasNotEnded** — the beneficiary signed, but the end block has not arrived.
+
+## Distinction from Lease Does Not Exist
+
+`ExpectedBeneficiaryOrigin` and `LeaseDoesNotExist` both block lease termination early, but they
+reject different problems. `LeaseDoesNotExist` means the submitted lease identifier has no stored
+lease record. `ExpectedBeneficiaryOrigin` means a lease record was found, but the signing account is
+not its beneficiary
+([Subtensor Standard Errors: LeaseDoesNotExist](https://docs.learnbittensor.org/errors/subtensor#leasedoesnotexist)).
+
+- **LeaseDoesNotExist** — no lease record matches the submitted identifier.
+- **ExpectedBeneficiaryOrigin** — the lease exists, but the signer is not the beneficiary.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the beneficiary-origin check that raises it. It
+does not report which account is the live beneficiary for a lease or whether a lease's end block has
+passed; those depend on chain state at observation time
+([Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#expectedbeneficiaryorigin)
+- [Subtensor Standard Errors: InvalidLeaseBeneficiary](https://docs.learnbittensor.org/errors/subtensor#invalidleasebeneficiary)
+- [Subtensor Standard Errors: LeaseHasNotEnded](https://docs.learnbittensor.org/errors/subtensor#leasehasnotended)
+- [Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans)
