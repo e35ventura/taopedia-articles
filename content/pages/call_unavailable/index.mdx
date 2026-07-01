@@ -1,0 +1,111 @@
+---
+title: "Call Unavailable"
+summary:
+  "How the CallUnavailable error blocks crowdloan finalization when the stored dispatch call cannot
+  be loaded from preimage storage."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Call Unavailable
+infoboxCaption:
+  Error raised when finalize cannot load the crowdloan's stored call from preimage storage.
+infoboxRows:
+  - label: Error
+    value: CallUnavailable
+  - label: Trigger
+    value: preimage peek fails for the stored call on finalize
+  - label: Checked in
+    value: finalize extrinsic, call-dispatch path
+  - label: Check type
+    value: Preimage lookup for the stored finalization call
+---
+
+# Call Unavailable
+
+`CallUnavailable` is a crowdloan pallet error raised by the `finalize` extrinsic on the
+call-dispatch path. The pallet defines it as "Call to dispatch was not found in the preimage
+storage"
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+## What It Means
+
+Some [crowdloan](https://docs.learnbittensor.org/subnets/crowdloans) campaigns finalize by
+dispatching a stored runtime call, such as subnet lease registration, rather than by transferring
+funds to a target address. On that call-dispatch path, `finalize` loads the bound call from preimage
+storage and returns `CallUnavailable` when the lookup fails
+([Crowdloans: Crowdloan Lifecycle](https://docs.learnbittensor.org/subnets/crowdloans#crowdloan-lifecycle),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+This check applies only to call-based finalization. Campaigns configured with a `target_address`
+instead of a stored call follow the balance-transfer branch and do not raise this error on
+`finalize`.
+
+This is a preimage-lookup rejection on the finalize call path, not proof that the funding cap was
+not reached, that the caller is not the crowdloan creator, or that the campaign was already
+finalized.
+
+## Why It Appears
+
+This error appears when the crowdloan creator calls `finalize` on a call-based campaign after the
+earlier finalize checks pass, but the stored preimage cannot be found or loaded from preimage
+storage before finalization completes
+([Crowdloans: Can the purpose of a crowdloan be changed after it starts?](https://docs.learnbittensor.org/subnets/crowdloans#can-the-purpose-of-a-crowdloan-be-changed-after-it-starts),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+When debugging, compare against other rejections on the same call. `CapNotRaised` means total raised
+still differs from the cap. `AlreadyFinalized` means finalization already completed. `InvalidOrigin`
+means the signer is not the crowdloan creator. `InvalidFinalizationConfig` on `finalize` means the
+stored campaign record has an invalid call-and-target combination rather than a missing preimage
+([Cap Not Raised](https://docs.learnbittensor.org/errors/subtensor#capnotraised),
+[Already Finalized](https://docs.learnbittensor.org/errors/subtensor#alreadyfinalized),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+The practical meaning is narrow: the campaign reached finalize with a call-based configuration, but
+the stored dispatch call could not be loaded from preimage storage.
+
+## Distinction from Invalid Finalization Config
+
+`CallUnavailable` and `InvalidFinalizationConfig` both appear during finalization setup, but at
+different checks. `InvalidFinalizationConfig` means the campaign record does not have exactly one of
+a stored call or a target address. `CallUnavailable` means the record is call-based, but the bound
+call cannot be loaded from preimage storage
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+- **CallUnavailable** — the stored call preimage cannot be loaded.
+- **InvalidFinalizationConfig** — the campaign has an invalid call-or-target configuration.
+
+## Distinction from Cap Not Raised
+
+`CallUnavailable` and `CapNotRaised` both appear on `finalize`, but at different checks.
+`CapNotRaised` means total raised still differs from the cap. `CallUnavailable` means funding met
+the cap, but the stored call could not be retrieved for dispatch
+([Cap Not Raised](https://docs.learnbittensor.org/errors/subtensor#capnotraised),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+- **CallUnavailable** — the stored call preimage cannot be loaded.
+- **CapNotRaised** — raised total still differs from the cap.
+
+## Distinction from Already Finalized
+
+`CallUnavailable` and `AlreadyFinalized` both appear on `finalize`, but at different checks.
+`AlreadyFinalized` means the campaign already completed finalization. `CallUnavailable` means the
+campaign is not yet finalized, but the stored call cannot be loaded from preimage storage
+([Already Finalized](https://docs.learnbittensor.org/errors/subtensor#alreadyfinalized),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+- **CallUnavailable** — the stored call preimage cannot be loaded.
+- **AlreadyFinalized** — the campaign was already finalized.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the preimage lookup on the call-dispatch
+finalize path. It does not report whether a particular crowdloan's stored call still exists on any
+network; that is chain state readers can query separately
+([Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Crowdloans: Crowdloan Lifecycle](https://docs.learnbittensor.org/subnets/crowdloans#crowdloan-lifecycle)
+- [Crowdloans: Can the purpose of a crowdloan be changed after it starts?](https://docs.learnbittensor.org/subnets/crowdloans#can-the-purpose-of-a-crowdloan-be-changed-after-it-starts)
+- [Cap Not Raised](https://docs.learnbittensor.org/errors/subtensor#capnotraised)
+- [Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)
