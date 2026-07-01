@@ -1,0 +1,106 @@
+---
+title: "Spec Version Needs To Increase"
+summary:
+  "How the SpecVersionNeedsToIncrease error blocks a runtime upgrade submission when the new
+  runtime's spec_version is not strictly greater than the chain's current spec_version."
+category: "Core Concepts"
+tags: ["Transactions", "Errors"]
+infoboxTitle: Spec Version Needs To Increase
+infoboxCaption:
+  Error raised when a runtime upgrade submission's spec_version is not strictly greater than the
+  current spec_version.
+infoboxRows:
+  - label: Error
+    value: SpecVersionNeedsToIncrease
+  - label: Pallet
+    value: system
+  - label: Trigger
+    value: Runtime upgrade submission's spec_version is not strictly greater than the current one
+  - label: Check type
+    value: spec_version strict-monotonicity check at runtime upgrade validation
+---
+
+# Spec Version Needs To Increase
+
+`SpecVersionNeedsToIncrease` is a system pallet error raised when a runtime upgrade submission's
+`spec_version` is not strictly greater than the chain's current `spec_version`. The API errors
+reference summarizes it as "The specification version is not allowed to decrease between the current
+runtime and the new runtime."
+([Subtensor API Errors: SpecVersionNeedsToIncrease](https://docs.learnbittensor.org/subtensor-api/errors#specversionneedstoincrease)).
+
+## What It Means
+
+Subtensor runs a Substrate-style runtime that identifies each compiled runtime build by a numeric
+`spec_version` field in its embedded `RuntimeVersion`. Submitting a replacement runtime requires the
+new `spec_version` to be strictly greater than the current one, so a runtime upgrade is monotonic in
+version number. `SpecVersionNeedsToIncrease` means the runtime upgrade check compared the two
+versions and found that the new version was not strictly greater, so the upgrade path stops before
+the new runtime is applied
+([Subtensor API Errors: SpecVersionNeedsToIncrease](https://docs.learnbittensor.org/subtensor-api/errors#specversionneedstoincrease)).
+
+This is the `spec_version` strict-monotonicity check on the runtime upgrade path. It does not, by
+itself, mean the new runtime's `spec_name` differed from the current one, that the new runtime's
+embedded version metadata could not be decoded, or that the runtime upgrade was blocked by the
+dispatch filter.
+
+## Why It Appears
+
+This error appears when a runtime upgrade submission is processed with `check_version: true` and the
+new `spec_version` is not strictly greater than the current one. The pinned frame-system source
+describes the check inside the `can_set_code` helper: after decoding the new `RuntimeVersion` and
+verifying the `spec_name` matches the current `spec_name`, the helper compares the new
+`spec_version` against the current `spec_version` and returns
+`CanSetCodeResult::InvalidVersion(Error::<T>::SpecVersionNeedsToIncrease)` when the new version is
+not strictly greater
+([opentensor/polkadot-sdk: substrate/frame/system/src/lib.rs#L2342](https://github.com/opentensor/polkadot-sdk/blob/7cc54bf2d50ae3921d718736dfeb0de9468539c7/substrate/frame/system/src/lib.rs#L2342)).
+
+The `can_set_code` helper performs three sequential upgrade-version checks against the embedded
+version metadata: a decode check first
+([`FailedToExtractRuntimeVersion`](https://docs.learnbittensor.org/subtensor-api/errors#failedtoextractruntimeversion),
+[opentensor/polkadot-sdk: lib.rs#L2329](https://github.com/opentensor/polkadot-sdk/blob/7cc54bf2d50ae3921d718736dfeb0de9468539c7/substrate/frame/system/src/lib.rs#L2329)),
+then a `spec_name` equality check
+([`InvalidSpecName`](https://docs.learnbittensor.org/subtensor-api/errors#invalidspecname),
+[opentensor/polkadot-sdk: lib.rs#L2338](https://github.com/opentensor/polkadot-sdk/blob/7cc54bf2d50ae3921d718736dfeb0de9468539c7/substrate/frame/system/src/lib.rs#L2338)),
+then this `spec_version` strict-monotonicity check.
+
+## Distinction from Failed To Extract Runtime Version
+
+`SpecVersionNeedsToIncrease` and `FailedToExtractRuntimeVersion` both surface as `InvalidVersion`
+results from `can_set_code`, but they fire at different stages. `FailedToExtractRuntimeVersion` is
+the embedded-version-metadata decode check that runs before any field comparison.
+`SpecVersionNeedsToIncrease` is the `spec_version` strict-monotonicity check that runs after the
+decode succeeds and after the `spec_name` comparison passes
+([Subtensor API Errors: SpecVersionNeedsToIncrease](https://docs.learnbittensor.org/subtensor-api/errors#specversionneedstoincrease),
+[Subtensor API Errors: FailedToExtractRuntimeVersion](https://docs.learnbittensor.org/subtensor-api/errors#failedtoextractruntimeversion)).
+
+- **SpecVersionNeedsToIncrease** — the embedded version metadata decoded and the `spec_name`
+  matched, but the `spec_version` did not increase.
+- **FailedToExtractRuntimeVersion** — the embedded version metadata could not be decoded at all.
+
+## Distinction from Invalid Spec Name
+
+`SpecVersionNeedsToIncrease` and `InvalidSpecName` both appear inside the same `can_set_code`
+helper's version validation, but they check different fields. `SpecVersionNeedsToIncrease` is the
+`spec_version` strict-monotonicity check that runs after the `spec_name` comparison passes.
+`InvalidSpecName` is the `spec_name` equality check that runs after the decode succeeds
+([Subtensor API Errors: SpecVersionNeedsToIncrease](https://docs.learnbittensor.org/subtensor-api/errors#specversionneedstoincrease),
+[Subtensor API Errors: InvalidSpecName](https://docs.learnbittensor.org/subtensor-api/errors#invalidspecname)).
+
+- **SpecVersionNeedsToIncrease** — the embedded version metadata decoded and the `spec_name`
+  matched, but the `spec_version` did not increase.
+- **InvalidSpecName** — the embedded version metadata decoded but its `spec_name` did not match.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the `spec_version` strict-monotonicity check it
+represents on the runtime upgrade path. It does not report the current chain `spec_version`, list
+the runtime upgrade extrinsic that submits the new bytes, or describe how to package a runtime for
+upgrade ([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks),
+[Subtensor API Errors: SpecVersionNeedsToIncrease](https://docs.learnbittensor.org/subtensor-api/errors#specversionneedstoincrease)).
+
+## Further Reading
+
+- [Subtensor API Errors: SpecVersionNeedsToIncrease](https://docs.learnbittensor.org/subtensor-api/errors#specversionneedstoincrease)
+- [Subtensor API Errors: FailedToExtractRuntimeVersion](https://docs.learnbittensor.org/subtensor-api/errors#failedtoextractruntimeversion)
+- [Subtensor API Errors: InvalidSpecName](https://docs.learnbittensor.org/subtensor-api/errors#invalidspecname)
+- [opentensor/polkadot-sdk: frame/system/src/lib.rs#L2342](https://github.com/opentensor/polkadot-sdk/blob/7cc54bf2d50ae3921d718736dfeb0de9468539c7/substrate/frame/system/src/lib.rs#L2342)
