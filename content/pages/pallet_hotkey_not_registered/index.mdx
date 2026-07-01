@@ -1,0 +1,95 @@
+---
+title: "Pallet Hotkey Not Registered"
+summary:
+  "How the PalletHotkeyNotRegistered error blocks enabling the limit-orders pallet when the pallet
+  account is not registered to the configured pallet hotkey."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Pallet Hotkey Not Registered
+infoboxCaption: Error raised when enabling limit orders without pallet hotkey registration.
+infoboxRows:
+  - label: Error
+    value: PalletHotkeyNotRegistered
+  - label: Trigger
+    value: pallet_hotkey_registered(pallet_account, PalletHotkey) returns false
+  - label: Checked in
+    value: set_pallet_status when enabled=true
+  - label: Check type
+    value: Pallet account-to-hotkey registration guard
+---
+
+# Pallet Hotkey Not Registered
+
+`PalletHotkeyNotRegistered` is a documented limit-orders error raised when root tries to enable the
+limit-orders pallet before its pallet account is registered to the configured pallet hotkey. The
+Subtensor API error reference describes it as "The pallet hotkey has not been registered to the
+pallet account"
+([Subtensor API Errors: PalletHotkeyNotRegistered](https://docs.learnbittensor.org/subtensor-api/errors#pallethotkeynotregistered)).
+
+## What It Means
+
+The `set_pallet_status` extrinsic controls whether limit-order execution is enabled. When called
+with `enabled=true`, it first checks whether
+`pallet_hotkey_registered(pallet_account, PalletHotkey)` is true and returns
+`PalletHotkeyNotRegistered` if not
+([Subnet Liquidity Pools](https://docs.learnbittensor.org/subnets/understanding-subnets#liquidity-pools),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+This guard only runs on enable operations. Disabling with `enabled=false` does not run the pallet
+hotkey registration check
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+The runtime includes paths that register this pairing at genesis and on runtime upgrade migrations,
+so the error signals that enable-time registration state is still missing on the executing chain
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+This is an enablement precondition on admin control flow, not a per-order validation failure.
+
+## Why It Appears
+
+This error appears when root calls `set_pallet_status(true)` before the pallet account and pallet
+hotkey association is present. That can happen if enablement is attempted before migration
+registration has completed, or when chain state does not yet carry the expected pairing
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+When debugging, compare against the execution-time gate after successful enablement.
+`LimitOrdersDisabled` is raised by relayer execution extrinsics when `LimitOrdersEnabled` is false;
+`PalletHotkeyNotRegistered` is raised earlier on the root admin call that tries to switch that flag
+on ([Limit Orders Disabled](https://docs.learnbittensor.org/errors/subtensor#limitordersdisabled),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+## Distinction from Limit Orders Disabled
+
+`PalletHotkeyNotRegistered` and `LimitOrdersDisabled` both relate to whether limit orders can run,
+but they occur on different callers and stages. `PalletHotkeyNotRegistered` blocks root from
+enabling the pallet via `set_pallet_status(true)`. `LimitOrdersDisabled` blocks relayer execution
+calls when the enable flag is off
+([Limit Orders Disabled](https://docs.learnbittensor.org/errors/subtensor#limitordersdisabled),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+- **PalletHotkeyNotRegistered** — root cannot enable because pallet hotkey pairing is missing.
+- **LimitOrdersDisabled** — execution calls are gated off by current pallet status.
+
+## Distinction from Unauthorized
+
+`PalletHotkeyNotRegistered` and `Unauthorized` both involve control checks in the limit-orders
+pallet, but on different extrinsics. `PalletHotkeyNotRegistered` is an admin enablement guard on
+`set_pallet_status`. `Unauthorized` is a signer identity guard on `cancel_order`
+([Unauthorized](https://docs.learnbittensor.org/errors/subtensor#unauthorized),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+- **PalletHotkeyNotRegistered** — enable-time pallet registration precondition failed.
+- **Unauthorized** — cancel caller is not the order signer.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the enable-time registration check that raises
+it. It does not cover full pallet migration procedures or all runtime upgrade mechanics beyond this
+specific guard
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+## Further Reading
+
+- [Subtensor API Errors: PalletHotkeyNotRegistered](https://docs.learnbittensor.org/subtensor-api/errors#pallethotkeynotregistered)
+- [Limit Orders Disabled](https://docs.learnbittensor.org/errors/subtensor#limitordersdisabled)
+- [Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)
