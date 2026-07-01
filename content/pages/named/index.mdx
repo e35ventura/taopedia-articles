@@ -1,0 +1,88 @@
+---
+title: "Named"
+summary:
+  "How the Named error blocks a scheduler reschedule when the targeted task is a named task, since
+  named task identifiers are stable and cannot be moved."
+category: "Core Concepts"
+tags: ["Transactions", "Errors"]
+infoboxTitle: Named
+infoboxCaption: Error raised when a scheduler reschedule targets a named task.
+infoboxRows:
+  - label: Error
+    value: Named
+  - label: Pallet
+    value: scheduler
+  - label: Trigger
+    value: Scheduler reschedule submitted against a task that has a name
+  - label: Check type
+    value: Named-task guard on the reschedule path
+---
+
+# Named
+
+`Named` is a scheduler pallet error raised when a reschedule submission targets a task that is
+already a named task. The API errors reference summarizes it as "Attempt to use a non-named function
+on a named task."
+([Subtensor API Errors: Named](https://docs.learnbittensor.org/subtensor-api/errors#named)).
+
+## What It Means
+
+Subtensor uses the scheduler pallet to queue calls for dispatch at a specified future block. Each
+scheduled task is either anonymous (its position in the agenda is its identifier) or named (the
+submission supplied a `TaskName` so it can be cancelled or rescheduled by that stable handle).
+`Named` means a reschedule request reached a task that already carries a name, so the runtime
+rejects the move to keep the name-to-task mapping stable
+([Subtensor API Errors: Named](https://docs.learnbittensor.org/subtensor-api/errors#named)).
+
+This is the named-task guard on the reschedule path. It does not, by itself, mean the new target
+block is in the past, that the reschedule would leave the call at the same block, or that the
+scheduler failed to store a fresh call.
+
+## Why It Appears
+
+This error appears when a scheduler reschedule submission lands on a task whose stored record
+carries a `TaskName`. The scheduler source describes the guard as a check on the
+`Scheduled.maybe_id` field of the task: if that field is `Some(_)`, the task is named and the
+reschedule is rejected
+([Subtensor API Errors: Named](https://docs.learnbittensor.org/subtensor-api/errors#named)).
+
+The practical meaning is narrow: reschedule an anonymous task by its agenda index, or cancel a named
+task and schedule a replacement, rather than trying to move a named task in place.
+
+## Distinction from Reschedule No Change
+
+`Named` and `RescheduleNoChange` both appear on the scheduler reschedule path, but they fire at
+different checks. `Named` is the named-task guard, rejecting the reschedule because the targeted
+task already carries a `TaskName`. `RescheduleNoChange` is the time-equality guard, rejecting the
+reschedule because the new time equals the existing task's scheduled time
+([Subtensor API Errors: Named](https://docs.learnbittensor.org/subtensor-api/errors#named),
+[Subtensor API Errors: RescheduleNoChange](https://docs.learnbittensor.org/subtensor-api/errors#reschedulenochange)).
+
+- **Named** — the targeted task is a named task.
+- **RescheduleNoChange** — the new time equals the existing scheduled time.
+
+## Distinction from Target Block Number In Past
+
+`Named` and `TargetBlockNumberInPast` both block scheduler operations, but at different checks.
+`Named` is the named-task guard on the reschedule path. `TargetBlockNumberInPast` is the timing
+guard that rejects a submission whose target block is already behind the current chain head
+([Subtensor API Errors: Named](https://docs.learnbittensor.org/subtensor-api/errors#named),
+[Subtensor API Errors: TargetBlockNumberInPast](https://docs.learnbittensor.org/subtensor-api/errors#targetblocknumberinpast)).
+
+- **Named** — the targeted task is a named task.
+- **TargetBlockNumberInPast** — the submitted target block is in the past.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the named-task guard it represents on the
+scheduler reschedule path. It does not enumerate which task identifiers are currently named on a
+network or describe the workflow to replace a named task
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks),
+[Subtensor API Errors: Named](https://docs.learnbittensor.org/subtensor-api/errors#named)).
+
+## Further Reading
+
+- [Subtensor API Errors: Named](https://docs.learnbittensor.org/subtensor-api/errors#named)
+- [Subtensor API Errors: RescheduleNoChange](https://docs.learnbittensor.org/subtensor-api/errors#reschedulenochange)
+- [Subtensor API Errors: TargetBlockNumberInPast](https://docs.learnbittensor.org/subtensor-api/errors#targetblocknumberinpast)
+- [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)
