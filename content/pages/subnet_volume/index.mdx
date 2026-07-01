@@ -1,0 +1,101 @@
+---
+title: "Subnet Volume"
+summary:
+  "How subnet volume is an on-chain running total of the TAO that has flowed through a subnet's
+  liquidity pool through staking and unstaking swaps."
+category: "Tokenomics"
+tags: ["Tokenomics", "Subnets"]
+infoboxTitle: Subnet Volume
+infoboxCaption: Cumulative TAO that has moved through a subnet's pool via swaps.
+infoboxRows:
+  - label: Storage
+    value: SubnetVolume
+  - label: Type
+    value: u128 (TAO, in rao)
+  - label: Meaning
+    value: Lifetime TAO swap volume for the subnet
+  - label: Starts at
+    value: "0 at registration"
+  - label: Example
+    value: netuid 1
+---
+
+# Subnet Volume
+
+Subnet volume is an on-chain value, stored per subnet as `SubnetVolume`, that holds a running total
+of the TAO that has moved through a subnet's liquidity pool. Every swap between TAO and the subnet's
+alpha adds the TAO side of that swap to the total
+([Subtensor source: staking/stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)).
+
+## What It Measures
+
+Staking into a subnet swaps TAO for alpha, and unstaking swaps alpha back to TAO, both through the
+subnet's pool. Each of those swaps adds the TAO amount involved to `SubnetVolume`, so the value
+grows with trading activity in either direction. It is a cumulative lifetime figure for the subnet,
+not a current balance or a per-block rate
+([Subtensor source: staking/stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)).
+
+The value is stored as a `u128` denominated in rao, TAO's base unit, and is set to `0` when the
+subnet is registered. Because each swap adds to it and nothing subtracts from it during normal
+operation, the total only increases over the subnet's life; it is cleared only if the subnet is
+removed
+([Subtensor source: pallets/subtensor/src/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/lib.rs),
+[Subtensor source: staking/stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)).
+
+## Distinction from Tao Reserve
+
+Subnet volume and the subnet's TAO reserve both count TAO, but they measure different things. The
+TAO reserve is the amount of TAO currently held in the pool, a level that rises and falls as stake
+enters and leaves. Subnet volume is the cumulative amount of TAO that has ever flowed through the
+pool, a running total that only grows
+([Subtensor source: staking/stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)).
+
+- **Tao reserve** — the TAO currently in the pool right now.
+- **Subnet volume** — the lifetime total of TAO that has moved through the pool.
+
+## Distinction from Emission
+
+Subnet volume counts TAO that users swap through the pool; it is not the TAO a subnet receives as
+emission. Emission is minted and allocated to subnets by the coinbase process, while subnet volume
+records swap flow driven by staking and unstaking activity
+([Subtensor source: staking/stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs),
+[Subtensor source: coinbase/subnet_emissions.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/subnet_emissions.rs)).
+
+- **Subnet volume** — cumulative user swap flow through the pool, in TAO.
+- **Emission** — newly minted TAO allocated to subnets by the runtime.
+
+## Chain Reads for netuid 1
+
+Because the value is stored per subnet, it is read per netuid. `SubnetVolume` is a storage map keyed
+by netuid, so a reader can query the running total for the documented example netuid — for instance
+netuid 1 — from chain state with a Polkadot.js Apps chain-state query against that storage item; the
+same figure is also surfaced in a subnet's metagraph information
+([Subtensor source: pallets/subtensor/src/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/lib.rs)).
+
+That read path keeps the live value claim tied to a parseable netuid rather than to any single
+network-wide number
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Per-Subnet Live Value Boundary
+
+Subnet volume is per-subnet chain state. The running total for one netuid reflects only that
+subnet's own swap history and can differ from every other subnet's volume
+([Subtensor source: staking/stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)).
+
+This article uses netuid 1 as an example label for reading one subnet's stored value on Finney
+mainnet. That example helps a reader verify one entry; it is not proof that every subnet holds the
+same live total ([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Reader Boundary
+
+This page defines subnet volume and what its running total counts. It does not document the full
+swap pipeline, the exact fixed-point handling of the stored value, or the live number held on any
+particular subnet; each subnet stores its own `SubnetVolume`
+([Subtensor source: staking/stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)).
+
+## Further Reading
+
+- [Subtensor source: staking/stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)
+- [Subtensor source: pallets/subtensor/src/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/lib.rs)
+- [Subtensor source: coinbase/subnet_emissions.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/subnet_emissions.rs)
+- [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)
