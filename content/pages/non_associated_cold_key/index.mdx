@@ -1,8 +1,8 @@
 ---
 title: "Non Associated Cold Key"
 summary:
-  "How the NonAssociatedColdKey error signals that a stake, unstake, or subscribe request was signed
-  by a coldkey that does not own the targeted hotkey account."
+  "How the NonAssociatedColdKey error blocks runtime calls when the signing coldkey does not own the
+  hotkey required by that path."
 category: "Staking"
 tags: ["Staking", "Errors"]
 infoboxTitle: Non Associated Cold Key
@@ -12,78 +12,67 @@ infoboxRows:
     value: NonAssociatedColdKey
   - label: Trigger
     value: Coldkey acts on a hotkey it is not associated with
-  - label: Check
-    value: Coldkey-owns-hotkey ownership association
-  - label: Scope
-    value: Account-level coldkey-hotkey ownership
+  - label: Checked in
+    value: registration, hotkey swap, and set_children ownership checks
+  - label: Check type
+    value: coldkey_owns_hotkey ownership guard
 ---
 
 # Non Associated Cold Key
 
-`NonAssociatedColdKey` means the coldkey that signed a request is not the owner of the hotkey being
-acted on. The standard-errors reference describes it as "Request made by a coldkey that is not
+`NonAssociatedColdKey` means the signing coldkey is not the owner of the hotkey required by the
+executed path. The standard-errors reference describes it as "Request made by a coldkey that is not
 associated with the hotkey account"
 ([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#nonassociatedcoldkey)).
 
-Stake, unstake, and subscribe calls must be signed by the coldkey that owns the target hotkey
-([Hotkey and Coldkey](https://docs.learnbittensor.org/getting-started/wallets),
-[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#nonassociatedcoldkey)).
+The runtime raises this error on several call families that require coldkey ownership of a hotkey,
+including registration ownership checks, hotkey-swap ownership checks, and child-key scheduling
+ownership checks
+([Subtensor source: registration.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs),
+[Subtensor source: swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs),
+[Subtensor source: set_children.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/set_children.rs)).
 
 ## What It Means
 
-This error is about ownership, not about funds or timing. In Bittensor, every hotkey is associated
-with an owning coldkey, and the chain stores that coldkey-to-hotkey relationship as account state.
-When a staking-related call arrives, the runtime checks that the signing coldkey actually owns the
-hotkey it is acting on, and rejects the call with `NonAssociatedColdKey` when it does not
-([Hotkey and Coldkey](https://docs.learnbittensor.org/getting-started/wallets),
-[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#nonassociatedcoldkey)).
+This error is about ownership, not about funds or timing. In Bittensor, hotkeys are associated with
+owning coldkeys, and runtime paths can require that ownership before proceeding. Where the code
+calls `coldkey_owns_hotkey`, the path rejects with `NonAssociatedColdKey` when that relationship is
+false ([Hotkey and Coldkey](https://docs.learnbittensor.org/getting-started/wallets),
+[Subtensor source: registration.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs),
+[Subtensor source: swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs)).
 
-So when this error appears, the immediate meaning is narrow: the coldkey that signed the request is
-not the coldkey associated with that hotkey. It does not, by itself, say anything about how much
-balance or stake the account holds
+So when this error appears, the immediate meaning is narrow: for that specific path, the signer does
+not own the required hotkey. It does not, by itself, say anything about how much balance or stake
+the account holds
 ([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#nonassociatedcoldkey),
 [Glossary: Coldkey](https://docs.learnbittensor.org/resources/glossary#coldkey)).
 
 ## Why It Appears
 
-The wallet model in Bittensor pairs a coldkey with the hotkeys it owns, and many staking operations
-must be signed by the coldkey that owns the hotkey involved. The standard-errors reference documents
-this variant for stake, unstake, or subscribe requests from a coldkey not associated with the
-targeted hotkey account
-([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#nonassociatedcoldkey),
-[Hotkey and Coldkey](https://docs.learnbittensor.org/getting-started/wallets)).
+The wallet model in Bittensor pairs a coldkey with the hotkeys it owns, and multiple runtime paths
+enforce that pairing. In `do_register`, the check runs before capacity logic. In `do_swap_hotkey`,
+it applies both to owning the old hotkey and, when the new hotkey already exists, to owning that new
+hotkey. In `do_schedule_children`, it ensures the caller owns the parent hotkey before child
+schedule updates
+([Subtensor source: registration.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs),
+[Subtensor source: swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs),
+[Subtensor source: set_children.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/set_children.rs)).
 
-In practice this typically surfaces when a call references the wrong coldkey-hotkey pairing: a
-mismatched wallet, a hotkey that belongs to a different coldkey, or a hotkey whose ownership has
-changed. When debugging, check wallet pairing before balance or rate-limit errors, because the chain
-rejects the ownership mismatch even if the signing coldkey would otherwise have enough TAO
+In practice this surfaces when a call uses the wrong coldkey-hotkey pairing, or when swap and child
+operations reference hotkeys not owned by the signer. Check ownership pairing before balance or
+rate-limit hypotheses because the runtime rejects ownership mismatch first on those guarded paths
 ([Hotkey and Coldkey](https://docs.learnbittensor.org/getting-started/wallets),
-[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#nonassociatedcoldkey)).
-
-## What It Does Not Mean
-
-This error should not be read as a balance or stake failure. Bittensor documents separate errors for
-those conditions, such as `NotEnoughBalanceToStake` for an insufficient coldkey balance and
-`NotEnoughStakeToWithdraw` for an insufficient stake position. `NonAssociatedColdKey` is an
-ownership rejection: it fires regardless of the amounts involved, because the signer is not the
-hotkey's owner in the first place
-([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#nonassociatedcoldkey),
-[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake)).
-
-It also should not be read as a per-subnet condition. The coldkey-to-hotkey association is account
-state that the chain tracks globally for the key pair, so the meaning does not depend on a
-particular netuid ([Hotkey and Coldkey](https://docs.learnbittensor.org/getting-started/wallets),
-[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#nonassociatedcoldkey),
-[Glossary: Hotkey](https://docs.learnbittensor.org/resources/glossary#hotkey)).
+[Subtensor source: registration.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs),
+[Subtensor source: swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs)).
 
 ## Distinction from Hot Key Account Not Exists
 
-`NonAssociatedColdKey` and `HotKeyAccountNotExists` are different documented checks.
-`HotKeyAccountNotExists` means the specified hotkey does not exist at all, whereas
-`NonAssociatedColdKey` means the hotkey exists but is owned by a different coldkey than the one that
-signed the request
+`NonAssociatedColdKey` and `HotKeyAccountNotExists` are different checks. `HotKeyAccountNotExists`
+means the hotkey account does not exist. `NonAssociatedColdKey` means the hotkey exists but the
+signer does not own it for the guarded path
 ([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#hotkeyaccountnotexists),
-[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#nonassociatedcoldkey)).
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#nonassociatedcoldkey),
+[Subtensor source: swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs)).
 
 - **NonAssociatedColdKey** — the hotkey exists, but this coldkey is not its owner.
 - **HotKeyAccountNotExists** — the hotkey is not present on chain at all.
@@ -100,25 +89,24 @@ relationship
 - **NonAssociatedColdKey** — wrong coldkey for the hotkey.
 - **NotEnoughBalanceToStake** — right coldkey, but insufficient coldkey balance.
 
-## Distinction from Cold Key Already Associated
+## Distinction from Hot Key Already Registered In Subnet
 
-`NonAssociatedColdKey` is a per-operation ownership guard on staking-style calls, while
-`ColdKeyAlreadyAssociated` relates to coldkey swapping. The standard-errors reference describes
-`ColdKeyAlreadyAssociated` as the coldkey having already been swapped, so it names a state in the
-coldkey-swap flow rather than a mismatch between a signer and a hotkey
-([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#coldkeyalreadyassociated),
-[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#nonassociatedcoldkey),
-[Coldkey Swap](https://docs.learnbittensor.org/keys/coldkey-swap)).
+`NonAssociatedColdKey` and `HotKeyAlreadyRegisteredInSubNet` both appear on registration and swap
+paths, but they represent different states. `NonAssociatedColdKey` means signer ownership fails.
+`HotKeyAlreadyRegisteredInSubNet` means the targeted hotkey is already present on that subnet
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#nonassociatedcoldkey),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#hotkeyalreadyregisteredinsubnet),
+[Subtensor source: registration.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs),
+[Subtensor source: swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs)).
 
 - **NonAssociatedColdKey** — signer does not own the targeted hotkey.
-- **ColdKeyAlreadyAssociated** — the coldkey has already been swapped.
+- **HotKeyAlreadyRegisteredInSubNet** — hotkey is already present on that subnet.
 
 ## Reader Boundary
 
-This page defines the meaning of the error label. It does not tell a reader which coldkey owns a
-given hotkey on a live network; that depends on the current on-chain ownership association for the
-key pair. The documented place to read the error itself is the standard-errors reference, and the
-owning relationship is part of the chain's account state for the coldkey and hotkey
+This page defines the meaning of the error label and its ownership-guard semantics across relevant
+paths. It does not tell a reader which coldkey owns a given hotkey on a live network; that depends
+on current chain state for those accounts
 ([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#nonassociatedcoldkey),
 [Hotkey and Coldkey](https://docs.learnbittensor.org/getting-started/wallets)).
 
@@ -127,3 +115,5 @@ owning relationship is part of the chain's account state for the coldkey and hot
 - [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#nonassociatedcoldkey)
 - [Hotkey and Coldkey](https://docs.learnbittensor.org/getting-started/wallets)
 - [Glossary: Coldkey](https://docs.learnbittensor.org/resources/glossary#coldkey)
+- [Subtensor source: registration.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)
+- [Subtensor source: swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs)
