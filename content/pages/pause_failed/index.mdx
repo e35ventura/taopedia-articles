@@ -1,0 +1,90 @@
+---
+title: "Pause Failed"
+summary:
+  "How the PauseFailed error blocks a GRANDPA pause request when the authority set is not in a live
+  state."
+category: "Consensus"
+tags: ["Consensus", "Errors"]
+infoboxTitle: Pause Failed
+infoboxCaption:
+  Error raised when a GRANDPA pause request arrives when the authority set is not live.
+infoboxRows:
+  - label: Error
+    value: PauseFailed
+  - label: Pallet
+    value: grandpa
+  - label: Trigger
+    value: GRANDPA pause requested when the authority set is paused or already pending a pause
+  - label: Check type
+    value: Live-state guard on the pause path
+---
+
+# Pause Failed
+
+`PauseFailed` is a grandpa pallet error raised when a GRANDPA pause request arrives while the
+authority set is not in a live state. The API errors reference summarizes it as "Attempt to signal
+GRANDPA pause when the authority set isn't live (either paused or already pending pause)."
+([Subtensor API Errors: PauseFailed](https://docs.learnbittensor.org/subtensor-api/errors#pausefailed)).
+
+## What It Means
+
+GRANDPA is the block finality gadget on Subtensor. The authority set that votes on finality can be
+in one of several states, and a pause request can only be accepted when the set is currently live
+(that is, actively voting on finality). `PauseFailed` means a pause request reached the
+`schedule_pause` path when the authority set was either already paused or already had a pause
+pending, so the runtime rejects the request rather than queue a redundant pause
+([Subtensor API Errors: PauseFailed](https://docs.learnbittensor.org/subtensor-api/errors#pausefailed)).
+
+This is the live-state guard on the pause path. It does not, by itself, mean the authority set was
+already paused by a prior operation, that a forced authority change was already scheduled, or that
+the authority set had been signaled to resume from a previous pause.
+
+## Why It Appears
+
+This error appears when a GRANDPA pause request reaches the `schedule_pause` helper and the
+authority set is not currently live. The pinned grandpa-pallet source describes the guard: the
+helper checks that the current authority set state is `Live` before scheduling the pause, and
+returns `Error::<T>::PauseFailed` when the state is anything else
+([opentensor/polkadot-sdk: substrate/frame/grandpa/src/lib.rs#L481](https://github.com/opentensor/polkadot-sdk/blob/7cc54bf2d50ae3921d718736dfeb0de9468539c7/substrate/frame/grandpa/src/lib.rs#L481)).
+
+The practical meaning is narrow: the authority set must be live before a pause can be scheduled. A
+set that is already paused or already pending a pause rejects the request.
+
+## Distinction from Resume Failed
+
+`PauseFailed` and `ResumeFailed` are both grandpa-pallet errors on the authority-set lifecycle path,
+but they fire in opposite directions. `PauseFailed` is the live-state guard that fires when a pause
+request arrives and the authority set is not live. `ResumeFailed` is the paused-state guard that
+fires when a resume request arrives and the authority set is not paused
+([Subtensor API Errors: PauseFailed](https://docs.learnbittensor.org/subtensor-api/errors#pausefailed),
+[Subtensor API Errors: ResumeFailed](https://docs.learnbittensor.org/subtensor-api/errors#resumefailed)).
+
+- **PauseFailed** — the authority set is not live when a pause is requested.
+- **ResumeFailed** — the authority set is not paused when a resume is requested.
+
+## Distinction from Change Pending
+
+`PauseFailed` and `ChangePending` are both grandpa-pallet errors that block an authority-set
+operation, but they fire at different checks. `PauseFailed` is the live-state guard on the pause
+path. `ChangePending` is the no-existing-change-pending guard that fires when an authority-set
+change request arrives while another change is already pending
+([Subtensor API Errors: PauseFailed](https://docs.learnbittensor.org/subtensor-api/errors#pausefailed),
+[Subtensor API Errors: ChangePending](https://docs.learnbittensor.org/subtensor-api/errors#changepending)).
+
+- **PauseFailed** — a pause request arrived while the authority set is not live.
+- **ChangePending** — an authority-set change request arrived while another change is already
+  pending.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the live-state guard it represents on the
+GRANDPA pause path. It does not report the current authority-set state, list the extrinsic that
+submits the pause request, or describe the session framework that tracks authority-set transitions
+([Subtensor API Errors: PauseFailed](https://docs.learnbittensor.org/subtensor-api/errors#pausefailed)).
+
+## Further Reading
+
+- [Subtensor API Errors: PauseFailed](https://docs.learnbittensor.org/subtensor-api/errors#pausefailed)
+- [Subtensor API Errors: ResumeFailed](https://docs.learnbittensor.org/subtensor-api/errors#resumefailed)
+- [Subtensor API Errors: ChangePending](https://docs.learnbittensor.org/subtensor-api/errors#changepending)
+- [opentensor/polkadot-sdk: frame/grandpa/src/lib.rs#L481](https://github.com/opentensor/polkadot-sdk/blob/7cc54bf2d50ae3921d718736dfeb0de9468539c7/substrate/frame/grandpa/src/lib.rs#L481)
