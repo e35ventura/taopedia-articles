@@ -1,0 +1,87 @@
+---
+title: "Uid Vec Contain Invalid One"
+summary:
+  "How the UidVecContainInvalidOne error blocks a set_weights call when the uid list includes a UID
+  that does not exist in the targeted subnet."
+category: "Validation"
+tags: ["Validation", "Errors"]
+infoboxTitle: Uid Vec Contain Invalid One
+infoboxCaption: Error raised when a set_weights uid list includes a non-existent UID.
+infoboxRows:
+  - label: Error
+    value: UidVecContainInvalidOne
+  - label: Trigger
+    value: A UID in the submitted list exceeds the subnet's registered neuron count
+  - label: Checked in
+    value: do_set_weights
+  - label: Check type
+    value: UID range validation against subnet neuron count
+---
+
+# Uid Vec Contain Invalid One
+
+`UidVecContainInvalidOne` is a documented Subtensor standard error raised by the `set_weights`
+extrinsic when the submitted uid list contains a UID that does not exist in the targeted subnet. The
+standard-errors reference describes it as "Attempting to set weight to non-existent UID"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#uidveccontainsinvalidone),
+[Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+## What It Means
+
+Each subnet has a set of registered neurons identified by UIDs starting at zero. A UID is valid for
+a subnet if it is less than the subnet's current neuron count. `UidVecContainInvalidOne` fires when
+the submitted uid list contains at least one UID that is equal to or greater than that count,
+meaning the UID names a slot that has no registered neuron
+([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+This is a uid-validation rejection, not proof that the weight vector length is wrong, that UIDs are
+duplicated, or that the submitting hotkey lacks a validator permit.
+
+## Why It Appears
+
+This error appears when a `set_weights` call includes a UID that is outside the registered neuron
+range for the subnet at the time of submission. Common cases include stale UID lists that reference
+neurons deregistered since the list was built, off-by-one errors where the list includes a UID equal
+to the neuron count rather than one below it, or UID lists copied from a different subnet where the
+neuron count is higher
+([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+The practical meaning is narrow: every UID in the submitted list must correspond to a currently
+registered neuron on the target subnet.
+
+## Distinction from Duplicate Uids
+
+`UidVecContainInvalidOne` and `DuplicateUids` both reject the submitted uid list in
+`do_set_weights`, but they catch different list problems. `DuplicateUids` fires when the same valid
+UID appears more than once in the list. `UidVecContainInvalidOne` fires when a UID value names a
+slot that has no registered neuron, regardless of whether it appears once or multiple times
+([Subtensor Standard Errors: DuplicateUids](https://docs.learnbittensor.org/errors/subtensor#duplicateuids),
+[Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+- **UidVecContainInvalidOne** — a UID in the list does not exist in the subnet.
+- **DuplicateUids** — a valid UID appears more than once in the list.
+
+## Distinction from Weight Vec Not Equal Size
+
+`UidVecContainInvalidOne` and `WeightVecNotEqualSize` both block `set_weights` on structural list
+problems, but they check different dimensions. `WeightVecNotEqualSize` fires when the uid list and
+weight list have different lengths. `UidVecContainInvalidOne` fires when the lists are the same
+length but a UID value in the uid list is out of range for the subnet
+([Subtensor Standard Errors: WeightVecNotEqualSize](https://docs.learnbittensor.org/errors/subtensor#weightsvecnotequal)).
+
+- **UidVecContainInvalidOne** — uid list contains an out-of-range UID value.
+- **WeightVecNotEqualSize** — uid and weight lists have different lengths.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the UID range check that raises it. It does not
+report the current neuron count for any subnet or which UIDs are registered at the time of a call;
+those depend on chain state and should be read fresh before building a weight submission
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#uidveccontainsinvalidone)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#uidveccontainsinvalidone)
+- [Subtensor Standard Errors: DuplicateUids](https://docs.learnbittensor.org/errors/subtensor#duplicateuids)
+- [Subtensor Standard Errors: WeightVecNotEqualSize](https://docs.learnbittensor.org/errors/subtensor#weightsvecnotequal)
+- [Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)
