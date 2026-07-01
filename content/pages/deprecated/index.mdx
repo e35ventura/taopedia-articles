@@ -1,0 +1,107 @@
+---
+title: "Deprecated"
+summary:
+  "How the Deprecated error blocks legacy Subtensor extrinsics that the runtime has retired in favor
+  of newer replacement calls."
+category: "Wallets"
+tags: ["Wallets", "Errors"]
+infoboxTitle: Deprecated
+infoboxCaption: Error raised when a retired extrinsic is called.
+infoboxRows:
+  - label: Error
+    value: Deprecated
+  - label: Trigger
+    value: Call targets a runtime-retired extrinsic
+  - label: Example path
+    value: Legacy coldkey swap scheduling
+  - label: Replacement
+    value: announce_coldkey_swap / coldkey_swap
+---
+
+# Deprecated
+
+`Deprecated` means a signed call reached a Subtensor extrinsic the runtime no longer executes. The
+Subtensor API errors reference and standard-errors page list it as a deprecated-call rejection
+([Subtensor API Errors: Deprecated](https://docs.learnbittensor.org/subtensor-api/errors#deprecated),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#deprecated)).
+
+## What It Means
+
+Bittensor upgrades sometimes retire older extrinsics instead of keeping two parallel wallet flows
+alive on chain. When that happens, the retired entry point returns `Deprecated` rather than running
+the legacy logic
+([Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)).
+
+One documented example is the legacy coldkey swap scheduling extrinsic, which the runtime now
+rejects with `Deprecated` and directs callers toward the announce-and-finalize coldkey swap flow
+described in the wallet documentation
+([Rotate or Swap your Coldkey](https://docs.learnbittensor.org/keys/coldkey-swap),
+[Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)).
+
+This is a migration rejection, not proof that the signing coldkey lacks balance, that a swap
+announcement is already pending, or that the destination coldkey is invalid.
+
+## Why It Appears
+
+This error appears when a wallet, script, or integration still calls a retired extrinsic after the
+chain has moved to a replacement flow. That can happen when an old BTCLI build, SDK version, or
+custom automation still targets the legacy scheduling entry point for coldkey rotation
+([Rotate or Swap your Coldkey](https://docs.learnbittensor.org/keys/coldkey-swap),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#deprecated)).
+
+When debugging coldkey rotation, compare against the active swap guard errors on the newer path.
+`ColdkeySwapAnnounced` means an undisputed swap announcement is already blocking ordinary signed
+calls. `ColdkeySwapAnnouncementNotFound` means a finalize attempt has no matching announcement on
+record
+([Subtensor Standard Errors: ColdkeySwapAnnounced](https://docs.learnbittensor.org/errors/subtensor#coldkeyswapannounced),
+[Subtensor Standard Errors: ColdkeySwapAnnouncementNotFound](https://docs.learnbittensor.org/errors/subtensor#coldkeyswapannouncementnotfound)).
+
+The practical meaning is narrow: migrate the integration to the supported extrinsic for the
+operation.
+
+## Distinction from Coldkey Swap Announced
+
+`Deprecated` and `ColdkeySwapAnnounced` both can appear while a user is changing coldkeys, but on
+different layers. `Deprecated` means the call used a retired extrinsic entry point.
+`ColdkeySwapAnnounced` means the signer has an active, undisputed swap announcement and the blocked
+call is not on the swap allow list
+([Subtensor Standard Errors: ColdkeySwapAnnounced](https://docs.learnbittensor.org/errors/subtensor#coldkeyswapannounced)).
+
+- **Deprecated** — the extrinsic itself has been retired.
+- **ColdkeySwapAnnounced** — a pending swap announcement is blocking the call.
+
+## Distinction from Coldkey Swap Announcement Not Found
+
+`Deprecated` and `ColdkeySwapAnnouncementNotFound` both block coldkey swap progress, but for
+different reasons. `Deprecated` means the integration called a retired scheduling extrinsic.
+`ColdkeySwapAnnouncementNotFound` means a finalize or related swap step cannot find the expected
+announcement record for the signing coldkey
+([Subtensor Standard Errors: ColdkeySwapAnnouncementNotFound](https://docs.learnbittensor.org/errors/subtensor#coldkeyswapannouncementnotfound)).
+
+- **Deprecated** — the call targets a retired extrinsic.
+- **ColdkeySwapAnnouncementNotFound** — no matching announcement exists for the swap step.
+
+## Distinction from New Coldkey Is Hotkey
+
+`Deprecated` and `NewColdKeyIsHotkey` both stop a coldkey identity change, but at different checks.
+`Deprecated` means the call used a retired extrinsic. `NewColdKeyIsHotkey` means the destination
+address is already in use as a hotkey somewhere on chain on the active swap path
+([Subtensor Standard Errors: NewColdKeyIsHotkey](https://docs.learnbittensor.org/errors/subtensor#newcoldkeyishotkey)).
+
+- **Deprecated** — the extrinsic has been retired.
+- **NewColdKeyIsHotkey** — the destination address is already a hotkey.
+
+## Reader Boundary
+
+This page defines the meaning of the `Deprecated` error label and the migration gate it represents.
+It does not list every retired extrinsic on every network version; readers should treat the live
+runtime and wallet tooling as the source of truth for which calls remain supported
+([Rotate or Swap your Coldkey](https://docs.learnbittensor.org/keys/coldkey-swap),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: Deprecated](https://docs.learnbittensor.org/subtensor-api/errors#deprecated)
+- [Rotate or Swap your Coldkey](https://docs.learnbittensor.org/keys/coldkey-swap)
+- [Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)
+- [Subtensor Standard Errors: ColdkeySwapAnnounced](https://docs.learnbittensor.org/errors/subtensor#coldkeyswapannounced)
