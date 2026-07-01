@@ -1,0 +1,92 @@
+---
+title: "Reserves Out Of Balance"
+summary:
+  "How the ReservesOutOfBalance error blocks a swap path when the subnet pool reserves are too
+  imbalanced to produce a valid balancer state."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Reserves Out Of Balance
+infoboxCaption: Error raised when a subnet pool is too imbalanced for valid swap math.
+infoboxRows:
+  - label: Error
+    value: ReservesOutOfBalance
+  - label: Trigger
+    value: Reserve and price inputs cannot produce a valid balancer state
+  - label: Checked in
+    value: maybe_initialize_palswap and balancer construction
+  - label: Related concept
+    value: Subnet pool reserve balance
+---
+
+# Reserves Out Of Balance
+
+`ReservesOutOfBalance` is a documented swap-pallet error raised when a subnet pool's reserve state
+is too imbalanced to produce a valid balancer configuration. The Subtensor API errors reference
+describes it as "Swap reserves are too imbalanced"
+([Subtensor API Errors: ReservesOutOfBalance](https://docs.learnbittensor.org/subtensor-api/errors#reservesoutofbalance)).
+
+## What It Means
+
+The swap runtime derives internal balancer weights from the subnet's TAO reserve, alpha reserve,
+and, when relevant, an input price. `ReservesOutOfBalance` means those values do not produce a valid
+reserve relationship for the balancer math, so the swap path stops before a usable pool state is
+created
+([Subnet Liquidity Pools](https://docs.learnbittensor.org/subnets/understanding-subnets#liquidity-pools),
+[Subtensor source: swap impls](https://github.com/opentensor/subtensor/blob/main/pallets/swap/src/pallet/impls.rs)).
+
+The practical meaning is narrower than a generic liquidity failure. This label does not say only
+that the pool is small; it says the reserve relationship itself is too imbalanced for the swap
+pallet to accept as a valid balancer state.
+
+## Why It Appears
+
+This error appears on paths where the swap pallet initializes or recalculates balancer state from
+reserve data. One direct edge case is a price-guided initialization where the derived denominator
+for the reserve relationship collapses to zero. Another is a reserve update that pushes the
+balancer's computed weight outside the valid range and maps the underlying balancer failure back to
+`ReservesOutOfBalance`
+([Subtensor source: swap impls](https://github.com/opentensor/subtensor/blob/main/pallets/swap/src/pallet/impls.rs)).
+
+For a reader, the useful takeaway is that the pool has crossed from ordinary thinness into an
+invalid reserve relationship for swap math. The problem is not only that a trade would get a poor
+price; the swap pallet cannot treat the reserve state as a valid pool configuration.
+
+## Distinction from Reserves Too Low
+
+`ReservesOutOfBalance` and `ReservesTooLow` both point to reserve-side pool problems, but they name
+different ones. `ReservesTooLow` is the minimum-reserve or zero-output guard on a specific swap
+operation. `ReservesOutOfBalance` means the broader reserve relationship is too imbalanced for the
+balancer state itself to be valid
+([Subtensor API Errors: ReservesTooLow](https://docs.learnbittensor.org/subtensor-api/errors#reservestoolow),
+[Subtensor API Errors: ReservesOutOfBalance](https://docs.learnbittensor.org/subtensor-api/errors#reservesoutofbalance)).
+
+- **ReservesTooLow** — a specific output-side reserve is too thin for the operation.
+- **ReservesOutOfBalance** — the reserve relationship is too imbalanced for valid balancer math.
+
+## Distinction from Price Limit Exceeded
+
+`ReservesOutOfBalance` and `PriceLimitExceeded` can both stop a swap-backed path before execution,
+but they come from different checks. `ReservesOutOfBalance` is a pool-state validity problem.
+`PriceLimitExceeded` is a caller-side protection that rejects the current price even when the pool
+state itself is valid enough to evaluate
+([Subtensor API Errors: PriceLimitExceeded](https://docs.learnbittensor.org/subtensor-api/errors#pricelimitexceeded),
+[Subtensor source: swap impls](https://github.com/opentensor/subtensor/blob/main/pallets/swap/src/pallet/impls.rs)).
+
+- **ReservesOutOfBalance** — the pool state is not valid for balancer math.
+- **PriceLimitExceeded** — the pool is valid enough to price, but the caller rejects that price.
+
+## Reader Boundary
+
+This page defines the meaning of the `ReservesOutOfBalance` label on swap-backed pool paths. It does
+not report live reserve ratios for any subnet or identify which specific live reserve change caused
+the imbalance on a network; those are chain-state questions readers must inspect at the time of
+observation ([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks),
+[Understanding Slippage](https://docs.learnbittensor.org/learn/slippage)).
+
+## Further Reading
+
+- [Subtensor API Errors: ReservesOutOfBalance](https://docs.learnbittensor.org/subtensor-api/errors#reservesoutofbalance)
+- [Subnet Liquidity Pools](https://docs.learnbittensor.org/subnets/understanding-subnets#liquidity-pools)
+- [Subtensor API Errors: ReservesTooLow](https://docs.learnbittensor.org/subtensor-api/errors#reservestoolow)
+- [Subtensor API Errors: PriceLimitExceeded](https://docs.learnbittensor.org/subtensor-api/errors#pricelimitexceeded)
+- [Subtensor source: swap impls](https://github.com/opentensor/subtensor/blob/main/pallets/swap/src/pallet/impls.rs)
