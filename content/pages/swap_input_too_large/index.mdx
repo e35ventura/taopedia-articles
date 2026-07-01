@@ -1,0 +1,94 @@
+---
+title: "Swap Input Too Large"
+summary:
+  "How the SwapInputTooLarge error blocks subnet pool swaps when the net input amount exceeds the
+  configured multiple of the input-side reserve."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Swap Input Too Large
+infoboxCaption: Error raised when swap input is too large for input-side liquidity.
+infoboxRows:
+  - label: Error
+    value: SwapInputTooLarge
+  - label: Trigger
+    value: net swap input exceeds configured multiple of input-side reserve
+  - label: Checked in
+    value: do_swap input-limit guard on dynamic staking swap paths
+  - label: Check type
+    value: Input-size cap against pool reserve
+---
+
+# Swap Input Too Large
+
+`SwapInputTooLarge` is a documented swap-pallet error. The pallet defines it as "Swap input is too
+large relative to input-side liquidity"
+([Subtensor source: swap mod.rs](https://github.com/opentensor/subtensor/blob/main/pallets/swap/src/pallet/mod.rs)).
+
+## What It Means
+
+Dynamic subnet staking flows route TAO-alpha conversions through the subnet pool swap runtime.
+Before the swap step executes, `do_swap` checks that the net input amount, after fees are
+subtracted, does not exceed a configured multiple of the input-side reserve for that trade
+direction. `SwapInputTooLarge` is returned when that cap is exceeded and the swap stops before price
+or reserve- step checks run
+([Subtensor source: swap impls.rs](https://github.com/opentensor/subtensor/blob/main/pallets/swap/src/pallet/impls.rs),
+[Understanding Slippage](https://docs.learnbittensor.org/learn/slippage)).
+
+This is an input-size rejection against pool reserves, not proof that the submitted limit price is
+too strict and not proof that the output-side reserve is too depleted for the trade to complete.
+
+## Why It Appears
+
+This error appears when a wallet or integration requests a stake-related swap whose net input is
+larger than the runtime allows relative to the input-side pool reserve. That can happen when a trade
+size is far out of proportion to current liquidity on the paying side of the pool
+([Subtensor source: swap impls.rs](https://github.com/opentensor/subtensor/blob/main/pallets/swap/src/pallet/impls.rs),
+[Subnet Liquidity Pools](https://docs.learnbittensor.org/subnets/understanding-subnets#liquidity-pools)).
+
+When debugging on the same swap path, compare against the next rejections that run only after this
+cap passes. `PriceLimitExceeded` means the submitted limit price is not executable against the
+current pool price, while `ReservesTooLow` means the output-side reserve is below the runtime
+minimum needed to proceed
+([Price Limit Exceeded](https://docs.learnbittensor.org/subtensor-api/errors#pricelimitexceeded),
+[Subtensor API Errors: ReservesTooLow](https://docs.learnbittensor.org/subtensor-api/errors#reservestoolow),
+[Subtensor source: swap impls.rs](https://github.com/opentensor/subtensor/blob/main/pallets/swap/src/pallet/impls.rs)).
+
+## Distinction from Price Limit Exceeded
+
+`SwapInputTooLarge` and `PriceLimitExceeded` both block swap-backed staking paths, but at different
+checks. `SwapInputTooLarge` is returned before the swap step when the net input exceeds the
+configured multiple of the input-side reserve. `PriceLimitExceeded` is returned later when the
+submitted limit price is not on the executable side of the pool's current price
+([Price Limit Exceeded](https://docs.learnbittensor.org/subtensor-api/errors#pricelimitexceeded),
+[Subtensor source: swap impls.rs](https://github.com/opentensor/subtensor/blob/main/pallets/swap/src/pallet/impls.rs)).
+
+- **SwapInputTooLarge** — net swap input is too large for input-side liquidity.
+- **PriceLimitExceeded** — submitted limit price is not executable at the current pool price.
+
+## Distinction from Insufficient Liquidity
+
+`SwapInputTooLarge` and `InsufficientLiquidity` both involve pool liquidity limits, but they detect
+different failures. `SwapInputTooLarge` rejects the trade before execution because the net input is
+too large relative to the input-side reserve. `InsufficientLiquidity` is the broader staking-path
+failure when the pool cannot simulate or complete the conversion needed for the action
+([Insufficient Liquidity](https://docs.learnbittensor.org/errors/subtensor#insufficientliquidity),
+[Subtensor source: swap impls.rs](https://github.com/opentensor/subtensor/blob/main/pallets/swap/src/pallet/impls.rs)).
+
+- **SwapInputTooLarge** — net input exceeds the configured input-side reserve multiple.
+- **InsufficientLiquidity** — the pool cannot support the needed conversion.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the input-size cap in `do_swap`. It does not
+report live reserve levels for any subnet; readers can inspect pool state separately for the network
+they use
+([Subnet Liquidity Pools](https://docs.learnbittensor.org/subnets/understanding-subnets#liquidity-pools),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor source: swap mod.rs](https://github.com/opentensor/subtensor/blob/main/pallets/swap/src/pallet/mod.rs)
+- [Subtensor source: swap impls.rs](https://github.com/opentensor/subtensor/blob/main/pallets/swap/src/pallet/impls.rs)
+- [Price Limit Exceeded](https://docs.learnbittensor.org/subtensor-api/errors#pricelimitexceeded)
+- [Subtensor API Errors: ReservesTooLow](https://docs.learnbittensor.org/subtensor-api/errors#reservestoolow)
+- [Understanding Slippage](https://docs.learnbittensor.org/learn/slippage)
