@@ -1,0 +1,90 @@
+---
+title: "Already Approved"
+summary:
+  "How the AlreadyApproved error blocks a multisig approval when the signing account has already
+  approved the pending call."
+category: "Wallets"
+tags: ["Wallets", "Errors", "Security"]
+infoboxTitle: Already Approved
+infoboxCaption:
+  Error raised when a signatory tries to approve a multisig call they have already approved.
+infoboxRows:
+  - label: Error
+    value: AlreadyApproved
+  - label: Pallet
+    value: multisig
+  - label: Trigger
+    value: Signatory submits a second approval for the same pending call
+  - label: Check type
+    value: Per-signatory approval state on the pending multisig call
+---
+
+# Already Approved
+
+`AlreadyApproved` is a multisig pallet error raised when a signatory attempts to approve a pending
+multisig call that they have already approved. The API errors reference describes it as "Call is
+already approved by this signatory"
+([Subtensor API Errors: AlreadyApproved](https://docs.learnbittensor.org/subtensor-api/errors#alreadyapproved)).
+
+## What It Means
+
+Bittensor multisig wallets require M approvals from N registered signatories before a call executes.
+Each signatory contributes one approval toward the threshold; the multisig tracks which signatories
+have already approved the pending call
+([Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)).
+
+`AlreadyApproved` fires when a signatory who has already approved the call submits another approval
+for the same pending operation. The multisig records the signatory's approval on the first
+submission, so a second submission from the same account is rejected
+([Subtensor API Errors: AlreadyApproved](https://docs.learnbittensor.org/subtensor-api/errors#alreadyapproved),
+[Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)).
+
+This is a duplicate-approval rejection, not proof that the pending call does not exist, that the
+threshold has already been reached, or that the signatory is not registered for the multisig.
+
+## Why It Appears
+
+This error appears when the same signatory account submits an approval for a multisig call that
+already has their approval recorded. The multisig documentation describes the process as each
+signatory agreeing until the threshold of approvals is met
+([Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)).
+
+The practical meaning is narrow: each signatory can approve a given pending call only once.
+
+## Distinction from No Approvals Needed
+
+`AlreadyApproved` and `NoApprovalsNeeded` both block approval submissions, but at different
+conditions. `NoApprovalsNeeded` fires when the pending call already has enough approvals to meet the
+threshold and no further approvals are required. `AlreadyApproved` fires when the threshold has not
+yet been reached but this specific signatory has already contributed their approval
+([Subtensor API Errors: NoApprovalsNeeded](https://docs.learnbittensor.org/subtensor-api/errors#noapprovalsneeded),
+[Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)).
+
+- **AlreadyApproved** — this signatory has approved; threshold may not yet be reached.
+- **NoApprovalsNeeded** — the threshold is already met; no more approvals are needed.
+
+## Distinction from Sender In Signatories
+
+`AlreadyApproved` and `SenderInSignatories` both block multisig approval actions, but they catch
+different problems in the submitted call. `SenderInSignatories` fires when the sender's own address
+appears in the `other_signatories` list parameter. `AlreadyApproved` fires when the signatory list
+is correctly formed but this account has already recorded an approval for the pending call
+([Subtensor API Errors: SenderInSignatories](https://docs.learnbittensor.org/subtensor-api/errors#senderinsignatories),
+[Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)).
+
+- **AlreadyApproved** — approval already recorded for this signatory on this call.
+- **SenderInSignatories** — sender's address is listed in other_signatories.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the per-signatory approval check that raises
+it. It does not report the current approval state of any pending multisig call on chain; that is
+live chain state ([Multisig Wallets](https://docs.learnbittensor.org/keys/multisig),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: AlreadyApproved](https://docs.learnbittensor.org/subtensor-api/errors#alreadyapproved)
+- [Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)
+- [Subtensor API Errors: NoApprovalsNeeded](https://docs.learnbittensor.org/subtensor-api/errors#noapprovalsneeded)
+- [Subtensor API Errors: SenderInSignatories](https://docs.learnbittensor.org/subtensor-api/errors#senderinsignatories)
