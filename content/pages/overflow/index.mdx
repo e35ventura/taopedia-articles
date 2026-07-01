@@ -1,77 +1,114 @@
 ---
 title: "Overflow"
 summary:
-  "How the Overflow error blocks finalizing a crowdloan into a subnet lease when the chain cannot
-  allocate the next subnet lease ID."
+  "How the Overflow error blocks crowdloan or lease registration extrinsics when a checked addition
+  on counters, raised totals, or contributor counts would overflow."
 category: "Subnets"
 tags: ["Subnets", "Errors"]
 infoboxTitle: Overflow
-infoboxCaption: Error raised when the subnet lease ID counter cannot increment safely.
+infoboxCaption: Error raised when checked addition would overflow on crowdloan or lease counters.
 infoboxRows:
   - label: Error
     value: Overflow
   - label: Trigger
-    value: NextSubnetLeaseId cannot increment past u64::MAX
+    value: checked_add returns None on crowdloan balances or ID counters
   - label: Checked in
-    value: get_next_lease_id, called by do_register_leased_network
+    value: create, contribute, refund, register_leased_network
   - label: Check type
-    value: Lease ID counter increment
+    value: Checked addition guard
 ---
 
 # Overflow
 
-`Overflow` is a documented Subtensor standard error raised when the chain cannot safely increment
-the subnet lease ID counter during leased-network registration. The standard-errors reference
-describes it as "An overflow occurred"
-([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#overflow)).
+`Overflow` is documented in both the crowdloan pallet and the Subtensor pallet as "An overflow
+occurred"
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#overflow)).
 
 ## What It Means
 
-`do_register_leased_network` finalizes a
-[crowdloan](https://docs.learnbittensor.org/subnets/crowdloans) into a registered
-[subnet lease](https://docs.learnbittensor.org/subnets/crowdloans). After the caller and optional
-end-block checks pass, it calls `get_next_lease_id` to reserve the next lease ID from
-`NextSubnetLeaseId` storage. `Overflow` is raised when that counter cannot increment without
-exceeding `u64::MAX`
+The runtime uses `Overflow` when a `checked_add` call would exceed the representable range for a
+counter or balance field.
+
+In the crowdloan pallet, `Overflow` can appear on `create` when incrementing `NextCrowdloanId`, on
+`contribute` when updating `raised`, per-contributor totals, or `contributors_count`, and on
+`refund` when incrementing the refund batch counter
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+In the Subtensor pallet, `Overflow` appears when `get_next_lease_id` cannot increment
+`NextSubnetLeaseId` during leased-network registration
 ([Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
 
-This is a counter-safety rejection, not a crowdloan balance, beneficiary identity, or end-block
-timing failure. Lease coldkey and hotkey derivation, fund transfer, subnet registration, and lease
-record storage only run after a lease ID has been allocated successfully
-([Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+This is an arithmetic guard on ID counters or balance totals, not proof that a crowdloan id is
+invalid, that a lease beneficiary is wrong, or that a contribution is below the campaign minimum.
 
 ## Why It Appears
 
-`get_next_lease_id` reads the current `NextSubnetLeaseId` value and uses checked addition to compute
-the next ID. When the stored counter is already at the maximum representable lease ID, incrementing
-it would overflow and the call returns `Overflow` instead of continuing
+On crowdloan `create`, `Overflow` appears when `NextCrowdloanId` cannot advance by one. On
+`contribute`, it appears on whichever `checked_add` step fails while updating raised totals,
+per-contributor totals, or contributor counts after earlier gates on the same call have passed. On
+`refund`, it appears when the refund-loop counter cannot increment
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+On `register_leased_network`, `Overflow` appears when `NextSubnetLeaseId` is already at the maximum
+value that can be incremented safely
 ([Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
 
-In ordinary network use this is an extreme edge case: each successful leased-network registration
-advances the counter by one. A reader seeing `Overflow` on `register_leased_network` should treat it
-as the lease-ID allocator being exhausted rather than a mis-signed crowdloan or an invalid end block
-([Subnet Lease](https://docs.learnbittensor.org/subnets/crowdloans),
+When debugging `contribute`, compare against other rejections on the same call. `CapRaised` means
+total raised is already at or above the cap. `InsufficientBalance` means the contributor cannot fund
+the accepted amount. `Underflow` on the same extrinsic means a `checked_sub` step would underflow
+instead ([Cap Raised](https://docs.learnbittensor.org/errors/subtensor#capraised),
+[Insufficient Balance](https://docs.learnbittensor.org/errors/subtensor#insufficientbalance),
+[Underflow](https://docs.learnbittensor.org/errors/subtensor#underflow),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+When debugging `register_leased_network`, `InvalidLeaseBeneficiary` means the caller is not the
+crowdloan creator. `LeaseCannotEndInThePast` means a supplied end block is not in the future
+([Invalid Lease Beneficiary](https://docs.learnbittensor.org/errors/subtensor#invalidleasebeneficiary),
+[Lease Cannot End In The Past](https://docs.learnbittensor.org/errors/subtensor#leasecannotendinthepast),
 [Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
 
-## Distinction from Invalid Lease Beneficiary
+## Distinction from Underflow on contribute
 
-`Overflow` and `InvalidLeaseBeneficiary` are both early rejections on the leased-network
-registration path, but they guard different properties. `InvalidLeaseBeneficiary` is the first
-check, confirming the caller is the crowdloan creator. `Overflow` is reached only after that creator
-match and any optional end-block validation succeed, when the lease ID counter itself cannot advance
-([Subtensor Standard Errors: InvalidLeaseBeneficiary](https://docs.learnbittensor.org/errors/subtensor#invalidleasebeneficiary),
+`Overflow` and `Underflow` both appear on `contribute`, but on different arithmetic directions.
+`Overflow` is returned by failing `checked_add` steps when updating raised totals, per-contributor
+totals, or contributor counts. `Underflow` is returned by failing `checked_sub` steps when computing
+headroom before accepting a contribution
+([Underflow](https://docs.learnbittensor.org/errors/subtensor#underflow),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+- **Overflow** — a `checked_add` step would overflow.
+- **Underflow** — a `checked_sub` step would underflow.
+
+## Distinction from Cap Raised on contribute
+
+`Overflow` and `CapRaised` both involve funding totals on `contribute`, but at different checks.
+`CapRaised` is returned when `crowdloan.raised` is already at or above `crowdloan.cap` before the
+accepted contribution is added. `Overflow` is returned only if a `checked_add` on raised totals or
+related counters would overflow
+([Cap Raised](https://docs.learnbittensor.org/errors/subtensor#capraised),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+- **CapRaised** — total raised already meets or exceeds the cap.
+- **Overflow** — a `checked_add` step would overflow.
+
+## Distinction from Invalid Lease Beneficiary on register_leased_network
+
+`Overflow` and `InvalidLeaseBeneficiary` are both rejections on the leased-network registration
+path, but at different checks. `InvalidLeaseBeneficiary` confirms the caller is the crowdloan
+creator. `Overflow` is reached later when the lease ID counter itself cannot advance
+([Invalid Lease Beneficiary](https://docs.learnbittensor.org/errors/subtensor#invalidleasebeneficiary),
 [Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
 
 - **InvalidLeaseBeneficiary** — the caller is not the crowdloan creator.
 - **Overflow** — the next subnet lease ID cannot be allocated.
 
-## Distinction from Lease Cannot End In The Past
+## Distinction from Lease Cannot End In The Past on register_leased_network
 
 `Overflow` and `LeaseCannotEndInThePast` both appear while registering a leased network, but on
 different inputs. `LeaseCannotEndInThePast` compares a supplied optional end block against the
-current block. `Overflow` is unrelated to block timing: it means the lease ID counter has reached
-the representable maximum
-([Subtensor Standard Errors: LeaseCannotEndInThePast](https://docs.learnbittensor.org/errors/subtensor#leasecannotendinthepast),
+current block. `Overflow` means the lease ID counter cannot increment
+([Lease Cannot End In The Past](https://docs.learnbittensor.org/errors/subtensor#leasecannotendinthepast),
 [Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
 
 - **LeaseCannotEndInThePast** — the supplied end block is not in the future.
@@ -81,25 +118,28 @@ the representable maximum
 
 `Overflow` and `ProportionOverflow` both use overflow wording, but on separate extrinsics.
 `ProportionOverflow` blocks child-hotkey scheduling when combined stake proportions exceed what the
-chain can represent. `Overflow` blocks leased-network registration when the subnet lease ID counter
-cannot advance
-([Subtensor Standard Errors: ProportionOverflow](https://docs.learnbittensor.org/errors/subtensor#proportionoverflow),
+chain can represent. `Overflow` blocks crowdloan counter updates or leased-network registration when
+a `checked_add` on the relevant counter would overflow
+([Proportion Overflow](https://docs.learnbittensor.org/errors/subtensor#proportionoverflow),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs),
 [Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
 
 - **ProportionOverflow** — child stake proportions do not fit.
-- **Overflow** — the subnet lease ID counter is exhausted.
+- **Overflow** — a `checked_add` step on crowdloan or lease counters would overflow.
 
 ## Reader Boundary
 
-This page defines the meaning of the error label and the lease ID increment that raises it. It does
-not describe crowdloan contribution rules, dividend distribution, or lease termination; those are
-documented separately ([Subnet Lease](https://docs.learnbittensor.org/subnets/crowdloans)).
+This page defines the meaning of the error label and the `checked_add` guards that raise it on
+crowdloan and lease paths. It does not report live raised totals, crowdloan ids, or lease ids on any
+network; those are runtime state readers can query separately
+([Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
 
 ## Further Reading
 
-- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#overflow)
-- [Subtensor Standard Errors: InvalidLeaseBeneficiary](https://docs.learnbittensor.org/errors/subtensor#invalidleasebeneficiary)
-- [Subtensor Standard Errors: LeaseCannotEndInThePast](https://docs.learnbittensor.org/errors/subtensor#leasecannotendinthepast)
-- [Subtensor Standard Errors: ProportionOverflow](https://docs.learnbittensor.org/errors/subtensor#proportionoverflow)
-- [Subnet Lease](https://docs.learnbittensor.org/subnets/crowdloans)
+- [Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans)
+- [Underflow](https://docs.learnbittensor.org/errors/subtensor#underflow)
+- [Cap Raised](https://docs.learnbittensor.org/errors/subtensor#capraised)
+- [Invalid Lease Beneficiary](https://docs.learnbittensor.org/errors/subtensor#invalidleasebeneficiary)
+- [Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)
 - [Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)
