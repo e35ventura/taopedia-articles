@@ -1,0 +1,113 @@
+---
+title: "Invalid Origin"
+summary:
+  "How the InvalidOrigin error blocks crowdloan creator-only calls when the signing account is not
+  the crowdloan creator."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Invalid Origin
+infoboxCaption: Error raised when a creator-only crowdloan call is signed by another account.
+infoboxRows:
+  - label: Error
+    value: InvalidOrigin
+  - label: Trigger
+    value: who != crowdloan.creator on creator-only extrinsics
+  - label: Checked in
+    value:
+      finalize, refund, dissolve, update_min_contribution, update_end, update_cap,
+      set_max_contribution
+  - label: Check type
+    value: Creator-origin comparison on crowdloan management calls
+---
+
+# Invalid Origin
+
+`InvalidOrigin` is a crowdloan pallet error raised when a creator-only call is signed by an account
+other than the crowdloan creator. The pallet defines it as "The origin of this call is invalid"
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+## What It Means
+
+Several [crowdloan](https://docs.learnbittensor.org/subnets/crowdloans) management extrinsics
+require the signing account to be the campaign creator. After loading the crowdloan record, those
+calls compare the signer against `crowdloan.creator` and return `InvalidOrigin` when the two
+accounts differ
+([Crowdloans: Crowdloan Lifecycle](https://docs.learnbittensor.org/subnets/crowdloans#crowdloan-lifecycle),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+In the current source, that creator check appears on `finalize`, `refund`, `dissolve`,
+`update_min_contribution`, `update_end`, `update_cap`, and `set_max_contribution`
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+This is a creator-permission rejection on crowdloan management paths, not proof that the crowdloan
+id is invalid, that the campaign was already finalized, or that a contribution amount was too small
+on `contribute`.
+
+## Why It Appears
+
+This error appears when a non-creator account signs one of the creator-only crowdloan extrinsics
+listed above. That can happen when a contributor wallet retries a creator action, when automation
+uses the wrong signing key, or when a client confuses creator management calls with open contributor
+calls such as `contribute` or `withdraw`
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+When debugging, compare against other rejections on the same call. `InvalidCrowdloanId` means the
+submitted id does not resolve to stored campaign state. `AlreadyFinalized` means the campaign
+already completed finalization. On `finalize`, `CapNotRaised` means the creator signed the call but
+total raised still differs from the cap
+([Invalid Crowdloan Id](https://docs.learnbittensor.org/errors/subtensor#invalidcrowdloanid),
+[Already Finalized](https://docs.learnbittensor.org/errors/subtensor#alreadyfinalized),
+[Cap Not Raised](https://docs.learnbittensor.org/errors/subtensor#capnotraised),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+The practical meaning is narrow: sign creator-only crowdloan calls with the campaign creator
+account.
+
+## Distinction from Invalid Crowdloan Id
+
+`InvalidOrigin` and `InvalidCrowdloanId` both block crowdloan calls, but at different stages.
+`InvalidCrowdloanId` means the submitted crowdloan id does not resolve to stored campaign state.
+`InvalidOrigin` means the id resolved to a campaign, but the signer is not its creator on a
+creator-only path
+([Invalid Crowdloan Id](https://docs.learnbittensor.org/errors/subtensor#invalidcrowdloanid),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+- **InvalidOrigin** — the signer is not the crowdloan creator.
+- **InvalidCrowdloanId** — the crowdloan id does not resolve to stored state.
+
+## Distinction from Bad Origin
+
+`InvalidOrigin` and `BadOrigin` both signal authorization failures, but on different pallets and
+calls. `InvalidOrigin` is the crowdloan pallet error for creator-only management extrinsics.
+`BadOrigin` is the broader subtensor rejection when a privileged extrinsic lacks required root or
+subnet-owner permission ([Bad Origin](https://docs.learnbittensor.org/errors/subtensor#badorigin),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+- **InvalidOrigin** — the signer is not the crowdloan creator.
+- **BadOrigin** — the signer lacks required privileged permission on a subtensor call.
+
+## Distinction from Cap Not Raised
+
+`InvalidOrigin` and `CapNotRaised` both appear on `finalize`, but at different checks.
+`InvalidOrigin` means the signer is not the crowdloan creator. `CapNotRaised` means the creator
+signed the call but total raised still differs from the cap
+([Cap Not Raised](https://docs.learnbittensor.org/errors/subtensor#capnotraised),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+- **InvalidOrigin** — the signer is not the crowdloan creator.
+- **CapNotRaised** — raised total still differs from the cap.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the creator-origin comparison on crowdloan
+management extrinsics. It does not report which account created a particular crowdloan on any
+network; that is campaign state readers can query separately
+([Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Crowdloans: Crowdloan Lifecycle](https://docs.learnbittensor.org/subnets/crowdloans#crowdloan-lifecycle)
+- [Invalid Crowdloan Id](https://docs.learnbittensor.org/errors/subtensor#invalidcrowdloanid)
+- [Cap Not Raised](https://docs.learnbittensor.org/errors/subtensor#capnotraised)
+- [Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)
