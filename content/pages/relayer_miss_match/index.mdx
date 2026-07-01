@@ -1,0 +1,116 @@
+---
+title: "Relayer Miss Match"
+summary:
+  "How the RelayerMissMatch error blocks limit-order execution when the submitting relayer is not on
+  the order's allowed relayer list."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Relayer Miss Match
+infoboxCaption: Error raised when the executing relayer is not authorized for the order.
+infoboxRows:
+  - label: Error
+    value: RelayerMissMatch
+  - label: Trigger
+    value: Order lists allowed relayers and the caller is not included
+  - label: Checked in
+    value: is_order_valid, called by execute_orders and execute_batched_orders
+  - label: Check type
+    value: Allowed-relayer membership check
+---
+
+# Relayer Miss Match
+
+`RelayerMissMatch` is a documented limit-orders error raised when a signed limit order restricts
+which accounts may execute it and the submitting relayer is not on that list. The Subtensor API
+error reference describes it as "Relayer not the same as specified in the order"
+([Subtensor API Errors: RelayerMissMatch](https://docs.learnbittensor.org/subtensor-api/errors#relayermissmatch)).
+
+## What It Means
+
+Limit orders may optionally name one or more allowed relayer accounts. The `is_order_valid` helper —
+used by both `execute_orders` and `execute_batched_orders` — checks whether the signed transaction
+origin appears in that list when the order includes a relayer restriction. `RelayerMissMatch` means
+the executing account was not included
+([Subnet Liquidity Pools](https://docs.learnbittensor.org/subnets/understanding-subnets#liquidity-pools),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+The check runs only when the order stores an allowed-relayer list. Orders without that restriction
+skip this gate and may be executed by any signing relayer that passes the earlier validation steps
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+This check runs after signature, processed-state, expiry, and price-condition validation, and before
+partial-fill rules on the same path
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+This is a relayer-authorization rejection on the execution path, not proof that the signature is
+invalid or that the market price fails the limit rule.
+
+## Why It Appears
+
+This error appears when a relayer submits an order that names allowed executors but signs the
+extrinsic with an account outside that set. That can happen when automation rotates relayer keys
+without updating the order payload, when the wrong worker wallet submits a batch, or when an order
+was signed to permit only specific relayers
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+When debugging, compare against earlier rejections on the same validation path.
+`PriceConditionNotMet` means the scaled market price did not satisfy the order-type limit rule.
+`InvalidSignature` means the Sr25519 signature did not verify
+([Price Condition Not Met](https://docs.learnbittensor.org/errors/subtensor#priceconditionnotmet),
+[Invalid Signature](https://docs.learnbittensor.org/errors/subtensor#invalidsignature),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+Later rejections on the same path include `RelayerRequiredForPartialFill` when a partial execution
+is submitted for an order that does not name any allowed relayers, and `PartialFillsNotEnabled` when
+partial fills are not turned on for that order
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+## Distinction from Price Condition Not Met
+
+`RelayerMissMatch` and `PriceConditionNotMet` are both raised by `is_order_valid`, but at different
+checks. `PriceConditionNotMet` compares the scaled market price against the order's limit rule.
+`RelayerMissMatch` means the order restricts relayers and the submitting account is not on that list
+([Price Condition Not Met](https://docs.learnbittensor.org/errors/subtensor#priceconditionnotmet),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+- **PriceConditionNotMet** — the market price does not satisfy the limit condition.
+- **RelayerMissMatch** — the executing relayer is not on the allowed list.
+
+## Distinction from Relayer Required For Partial Fill
+
+`RelayerMissMatch` and `RelayerRequiredForPartialFill` both involve relayer fields on limit orders,
+but at different checks. `RelayerMissMatch` applies when the order already lists allowed relayers
+but the caller is not included. `RelayerRequiredForPartialFill` applies when a partial execution is
+submitted but the order does not name any relayer restriction at all
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+- **RelayerMissMatch** — the caller is not on the order's allowed relayer list.
+- **RelayerRequiredForPartialFill** — partial fill was requested without a relayer list on the
+  order.
+
+## Distinction from Unauthorized on cancel_order
+
+`RelayerMissMatch` and `Unauthorized` both involve account identity on limit-order calls, but on
+different extrinsics. `RelayerMissMatch` is returned during order execution when the relayer is not
+permitted to fulfill a restricted order. `Unauthorized` is returned by `cancel_order` when the
+caller is not the order's designated signer
+([Unauthorized](https://docs.learnbittensor.org/errors/subtensor#unauthorized),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+- **RelayerMissMatch** — the executing relayer is not allowed to fulfill the order.
+- **Unauthorized** — the caller is not the order signer on cancellation.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the allowed-relayer membership check that
+raises it. It does not report which relayer accounts are configured on any live order; that is order
+state readers can inspect separately
+([Subnet Liquidity Pools](https://docs.learnbittensor.org/subnets/understanding-subnets#liquidity-pools),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: RelayerMissMatch](https://docs.learnbittensor.org/subtensor-api/errors#relayermissmatch)
+- [Price Condition Not Met](https://docs.learnbittensor.org/errors/subtensor#priceconditionnotmet)
+- [Unauthorized](https://docs.learnbittensor.org/errors/subtensor#unauthorized)
+- [Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)
