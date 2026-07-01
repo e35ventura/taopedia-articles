@@ -1,0 +1,115 @@
+---
+title: "Registration Not Permitted On Root Subnet"
+summary:
+  "How the RegistrationNotPermittedOnRootSubnet error blocks ordinary neuron registration and
+  child-hotkey setup calls that target the Root Subnet instead of an ordinary mining subnet."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Registration Not Permitted On Root Subnet
+infoboxCaption: Error raised when registration-style calls target Subnet Zero.
+infoboxRows:
+  - label: Error
+    value: RegistrationNotPermittedOnRootSubnet
+  - label: Trigger
+    value: Submitted netuid equals the Root Subnet
+  - label: Checked in
+    value: register, register_limit, and set_children paths
+  - label: Related concept
+    value: Root Subnet
+---
+
+# Registration Not Permitted On Root Subnet
+
+`RegistrationNotPermittedOnRootSubnet` means a registration-style call targeted the Root Subnet
+instead of an ordinary mining subnet. The standard-errors reference describes it as "Operation is
+not permitted on the root subnet"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#registrationnotpermittedonrootsubnet)).
+
+The Root Subnet, also called Subnet Zero, is a subnet-agnostic staking path. Ordinary burned
+registration and child-hotkey delegation are reserved for mining subnets, while root validator entry
+uses the separate `root_register` path
+([Root Subnet / Subnet Zero](https://docs.learnbittensor.org/resources/glossary#root-subnetsubnet-zero),
+[Stake Too Low For Root](https://docs.learnbittensor.org/errors/subtensor#staketoolowforroot)).
+
+## What It Means
+
+`register` and `register_limit` give a hotkey a UID slot on a mining subnet after the dynamic
+registration burn. `RegistrationNotPermittedOnRootSubnet` means the submitted netuid was the Root
+Subnet, so the chain rejected the call before registration-allowed, duplicate-hotkey, or burn checks
+ran
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#registrationnotpermittedonrootsubnet),
+[Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register)).
+
+The same rejection applies on `set_children` when the target netuid is the Root Subnet, because
+child-hotkey delegation is not valid on Subnet Zero
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#registrationnotpermittedonrootsubnet)).
+
+This is an early netuid guard. The Root Subnet exists on chain, but these registration-style
+extrinsics are reserved for ordinary subnets only.
+
+## Why It Appears
+
+The check fires whenever `register`, `register_limit`, or `set_children` names the Root Subnet as
+its target. A misconfigured client, copied extrinsic, or automation defaulting to netuid zero can
+hit this error before burn pricing or child-list validation runs.
+
+When debugging, confirm the submitted netuid is an ordinary mining subnet, not the Root Subnet. Then
+compare against the correct root entry path: `root_register` is how validators join the Root Subnet,
+and failures there surface as root-registration errors such as `StakeTooLowForRoot` rather than this
+registration guard
+([Subtensor Standard Errors: StakeTooLowForRoot](https://docs.learnbittensor.org/errors/subtensor#staketoolowforroot)).
+
+The practical meaning is narrow: the caller aimed an ordinary registration or child-setup call at
+Subnet Zero. The problem is not that the subnet is missing, that registration is disabled on an
+ordinary subnet, or that the hotkey already holds a UID there.
+
+## Distinction from Subnet Not Exists
+
+`RegistrationNotPermittedOnRootSubnet` and `SubnetNotExists` both appear when a registration call
+names a problematic netuid, but they reject different conditions. `SubnetNotExists` means the subnet
+is absent from chain state. `RegistrationNotPermittedOnRootSubnet` means the subnet is the Root
+Subnet, which is present but excluded from these registration-style paths
+([Subtensor Standard Errors: SubnetNotExists](https://docs.learnbittensor.org/errors/subtensor#subnetnotexists)).
+
+- **SubnetNotExists** — the targeted subnet does not exist.
+- **RegistrationNotPermittedOnRootSubnet** — the targeted subnet is the Root Subnet.
+
+## Distinction from Subnet Registration Disabled
+
+`RegistrationNotPermittedOnRootSubnet` and `SubNetRegistrationDisabled` both block registration
+calls, but for different reasons. `RegistrationNotPermittedOnRootSubnet` means the target is the
+Root Subnet, which ordinary registration never accepts. `SubNetRegistrationDisabled` means the
+target is an ordinary subnet whose registration gate is turned off
+([Subtensor Standard Errors: SubNetRegistrationDisabled](https://docs.learnbittensor.org/errors/subtensor#subnetregistrationdisabled)).
+
+- **RegistrationNotPermittedOnRootSubnet** — ordinary registration targeted the Root Subnet.
+- **SubNetRegistrationDisabled** — registration is disabled on an ordinary subnet.
+
+## Distinction from Stake Too Low For Root
+
+`RegistrationNotPermittedOnRootSubnet` and `StakeTooLowForRoot` both involve joining the Root
+Subnet, but on different extrinsic families. `RegistrationNotPermittedOnRootSubnet` blocks ordinary
+`register` or `register_limit` calls aimed at Subnet Zero. `StakeTooLowForRoot` appears on
+`root_register` when the root network is full and the registering hotkey's root stake is not high
+enough to displace the weakest validator
+([Subtensor Standard Errors: StakeTooLowForRoot](https://docs.learnbittensor.org/errors/subtensor#staketoolowforroot)).
+
+- **RegistrationNotPermittedOnRootSubnet** — ordinary registration targeted the Root Subnet.
+- **StakeTooLowForRoot** — `root_register` failed a root stake comparison.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the Root Subnet rejection on registration-style
+paths. It does not describe how `root_register` admits validators, how burned registration pricing
+works on ordinary subnets, or every internal routine that shares the same netuid guard; those are
+documented separately
+([Root Subnet / Subnet Zero](https://docs.learnbittensor.org/resources/glossary#root-subnetsubnet-zero),
+[Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#registrationnotpermittedonrootsubnet)
+- [Subtensor Standard Errors: SubnetNotExists](https://docs.learnbittensor.org/errors/subtensor#subnetnotexists)
+- [Subtensor Standard Errors: SubNetRegistrationDisabled](https://docs.learnbittensor.org/errors/subtensor#subnetregistrationdisabled)
+- [Stake Too Low For Root](https://docs.learnbittensor.org/errors/subtensor#staketoolowforroot)
+- [Glossary: Root Subnet / Subnet Zero](https://docs.learnbittensor.org/resources/glossary#root-subnetsubnet-zero)
