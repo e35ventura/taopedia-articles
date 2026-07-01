@@ -1,0 +1,90 @@
+---
+title: "New Cold Key Is Hotkey"
+summary:
+  "How the NewColdKeyIsHotkey error stops a coldkey swap when the chosen new coldkey is already a
+  hotkey account."
+category: "Wallets"
+tags: ["Wallets", "Errors"]
+infoboxTitle: New Cold Key Is Hotkey
+infoboxCaption:
+  Error raised when a coldkey swap targets a new coldkey that is already a hotkey account.
+infoboxRows:
+  - label: Error
+    value: NewColdKeyIsHotkey
+  - label: Trigger
+    value: Coldkey swap destination is already a hotkey account
+  - label: Checked in
+    value: swap_coldkey (do_swap_coldkey)
+  - label: Check type
+    value: Destination coldkey role check
+---
+
+# New Cold Key Is Hotkey
+
+`NewColdKeyIsHotkey` is a Subtensor pallet error raised during a coldkey swap when the chosen new
+coldkey is already a hotkey account. The Subtensor API errors reference lists it under the subtensor
+pallet
+([Subtensor API Errors: NewColdKeyIsHotkey](https://docs.learnbittensor.org/subtensor-api/errors#newcoldkeyishotkey)).
+
+## What It Means
+
+A coldkey swap moves a coldkey's balance, stake, subnet ownerships, and hotkey associations to a new
+coldkey. Before doing any of that, `do_swap_coldkey` requires the destination to be a clean account
+that is not already acting as a hotkey. When the new coldkey is an existing hotkey account, the
+runtime stops with `NewColdKeyIsHotkey` and no transfer occurs
+([Subtensor source: swap/swap_coldkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_coldkey.rs)).
+
+This keeps the coldkey and hotkey roles separate. The swap is rejected because the target account
+already has a hotkey role, not because the signer lacks ownership or the balance is insufficient
+([Subtensor API Errors: NewColdKeyIsHotkey](https://docs.learnbittensor.org/subtensor-api/errors#newcoldkeyishotkey),
+[Subtensor source: swap/swap_coldkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_coldkey.rs)).
+
+## Why It Appears
+
+This error is reproducible by design: start a coldkey swap whose new coldkey is an account already
+registered as a hotkey. It typically comes from picking a destination key that is already in use as
+a hotkey, such as reusing a hotkey as the intended new coldkey
+([Subtensor source: swap/swap_coldkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_coldkey.rs)).
+
+`do_swap_coldkey` first checks that the new coldkey has no staking hotkeys associated with it, then
+checks that it is not itself a hotkey account. So `NewColdKeyIsHotkey` is only returned once the
+earlier association check has passed
+([Subtensor source: swap/swap_coldkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_coldkey.rs)).
+
+## Distinction from Cold Key Already Associated
+
+`NewColdKeyIsHotkey` and `ColdKeyAlreadyAssociated` both guard the destination of a coldkey swap and
+run one after the other. `ColdKeyAlreadyAssociated` is returned first when the new coldkey already
+has staking hotkeys associated with it. `NewColdKeyIsHotkey` is returned next when the new coldkey
+is itself a registered hotkey account
+([Subtensor API Errors: ColdKeyAlreadyAssociated](https://docs.learnbittensor.org/subtensor-api/errors#coldkeyalreadyassociated),
+[Subtensor source: swap/swap_coldkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_coldkey.rs)).
+
+- **ColdKeyAlreadyAssociated** — the new coldkey already has staking hotkeys associated with it.
+- **NewColdKeyIsHotkey** — the new coldkey is itself a hotkey account.
+
+## Distinction from Non Associated Cold Key
+
+`NewColdKeyIsHotkey` and `NonAssociatedColdKey` are different coldkey/hotkey errors.
+`NewColdKeyIsHotkey` rejects a coldkey swap because the destination account is already a hotkey.
+`NonAssociatedColdKey` rejects a call because the signing coldkey does not own the hotkey it is
+trying to act on
+([Subtensor API Errors: NonAssociatedColdKey](https://docs.learnbittensor.org/subtensor-api/errors#nonassociatedcoldkey),
+[Subtensor source: swap/swap_coldkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_coldkey.rs)).
+
+- **NewColdKeyIsHotkey** — the swap destination is already a hotkey.
+- **NonAssociatedColdKey** — the signer does not own the hotkey it is acting on.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the destination-account check on a coldkey
+swap. It does not document the full swap procedure or everything moved from the old coldkey to the
+new one; those are separate parts of the coldkey-swap flow
+([Subtensor source: swap/swap_coldkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_coldkey.rs)).
+
+## Further Reading
+
+- [Subtensor API Errors: NewColdKeyIsHotkey](https://docs.learnbittensor.org/subtensor-api/errors#newcoldkeyishotkey)
+- [Subtensor API Errors: ColdKeyAlreadyAssociated](https://docs.learnbittensor.org/subtensor-api/errors#coldkeyalreadyassociated)
+- [Subtensor API Errors: NonAssociatedColdKey](https://docs.learnbittensor.org/subtensor-api/errors#nonassociatedcoldkey)
+- [Subtensor source: swap/swap_coldkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_coldkey.rs)
