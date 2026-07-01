@@ -1,0 +1,103 @@
+---
+title: "Cannot Use System Account"
+summary:
+  "How the CannotUseSystemAccount error blocks hotkey-scoped calls when the submitted hotkey is a
+  subnet system account rather than an ordinary participant key."
+category: "Wallets"
+tags: ["Wallets", "Errors"]
+infoboxTitle: Cannot Use System Account
+infoboxCaption: Error raised when a hotkey is a subnet system account.
+infoboxRows:
+  - label: Error
+    value: CannotUseSystemAccount
+  - label: Trigger
+    value: Submitted hotkey resolves to a subnet system account
+  - label: Checked in
+    value: Hotkey swap and subnet-registration paths
+  - label: Related concept
+    value: Hotkey
+---
+
+# Cannot Use System Account
+
+`CannotUseSystemAccount` means a hotkey-scoped call named a hotkey that the chain treats as a subnet
+system account instead of an ordinary participant key. The standard-errors reference describes it as
+"A system account cannot be used in this operation"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#cannotusesystemaccount)).
+
+## What It Means
+
+Bittensor distinguishes ordinary coldkey and hotkey accounts from subnet system accounts created for
+subnet infrastructure. `CannotUseSystemAccount` means the runtime rejected the call because the
+named hotkey matched that system-account class rather than a user-operated hotkey
+([Glossary: Hotkey](https://docs.learnbittensor.org/resources/glossary#hotkey),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#cannotusesystemaccount)).
+
+This is an account-type guard. The failure concerns which kind of account was submitted, not whether
+the caller lacks balance, whether a subnet exists, or whether the hotkey already holds a UID.
+
+## Why It Appears
+
+This error appears when a wallet or automation passes a subnet system account where an ordinary
+hotkey is required. That can happen when a copied address points at subnet infrastructure instead of
+a participant hotkey, when tooling confuses a subnet account with a mining hotkey, or when
+registration or swap calls reuse an invalid hotkey value
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#cannotusesystemaccount),
+[Hotkey and Coldkey](https://docs.learnbittensor.org/getting-started/wallets)).
+
+When debugging hotkey swap failures, compare against earlier identity checks on the same call.
+`NonAssociatedColdKey` means the signing coldkey does not own the old hotkey.
+`NewHotKeyIsSameWithOld` means the new and old hotkeys are identical. `HotKeyAccountNotExists` means
+the new hotkey account itself is absent from chain state
+([Subtensor Standard Errors: NonAssociatedColdKey](https://docs.learnbittensor.org/errors/subtensor#nonassociatedcoldkey),
+[Subtensor Standard Errors: NewHotKeyIsSameWithOld](https://docs.learnbittensor.org/errors/subtensor#newhotkeyissamewithold),
+[Subtensor Standard Errors: HotKeyAccountNotExists](https://docs.learnbittensor.org/errors/subtensor#hotkeyaccountnotexists)).
+
+The practical meaning is narrow: the submitted hotkey is a system account, not an ordinary hotkey.
+
+## Distinction from Hotkey Account Not Exists
+
+`CannotUseSystemAccount` and `HotKeyAccountNotExists` both involve hotkey validity, but they reject
+different problems. `HotKeyAccountNotExists` means the hotkey account is not present on chain at
+all. `CannotUseSystemAccount` means the account exists but is a subnet system account that the path
+does not accept
+([Subtensor Standard Errors: HotKeyAccountNotExists](https://docs.learnbittensor.org/errors/subtensor#hotkeyaccountnotexists)).
+
+- **HotKeyAccountNotExists** — the hotkey account does not exist.
+- **CannotUseSystemAccount** — the hotkey is a system account.
+
+## Distinction from New Hotkey Is Same With Old
+
+`CannotUseSystemAccount` and `NewHotKeyIsSameWithOld` both appear on hotkey swap paths, but they
+test different conditions. `NewHotKeyIsSameWithOld` means the submitted new hotkey equals the old
+hotkey. `CannotUseSystemAccount` means the new hotkey resolves to a subnet system account
+([Subtensor Standard Errors: NewHotKeyIsSameWithOld](https://docs.learnbittensor.org/errors/subtensor#newhotkeyissamewithold)).
+
+- **NewHotKeyIsSameWithOld** — the new and old hotkeys are the same account.
+- **CannotUseSystemAccount** — the hotkey is a system account.
+
+## Distinction from Non Associated Cold Key
+
+`CannotUseSystemAccount` and `NonAssociatedColdKey` are both early hotkey swap checks, but they
+reject different relationships. `NonAssociatedColdKey` means the signing coldkey does not own the
+hotkey being acted on. `CannotUseSystemAccount` means the hotkey itself is the wrong account class
+for the operation
+([Subtensor Standard Errors: NonAssociatedColdKey](https://docs.learnbittensor.org/errors/subtensor#nonassociatedcoldkey)).
+
+- **NonAssociatedColdKey** — the coldkey does not own the hotkey.
+- **CannotUseSystemAccount** — the hotkey is a system account.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the system-account guard it represents. It does
+not map a particular address to an account class on a live network; that classification depends on
+chain state for the submitted key at observation time
+([Glossary: Hotkey](https://docs.learnbittensor.org/resources/glossary#hotkey),
+[Hotkey and Coldkey](https://docs.learnbittensor.org/getting-started/wallets)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#cannotusesystemaccount)
+- [Glossary: Hotkey](https://docs.learnbittensor.org/resources/glossary#hotkey)
+- [Subtensor Standard Errors: HotKeyAccountNotExists](https://docs.learnbittensor.org/errors/subtensor#hotkeyaccountnotexists)
+- [Subtensor Standard Errors: NewHotKeyIsSameWithOld](https://docs.learnbittensor.org/errors/subtensor#newhotkeyissamewithold)
