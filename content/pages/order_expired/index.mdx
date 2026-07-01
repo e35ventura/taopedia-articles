@@ -1,0 +1,62 @@
+---
+title: "Order Expired"
+summary:
+  "How the OrderExpired error blocks executing a limit order whose expiry timestamp has already
+  passed at the time of execution."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Order Expired
+infoboxCaption: Error raised when a limit order's expiry timestamp has already passed.
+infoboxRows:
+  - label: Error
+    value: OrderExpired
+  - label: Trigger
+    value: Current timestamp exceeds the order's expiry field
+  - label: Checked in
+    value: is_order_valid, called by execute_orders and execute_batched_orders
+  - label: Check type
+    value: Timestamp comparison
+---
+
+# Order Expired
+
+`OrderExpired` is a documented Subtensor standard error raised when a limit order is executed after
+its expiry timestamp. The Subtensor API error reference describes it as "The order's expiry
+timestamp is in the past"
+([Subtensor API: Errors](https://docs.learnbittensor.org/subtensor-api/errors)).
+
+## What It Means
+
+Limit orders carry an expiry field — a timestamp in milliseconds after which the order is no longer
+valid. The `is_order_valid` helper, called by both `execute_orders` and `execute_batched_orders`,
+compares the current time against that expiry value and raises `OrderExpired` when the current time
+is past the order's deadline
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+This check runs after verifying the order targets a valid subnet and carries a valid signature, and
+before checking whether the price condition is met. An expired order is rejected regardless of the
+current market price
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+## Distinction from Order Already Processed
+
+`OrderExpired` and `OrderAlreadyProcessed` both block execution of a limit order, but they reflect
+different states. `OrderAlreadyProcessed` fires because the order has already been fulfilled or
+cancelled. `OrderExpired` fires because the order's time window has closed, regardless of whether
+the order itself was ever attempted
+([Subtensor Standard Errors: OrderAlreadyProcessed](https://docs.learnbittensor.org/subtensor-api/errors),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+- **OrderAlreadyProcessed** — the order has already been fulfilled or cancelled.
+- **OrderExpired** — the order's expiry timestamp has passed.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the timestamp comparison that raises it. It
+does not describe how limit orders are submitted or the rest of the order validation sequence
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+## Further Reading
+
+- [Subtensor API: Errors](https://docs.learnbittensor.org/subtensor-api/errors)
+- [Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)
