@@ -1,0 +1,111 @@
+---
+title: "Negative Sigmoid Steepness"
+summary:
+  "How the NegativeSigmoidSteepness error blocks sudo_set_alpha_sigmoid_steepness when a non-root
+  caller submits a negative steepness value reserved for root origin."
+category: "Consensus"
+tags: ["Consensus", "Errors"]
+infoboxTitle: Negative Sigmoid Steepness
+infoboxCaption: Error raised when a non-root caller sets a negative steepness value.
+infoboxRows:
+  - label: Error
+    value: NegativeSigmoidSteepness
+  - label: Trigger
+    value: Non-root caller submits steepness below zero
+  - label: Checked in
+    value: sudo_set_alpha_sigmoid_steepness
+  - label: Related hyperparameter
+    value: AlphaSigmoidSteepness
+---
+
+# Negative Sigmoid Steepness
+
+`NegativeSigmoidSteepness` means a non-root caller tried to set `AlphaSigmoidSteepness` below zero
+on a subnet. The admin-utils pallet defines the error as "Only root can set negative sigmoid
+steepness values"
+([Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+## What It Means
+
+[Alpha sigmoid steepness](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#alphasigmoidsteepness)
+shapes how sharply liquid alpha responds to validator consensus alignment when smoothing
+validator-miner bonds in Yuma Consensus
+([Subnet Hyperparameters: AlphaSigmoidSteepness](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#alphasigmoidsteepness),
+[Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)).
+
+The `sudo_set_alpha_sigmoid_steepness` extrinsic accepts an `i16` steepness argument. The setter
+documentation in source describes the ordinary range as zero through `i16::MAX`, with negative
+values reserved for future use. Before writing storage, the runtime allows root origin to submit any
+`i16` value and requires non-root callers to submit zero or a positive steepness instead
+([Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+`NegativeSigmoidSteepness` means a non-root caller submitted a negative steepness value. The
+rejection is a sign guard on the submitted value, not proof that liquid alpha is disabled, that the
+steepness exceeds an upper bound, or that the subnet is missing.
+
+## Why It Appears
+
+This error appears when `sudo_set_alpha_sigmoid_steepness` is called with a negative steepness by a
+non-root origin. That can happen when automation reuses a signed integer field without clamping to
+non-negative values, when a client copies a root-only configuration attempt, or when tooling sends
+an unset sentinel as a negative number
+([Subnet Hyperparameters: AlphaSigmoidSteepness](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#alphasigmoidsteepness),
+[Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+When debugging, compare against other rejections on the same setter. `InvalidValue` is the generic
+out-of-range label on other hyperparameter updates. Liquid-alpha bound errors such as
+`AlphaHighTooLow` and `AlphaLowOutOfRange` belong to the separate alpha-values path rather than this
+steepness sign check
+([Subtensor Standard Errors: InvalidValue](https://docs.learnbittensor.org/errors/subtensor#invalidvalue),
+[Subtensor Standard Errors: AlphaHighTooLow](https://docs.learnbittensor.org/errors/subtensor#alphahightoolow),
+[Subtensor Standard Errors: AlphaLowOutOfRange](https://docs.learnbittensor.org/errors/subtensor#alphalowoutofrange)).
+
+The practical meaning is narrow: non-root callers must submit zero or a positive steepness.
+
+## Distinction from Invalid Value
+
+`NegativeSigmoidSteepness` and `InvalidValue` both block out-of-range hyperparameter input, but at
+different checks. `InvalidValue` is the generic admin-utils bounds rejection on many setters.
+`NegativeSigmoidSteepness` is the dedicated sign guard that reserves negative steepness values for
+root origin only
+([Subtensor Standard Errors: InvalidValue](https://docs.learnbittensor.org/errors/subtensor#invalidvalue)).
+
+- **NegativeSigmoidSteepness** — a non-root caller submitted a negative steepness.
+- **InvalidValue** — a generic parameter value is outside its allowed range on another setter.
+
+## Distinction from Alpha High Too Low
+
+`NegativeSigmoidSteepness` and `AlphaHighTooLow` both involve liquid-alpha configuration, but on
+different parameters. `NegativeSigmoidSteepness` rejects a negative steepness on the sigmoid
+sharpness setter. `AlphaHighTooLow` rejects an `alpha_high` bound that is not above the documented
+minimum on the alpha-values path
+([Subtensor Standard Errors: AlphaHighTooLow](https://docs.learnbittensor.org/errors/subtensor#alphahightoolow)).
+
+- **NegativeSigmoidSteepness** — steepness is negative for a non-root caller.
+- **AlphaHighTooLow** — the submitted `alpha_high` bound is too low.
+
+## Distinction from Alpha Low Out Of Range
+
+`NegativeSigmoidSteepness` and `AlphaLowOutOfRange` both appear in liquid-alpha tuning, but they
+guard different fields. `NegativeSigmoidSteepness` is the steepness sign check on
+`sudo_set_alpha_sigmoid_steepness`. `AlphaLowOutOfRange` rejects an `alpha_low` value outside the
+documented open interval on the alpha-values setter
+([Subtensor Standard Errors: AlphaLowOutOfRange](https://docs.learnbittensor.org/errors/subtensor#alphalowoutofrange)).
+
+- **NegativeSigmoidSteepness** — steepness is negative for a non-root caller.
+- **AlphaLowOutOfRange** — the submitted `alpha_low` bound is out of range.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the steepness sign guard it represents. It does
+not report the live `AlphaSigmoidSteepness` value on any subnet or recommend a production steepness
+setting; those depend on chain state and subnet tuning choices readers can query separately
+([Subnet Hyperparameters: AlphaSigmoidSteepness](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#alphasigmoidsteepness),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subnet Hyperparameters: AlphaSigmoidSteepness](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#alphasigmoidsteepness)
+- [Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)
+- [Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)
+- [Subtensor Standard Errors: AlphaHighTooLow](https://docs.learnbittensor.org/errors/subtensor#alphahightoolow)
