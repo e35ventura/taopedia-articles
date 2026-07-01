@@ -1,0 +1,109 @@
+---
+title: "Activity Cutoff Factor Milli Out Of Bounds"
+summary:
+  "How the ActivityCutoffFactorMilliOutOfBounds error blocks an activity cutoff factor update when
+  the submitted per-mille value falls outside the documented 1,000 to 50,000 range."
+category: "Consensus"
+tags: ["Consensus", "Errors"]
+infoboxTitle: Activity Cutoff Factor Milli Out Of Bounds
+infoboxCaption: Error raised when activity cutoff factor is outside the allowed per-mille band.
+infoboxRows:
+  - label: Error
+    value: ActivityCutoffFactorMilliOutOfBounds
+  - label: Trigger
+    value: Submitted factor is below 1,000 or above 50,000 per-mille
+  - label: Related hyperparameter
+    value: ActivityCutoffFactor
+  - label: Example netuid
+    value: netuid 1
+---
+
+# Activity Cutoff Factor Milli Out Of Bounds
+
+`ActivityCutoffFactorMilliOutOfBounds` means an activity cutoff factor update on netuid 1 or another
+named subnet submitted a per-mille value outside the documented allowed band. The standard-errors
+reference describes it as "The supplied activity-cutoff factor is outside the allowed range"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#activitycutofffactormillioutofbounds)).
+
+Activity cutoff factor expresses validator inactivity tolerance in per-mille epochs so the effective
+window scales with tempo
+([Activity Cutoff Factor](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutofffactor),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## What It Means
+
+The subnet hyperparameter reference documents `ActivityCutoffFactor` as a `u32` measured in
+per-mille epochs, with an allowed range from 1,000 to 50,000 per-mille. The constants reference
+lists the same floor and ceiling as `minActivityCutoffFactorMilli` at 1,000 and
+`maxActivityCutoffFactorMilli` at 50,000
+([Subnet Hyperparameters: ActivityCutoffFactor](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutofffactor),
+[Subtensor Constants: minActivityCutoffFactorMilli](https://docs.learnbittensor.org/subtensor-api/constants#minactivitycutofffactormilli)).
+
+`ActivityCutoffFactorMilliOutOfBounds` means that owner-path update rejected the submitted factor
+because it fell below 1,000 or above 50,000 per-mille
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#activitycutofffactormillioutofbounds)).
+
+This is a value-range gate on the activity cutoff factor setter. The failure concerns the submitted
+per-mille count, not whether the caller lacks permission or whether the admin freeze window is
+active.
+
+## Why It Appears
+
+This error appears when a subnet owner submits an activity cutoff factor below one tempo or above
+fifty tempos in per-mille units. That can happen when a client uses the wrong scale, copies an
+outdated extrinsic, or submits a value outside the documented 1,000 to 50,000 band
+([Subnet Hyperparameters: ActivityCutoffFactor](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutofffactor)).
+
+When debugging on netuid 1, readers can read the live factor with
+`btcli subnet hyperparameters --netuid 1 --network finney` before resubmitting an update
+([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
+
+When debugging, rule out authorization and timing failures first. `BadOrigin` and `NotSubnetOwner`
+mean the signer lacks subnet-owner permission. `AdminActionProhibitedDuringWeightsWindow` means the
+call arrived during the epoch-end admin freeze
+([Subtensor Standard Errors: BadOrigin](https://docs.learnbittensor.org/errors/subtensor#badorigin),
+[Subtensor Standard Errors: NotSubnetOwner](https://docs.learnbittensor.org/errors/subtensor#notsubnetowner),
+[Admin Action Prohibited During Weights Window](https://docs.learnbittensor.org/errors/subtensor#adminactionprohibitedduringweightswindow)).
+
+The practical meaning is narrow: the submitted activity cutoff factor is outside the allowed
+per-mille range.
+
+## Distinction from Activity Cutoff Too Low
+
+`ActivityCutoffFactorMilliOutOfBounds` and `ActivityCutoffTooLow` both involve inactivity tolerance
+settings, but on different hyperparameters. `ActivityCutoffFactorMilliOutOfBounds` applies to the
+live `ActivityCutoffFactor` per-mille setter. `ActivityCutoffTooLow` applies to the legacy
+fixed-block `ActivityCutoff` map and its `MinActivityCutoff` floor
+([Subtensor Standard Errors: ActivityCutoffTooLow](https://docs.learnbittensor.org/errors/subtensor#activitycutofftoolow),
+[Activity Cutoff](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutoff)).
+
+- **ActivityCutoffFactorMilliOutOfBounds** — the submitted per-mille factor is outside 1,000 to
+  50,000.
+- **ActivityCutoffTooLow** — the legacy activity cutoff block count is below the minimum floor.
+
+## Distinction from Admin Action Prohibited During Weights Window
+
+`ActivityCutoffFactorMilliOutOfBounds` and `AdminActionProhibitedDuringWeightsWindow` both appear on
+subnet hyperparameter updates, but they reject different problems.
+`ActivityCutoffFactorMilliOutOfBounds` means the submitted per-mille value is outside the documented
+band. `AdminActionProhibitedDuringWeightsWindow` means the signer was otherwise permitted, but the
+admin freeze window was active
+([Admin Action Prohibited During Weights Window](https://docs.learnbittensor.org/errors/subtensor#adminactionprohibitedduringweightswindow)).
+
+- **ActivityCutoffFactorMilliOutOfBounds** — the submitted factor is outside the allowed range.
+- **AdminActionProhibitedDuringWeightsWindow** — the call arrived during the admin freeze window.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the 1,000 to 50,000 per-mille gate it
+represents. It does not report the live activity cutoff factor on a particular netuid; that value is
+subnet chain state readers can query for the selected netuid
+([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#activitycutofffactormillioutofbounds)
+- [Subnet Hyperparameters: ActivityCutoffFactor](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#activitycutofffactor)
+- [Subtensor Standard Errors: ActivityCutoffTooLow](https://docs.learnbittensor.org/errors/subtensor#activitycutofftoolow)
+- [Subtensor Constants: minActivityCutoffFactorMilli](https://docs.learnbittensor.org/subtensor-api/constants#minactivitycutofffactormilli)
