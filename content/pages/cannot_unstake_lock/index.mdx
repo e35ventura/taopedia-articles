@@ -1,0 +1,96 @@
+---
+title: "Cannot Unstake Lock"
+summary:
+  "How the CannotUnstakeLock error blocks a stake-removal call that tries to withdraw alpha still
+  bound by an active conviction lock on the subnet."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Cannot Unstake Lock
+infoboxCaption: Error raised when a call targets locked alpha that cannot be removed yet.
+infoboxRows:
+  - label: Error
+    value: CannotUnstakeLock
+  - label: Trigger
+    value: Stake removal names locked alpha on the subnet
+  - label: Related concept
+    value: Conviction and locked stake
+  - label: Example netuid
+    value: netuid 1
+---
+
+# Cannot Unstake Lock
+
+`CannotUnstakeLock` means a stake-removal call on netuid 1 or another named subnet tried to withdraw
+alpha that is still bound by an active conviction lock. The standard-errors reference describes it
+as "Cannot unstake lock amount"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#cannotunstakelock)).
+
+## What It Means
+
+Conviction locks bind part of a coldkey's subnet alpha to a hotkey and a commitment signal. Locked
+mass can decay over time in decaying mode, freeing alpha that may later become removable
+([Conviction and locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking)).
+
+`CannotUnstakeLock` is a lock-boundary rejection on stake removal. It means the call tried to
+unstake alpha that the conviction lock still treats as locked rather than as freely removable stake
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#cannotunstakelock)).
+
+This is a conviction-lock rejection, not a coldkey TAO balance failure and not a generic pool
+liquidity failure on an add-stake or remove-stake swap.
+
+## Why It Appears
+
+This error appears when a coldkey submits a stake-removal amount that includes alpha still covered
+by an active conviction lock on the netuid. That can happen when a client treats total staked alpha
+as fully removable, when automation retries an unstake before locked mass has decayed, or when a
+call names the locked portion directly instead of the unlocked remainder
+([Conviction and locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking)).
+
+On netuid 1, readers can compare a proposed unstake against live conviction-lock state through the
+storage query patterns described in the Subtensor documentation before resubmitting the removal
+([Subtensor Storage Query Examples](https://docs.learnbittensor.org/subtensor-nodes/subtensor-storage-query-examples)).
+
+When debugging, rule out other stake-removal failures first. `NotEnoughStakeToWithdraw` means the
+hotkey-coldkey pair lacks enough total staked alpha for the request. `StakeUnavailable` means the
+request exceeds unlocked alpha after existing locks are excluded, without naming the locked mass
+itself as the withdrawal target
+([Subtensor Standard Errors: NotEnoughStakeToWithdraw](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketowithdraw),
+[Subtensor API Errors: StakeUnavailable](https://docs.learnbittensor.org/subtensor-api/errors#stakeunavailable)).
+
+The practical meaning is narrow: the call tried to remove alpha that is still locked on the subnet.
+
+## Distinction from Stake Unavailable
+
+`CannotUnstakeLock` and `StakeUnavailable` both involve conviction locks on stake removal, but they
+reject different problems. `CannotUnstakeLock` means the call targets locked alpha that cannot be
+withdrawn while the lock is active. `StakeUnavailable` means the request exceeds the unlocked alpha
+available after locked mass is excluded from the removable balance
+([Conviction and locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking)).
+
+- **CannotUnstakeLock** — the call tries to unstake locked alpha on the subnet.
+- **StakeUnavailable** — the request exceeds unlocked alpha on the subnet.
+
+## Distinction from Not Enough Stake To Withdraw
+
+`CannotUnstakeLock` and `NotEnoughStakeToWithdraw` both appear on stake-removal paths, but they
+compare against different limits. `NotEnoughStakeToWithdraw` means total staked alpha on the
+hotkey-coldkey pair is below the requested amount. `CannotUnstakeLock` means the call reaches the
+conviction-lock boundary because locked alpha cannot be removed yet
+([Subtensor Standard Errors: NotEnoughStakeToWithdraw](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketowithdraw)).
+
+- **CannotUnstakeLock** — locked alpha on the subnet cannot be unstaked yet.
+- **NotEnoughStakeToWithdraw** — total staked alpha is too low for the request.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the locked-alpha withdrawal gate it represents.
+It does not report a wallet's live locked or unlocked alpha on any subnet; those values depend on
+chain state at observation time
+([Conviction and locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor Standard Errors: CannotUnstakeLock](https://docs.learnbittensor.org/errors/subtensor#cannotunstakelock)
+- [Conviction and locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking)
+- [Subtensor Storage Query Examples](https://docs.learnbittensor.org/subtensor-nodes/subtensor-storage-query-examples)
