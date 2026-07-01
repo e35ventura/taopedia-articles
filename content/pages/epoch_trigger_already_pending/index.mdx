@@ -1,0 +1,106 @@
+---
+title: "Epoch Trigger Already Pending"
+summary:
+  "How the EpochTriggerAlreadyPending error blocks a second manual epoch trigger on a subnet while
+  an earlier trigger is still waiting to fire."
+category: "Consensus"
+tags: ["Consensus", "Errors"]
+infoboxTitle: Epoch Trigger Already Pending
+infoboxCaption: Error raised when a manual epoch trigger is already armed for the subnet.
+infoboxRows:
+  - label: Error
+    value: EpochTriggerAlreadyPending
+  - label: Trigger
+    value: Second manual epoch trigger while one is already pending
+  - label: Related concept
+    value: Manual epoch trigger
+  - label: Example netuid
+    value: netuid 1
+---
+
+# Epoch Trigger Already Pending
+
+`EpochTriggerAlreadyPending` means a subnet owner tried to arm another manual epoch trigger on
+netuid 1 or another named subnet while an earlier trigger for that subnet is still pending. The
+Subtensor API errors reference summarizes it as "An epoch trigger is already pending for this
+subnet; wait for it to fire before triggering again"
+([Subtensor API Errors: EpochTriggerAlreadyPending](https://docs.learnbittensor.org/subtensor-api/errors#epochtriggeralreadypending)).
+
+Subnet owners can schedule a manual epoch ahead of the automatic tempo boundary
+([Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase),
+[Glossary: Epoch](https://docs.learnbittensor.org/resources/glossary#epoch)).
+
+## What It Means
+
+An epoch is the consensus period inside a subnet, paced by tempo
+([Glossary: Epoch](https://docs.learnbittensor.org/resources/glossary#epoch),
+[Subnet Hyperparameters: tempo](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#tempo)).
+
+`EpochTriggerAlreadyPending` is a one-at-a-time gate on manual epoch triggers. It means the subnet
+already has a pending manual trigger armed and the new request would stack a second trigger before
+the first has fired
+([Subtensor API Errors: EpochTriggerAlreadyPending](https://docs.learnbittensor.org/subtensor-api/errors#epochtriggeralreadypending)).
+
+This is a scheduling rejection, not a value-range failure on tempo or other hyperparameters, and not
+an authorization failure when the signer otherwise has subnet-owner permission.
+
+## Why It Appears
+
+This error appears when a subnet owner submits a manual epoch trigger while an earlier trigger for
+the same netuid is still waiting to execute. That can happen when automation retries the trigger
+call, when two operators act on the same subnet without coordinating, or when a client resubmits
+before the pending epoch has cleared
+([Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase)).
+
+When debugging on netuid 1, readers can read the live tempo with
+`btcli subnet hyperparameters --netuid 1 --network finney` to understand the automatic epoch cadence
+before deciding whether to arm a manual trigger
+([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
+
+When debugging, rule out authorization and timing failures first. `BadOrigin` and `NotSubnetOwner`
+mean the signer lacks subnet-owner permission. `AdminActionProhibitedDuringWeightsWindow` means an
+admin hyperparameter change landed during the protected freeze window, which can include the
+countdown after a pending manual trigger is armed
+([Subtensor Standard Errors: BadOrigin](https://docs.learnbittensor.org/errors/subtensor#badorigin),
+[Subtensor Standard Errors: NotSubnetOwner](https://docs.learnbittensor.org/errors/subtensor#notsubnetowner),
+[Admin Action Prohibited During Weights Window](https://docs.learnbittensor.org/errors/subtensor#adminactionprohibitedduringweightswindow)).
+
+The practical fix is to wait until the pending trigger fires and clears before arming another manual
+epoch on the same netuid.
+
+## Distinction from Auto Epoch Already Imminent
+
+`EpochTriggerAlreadyPending` and `AutoEpochAlreadyImminent` both appear on manual epoch trigger
+paths, but they reject different scheduling problems. `EpochTriggerAlreadyPending` means a pending
+manual trigger is already armed for the subnet. `AutoEpochAlreadyImminent` means the next automatic
+epoch on the tempo schedule is already so close that a manual trigger would have no effect
+([Subtensor API Errors: AutoEpochAlreadyImminent](https://docs.learnbittensor.org/subtensor-api/errors#autoepochalreadyimminent)).
+
+- **EpochTriggerAlreadyPending** — a manual trigger is already pending for the subnet.
+- **AutoEpochAlreadyImminent** — the automatic epoch is already imminent.
+
+## Distinction from Admin Action Prohibited During Weights Window
+
+`EpochTriggerAlreadyPending` and `AdminActionProhibitedDuringWeightsWindow` both involve epoch
+timing on a subnet, but on different calls. `EpochTriggerAlreadyPending` blocks a second manual
+epoch trigger while one is already pending. `AdminActionProhibitedDuringWeightsWindow` blocks
+subnet-owner hyperparameter changes during the admin freeze window, which can be active during a
+pending manual trigger countdown
+([Admin Action Prohibited During Weights Window](https://docs.learnbittensor.org/errors/subtensor#adminactionprohibitedduringweightswindow)).
+
+- **EpochTriggerAlreadyPending** — another manual epoch trigger is already armed.
+- **AdminActionProhibitedDuringWeightsWindow** — an admin change arrived during the freeze window.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the one-pending-trigger gate it represents. It
+does not report whether a particular netuid currently has a pending manual epoch trigger; that state
+is subnet chain data readers can query for the selected netuid
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: EpochTriggerAlreadyPending](https://docs.learnbittensor.org/subtensor-api/errors#epochtriggeralreadypending)
+- [Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase)
+- [Glossary: Epoch](https://docs.learnbittensor.org/resources/glossary#epoch)
+- [Admin Action Prohibited During Weights Window](https://docs.learnbittensor.org/errors/subtensor#adminactionprohibitedduringweightswindow)
