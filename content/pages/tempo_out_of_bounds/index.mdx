@@ -1,0 +1,104 @@
+---
+title: "Tempo Out Of Bounds"
+summary:
+  "How the TempoOutOfBounds error blocks a subnet-owner tempo update when the submitted block count
+  falls outside the documented 360 to 50,400 range."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Tempo Out Of Bounds
+infoboxCaption: Error raised when tempo is outside the allowed owner-path block range.
+infoboxRows:
+  - label: Error
+    value: TempoOutOfBounds
+  - label: Trigger
+    value: Submitted tempo is below 360 or above 50,400 blocks
+  - label: Related hyperparameter
+    value: tempo
+  - label: Example netuid
+    value: netuid 1
+---
+
+# Tempo Out Of Bounds
+
+`TempoOutOfBounds` means a subnet-owner tempo update on netuid 1 or another named subnet submitted a
+block count outside the documented allowed band. The standard-errors reference describes it as "The
+supplied tempo is outside the allowed range"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#tempooutofbounds)).
+
+Tempo is the block-based interval that groups subnet reward and weight processing
+([Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo),
+[Subnet Hyperparameters: tempo](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#tempo)).
+
+## What It Means
+
+The subnet hyperparameter reference documents `tempo` as a `u16` measured in blocks, with a default
+of 360. The documented owner-path setter is bounded from 360 to 50,400 blocks, corresponding to the
+chain's MinTempo and MaxTempo limits for that path
+([Subnet Hyperparameters: tempo](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#tempo),
+[Subtensor Constants: initialTempo](https://docs.learnbittensor.org/subtensor-api/constants#initialtempo)).
+
+`TempoOutOfBounds` means that owner-path update rejected the submitted tempo because it fell below
+360 blocks or above 50,400 blocks
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#tempooutofbounds)).
+
+This is a value-range gate on the owner tempo setter. The failure concerns the submitted block
+count, not whether the caller lacks permission or whether the admin freeze window is active.
+
+## Why It Appears
+
+This error appears when a subnet owner submits a tempo below 360 blocks or above 50,400 blocks. That
+can happen when a client uses the wrong units, copies an outdated extrinsic, or confuses the owner
+tempo setter with the separate root setter that is not bounded by this error
+([Subnet Hyperparameters: tempo](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#tempo)).
+
+When debugging on netuid 1, readers can read the live tempo with
+`btcli subnet hyperparameters --netuid 1 --network finney` before resubmitting an update
+([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
+
+When debugging, rule out authorization and timing failures first. `BadOrigin` and `NotSubnetOwner`
+mean the signer lacks subnet-owner permission. `AdminActionProhibitedDuringWeightsWindow` means the
+call arrived during the epoch-end admin freeze. `TxRateLimitExceeded` means the tempo-update
+cooldown has not elapsed
+([Subtensor Standard Errors: BadOrigin](https://docs.learnbittensor.org/errors/subtensor#badorigin),
+[Subtensor Standard Errors: NotSubnetOwner](https://docs.learnbittensor.org/errors/subtensor#notsubnetowner),
+[Admin Action Prohibited During Weights Window](https://docs.learnbittensor.org/errors/subtensor#adminactionprohibitedduringweightswindow),
+[Subtensor Standard Errors: TxRateLimitExceeded](https://docs.learnbittensor.org/errors/subtensor#txratelimitexceeded)).
+
+The practical meaning is narrow: the submitted tempo is outside the allowed owner-path range.
+
+## Distinction from Admin Action Prohibited During Weights Window
+
+`TempoOutOfBounds` and `AdminActionProhibitedDuringWeightsWindow` both appear on subnet
+hyperparameter updates, but they reject different problems. `TempoOutOfBounds` means the submitted
+tempo is outside the documented 360 to 50,400 block band. `AdminActionProhibitedDuringWeightsWindow`
+means the signer was otherwise permitted, but the admin freeze window was active
+([Admin Action Prohibited During Weights Window](https://docs.learnbittensor.org/errors/subtensor#adminactionprohibitedduringweightswindow)).
+
+- **TempoOutOfBounds** — the submitted tempo is outside the allowed range.
+- **AdminActionProhibitedDuringWeightsWindow** — the call arrived during the admin freeze window.
+
+## Distinction from Tx Rate Limit Exceeded
+
+`TempoOutOfBounds` and `TxRateLimitExceeded` both appear on owner tempo updates, but at different
+stages. `TempoOutOfBounds` is the value-range rejection when the tempo falls outside 360 to 50,400
+blocks. `TxRateLimitExceeded` is the later pacing rejection when the update arrives before the
+tempo-update cooldown has elapsed
+([Subtensor Standard Errors: TxRateLimitExceeded](https://docs.learnbittensor.org/errors/subtensor#txratelimitexceeded)).
+
+- **TempoOutOfBounds** — the submitted tempo is outside the allowed range.
+- **TxRateLimitExceeded** — the tempo update arrived too soon after the last one.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the 360 to 50,400 block gate it represents. It
+does not report the live tempo on a particular netuid; that value is subnet chain state readers can
+query for the selected netuid
+([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#tempooutofbounds)
+- [Subnet Hyperparameters: tempo](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#tempo)
+- [Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo)
+- [Subtensor Constants: initialTempo](https://docs.learnbittensor.org/subtensor-api/constants#initialtempo)
