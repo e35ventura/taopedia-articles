@@ -1,0 +1,63 @@
+---
+title: "Chain Id Mismatch"
+summary:
+  "How the ChainIdMismatch error blocks a limit order whose chain ID does not match the current
+  chain, preventing testnet orders from being replayed on mainnet."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Chain Id Mismatch
+infoboxCaption: Error raised when a limit order's chain ID doesn't match the runtime.
+infoboxRows:
+  - label: Error
+    value: ChainIdMismatch
+  - label: Trigger
+    value: order.chain_id != T::ChainId::get()
+  - label: Checked in
+    value: is_order_valid, called by execute_orders and execute_batched_orders
+  - label: Check type
+    value: Chain ID equality check
+---
+
+# Chain Id Mismatch
+
+`ChainIdMismatch` is a documented Subtensor standard error raised when a limit order is executed on
+the wrong network. The Subtensor API error reference describes it as "The order's chain_id does not
+match the current chain"
+([Subtensor API: Errors](https://docs.learnbittensor.org/subtensor-api/errors)).
+
+## What It Means
+
+Limit orders are signed with a chain ID field that binds the order to a specific network. The
+`is_order_valid` helper, called by both `execute_orders` and `execute_batched_orders`, compares the
+order's chain ID against the runtime's own configured chain ID and raises `ChainIdMismatch` when
+they do not match. This prevents orders signed on one network, such as testnet, from being replayed
+on a different network, such as mainnet
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+The check runs after confirming the order does not target the root subnet and before the signature
+check
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+## Distinction from Invalid Signature
+
+`ChainIdMismatch` and `InvalidSignature` are both raised by `is_order_valid` for orders that cannot
+be accepted, but they check different conditions. `ChainIdMismatch` is checked before the signature
+and fires when the network binding is wrong, regardless of whether the signature itself is valid.
+`InvalidSignature` fires after the chain ID check passes, when the signature does not match the
+order payload and claimed signer
+([Subtensor Standard Errors: InvalidSignature](https://docs.learnbittensor.org/subtensor-api/errors),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+- **ChainIdMismatch** — the order was signed for a different network.
+- **InvalidSignature** — the order's signature does not verify against the payload and signer.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the chain ID comparison that raises it. It does
+not describe how chain IDs are configured or the rest of the order validation sequence
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+## Further Reading
+
+- [Subtensor API: Errors](https://docs.learnbittensor.org/subtensor-api/errors)
+- [Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)
