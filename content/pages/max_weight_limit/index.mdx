@@ -1,0 +1,93 @@
+---
+title: "Max Weight Limit"
+summary:
+  "How the max weight limit subnet hyperparameter caps the largest single weight a validator may
+  assign when setting weights on a Bittensor subnet."
+category: "Consensus"
+tags: ["Consensus", "Subnets"]
+infoboxTitle: Max Weight Limit
+infoboxCaption: Per-subnet cap on the largest single normalized weight a validator may set.
+infoboxRows:
+  - label: Parameter
+    value: MaxWeightsLimit
+  - label: Type
+    value: u16
+  - label: Default
+    value: u16::MAX (no effective cap)
+  - label: Enforced in
+    value: set_weights (raises MaxWeightExceeded)
+  - label: Set by
+    value: Subnet owner
+---
+
+# Max Weight Limit
+
+Max weight limit is a per-subnet hyperparameter, stored on chain as `MaxWeightsLimit`, that caps how
+large any single weight a validator assigns may be, measured as a fraction of that validator's total
+weight. It is enforced when a validator calls `set_weights`
+([Subtensor source: subnets/weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+## What It Controls
+
+A validator scores other neurons by submitting a vector of weights. Max weight limit bounds the
+concentration of that vector: it sets the maximum share the largest single weight may hold once the
+vector is normalized. It does not change how many UIDs a validator must score or how the resulting
+weights feed consensus; it only limits how much weight one target can receive relative to the rest
+([Subtensor source: subnets/weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+The value is a `u16` interpreted as a fraction of `u16::MAX`. A limit of `u16::MAX` corresponds to a
+full share of `1.0`, so the largest weight may be the entire vector; a smaller value lowers the
+allowed share. The stored default is `u16::MAX`, which means the cap has no practical effect until a
+subnet owner lowers it
+([Subtensor source: pallets/subtensor/src/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/lib.rs)).
+
+## How It Is Enforced
+
+When a validator submits weights, the runtime normalizes the submitted vector and then compares its
+largest normalized entry against the limit expressed as a fraction of `u16::MAX`. The check passes
+when the largest normalized weight is less than or equal to that fraction; it fails, and the call is
+rejected with `MaxWeightExceeded`, only when the largest normalized weight is strictly greater than
+the limit. A vector whose largest weight is exactly equal to the limit passes
+([Subtensor source: subnets/weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs),
+[Subtensor source: epoch/math.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/epoch/math.rs)).
+
+Two cases skip the cap. A self-weight, where a validator submits a single weight on its own UID, is
+allowed to exceed the limit. And when the limit is set to `u16::MAX`, the check returns early and
+always passes, so no concentration bound applies
+([Subtensor source: subnets/weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+## Distinction from Max Weight Exceeded
+
+Max weight limit is the hyperparameter; `MaxWeightExceeded` is the error raised when a weight
+submission violates it. The limit defines the allowed ceiling on the largest normalized weight, and
+the error is the rejection returned from `set_weights` when a submitted vector's largest weight is
+above that ceiling
+([Subtensor source: subnets/weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+- **Max weight limit** — the per-subnet cap on the largest normalized weight.
+- **Max weight exceeded** — the error returned when a submission's largest weight is above the cap.
+
+## Distinction from Min Allowed Weights
+
+Max weight limit and min allowed weights both constrain a validator's weight vector, but on
+different axes. Min allowed weights sets how many UIDs the vector must include. Max weight limit
+bounds how large the single biggest weight may be once the vector is normalized. One is a floor on
+breadth; the other is a ceiling on concentration
+([Subtensor source: subnets/weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+- **Min allowed weights** — the minimum number of UIDs a weight vector must include.
+- **Max weight limit** — the maximum share the largest single weight may hold.
+
+## Reader Boundary
+
+This page defines the max weight limit hyperparameter and the concentration check it drives on
+`set_weights`. It does not document the full weight-setting path, how normalized weights are later
+combined during consensus, or the live value configured on any particular subnet; each subnet stores
+its own `MaxWeightsLimit`
+([Subtensor source: subnets/weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+## Further Reading
+
+- [Subtensor API Errors: MaxWeightExceeded](https://docs.learnbittensor.org/subtensor-api/errors#maxweightexceeded)
+- [Subtensor source: subnets/weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)
+- [Subtensor source: epoch/math.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/epoch/math.rs)
