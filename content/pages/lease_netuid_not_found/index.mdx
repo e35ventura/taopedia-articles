@@ -1,0 +1,67 @@
+---
+title: "Lease Netuid Not Found"
+summary:
+  "How the LeaseNetuidNotFound error signals that the register_leased_network call could not resolve
+  which netuid was assigned to the new subnet after registration completed."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Lease Netuid Not Found
+infoboxCaption: Error raised when the lease subnet's netuid cannot be resolved after registration.
+infoboxRows:
+  - label: Error
+    value: LeaseNetuidNotFound
+  - label: Trigger
+    value: find_lease_netuid returns nothing after subnet registration succeeds
+  - label: Checked in
+    value: do_register_leased_network, called by register_leased_network
+  - label: Check type
+    value: Post-registration lookup check
+---
+
+# Lease Netuid Not Found
+
+`LeaseNetuidNotFound` is a documented Subtensor standard error raised in
+`do_register_leased_network`, the helper called by the `register_leased_network` extrinsic. The
+Subtensor API error reference describes it as "Couldn't find the lease netuid"
+([Subtensor API: Errors](https://docs.learnbittensor.org/subtensor-api/errors)).
+
+## What It Means
+
+Registering a [subnet lease](https://docs.learnbittensor.org/subnets/crowdloans) involves first
+creating a new subnet on chain using the lease's reserved coldkey, then resolving which netuid was
+assigned to that freshly registered subnet. `do_register_leased_network` attempts that netuid
+resolution through `find_lease_netuid` immediately after registration, and raises
+`LeaseNetuidNotFound` when that lookup finds nothing
+([Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+The lookup is expected to succeed under normal operation, since the subnet was just registered in
+the same call. This error acts as a defensive guard for the case where the netuid cannot be resolved
+despite the registration step appearing to succeed
+([Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+## Distinction from Lease Does Not Exist
+
+`LeaseNetuidNotFound` and `LeaseDoesNotExist` both involve a failed lookup, but they are raised in
+different parts of the subnet lease lifecycle. `LeaseDoesNotExist` fires in `do_terminate_lease`
+when no stored lease record is found for the supplied lease ID. `LeaseNetuidNotFound` fires during
+lease registration in `do_register_leased_network` when the newly created subnet's netuid cannot be
+resolved after the subnet was registered
+([Subtensor Standard Errors: LeaseDoesNotExist](https://docs.learnbittensor.org/errors/subtensor#leasedoesnotexist),
+[Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+- **LeaseDoesNotExist** — no lease record is stored for the given lease ID during termination.
+- **LeaseNetuidNotFound** — the new subnet's netuid can't be resolved after lease registration.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the post-registration lookup that raises it. It
+does not describe the full leased-network registration flow or how leases are created via crowdloan;
+those are documented separately
+([Subnet Lease](https://docs.learnbittensor.org/subnets/crowdloans)).
+
+## Further Reading
+
+- [Subtensor API: Errors](https://docs.learnbittensor.org/subtensor-api/errors)
+- [Subtensor Standard Errors: LeaseDoesNotExist](https://docs.learnbittensor.org/errors/subtensor#leasedoesnotexist)
+- [Subnet Lease](https://docs.learnbittensor.org/subnets/crowdloans)
+- [Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)
