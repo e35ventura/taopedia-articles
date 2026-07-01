@@ -1,0 +1,93 @@
+---
+title: "Already Finalized"
+summary:
+  "How the AlreadyFinalized error blocks crowdloan calls that require an active, non-finalized
+  campaign after finalization has already completed."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Already Finalized
+infoboxCaption:
+  Error raised when a crowdloan call requires an open campaign but finalization is done.
+infoboxRows:
+  - label: Error
+    value: AlreadyFinalized
+  - label: Trigger
+    value: crowdloan.finalized is true
+  - label: Checked in
+    value: withdraw, finalize, refund, dissolve, and creator parameter update calls
+  - label: Check type
+    value: Finalization-state guard on non-finalized crowdloan calls
+---
+
+# Already Finalized
+
+`AlreadyFinalized` is a crowdloan pallet error raised when a call expects the campaign to still be
+open but the crowdloan record is already marked finalized. The pallet defines it as "The crowdloan
+has already been finalized"
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+## What It Means
+
+A successful [crowdloan](https://docs.learnbittensor.org/subnets/crowdloans) finalization sets the
+campaign's finalized flag and closes the pre-success lifecycle. Several extrinsics refuse to run
+once that flag is set, including `withdraw`, `finalize`, `refund`, `dissolve`, and the creator
+update calls for minimum contribution, end block, cap, and maximum contribution
+([Crowdloans: Crowdloan Lifecycle](https://docs.learnbittensor.org/subnets/crowdloans#crowdloan-lifecycle),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+This is a lifecycle-state rejection, not proof that the cap was never reached, that the contribution
+deadline has passed, or that the caller lacks creator permission on a separate check.
+
+## Why It Appears
+
+This error appears when a client retries an operation against a crowdloan that has already completed
+finalization. Common cases include submitting `finalize` again after a successful run, calling
+`refund` or `dissolve` on a finalized campaign, attempting `withdraw` on a finalized campaign, or
+sending a parameter update after the stored call or transfer has already executed
+([Crowdloans: Who can finalize a crowdloan and when?](https://docs.learnbittensor.org/subnets/crowdloans#who-can-finalize-a-crowdloan-and-when),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+When debugging, compare against other rejections on the same extrinsic. On `finalize`,
+`CapNotRaised` means funding is still short of the cap and `InvalidOrigin` means the signer is not
+the crowdloan creator. On `refund` and `dissolve`, `InvalidOrigin` means the signer is not the
+creator, while `NotReadyToDissolve` on `dissolve` means contributor refunds are not yet complete
+([Cap Not Raised](https://docs.learnbittensor.org/errors/subtensor#capnotraised),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+The practical meaning is narrow: treat the campaign as closed to pre-finalization operations and
+query its finalized state before retrying lifecycle calls.
+
+## Distinction from Cap Not Raised
+
+`AlreadyFinalized` and `CapNotRaised` both appear on `finalize`, but at different checks.
+`AlreadyFinalized` means finalization already completed. `CapNotRaised` means the creator signed
+`finalize` while total raised still differs from the cap
+([Cap Not Raised](https://docs.learnbittensor.org/errors/subtensor#capnotraised),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+- **AlreadyFinalized** — the campaign was already finalized.
+- **CapNotRaised** — raised total still differs from the cap.
+
+## Distinction from Not Ready to Dissolve
+
+`AlreadyFinalized` and `NotReadyToDissolve` both block cleanup-related calls, but on different
+paths. `AlreadyFinalized` rejects any pre-finalization extrinsic once the finalized flag is set.
+`NotReadyToDissolve` appears only on `dissolve` when the creator's remaining contribution still does
+not equal total raised, meaning other contributor balances have not yet been cleared
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+- **AlreadyFinalized** — the campaign is already finalized.
+- **NotReadyToDissolve** — contributor refunds are not yet complete for dissolution.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the finalization-state check that raises it. It
+does not describe the full crowdloan lifecycle or the conditions under which a campaign can be
+finalized; those are documented separately
+([Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans)).
+
+## Further Reading
+
+- [Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans)
+- [Crowdloans: Crowdloan Lifecycle](https://docs.learnbittensor.org/subnets/crowdloans#crowdloan-lifecycle)
+- [Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)
