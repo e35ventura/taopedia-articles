@@ -1,0 +1,99 @@
+---
+title: "Transaction Must Come From EOA"
+summary:
+  "How the TransactionMustComeFromEOA error rejects an EVM transaction whose sender address has
+  contract code deployed, applying EIP-3607 to external transactions."
+category: "Wallets"
+tags: ["Wallets", "Errors", "EVM"]
+infoboxTitle: Transaction Must Come From EOA
+infoboxCaption:
+  Error raised when an external EVM transaction is submitted from a sender that has code deployed.
+infoboxRows:
+  - label: Error
+    value: TransactionMustComeFromEOA
+  - label: Pallet
+    value: evm
+  - label: Trigger
+    value: External EVM transaction submitted from a sender address that has code deployed
+  - label: Check type
+    value: EIP-3607 sender-code check on transactional EVM operations
+---
+
+# Transaction Must Come From EOA
+
+`TransactionMustComeFromEOA` is an EVM pallet error raised when an external EVM transaction is
+submitted from a sender address that has contract code deployed, in line with EIP-3607. The API
+errors reference summarizes it as "EIP-3607"
+([Subtensor API Errors: TransactionMustComeFromEOA](https://docs.learnbittensor.org/subtensor-api/errors#transactionmustcomefromeoa),
+[EIP-3607](https://eips.ethereum.org/EIPS/eip-3607)).
+
+## What It Means
+
+Bittensor's EVM layer runs an Ethereum-compatible execution layer on top of the Subtensor chain
+([Bittensor EVM Smart Contracts](https://docs.learnbittensor.org/evm-tutorials)). EIP-3607 specifies
+that transactions on Ethereum must come from an externally owned account — one whose address has no
+deployed code. `TransactionMustComeFromEOA` means the EVM runner checked that rule and the sender
+address had deployed code, so the transaction is rejected before execution
+([EIP-3607](https://eips.ethereum.org/EIPS/eip-3607),
+[Subtensor API Errors: TransactionMustComeFromEOA](https://docs.learnbittensor.org/subtensor-api/errors#transactionmustcomefromeoa)).
+
+This is the EIP-3607 sender-code check on a transactional path. It does not, by itself, mean the
+transaction failed signature recovery, that the chain ID submitted with the transaction was invalid,
+or that the sender's account balance could not cover the fee.
+
+## Why It Appears
+
+This error appears when an external transaction arrives and the EVM runner finds that the sender
+address has code deployed. The frontier runner source describes the check as an EIP-3607 guard that
+only runs for external transactions: if the source account has any metadata with
+`metadata.size > 0`, the runner further allows an EIP-7702 delegation form (`0xef0100 || address`)
+before raising the error
+([paritytech/frontier: frame/evm/src/runner/stack.rs:249](https://github.com/paritytech/frontier/blob/master/frame/evm/src/runner/stack.rs#L249),
+[EIP-3607](https://eips.ethereum.org/EIPS/eip-3607)).
+
+Internal calls — including those originating from `eth_call` or `eth_estimateGas` RPC — bypass the
+EIP-3607 check on purpose, because the caller is not a transaction in the EIP-3607 sense
+([paritytech/frontier: frame/evm/src/runner/stack.rs:230](https://github.com/paritytech/frontier/blob/master/frame/evm/src/runner/stack.rs#L230)).
+
+## Distinction from Create Origin Not Allowed
+
+`TransactionMustComeFromEOA` and `CreateOriginNotAllowed` both reject an EVM submission based on the
+sender's relationship to EVM contracts, but they fire at different checks.
+`TransactionMustComeFromEOA` is the EIP-3607 guard that blocks transactions from a sender address
+with deployed code. `CreateOriginNotAllowed` is the deployment-origin permission check that rejects
+contract deployment from addresses the runtime treats as not allowed to deploy
+([Subtensor API Errors: TransactionMustComeFromEOA](https://docs.learnbittensor.org/subtensor-api/errors#transactionmustcomefromeoa),
+[Subtensor API Errors: CreateOriginNotAllowed](https://docs.learnbittensor.org/subtensor-api/errors#createoriginnotallowed)).
+
+- **TransactionMustComeFromEOA** — the sender address has code deployed (EIP-3607).
+- **CreateOriginNotAllowed** — the sender is not allowed to deploy contracts.
+
+## Distinction from Invalid Signature
+
+`TransactionMustComeFromEOA` and `InvalidSignature` both appear during EVM transaction validation,
+but at different stages. `TransactionMustComeFromEOA` is the EIP-3607 check on whether the sender
+address has code deployed. `InvalidSignature` is the signature rejection that fires earlier in the
+same validation path when the submitted signature does not recover under the chain's expected
+signing scheme
+([Subtensor API Errors: TransactionMustComeFromEOA](https://docs.learnbittensor.org/subtensor-api/errors#transactionmustcomefromeoa),
+[Subtensor API Errors: InvalidSignature](https://docs.learnbittensor.org/subtensor-api/errors#invalidsignature)).
+
+- **TransactionMustComeFromEOA** — the validated sender has deployed code.
+- **InvalidSignature** — the submitted signature did not recover.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the EIP-3607 sender-code check it represents.
+It does not list which sender addresses currently have code deployed on a network, define the
+EIP-7702 delegation indicator, or describe how to find an EOA on a given network
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks),
+[EIP-3607](https://eips.ethereum.org/EIPS/eip-3607),
+[Subtensor API Errors: TransactionMustComeFromEOA](https://docs.learnbittensor.org/subtensor-api/errors#transactionmustcomefromeoa)).
+
+## Further Reading
+
+- [Subtensor API Errors: TransactionMustComeFromEOA](https://docs.learnbittensor.org/subtensor-api/errors#transactionmustcomefromeoa)
+- [EIP-3607](https://eips.ethereum.org/EIPS/eip-3607)
+- [Subtensor API Errors: CreateOriginNotAllowed](https://docs.learnbittensor.org/subtensor-api/errors#createoriginnotallowed)
+- [Subtensor API Errors: InvalidSignature](https://docs.learnbittensor.org/subtensor-api/errors#invalidsignature)
+- [Bittensor EVM Smart Contracts](https://docs.learnbittensor.org/evm-tutorials)
