@@ -1,0 +1,97 @@
+---
+title: "Too Many"
+summary:
+  "How the TooMany error blocks proxy registration or announcement when a delegator's proxy list or
+  pending announcement queue reaches the runtime maximum."
+category: "Wallets"
+tags: ["Wallets", "Errors"]
+infoboxTitle: Too Many
+infoboxCaption: Error raised when proxy or announcement storage is at capacity.
+infoboxRows:
+  - label: Error
+    value: TooMany
+  - label: Trigger
+    value: proxy list or pending announcements at runtime maximum
+  - label: Checked in
+    value: add_proxy and announce
+  - label: Check type
+    value: Proxy or announcement capacity guard
+---
+
+# Too Many
+
+`TooMany` is a documented proxy-pallet error raised when proxy-related storage is already full. The
+Subtensor API errors reference summarizes it as: "There are too many proxies registered or too many
+announcements pending"
+([Subtensor API Errors: TooMany](https://docs.learnbittensor.org/subtensor-api/errors#toomany)).
+
+## What It Means
+
+The proxy pallet keeps two bounded lists that can both return `TooMany`.
+
+On the registration path, `add_proxy` adds a delegate relationship to the delegator's stored proxy
+list. When that list is already at the runtime maximum for registered proxies, the insertion is
+rejected with `TooMany` and no new relationship is stored
+([Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs)).
+
+On the delayed-proxy path, `announce` records a pending announcement before a delayed proxy call may
+execute. The extrinsic documentation states that no more than the configured pending-announcement
+maximum may be held at once. When that queue is full, a new announcement is rejected with `TooMany`
+([Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs)).
+
+This is a capacity rejection, not proof that the same proxy relationship is already registered and
+not proof that the caller lacks a proxy relationship for the targeted account.
+
+## Why It Appears
+
+This error appears when a wallet or script tries to add another proxy delegate after the delegator
+already holds the maximum number of registered proxies, or when a delayed proxy workflow submits
+another announcement while the delegate's pending queue is already full
+([Subtensor API Errors: TooMany](https://docs.learnbittensor.org/subtensor-api/errors#toomany),
+[Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs)).
+
+When debugging on `announce`, compare against the check that runs earlier on the same extrinsic.
+`NotProxy` means the signer is not registered as a proxy for the targeted real account, while
+`TooMany` means the signer is a valid proxy but the pending-announcement queue is already at its
+maximum
+([Subtensor API Errors: NotProxy](https://docs.learnbittensor.org/subtensor-api/errors#notproxy),
+[Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs)).
+
+## Distinction from Duplicate
+
+`TooMany` and `Duplicate` both block proxy registration, but they indicate different conditions.
+`Duplicate` means the exact proxy relationship or pure account is already present. `TooMany` means
+the delegator cannot add another proxy entry because the registered-proxy list is already at its
+runtime maximum ([Duplicate](https://docs.learnbittensor.org/subtensor-api/errors#duplicate),
+[Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs)).
+
+- **Duplicate** — the proxy relationship or pure account is already registered.
+- **TooMany** — the proxy list or pending-announcement queue is at capacity.
+
+## Distinction from Not Proxy
+
+`TooMany` and `NotProxy` can both appear around delayed proxy workflows, but on different checks.
+`NotProxy` is returned when the signer is not a registered proxy for the targeted real account.
+`TooMany` is returned on `announce` when the signer is a valid proxy but the pending-announcement
+queue is already full
+([Subtensor API Errors: NotProxy](https://docs.learnbittensor.org/subtensor-api/errors#notproxy),
+[Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs)).
+
+- **NotProxy** — the required proxy relationship is not found.
+- **TooMany** — the pending-announcement queue is at its runtime maximum.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the capacity checks on `add_proxy` and
+`announce`. It does not report how many proxies or pending announcements any live account currently
+holds; readers can inspect proxy storage separately for the accounts they manage
+([Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs),
+[Glossary: Pure Proxies](https://docs.learnbittensor.org/resources/glossary#pure-proxies)).
+
+## Further Reading
+
+- [Subtensor API Errors: TooMany](https://docs.learnbittensor.org/subtensor-api/errors#toomany)
+- [Subtensor API Errors: Duplicate](https://docs.learnbittensor.org/subtensor-api/errors#duplicate)
+- [Subtensor API Errors: NotProxy](https://docs.learnbittensor.org/subtensor-api/errors#notproxy)
+- [Glossary: Pure Proxies](https://docs.learnbittensor.org/resources/glossary#pure-proxies)
+- [Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs)
