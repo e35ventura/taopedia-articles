@@ -1,0 +1,83 @@
+---
+title: "Subnet Moving Alpha"
+summary:
+  "How SubnetMovingAlpha is a single global coefficient that bounds how fast each subnet's moving
+  price tracks its spot price under Dynamic TAO."
+category: "Tokenomics"
+tags: ["Tokenomics", "Subnets"]
+infoboxTitle: Subnet Moving Alpha
+infoboxCaption: Global coefficient that caps how fast subnet moving prices track spot prices.
+infoboxRows:
+  - label: Storage
+    value: SubnetMovingAlpha
+  - label: Scope
+    value: Global (single network-wide value)
+  - label: Default
+    value: "0.000003"
+  - label: Set by
+    value: Root
+  - label: Setter
+    value: sudo_set_subnet_moving_alpha
+---
+
+# Subnet Moving Alpha
+
+Subnet moving alpha is a single global coefficient, stored on chain as `SubnetMovingAlpha`, that
+caps how quickly a subnet's moving price can track its spot price. It is not a per-subnet value: one
+`SubnetMovingAlpha` applies across the whole network
+([Subtensor source: pallets/subtensor/src/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/lib.rs)).
+
+## What It Controls
+
+Each subnet keeps a moving price, an exponential moving average (EMA) of its alpha price that the
+runtime uses to weight how block emissions are split across subnets. `SubnetMovingAlpha` is the
+smoothing coefficient in that EMA: a larger value lets a subnet's moving price follow its spot price
+more quickly, while a smaller value makes the moving price slower and steadier, so emission shares
+react less to short-term price swings
+([Subtensor source: staking/stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)).
+
+## How It Enters the EMA
+
+When the runtime updates a subnet's moving price, it does not apply `SubnetMovingAlpha` directly.
+The effective smoothing weight is `SubnetMovingAlpha` scaled by the subnet's age, computed as
+`blocks_since_start_call / (blocks_since_start_call + halving_time)`, where `halving_time` is the
+subnet's `EMAPriceHalvingBlocks`. So the weight starts near zero when a subnet begins and rises
+toward `SubnetMovingAlpha` as the subnet ages
+([Subtensor source: staking/stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)).
+
+Because the ceiling is global while the age ramp is per-subnet, `SubnetMovingAlpha` sets the same
+upper bound on tracking speed for every subnet, and each subnet approaches it on its own schedule
+([Subtensor source: staking/stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)).
+
+## Default and Setter
+
+The runtime default is `0.000003`, chosen so that a subnet's moving price reaches about half of a
+price change in roughly thirty days and about ninety percent in roughly three and a half months. The
+value is a single network-wide setting changed only by the root origin through the
+`sudo_set_subnet_moving_alpha` extrinsic
+([Subtensor source: pallets/subtensor/src/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/lib.rs),
+[Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+## Distinction from EMA Price Halving Period
+
+`SubnetMovingAlpha` and the EMA price halving period (`EMAPriceHalvingBlocks`) both shape the moving
+price EMA, but at different scopes. `SubnetMovingAlpha` is the single global ceiling on the
+smoothing weight. `EMAPriceHalvingBlocks` is a per-subnet setting that controls how quickly a
+subnet's smoothing weight ramps up toward that ceiling
+([Subtensor source: staking/stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)).
+
+- **Subnet moving alpha** — the global ceiling on how fast any moving price can track spot price.
+- **EMA price halving period** — the per-subnet ramp speed toward that ceiling.
+
+## Reader Boundary
+
+This page defines the global `SubnetMovingAlpha` coefficient and its role in the moving price EMA.
+It does not document the full emission-allocation pipeline or the exact fixed-point representation
+of the stored value
+([Subtensor source: staking/stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)).
+
+## Further Reading
+
+- [Subtensor source: staking/stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)
+- [Subtensor source: pallets/subtensor/src/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/lib.rs)
+- [Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)
