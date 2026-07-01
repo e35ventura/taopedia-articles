@@ -1,0 +1,89 @@
+---
+title: "Bonds Moving Average Max Reached"
+summary:
+  "How the BondsMovingAverageMaxReached error blocks sudo_set_bonds_moving_average when the
+  submitted value exceeds the maximum allowed bonds moving average."
+category: "Consensus"
+tags: ["Consensus", "Errors"]
+infoboxTitle: Bonds Moving Average Max Reached
+infoboxCaption: Error raised when a bonds moving average update exceeds the allowed maximum.
+infoboxRows:
+  - label: Error
+    value: BondsMovingAverageMaxReached
+  - label: Trigger
+    value: Submitted value is above the bonds moving average ceiling
+  - label: Checked in
+    value: sudo_set_bonds_moving_average
+  - label: Related hyperparameter
+    value: BondsMovingAverage
+---
+
+# Bonds Moving Average Max Reached
+
+`BondsMovingAverageMaxReached` is a documented Subtensor standard error raised when
+`sudo_set_bonds_moving_average` receives a value above the allowed ceiling. The standard-errors
+reference lists it as a range check on the bonds moving average hyperparameter
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#bondsmovingaveragemaxreached),
+[Subtensor API Errors: BondsMovingAverageMaxReached](https://docs.learnbittensor.org/subtensor-api/errors#bondsmovingaveragemaxreached)).
+
+## What It Means
+
+The bonds moving average is a per-subnet hyperparameter that determines how quickly validator-miner
+bond weights update each epoch. The higher the value, the more new weight is carried into the next
+epoch's bonds; the lower the value, the slower the bonds change
+([Subnet Hyperparameters: BondsMovingAverage](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#bondsmovingaverage)).
+
+`BondsMovingAverageMaxReached` is the range rejection for a bonds moving average update where the
+submitted value is above the documented ceiling. The call is rejected before any state change
+occurs.
+
+This is a bounds check on a submitted parameter value, not proof that the caller lacks permission or
+that liquid alpha is disabled on the subnet.
+
+## Why It Appears
+
+This error appears when `sudo_set_bonds_moving_average` is called with a value above the bonds
+moving average ceiling. That can happen when automation passes an unclamped integer, when a client
+scales the value incorrectly before submission, or when a configuration tool generates an
+out-of-range default
+([Subnet Hyperparameters: BondsMovingAverage](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#bondsmovingaverage)).
+
+The practical meaning is narrow: the submitted value must be at or below the documented maximum
+before the call succeeds.
+
+## Distinction from Negative Sigmoid Steepness
+
+`BondsMovingAverageMaxReached` and `NegativeSigmoidSteepness` both appear on liquid-alpha
+hyperparameter setter paths, but they guard different parameters and different bounds.
+`BondsMovingAverageMaxReached` is the upper-bound rejection on `BondsMovingAverage`.
+`NegativeSigmoidSteepness` is the sign rejection on `AlphaSigmoidSteepness` for non-root callers
+([Subtensor Standard Errors: NegativeSigmoidSteepness](https://docs.learnbittensor.org/errors/subtensor#negativesigmoidsteepness)).
+
+- **BondsMovingAverageMaxReached** — bonds moving average value exceeds the ceiling.
+- **NegativeSigmoidSteepness** — steepness value is negative for a non-root caller.
+
+## Distinction from Alpha Low Out Of Range
+
+`BondsMovingAverageMaxReached` and `AlphaLowOutOfRange` both block liquid-alpha related
+hyperparameter updates for out-of-range values, but on different parameters. `AlphaLowOutOfRange`
+rejects an `alpha_low` value outside the allowed interval on the alpha-values setter.
+`BondsMovingAverageMaxReached` rejects a `bonds_moving_average` value above its ceiling
+([Subtensor Standard Errors: AlphaLowOutOfRange](https://docs.learnbittensor.org/errors/subtensor#alphalowoutofrange)).
+
+- **BondsMovingAverageMaxReached** — bonds moving average exceeds its maximum.
+- **AlphaLowOutOfRange** — alpha low is outside its allowed interval.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the upper-bound check that raises it. It does
+not report the live bonds moving average value on any subnet or the exact ceiling enforced by the
+runtime; those depend on chain state and should be checked through the hyperparameter reference at
+the time of the call
+([Subnet Hyperparameters: BondsMovingAverage](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#bondsmovingaverage),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#bondsmovingaveragemaxreached)
+- [Subtensor API Errors: BondsMovingAverageMaxReached](https://docs.learnbittensor.org/subtensor-api/errors#bondsmovingaveragemaxreached)
+- [Subnet Hyperparameters: BondsMovingAverage](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#bondsmovingaverage)
