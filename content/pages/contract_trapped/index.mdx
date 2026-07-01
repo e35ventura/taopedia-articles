@@ -1,0 +1,81 @@
+---
+title: "Contract Trapped"
+summary:
+  "How the ContractTrapped error signals that a smart contract call failed with an internal fault
+  while it was still running."
+category: "Smart Contracts"
+tags: ["Smart Contracts", "Errors"]
+infoboxTitle: Contract Trapped
+infoboxCaption: Error raised when a contract call fails with an internal fault during execution.
+infoboxRows:
+  - label: Error
+    value: ContractTrapped
+  - label: Pallet
+    value: contracts
+  - label: Trigger
+    value: Contract call faults before finishing cleanly
+  - label: Related outcome
+    value: Mid-run contract failure
+---
+
+# Contract Trapped
+
+ContractTrapped means a smart contract call failed with an internal fault while it was still
+running. The API errors reference describes it as "Contract trapped during execution"
+([Subtensor API Errors: ContractTrapped](https://docs.learnbittensor.org/subtensor-api/errors#contracttrapped)).
+
+## What It Means
+
+Smart contracts on Subtensor can finish cleanly, revert their own changes, or fail partway through a
+call. ContractTrapped belongs to that last case: the contract hit an internal fault before the call
+could finish in a normal way
+([Subtensor API Errors: ContractTrapped](https://docs.learnbittensor.org/subtensor-api/errors#contracttrapped)).
+
+For a reader, the practical meaning is narrow. The call did not succeed, but the reason is a fault
+inside the contract run rather than a separate policy or balance check elsewhere on the chain.
+
+This is a mid-run contract failure. It does not, by itself, mean the contract finished and chose to
+revert its changes, that the call ran out of gas, or that no contract existed at the target address.
+
+## Why It Appears
+
+This error appears when contract logic faults during a call instead of completing cleanly or
+reverting on purpose
+([Subtensor API Errors: ContractTrapped](https://docs.learnbittensor.org/subtensor-api/errors#contracttrapped)).
+
+When debugging, compare against nearby contract outcomes. [[contract_reverted|Contract Reverted]]
+means the contract finished and rolled back its own storage changes. [[out_of_gas|Out Of Gas]] means
+the call used up its gas budget before finishing
+([Subtensor API Errors: ContractReverted](https://docs.learnbittensor.org/subtensor-api/errors#contractreverted),
+[Subtensor API Errors: OutOfGas](https://docs.learnbittensor.org/subtensor-api/errors#outofgas)).
+
+## Distinction from Contract Reverted
+
+ContractTrapped and [[contract_reverted|Contract Reverted]] both stop a contract call from
+succeeding, but they describe different outcomes. Contract Reverted means the contract reached the
+end of the call and deliberately discarded its storage changes. Contract Trapped means the call
+failed with an internal fault before that kind of clean finish
+([Subtensor API Errors: ContractTrapped](https://docs.learnbittensor.org/subtensor-api/errors#contracttrapped),
+[Subtensor API Errors: ContractReverted](https://docs.learnbittensor.org/subtensor-api/errors#contractreverted)).
+
+## Distinction from Out Of Gas
+
+ContractTrapped and [[out_of_gas|Out Of Gas]] both leave a contract call without the intended
+result, but for different reasons. Out Of Gas means the call exhausted its gas budget before
+finishing. Contract Trapped means the call faulted during the run itself
+([Subtensor API Errors: ContractTrapped](https://docs.learnbittensor.org/subtensor-api/errors#contracttrapped),
+[Subtensor API Errors: OutOfGas](https://docs.learnbittensor.org/subtensor-api/errors#outofgas)).
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the mid-run contract failure it represents. It
+does not diagnose the exact line of contract logic that faulted or estimate gas for a specific call;
+those depend on contract code and call parameters at submission time
+([Bittensor EVM Smart Contracts](https://docs.learnbittensor.org/evm-tutorials),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: ContractTrapped](https://docs.learnbittensor.org/subtensor-api/errors#contracttrapped)
+- [Subtensor API Errors: ContractReverted](https://docs.learnbittensor.org/subtensor-api/errors#contractreverted)
+- [Subtensor API Errors: OutOfGas](https://docs.learnbittensor.org/subtensor-api/errors#outofgas)
