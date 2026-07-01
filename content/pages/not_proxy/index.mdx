@@ -1,0 +1,96 @@
+---
+title: "Not Proxy"
+summary:
+  "How the NotProxy error blocks proxy actions when the required proxy relationship does not exist
+  for the submitting account and target account."
+category: "Wallets"
+tags: ["Wallets", "Errors"]
+infoboxTitle: Not Proxy
+infoboxCaption:
+  Error raised when an account tries to act through a proxy relationship it does not have.
+infoboxRows:
+  - label: Error
+    value: NotProxy
+  - label: Trigger
+    value: required proxy definition for delegate and real account is not found
+  - label: Checked in
+    value: proxy and announce flows
+  - label: Check type
+    value: Missing proxy-relationship lookup
+---
+
+# Not Proxy
+
+`NotProxy` is a documented proxy-pallet error raised when a required proxy relationship cannot be
+found. The Subtensor API errors reference lists it under proxy errors
+([Subtensor API Errors: NotProxy](https://docs.learnbittensor.org/subtensor-api/errors#notproxy)).
+
+## What It Means
+
+Proxy flows rely on an existing relationship between the delegate account that submits the call and
+the real account on whose behalf the action is attempted. `NotProxy` means the runtime looked for
+that relationship and did not find a matching proxy definition, so the proxy action could not go
+forward
+([Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs)).
+
+This is a missing-proxy-relationship rejection, not a statement that the delegate is trying to proxy
+itself and not a statement that a derived proxy account ID failed to decode. The runtime rejects the
+call because the needed proxy record is not present for that delegate and target combination
+([Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs)).
+
+The practical meaning is narrow: the caller is not recognized as a valid proxy for the target
+account in that context.
+
+## Why It Appears
+
+This error appears when a proxy announce or proxy execution path requires a stored proxy definition,
+but none matches the delegate account and real account being used
+([Subtensor API Errors: NotProxy](https://docs.learnbittensor.org/subtensor-api/errors#notproxy),
+[Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs)).
+
+The tests show this on more than one path. One test fails with `NotProxy` when an account tries to
+announce a proxied call without being a registered proxy. Other tests fail with the same error when
+`proxy` is called by an account that is not the stored delegate for the target account or when the
+forced proxy type does not match a stored proxy definition
+([Subtensor test: proxy/tests.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/tests.rs)).
+
+This is not the error for self-proxy setup, and it is not the error for an invalid derived proxy
+account identifier. It is the specific failure for a missing or non-matching proxy relationship.
+
+## Distinction from No Self Proxy
+
+`NotProxy` and `NoSelfProxy` both belong to proxy flows, but they reject different conditions.
+`NoSelfProxy` means a proxy relationship is being created with the same account on both sides.
+`NotProxy` means the runtime cannot find the proxy relationship that the attempted action requires
+([Subtensor API Errors: NoSelfProxy](https://docs.learnbittensor.org/subtensor-api/errors#noselfproxy),
+[Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs)).
+
+- **NoSelfProxy** — the proposed proxy relationship points an account to itself.
+- **NotProxy** — the required proxy relationship does not exist.
+
+## Distinction from Invalid Derived Account Id
+
+`NotProxy` and `InvalidDerivedAccountId` can both appear in proxy-related logic, but they happen at
+different stages. `InvalidDerivedAccountId` means the runtime could not decode bytes into a valid
+proxy-derived account identifier. `NotProxy` means account decoding is not the problem; the required
+proxy definition itself is missing or does not match
+([Subtensor API Errors: InvalidDerivedAccountId](https://docs.learnbittensor.org/subtensor-api/errors#invalidderivedaccountid),
+[Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs)).
+
+- **InvalidDerivedAccountId** — a derived proxy account ID cannot be decoded.
+- **NotProxy** — the required proxy relationship is not found.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the proxy-relationship lookup failure that
+raises it. It does not describe every proxy type, announcement rule, or deposit rule; those are
+separate parts of the proxy pallet's behavior
+([Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs)).
+
+## Further Reading
+
+- [Subtensor API Errors: NotProxy](https://docs.learnbittensor.org/subtensor-api/errors#notproxy)
+- [Subtensor API Errors: NoSelfProxy](https://docs.learnbittensor.org/subtensor-api/errors#noselfproxy)
+- [Subtensor API Errors: InvalidDerivedAccountId](https://docs.learnbittensor.org/subtensor-api/errors#invalidderivedaccountid)
+- [Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs)
+- [Subtensor test: proxy/tests.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/tests.rs)
