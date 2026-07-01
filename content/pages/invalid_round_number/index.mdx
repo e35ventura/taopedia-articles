@@ -1,0 +1,65 @@
+---
+title: "Invalid Round Number"
+summary:
+  "How the InvalidRoundNumber error blocks a drand pulse submission when the pulse's round number
+  does not strictly exceed the last stored round, violating the monotonically increasing round
+  sequence required by the drand beacon."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Invalid Round Number
+infoboxCaption:
+  Error raised when a drand pulse's round number does not exceed the last stored round.
+infoboxRows:
+  - label: Error
+    value: InvalidRoundNumber
+  - label: Trigger
+    value: pulse.round <= last_stored_round
+  - label: Checked in
+    value: write_pulse extrinsic
+  - label: Check type
+    value: Round number monotonicity guard
+---
+
+# Invalid Round Number
+
+`InvalidRoundNumber` is a drand pallet error raised when a submitted beacon pulse carries a round
+number that does not strictly exceed the last stored round. The pallet defines it as "the round
+number did not increment"
+([Subtensor source: drand/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/drand/src/lib.rs)).
+
+## What It Means
+
+The drand pallet stores randomness pulses from the drand beacon and requires them to arrive in
+strictly increasing round order. The `write_pulse` extrinsic, submitted by the offchain worker,
+processes each pulse in the payload in sequence. After the cryptographic signature of a pulse is
+verified, the pallet checks that the pulse's round number is strictly greater than
+`LastStoredRound`. If the round number is equal to or less than the last stored round,
+`InvalidRoundNumber` fires and the call is rejected
+([Subtensor source: drand/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/drand/src/lib.rs)).
+
+This ensures the on-chain round sequence is monotonically increasing and that no pulse can be
+replayed or inserted out of order
+([Subtensor source: drand/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/drand/src/lib.rs)).
+
+## Distinction from Pulse Verification Error
+
+`InvalidRoundNumber` and `PulseVerificationError` both block `write_pulse` for a given pulse, but at
+different validation steps. `PulseVerificationError` fires when the cryptographic verification of
+the pulse itself fails — the pulse's BLS signature does not verify against the beacon's public key.
+`InvalidRoundNumber` fires after the signature is verified successfully, when the pulse's round
+position in the sequence is not valid
+([Subtensor source: drand/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/drand/src/lib.rs)).
+
+- **PulseVerificationError** — the pulse's cryptographic signature is invalid.
+- **InvalidRoundNumber** — the pulse's round number does not advance the stored sequence.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the round monotonicity check that raises it. It
+does not describe how drand beacon pulses are fetched, how the BLS signature scheme works, or how
+randomness from stored pulses is consumed by other pallets
+([Subtensor source: drand/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/drand/src/lib.rs)).
+
+## Further Reading
+
+- [Subtensor source: drand/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/drand/src/lib.rs)
