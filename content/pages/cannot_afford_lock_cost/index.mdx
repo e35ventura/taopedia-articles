@@ -1,0 +1,134 @@
+---
+title: "Cannot Afford Lock Cost"
+summary:
+  "How the CannotAffordLockCost error blocks do_register_network when the signing coldkey does not
+  hold enough free TAO to pay the current subnet-registration lock cost."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Cannot Afford Lock Cost
+infoboxCaption: Error raised when a coldkey cannot fund the subnet lock cost.
+infoboxRows:
+  - label: Error
+    value: CannotAffordLockCost
+  - label: Trigger
+    value: Coldkey free balance is below get_network_lock_cost()
+  - label: Checked in
+    value: do_register_network
+  - label: Check type
+    value: Pre-transfer affordability test on coldkey balance
+---
+
+# Cannot Afford Lock Cost
+
+`CannotAffordLockCost` means the signing coldkey cannot cover the TAO lock cost required to register
+a new subnet. In `do_register_network`, the runtime reads the current lock cost through
+`get_network_lock_cost()` and returns this error when `can_remove_balance_from_coldkey_account`
+fails for that amount
+([Subtensor source: subnet.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/subnet.rs),
+[Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet)).
+
+The check runs after mechanism, registration-window, rate-limit, and subnet-capacity gates and
+before any subnet is pruned, initialized, or charged
+([Subtensor source: subnet.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/subnet.rs)).
+
+## What It Means
+
+Subnet registration is a coldkey-signed add-network transaction that locks TAO from the caller's
+coldkey account. The create-a-subnet guide describes that cost as dynamic and tied to recent
+subnet-creation demand, with a documented floor through network min lock cost
+([Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet),
+[Network Min Lock Cost](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#networkminlockcost)).
+
+In `do_register_network`, step 6 computes `lock_amount` with `get_network_lock_cost()` and rejects
+the call when the coldkey cannot remove that much free balance
+([Subtensor source: subnet.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/subnet.rs),
+[Subtensor source: root.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/root.rs)).
+
+`get_network_lock_cost()` combines the last recorded lock, the network min lock floor, elapsed
+blocks since the last lock, and the lock reduction interval. The helper returns the TAO amount the
+registration path expects at submission time
+([Subtensor source: root.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/root.rs)).
+
+## Why It Appears
+
+This error appears when a coldkey signs a subnet-registration call but its spendable TAO balance is
+below the current lock cost. That can happen when the quoted lock cost rose after the client built
+the transaction, when fees or prior transfers reduced free balance, or when the wallet simply did
+not reserve enough TAO for the dynamic lock amount
+([Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet)).
+
+When debugging, rule out earlier gates on the same extrinsic. `MechanismDoesNotExist` means the
+submitted mechanism index is not supported on the registration path. `SubNetRegistrationDisabled`
+means subnet registration has not reached its start block. `NetworkTxRateLimitExceeded` means the
+network-wide subnet-creation cooldown has not elapsed. `SubnetLimitReached` means the chain is at
+its subnet cap with no eligible subnet to prune
+([Subtensor Standard Errors: MechanismDoesNotExist](https://docs.learnbittensor.org/errors/subtensor#mechanismdoesnotexist),
+[Subtensor Standard Errors: SubNetRegistrationDisabled](https://docs.learnbittensor.org/errors/subtensor#subnetregistrationdisabled),
+[Subtensor Standard Errors: NetworkTxRateLimitExceeded](https://docs.learnbittensor.org/errors/subtensor#networktxratelimitexceeded)).
+
+The practical meaning is narrow: the coldkey does not have enough free TAO for the current subnet
+lock cost.
+
+## Distinction from Network Tx Rate Limit Exceeded
+
+`CannotAffordLockCost` and `NetworkTxRateLimitExceeded` both appear on subnet-creation paths, but
+they test different conditions. `NetworkTxRateLimitExceeded` is the timing gate on how often a new
+subnet can be created. `CannotAffordLockCost` is the balance gate on whether the coldkey can fund
+the current lock cost
+([Subtensor Standard Errors: NetworkTxRateLimitExceeded](https://docs.learnbittensor.org/errors/subtensor#networktxratelimitexceeded),
+[Subtensor source: subnet.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/subnet.rs)).
+
+- **CannotAffordLockCost** — the coldkey lacks enough free TAO for the lock cost.
+- **NetworkTxRateLimitExceeded** — the subnet-creation cooldown has not elapsed.
+
+## Distinction from Subnet Limit Reached
+
+`CannotAffordLockCost` and `SubnetLimitReached` are both raised in `do_register_network`, but at
+different stages. `SubnetLimitReached` is the capacity rejection when the chain is at its subnet cap
+and no eligible subnet can be pruned. `CannotAffordLockCost` is the later affordability check after
+capacity logic has already passed or identified a prune target
+([Subtensor source: subnet.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/subnet.rs)).
+
+- **SubnetLimitReached** — no subnet slot is available without a prune candidate.
+- **CannotAffordLockCost** — the coldkey cannot fund the lock cost.
+
+## Distinction from Not Enough Balance To Stake
+
+`CannotAffordLockCost` and `NotEnoughBalanceToStake` both signal a coldkey funding failure, but on
+different extrinsics. `CannotAffordLockCost` applies to subnet registration through
+`do_register_network`. `NotEnoughBalanceToStake` applies to neuron registration and add-stake paths
+that compare the requested TAO amount against coldkey free balance on existing subnets
+([Subtensor Standard Errors: NotEnoughBalanceToStake](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake),
+[Subtensor source: registration.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)).
+
+- **CannotAffordLockCost** — the coldkey cannot pay the subnet-registration lock cost.
+- **NotEnoughBalanceToStake** — the coldkey cannot fund the TAO amount named in a stake call.
+
+## Distinction from Balance Withdrawal Error
+
+`CannotAffordLockCost` and `BalanceWithdrawalError` both involve moving TAO from a coldkey, but at
+different points in the registration flow. `CannotAffordLockCost` is the pre-transfer affordability
+check before subnet initialization. `BalanceWithdrawalError` is documented as a withdrawal failure
+from the coldkey account and can surface when the later lock transfer cannot complete even though
+the earlier affordability test passed
+([Subtensor Standard Errors: BalanceWithdrawalError](https://docs.learnbittensor.org/errors/subtensor#balancewithdrawalerror),
+[Subtensor source: subnet.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/subnet.rs)).
+
+- **CannotAffordLockCost** — the coldkey cannot afford the quoted lock cost at the pre-check stage.
+- **BalanceWithdrawalError** — the runtime could not withdraw TAO from the coldkey account.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the lock-cost affordability check in
+`do_register_network`. It does not quote a live lock cost for any network, describe subnet pruning
+rules in full, or explain how to fund a coldkey; those are documented separately
+([Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet),
+[Network Min Lock Cost](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#networkminlockcost)).
+
+## Further Reading
+
+- [Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet)
+- [Subtensor source: subnet.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/subnet.rs)
+- [Subtensor source: root.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/root.rs)
+- [Subtensor Standard Errors: NetworkTxRateLimitExceeded](https://docs.learnbittensor.org/errors/subtensor#networktxratelimitexceeded)
+- [Subtensor Standard Errors: NotEnoughBalanceToStake](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake)
