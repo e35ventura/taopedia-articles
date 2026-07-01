@@ -1,0 +1,118 @@
+---
+title: "Tx Rate Limit Exceeded"
+summary:
+  "How the TxRateLimitExceeded error blocks a rate-limited extrinsic when the caller retries before
+  the subnet-scoped cooldown for that transaction type has elapsed."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Tx Rate Limit Exceeded
+infoboxCaption: Error raised when a rate-limited transaction is retried too soon.
+infoboxRows:
+  - label: Error
+    value: TxRateLimitExceeded
+  - label: Trigger
+    value: Rate-limited call retried before its cooldown clears
+  - label: Scope
+    value: Per-transaction-type subnet pacing
+  - label: Related reference
+    value: Chain rate limits
+---
+
+# Tx Rate Limit Exceeded
+
+`TxRateLimitExceeded` is a documented Subtensor standard error raised when a rate-limited
+transaction is retried before its cooldown clears. The standard-errors reference describes it as
+"Default transaction rate limit exceeded"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#txratelimitexceeded),
+[Subtensor API Errors: TxRateLimitExceeded](https://docs.learnbittensor.org/subtensor-api/errors#txratelimitexceeded)).
+
+## What It Means
+
+Bittensor paces many extrinsics through per-transaction-type cooldowns tracked per account and
+subnet. The chain rate limits reference documents these limits in blocks and ties each one to the
+transaction family it governs
+([Chain Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+
+`TxRateLimitExceeded` is the default rejection label when one of those subnet-scoped cooldown checks
+fails. The error names a timing breach on the specific transaction type being attempted, not proof
+that the signer lacks permission, that a hotkey is unregistered, or that a subnet is missing.
+
+One documented example is the child-hotkey path: setting or revoking children is allowed every 150
+blocks, about 30 minutes, and a retry inside that window can return `TxRateLimitExceeded` on
+`set_children`
+([Child Hotkeys: Rate limits](https://docs.learnbittensor.org/validators/child-hotkeys#rate-limits),
+[Subtensor source: set_children.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/set_children.rs)).
+
+The same error label also appears on other rate-limited owner and admin paths that use the shared
+subnet transaction pacing helper, so readers should identify which extrinsic failed before treating
+every `TxRateLimitExceeded` as the same cooldown length
+([Chain Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+
+## Why It Appears
+
+This error appears when a caller submits a rate-limited extrinsic again before the relevant
+transaction type's cooldown has elapsed for that account on the targeted netuid. That can happen
+when automation retries child-hotkey updates, when subnet-owner tooling resubmits hyperparameter
+changes, or when a client replays a transaction without checking the last successful block for that
+transaction family
+([Child Hotkeys: Rate limits](https://docs.learnbittensor.org/validators/child-hotkeys#rate-limits),
+[Chain Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+
+When debugging, compare against other documented rate-limit errors on the same call family.
+`HotKeySetTxRateLimitExceeded` is the separate label on hotkey swap.
+`TxChildkeyTakeRateLimitExceeded` paces childkey-take increases. `NetworkTxRateLimitExceeded` paces
+subnet registration, and `ServingRateLimitExceeded` paces axon and prometheus updates
+([Subtensor Standard Errors: HotKeySetTxRateLimitExceeded](https://docs.learnbittensor.org/errors/subtensor#hotkeysettxratelimitexceeded),
+[Subtensor Standard Errors: TxChildkeyTakeRateLimitExceeded](https://docs.learnbittensor.org/errors/subtensor#txchildkeytakeratelimitexceeded),
+[Subtensor Standard Errors: NetworkTxRateLimitExceeded](https://docs.learnbittensor.org/errors/subtensor#networktxratelimitexceeded),
+[Subtensor Standard Errors: ServingRateLimitExceeded](https://docs.learnbittensor.org/errors/subtensor#servingratelimitexceeded)).
+
+The practical meaning is narrow: wait for the documented cooldown for that transaction type, then
+retry.
+
+## Distinction from Hotkey Set Tx Rate Limit Exceeded
+
+`TxRateLimitExceeded` and `HotKeySetTxRateLimitExceeded` both involve transaction pacing, but on
+different paths. `HotKeySetTxRateLimitExceeded` is the dedicated label on hotkey swap when the short
+general transaction cooldown has not cleared. `TxRateLimitExceeded` is the default label used by
+other rate-limited extrinsics such as child-hotkey updates and several subnet-admin paths
+([Subtensor Standard Errors: HotKeySetTxRateLimitExceeded](https://docs.learnbittensor.org/errors/subtensor#hotkeysettxratelimitexceeded)).
+
+- **TxRateLimitExceeded** — default pacing rejection on other rate-limited extrinsics.
+- **HotKeySetTxRateLimitExceeded** — hotkey swap blocked by the short coldkey cooldown.
+
+## Distinction from Tx Childkey Take Rate Limit Exceeded
+
+`TxRateLimitExceeded` and `TxChildkeyTakeRateLimitExceeded` both appear on child-hotkey paths, but
+for different operations. `TxRateLimitExceeded` paces `set_children` and related child-list updates.
+`TxChildkeyTakeRateLimitExceeded` paces increases to a child hotkey's take rate on a subnet
+([Subtensor Standard Errors: TxChildkeyTakeRateLimitExceeded](https://docs.learnbittensor.org/errors/subtensor#txchildkeytakeratelimitexceeded)).
+
+- **TxRateLimitExceeded** — child-list or other transaction-type cooldown not cleared.
+- **TxChildkeyTakeRateLimitExceeded** — childkey-take increase retried too soon.
+
+## Distinction from Network Tx Rate Limit Exceeded
+
+`TxRateLimitExceeded` and `NetworkTxRateLimitExceeded` both signal pacing failures, but on different
+scopes. `NetworkTxRateLimitExceeded` is the network-wide cooldown on subnet registration.
+`TxRateLimitExceeded` is the default label on per-account, per-subnet transaction pacing for other
+extrinsic families
+([Subtensor Standard Errors: NetworkTxRateLimitExceeded](https://docs.learnbittensor.org/errors/subtensor#networktxratelimitexceeded)).
+
+- **TxRateLimitExceeded** — a subnet-scoped transaction cooldown has not cleared.
+- **NetworkTxRateLimitExceeded** — subnet registration arrived too soon network-wide.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the shared pacing gate it represents. It does
+not report the live cooldown length for every transaction type on every network; those values are
+chain parameters and transaction-family limits readers should look up separately
+([Chain Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor Standard Errors: TxRateLimitExceeded](https://docs.learnbittensor.org/errors/subtensor#txratelimitexceeded)
+- [Chain Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)
+- [Child Hotkeys: Rate limits](https://docs.learnbittensor.org/validators/child-hotkeys#rate-limits)
+- [Subtensor source: set_children.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/set_children.rs)
