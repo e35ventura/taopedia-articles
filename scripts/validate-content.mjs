@@ -288,10 +288,19 @@ async function main() {
     try {
       const raw = await fs.readFile(articlePath, "utf8");
       const { data } = matter(raw);
-      articles.push({ slug, articleDir, articlePath, published: isPublishedArticle(slug, data) });
+      const title = typeof data.title === "string" ? data.title.trim() : "";
+      const titleTarget = title ? slugifyWikiLink(title) : null;
+      articles.push({
+        slug,
+        articleDir,
+        articlePath,
+        published: isPublishedArticle(slug, data),
+        title,
+        titleTarget,
+      });
       knownTargets.add(slug);
-      if (typeof data.title === "string" && data.title.trim()) {
-        knownTargets.add(slugifyWikiLink(data.title.trim()));
+      if (titleTarget) {
+        knownTargets.add(titleTarget);
       }
     } catch {
       // Skip folders without article content.
@@ -314,6 +323,23 @@ async function main() {
       );
     }
     publishedSlugSources.set(slug, articlePath);
+  }
+
+  // A published article's title also resolves as a [[wiki link]] target via
+  // slugifyWikiLink (see knownTargets above), so two published articles whose titles
+  // collapse to the same target make [[Title]] ambiguous — the title-level analog of
+  // the duplicate-slug collision rejected above. Reject it here for the same reason.
+  const publishedTitleSources = new Map();
+  for (const { titleTarget, title, articlePath, published } of articles) {
+    if (!published || !titleTarget) continue;
+    const previous = publishedTitleSources.get(titleTarget);
+    if (previous) {
+      const [first, second] = [previous, articlePath].map((p) => path.relative(root, p)).sort();
+      throw new Error(
+        `Duplicate published article title "${title}" (wiki-link target "${titleTarget}"): "${first}" and "${second}" resolve to the same [[wiki link]] target. Give each published article a distinct title.`
+      );
+    }
+    publishedTitleSources.set(titleTarget, articlePath);
   }
 
   let count = 0;
