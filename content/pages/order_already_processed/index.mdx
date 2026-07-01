@@ -1,0 +1,101 @@
+---
+title: "Order Already Processed"
+summary:
+  "How the OrderAlreadyProcessed error blocks canceling or executing a limit order that was already
+  fulfilled or already cancelled."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Order Already Processed
+infoboxCaption: Error raised when a limit order's ID already has final processed state.
+infoboxRows:
+  - label: Error
+    value: OrderAlreadyProcessed
+  - label: Trigger
+    value: order_id already recorded as fulfilled or cancelled
+  - label: Checked in
+    value: cancel_order and limit-order validation before execution
+  - label: Check type
+    value: Existing order-status check
+---
+
+# Order Already Processed
+
+`OrderAlreadyProcessed` is a documented limit-orders error raised when a limit order has already
+been finalized in chain state. The Subtensor API errors reference lists it under the limit-orders
+pallet
+([Subtensor API Errors: OrderAlreadyProcessed](https://docs.learnbittensor.org/subtensor-api/errors#orderalreadyprocessed)).
+
+## What It Means
+
+Limit orders are identified by `order_id` values derived from the order payload.
+`OrderAlreadyProcessed` means that `order_id` is already recorded in storage as fulfilled or
+cancelled, so the runtime will not process the same order again
+([Subnet Liquidity Pools](https://docs.learnbittensor.org/subnets/understanding-subnets#liquidity-pools),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+The runtime uses this check on more than one path. `cancel_order` rejects the call if the order ID
+already exists in `Orders`. On the execution path, limit-order validation rejects an order that is
+already marked fulfilled before later checks continue
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs),
+[Subtensor source: limit-orders README](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/README.md)).
+
+The practical meaning is narrow: this order ID already reached a terminal processed state.
+
+## Why It Appears
+
+This error appears when someone tries to cancel or execute a limit order whose ID was already used
+in a prior successful or terminal action
+([Subtensor API Errors: OrderAlreadyProcessed](https://docs.learnbittensor.org/subtensor-api/errors#orderalreadyprocessed),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+The tests show the cancel path directly. A `cancel_order` call fails with `OrderAlreadyProcessed`
+when the order ID is already stored as cancelled, and it fails with the same error when the order ID
+is already stored as fulfilled
+([Subtensor test: limit-orders/extrinsics.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/tests/extrinsics.rs)).
+
+The validation tests also show the execution side: classification rejects an order when the same
+order ID is already stored as fulfilled, preventing a second execution attempt on an order that has
+already been processed
+([Subtensor test: limit-orders/auxiliary.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/tests/auxiliary.rs)).
+
+## Distinction from Order Cancelled
+
+`OrderAlreadyProcessed` and `OrderCancelled` both involve cancelled orders, but they are raised at
+different checks. `OrderCancelled` is the execution-path rejection for an order whose stored status
+is specifically cancelled. `OrderAlreadyProcessed` is the broader processed-state rejection used
+when the runtime treats the order ID as already consumed on the cancel path or already fulfilled on
+the execution path
+([Subtensor API Errors: OrderCancelled](https://docs.learnbittensor.org/subtensor-api/errors#ordercancelled),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+- **OrderCancelled** — the order's stored status is cancelled on the execution path.
+- **OrderAlreadyProcessed** — the order ID is already treated as processed and cannot be reused.
+
+## Distinction from Duplicate Order In Batch
+
+`OrderAlreadyProcessed` and `DuplicateOrderInBatch` can both stop order handling, but they describe
+different problems. `OrderAlreadyProcessed` refers to stored chain state from earlier handling of an
+order ID. `DuplicateOrderInBatch` means the current `execute_batched_orders` call repeats the same
+order ID inside one batch before execution starts
+([Duplicate Order In Batch](https://docs.learnbittensor.org/errors/subtensor#duplicateorderinbatch),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+- **OrderAlreadyProcessed** — prior chain state already marks the order ID as processed.
+- **DuplicateOrderInBatch** — the current batch repeats one order ID within the same call.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the stored-status check that raises it. It does
+not describe every other validation rule for limit orders or the full batched execution flow; those
+are separate parts of the limit-orders system
+([Subtensor source: limit-orders README](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/README.md)).
+
+## Further Reading
+
+- [Subtensor API Errors: OrderAlreadyProcessed](https://docs.learnbittensor.org/subtensor-api/errors#orderalreadyprocessed)
+- [Subtensor API Errors: OrderCancelled](https://docs.learnbittensor.org/subtensor-api/errors#ordercancelled)
+- [Subnet Liquidity Pools](https://docs.learnbittensor.org/subnets/understanding-subnets#liquidity-pools)
+- [Subtensor source: limit-orders README](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/README.md)
+- [Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)
+- [Subtensor test: limit-orders/extrinsics.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/tests/extrinsics.rs)
+- [Subtensor test: limit-orders/auxiliary.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/tests/auxiliary.rs)
