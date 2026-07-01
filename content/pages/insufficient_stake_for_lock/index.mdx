@@ -1,0 +1,116 @@
+---
+title: "Insufficient Stake For Lock"
+summary:
+  "How the InsufficientStakeForLock error blocks do_lock_stake when the coldkey's total alpha on the
+  subnet is below the lock amount being created or topped up."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Insufficient Stake For Lock
+infoboxCaption: Error raised when total subnet alpha cannot cover the lock request.
+infoboxRows:
+  - label: Error
+    value: InsufficientStakeForLock
+  - label: Trigger
+    value: total_coldkey_alpha_on_subnet is below the requested lock mass
+  - label: Checked in
+    value: do_lock_stake
+  - label: Related concept
+    value: Conviction and locked stake
+---
+
+# Insufficient Stake For Lock
+
+`InsufficientStakeForLock` means a lock-stake call named more alpha than the coldkey currently holds
+in total on the subnet. In `do_lock_stake`, the runtime reads `total_coldkey_alpha_on_subnet` and
+returns this error when that total is below the lock mass being created or topped up
+([Subtensor source: lock.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/lock.rs)).
+
+## What It Means
+
+Conviction locks constrain how far a coldkey's subnet alpha can fall while a lock is active
+([Conviction and locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking)).
+
+`do_lock_stake` creates a new lock or tops up an existing one on a specific hotkey for a subnet.
+Before writing lock state, the function compares the coldkey's total alpha on that subnet against
+the requested lock mass. `InsufficientStakeForLock` means that total is too low to cover the lock
+amount
+([Subtensor source: lock.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/lock.rs)).
+
+For a new lock, the check compares total alpha against the submitted amount. For a top-up, it
+compares total alpha against the new combined `locked_mass` after the increase
+([Subtensor source: lock.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/lock.rs)).
+
+## Why It Appears
+
+This error appears when a coldkey calls `do_lock_stake` with an amount larger than its total staked
+alpha on the subnet can support. That can happen when the lock request exceeds current holdings on
+that netuid or when a top-up pushes the combined lock mass above the coldkey's total alpha there
+([Subtensor source: lock.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/lock.rs),
+[Conviction and locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking)).
+
+When debugging, rule out earlier gates on the same extrinsic. `AmountTooLow` means the submitted
+lock amount is zero. `HotKeyAccountNotExists` means the named hotkey account is absent.
+`LockHotkeyMismatch` means an existing lock on the subnet is bound to a different hotkey
+([Subtensor source: lock.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/lock.rs)).
+
+The practical meaning is narrow: total subnet alpha is below the lock mass being requested.
+
+## Distinction from Stake Unavailable
+
+`InsufficientStakeForLock` and `StakeUnavailable` both involve conviction locks, but on opposite
+directions. `InsufficientStakeForLock` is raised in `do_lock_stake` when total alpha on the subnet
+is too low to create or increase a lock. `StakeUnavailable` is raised on unstake-related paths when
+the requested amount exceeds unlocked alpha after existing locks are subtracted
+([Subtensor source: lock.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/lock.rs)).
+
+- **InsufficientStakeForLock** — total alpha on the subnet is below the lock request.
+- **StakeUnavailable** — the request exceeds unlocked alpha on the subnet.
+
+## Distinction from Not Enough Stake To Withdraw
+
+`InsufficientStakeForLock` and `NotEnoughStakeToWithdraw` both compare stake amounts, but on
+different extrinsics and scopes. `NotEnoughStakeToWithdraw` means a hotkey-coldkey pair lacks enough
+total staked alpha for a removal request. `InsufficientStakeForLock` means the coldkey's total alpha
+across the subnet cannot cover the lock mass being written in `do_lock_stake`
+([Subtensor Standard Errors: NotEnoughStakeToWithdraw](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketowithdraw),
+[Subtensor source: lock.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/lock.rs)).
+
+- **InsufficientStakeForLock** — total subnet alpha is too low for the lock request.
+- **NotEnoughStakeToWithdraw** — total staked alpha on the pair is too low for removal.
+
+## Distinction from Lock Hotkey Mismatch
+
+`InsufficientStakeForLock` and `LockHotkeyMismatch` are both raised in `do_lock_stake`, but at
+different checks. `LockHotkeyMismatch` means the coldkey already has a lock on the subnet tied to a
+different hotkey. `InsufficientStakeForLock` means the hotkey binding passed but total alpha on the
+subnet is still below the requested lock mass
+([Subtensor source: lock.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/lock.rs)).
+
+- **LockHotkeyMismatch** — the existing lock is bound to another hotkey.
+- **InsufficientStakeForLock** — total alpha cannot cover the lock amount.
+
+## Distinction from Amount Too Low
+
+`InsufficientStakeForLock` and `AmountTooLow` both stop lock-stake calls, but for different reasons.
+`AmountTooLow` is the zero-amount rejection at the start of `do_lock_stake`.
+`InsufficientStakeForLock` is the later total-balance rejection when the submitted amount is
+positive but exceeds total subnet alpha
+([Subtensor source: lock.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/lock.rs),
+[Subtensor Standard Errors: AmountTooLow](https://docs.learnbittensor.org/errors/subtensor#amounttoolow)).
+
+- **AmountTooLow** — the submitted lock amount is zero.
+- **InsufficientStakeForLock** — total subnet alpha is below the lock request.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the total-alpha check in `do_lock_stake`. It
+does not report a wallet's live locked or total alpha on any subnet; those values depend on chain
+state at observation time
+([Conviction and locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking)).
+
+## Further Reading
+
+- [Subtensor source: lock.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/lock.rs)
+- [Conviction and locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking)
+- [Subtensor Standard Errors: NotEnoughStakeToWithdraw](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketowithdraw)
+- [Subtensor Standard Errors: AmountTooLow](https://docs.learnbittensor.org/errors/subtensor#amounttoolow)
