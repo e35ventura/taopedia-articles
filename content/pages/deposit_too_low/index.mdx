@@ -1,0 +1,99 @@
+---
+title: "Deposit Too Low"
+summary:
+  "How the DepositTooLow error blocks crowdloan creation when the submitted initial deposit falls
+  below the runtime minimum deposit required to open a campaign."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Deposit Too Low
+infoboxCaption: Error raised when a crowdloan create call submits too small an initial deposit.
+infoboxRows:
+  - label: Error
+    value: DepositTooLow
+  - label: Trigger
+    value: deposit < MinimumDeposit on create
+  - label: Checked in
+    value: create extrinsic
+  - label: Check type
+    value: Initial-deposit comparison against runtime minimum
+---
+
+# Deposit Too Low
+
+`DepositTooLow` is a crowdloan pallet error raised by the `create` extrinsic. The pallet defines it
+as "The crowdloan initial deposit is too low"
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+## What It Means
+
+Opening a [crowdloan](https://docs.learnbittensor.org/subnets/crowdloans) requires an initial
+creator deposit that is transferred into the campaign funds account. Before any other creation
+checks run, `create` compares the submitted deposit against the runtime `MinimumDeposit` parameter
+and returns `DepositTooLow` when the deposit is below that floor
+([Crowdloans: Crowdloan Lifecycle](https://docs.learnbittensor.org/subnets/crowdloans#crowdloan-lifecycle),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+This is a parameter-floor rejection on the deposit amount itself, not proof that the creator lacks
+enough free balance to pay the deposit, that the funding cap is too low, or that the minimum
+contribution is invalid.
+
+## Why It Appears
+
+This error appears when a creator submits a `create` call with a deposit below the runtime minimum.
+That can happen when a client uses an outdated minimum value, rounds a deposit down too far, or
+confuses the creator deposit with the per-contributor minimum contribution
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+When debugging, compare against other rejections on the same call. `CapTooLow` means the funding cap
+is not greater than the deposit. `MinimumContributionTooLow` means the submitted minimum
+contribution is below the runtime absolute minimum contribution floor. `InsufficientBalance` on
+`create` means the deposit meets the runtime minimum but the creator's account balance is still too
+low to transfer it
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+The practical meaning is narrow: raise the submitted deposit to at least the runtime minimum before
+retrying `create`.
+
+## Distinction from Insufficient Balance
+
+`DepositTooLow` and `InsufficientBalance` both appear during crowdloan creation, but at different
+checks. `DepositTooLow` means the deposit parameter itself is below the runtime minimum deposit.
+`InsufficientBalance` means the deposit parameter is acceptable but the creator cannot fund the
+transfer from their account balance
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+- **DepositTooLow** — the submitted deposit is below the runtime minimum.
+- **InsufficientBalance** — the creator cannot pay the submitted deposit from balance.
+
+## Distinction from Cap Too Low
+
+`DepositTooLow` and `CapTooLow` both appear on `create`, but at different checks. `DepositTooLow`
+means the initial deposit is below the runtime minimum. `CapTooLow` means the funding cap is not
+greater than the deposit
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+- **DepositTooLow** — the deposit is below the runtime minimum.
+- **CapTooLow** — the cap is not greater than the deposit.
+
+## Distinction from Minimum Contribution Too Low
+
+`DepositTooLow` and `MinimumContributionTooLow` both compare submitted amounts against runtime
+floors on `create`, but for different parameters. `DepositTooLow` applies to the creator's initial
+deposit. `MinimumContributionTooLow` applies to the crowdloan's minimum contribution setting
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+- **DepositTooLow** — the creator deposit is below the runtime minimum deposit.
+- **MinimumContributionTooLow** — the minimum contribution is below the runtime absolute minimum.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the initial-deposit comparison on `create`. It
+does not report the live `MinimumDeposit` value on any network; that is runtime configuration
+readers can query separately ([Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Crowdloans: Crowdloan Lifecycle](https://docs.learnbittensor.org/subnets/crowdloans#crowdloan-lifecycle)
+- [Crowdloans: Runtime parameters (defaults)](https://docs.learnbittensor.org/subnets/crowdloans#runtime-parameters-defaults)
+- [Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)
