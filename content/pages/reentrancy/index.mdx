@@ -1,0 +1,95 @@
+---
+title: "Reentrancy"
+summary:
+  "How the Reentrancy error blocks an EVM operation when the EVM runner detects a re-entrant call
+  while reentrancy is forbidden."
+category: "Wallets"
+tags: ["Wallets", "Errors", "EVM"]
+infoboxTitle: Reentrancy
+infoboxCaption:
+  Error raised when the EVM runner rejects a re-entrant call under forbid-evm-reentrancy.
+infoboxRows:
+  - label: Error
+    value: Reentrancy
+  - label: Pallet
+    value: evm
+  - label: Trigger
+    value: EVM call attempted while the EVM runner is already inside another EVM call
+  - label: Check type
+    value: Re-entrancy lock check on the EVM runner
+---
+
+# Reentrancy
+
+`Reentrancy` is an EVM pallet error raised when the EVM runner rejects a re-entrant call while
+reentrancy is forbidden. The API errors reference summarizes it as "EVM reentrancy"
+([Subtensor API Errors: Reentrancy](https://docs.learnbittensor.org/subtensor-api/errors#reentrancy)).
+
+## What It Means
+
+Bittensor's EVM layer runs an Ethereum-compatible execution layer on top of the Subtensor chain
+([Bittensor EVM Smart Contracts](https://docs.learnbittensor.org/evm-tutorials)). When the EVM
+runner is configured to forbid reentrancy, it guards each call with a single in-flight flag and
+refuses to start a new EVM operation while one is already in progress on the same task. `Reentrancy`
+means that guard fired, so the nested call is rejected before any contract code in the new frame
+executes
+([Subtensor API Errors: Reentrancy](https://docs.learnbittensor.org/subtensor-api/errors#reentrancy),
+[Bittensor EVM Smart Contracts](https://docs.learnbittensor.org/evm-tutorials)).
+
+This is the reentrancy lock check on the EVM runner. It does not, by itself, mean the sender address
+had deployed code, that the deployment-origin permission check failed, or that the call's fee
+balance was too low.
+
+## Why It Appears
+
+This error appears when the EVM runner is built with the `forbid-evm-reentrancy` feature enabled and
+a re-entrant EVM operation is attempted. The frontier runner source shows the guard: a single
+`IN_EVM` flag is checked at the start of a call, and if it is already `true`, the runner returns
+`Error::<T>::Reentrancy` instead of proceeding
+([paritytech/frontier: frame/evm/src/runner/stack.rs:125](https://github.com/paritytech/frontier/blob/master/frame/evm/src/runner/stack.rs#L125)).
+A `sp_core::defer!` block clears the flag at the end of the call so subsequent sibling calls on the
+same task are not blocked
+([paritytech/frontier: frame/evm/src/runner/stack.rs:135](https://github.com/paritytech/frontier/blob/master/frame/evm/src/runner/stack.rs#L135)).
+
+When the `forbid-evm-reentrancy` feature is not enabled, the runner takes a different path and does
+not raise this error, so the same call pattern is allowed
+([paritytech/frontier: frame/evm/src/runner/stack.rs:101](https://github.com/paritytech/frontier/blob/master/frame/evm/src/runner/stack.rs#L101)).
+
+## Distinction from Create Origin Not Allowed
+
+`Reentrancy` and `CreateOriginNotAllowed` both block an EVM submission before contract code
+executes, but they fire at different checks. `Reentrancy` is the in-flight guard on the EVM runner
+when reentrancy is forbidden. `CreateOriginNotAllowed` is the deployment-origin permission check
+that rejects contract deployment from addresses the runtime treats as not allowed to deploy
+([Subtensor API Errors: Reentrancy](https://docs.learnbittensor.org/subtensor-api/errors#reentrancy),
+[Subtensor API Errors: CreateOriginNotAllowed](https://docs.learnbittensor.org/subtensor-api/errors#createoriginnotallowed)).
+
+- **Reentrancy** — the EVM runner is already inside another EVM call.
+- **CreateOriginNotAllowed** — the sender is not allowed to deploy contracts.
+
+## Distinction from Balance Low
+
+`Reentrancy` and `BalanceLow` both stop an EVM operation from succeeding, but at different stages.
+`Reentrancy` is the runner-level re-entrancy check before contract code runs. `BalanceLow` is the
+fee withdrawal failure when the mapped account does not have enough balance to pay the call's fee
+([Subtensor API Errors: Reentrancy](https://docs.learnbittensor.org/subtensor-api/errors#reentrancy),
+[Subtensor API Errors: BalanceLow](https://docs.learnbittensor.org/subtensor-api/errors#balancelow)).
+
+- **Reentrancy** — a re-entrant EVM call is rejected before any code executes.
+- **BalanceLow** — fee withdrawal failed because the account balance was too low.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the re-entrancy lock check it represents on the
+EVM runner. It does not report which EVM call was in flight at the time of rejection, describe how
+contract code should restructure to avoid the lock, or confirm that the `forbid-evm-reentrancy`
+feature is enabled on a particular network build
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks),
+[Subtensor API Errors: Reentrancy](https://docs.learnbittensor.org/subtensor-api/errors#reentrancy)).
+
+## Further Reading
+
+- [Subtensor API Errors: Reentrancy](https://docs.learnbittensor.org/subtensor-api/errors#reentrancy)
+- [Subtensor API Errors: CreateOriginNotAllowed](https://docs.learnbittensor.org/subtensor-api/errors#createoriginnotallowed)
+- [Subtensor API Errors: BalanceLow](https://docs.learnbittensor.org/subtensor-api/errors#balancelow)
+- [Bittensor EVM Smart Contracts](https://docs.learnbittensor.org/evm-tutorials)
