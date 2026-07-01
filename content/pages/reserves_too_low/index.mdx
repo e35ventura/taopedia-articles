@@ -1,0 +1,91 @@
+---
+title: "Reserves Too Low"
+summary:
+  "How the ReservesTooLow error blocks a swap when the pool's output-side reserve is below the
+  runtime minimum."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Reserves Too Low
+infoboxCaption: Error raised when a swap's output-side reserve is below the configured minimum.
+infoboxRows:
+  - label: Error
+    value: ReservesTooLow
+  - label: Trigger
+    value: Output-side reserve is below MinimumReserve
+  - label: Checked in
+    value: swap_inner (swap pallet)
+  - label: Check type
+    value: Minimum-reserve floor check
+---
+
+# Reserves Too Low
+
+`ReservesTooLow` is a swap pallet error raised when a swap cannot proceed because the output-side
+reserve of the liquidity pool is below the runtime's minimum. The Subtensor API errors reference
+lists it under the swap pallet
+([Subtensor API Errors: ReservesTooLow](https://docs.learnbittensor.org/subtensor-api/errors#reservestoolow)).
+
+## What It Means
+
+Staking and unstaking convert between TAO and a subnet's alpha through that subnet's liquidity pool.
+Before executing a swap, the runtime checks that the reserve on the output side of the swap is at
+least `MinimumReserve`, the configured non-zero floor for a pool reserve. When the output-side
+reserve is below that floor, the swap stops with `ReservesTooLow` and no exchange occurs
+([Subtensor source: swap/impls.rs](https://github.com/opentensor/subtensor/blob/main/pallets/swap/src/pallet/impls.rs)).
+
+This is a liquidity floor check on the pool, not a statement about the caller's balance or the price
+of the swap. The operation is rejected because the pool cannot back it without dropping its reserve
+below the minimum
+([Subtensor API Errors: ReservesTooLow](https://docs.learnbittensor.org/subtensor-api/errors#reservestoolow),
+[Subtensor source: swap/impls.rs](https://github.com/opentensor/subtensor/blob/main/pallets/swap/src/pallet/impls.rs)).
+
+## Why It Appears
+
+This error appears when a swap targets a pool whose output-side reserve is already at or below
+`MinimumReserve`, which happens on pools with very low liquidity. It is the first guard inside the
+swap: the reserve floor is checked before the pool is initialized for the step and before the user's
+limit price is compared against the current price
+([Subtensor source: swap/impls.rs](https://github.com/opentensor/subtensor/blob/main/pallets/swap/src/pallet/impls.rs)).
+
+Because it is checked first, `ReservesTooLow` reflects the state of the pool at the moment of the
+swap rather than anything specific to the caller's submitted amount or price
+([Subtensor source: swap/impls.rs](https://github.com/opentensor/subtensor/blob/main/pallets/swap/src/pallet/impls.rs)).
+
+## Distinction from Price Limit Exceeded
+
+`ReservesTooLow` and `PriceLimitExceeded` are consecutive checks inside the same swap, and they
+guard different things. `ReservesTooLow` is checked first and rejects the swap when the pool's
+output-side reserve is below the floor. `PriceLimitExceeded` is checked next and rejects the swap
+when the caller's specified limit price is not beyond the pool's current price
+([Subtensor API Errors: PriceLimitExceeded](https://docs.learnbittensor.org/subtensor-api/errors#pricelimitexceeded),
+[Subtensor source: swap/impls.rs](https://github.com/opentensor/subtensor/blob/main/pallets/swap/src/pallet/impls.rs)).
+
+- **ReservesTooLow** — the pool's output-side reserve is below the minimum.
+- **PriceLimitExceeded** — the pool has reserves, but the submitted limit price is not beyond the
+  current price.
+
+## Distinction from Slippage Too High
+
+`ReservesTooLow` and `SlippageTooHigh` can both stop a staking swap, but they measure different
+things. `ReservesTooLow` is about the pool: its output-side reserve is under the minimum floor.
+`SlippageTooHigh` is about the caller's own cap: the swap would move past the maximum-amount
+slippage limit the caller set, with partial execution disabled
+([Subtensor API Errors: SlippageTooHigh](https://docs.learnbittensor.org/subtensor-api/errors#slippagetoohigh),
+[Subtensor source: swap/impls.rs](https://github.com/opentensor/subtensor/blob/main/pallets/swap/src/pallet/impls.rs)).
+
+- **ReservesTooLow** — the pool lacks enough reserve to back the swap.
+- **SlippageTooHigh** — the pool can swap, but the result exceeds the caller's slippage cap.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the minimum-reserve floor check on a swap. It
+does not document the full swap math, how `MinimumReserve` is configured, or how pool reserves are
+maintained; those are separate parts of the swap pallet
+([Subtensor source: swap/impls.rs](https://github.com/opentensor/subtensor/blob/main/pallets/swap/src/pallet/impls.rs)).
+
+## Further Reading
+
+- [Subtensor API Errors: ReservesTooLow](https://docs.learnbittensor.org/subtensor-api/errors#reservestoolow)
+- [Subtensor API Errors: PriceLimitExceeded](https://docs.learnbittensor.org/subtensor-api/errors#pricelimitexceeded)
+- [Subtensor API Errors: SlippageTooHigh](https://docs.learnbittensor.org/subtensor-api/errors#slippagetoohigh)
+- [Subtensor source: swap/impls.rs](https://github.com/opentensor/subtensor/blob/main/pallets/swap/src/pallet/impls.rs)
