@@ -1,0 +1,110 @@
+---
+title: "Voting Power Tracking Not Enabled"
+summary:
+  "How the VotingPowerTrackingNotEnabled error blocks disable_voting_power_tracking when voting
+  power tracking is not active on the target subnet."
+category: "Consensus"
+tags: ["Consensus", "Errors"]
+infoboxTitle: Voting Power Tracking Not Enabled
+infoboxCaption:
+  Error raised when disable is requested on a subnet without active voting-power tracking.
+infoboxRows:
+  - label: Error
+    value: VotingPowerTrackingNotEnabled
+  - label: Trigger
+    value: VotingPowerTrackingEnabled is false for the netuid
+  - label: Checked in
+    value: disable_voting_power_tracking
+  - label: Example netuid
+    value: netuid 1
+---
+
+# Voting Power Tracking Not Enabled
+
+`VotingPowerTrackingNotEnabled` means a `disable_voting_power_tracking` call on netuid 1 or another
+named subnet arrived while voting-power tracking was not active for that subnet. The Subtensor API
+errors reference summarizes it as "Voting power tracking is not enabled for this subnet"
+([Subtensor API Errors: VotingPowerTrackingNotEnabled](https://docs.learnbittensor.org/subtensor-api/errors#votingpowertrackingnotenabled)).
+
+Subnet chain storage includes a per-netuid `VotingPowerTrackingEnabled` flag that records whether
+voting-power tracking is turned on. When that flag is true, the chain maintains a stake EMA used as
+voting power for validators on the subnet
+([Subtensor source: lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/lib.rs)).
+
+## What It Means
+
+`disable_voting_power_tracking` schedules turning voting-power tracking off for a subnet after a
+grace period. `VotingPowerTrackingNotEnabled` is the rejection when that disable request reaches a
+subnet whose `VotingPowerTrackingEnabled` flag is already false, so there is no active tracking
+session to schedule for shutdown
+([Subtensor API Errors: VotingPowerTrackingNotEnabled](https://docs.learnbittensor.org/subtensor-api/errors#votingpowertrackingnotenabled),
+[Subtensor source: voting_power.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/voting_power.rs)).
+
+This is a feature-state gate on the disable path. It does not, by itself, say anything about whether
+the caller is the subnet owner, whether the netuid exists, or whether a voting-power EMA alpha value
+is out of range.
+
+## Why It Appears
+
+This error appears when a subnet owner or root signer submits `disable_voting_power_tracking` for a
+netuid that never had tracking enabled, or for one where tracking was already fully disabled. That
+can happen when automation reuses a disable call after tracking has been cleared, when the wrong
+netuid is targeted, or when `enable_voting_power_tracking` was never run on that subnet
+([Subtensor source: voting_power.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/voting_power.rs)).
+
+When debugging on netuid 1, rule out authorization and subnet-existence failures before treating
+this as a tracking-state problem. `NotSubnetOwner` means the signer is neither the subnet owner nor
+root on the disable path. `SubnetNotExists` means the named netuid has no registered subnet
+([Subtensor Standard Errors: NotSubnetOwner](https://docs.learnbittensor.org/errors/subtensor#notsubnetowner),
+[Subtensor Standard Errors: SubnetNotExists](https://docs.learnbittensor.org/errors/subtensor#subnetnotexists)).
+
+The practical meaning is narrow: voting-power tracking is not currently enabled on that subnet, so
+disable cannot be scheduled.
+
+## Distinction from Invalid Voting Power EMA Alpha
+
+`VotingPowerTrackingNotEnabled` and `InvalidVotingPowerEmaAlpha` both involve voting-power settings,
+but on different extrinsics. `VotingPowerTrackingNotEnabled` blocks `disable_voting_power_tracking`
+when tracking is off. `InvalidVotingPowerEmaAlpha` blocks `sudo_set_voting_power_ema_alpha` when the
+submitted alpha exceeds the documented 10^18 ceiling
+([Subtensor API Errors: InvalidVotingPowerEmaAlpha](https://docs.learnbittensor.org/subtensor-api/errors#invalidvotingpoweremaalpha)).
+
+- **VotingPowerTrackingNotEnabled** — tracking is not enabled on the subnet.
+- **InvalidVotingPowerEmaAlpha** — the submitted voting-power EMA alpha is above 10^18.
+
+## Distinction from Not Subnet Owner
+
+`VotingPowerTrackingNotEnabled` and `NotSubnetOwner` both appear on `disable_voting_power_tracking`,
+but at different checks. `NotSubnetOwner` is the authorization rejection when the signer is neither
+the subnet owner nor root. `VotingPowerTrackingNotEnabled` means authorization passed, but the
+subnet's tracking flag is already off
+([Subtensor Standard Errors: NotSubnetOwner](https://docs.learnbittensor.org/errors/subtensor#notsubnetowner)).
+
+- **VotingPowerTrackingNotEnabled** — voting-power tracking is not enabled on the netuid.
+- **NotSubnetOwner** — the signer is not the subnet owner or root.
+
+## Distinction from Subnet Not Exists
+
+`VotingPowerTrackingNotEnabled` and `SubnetNotExists` both block subnet-owner governance calls, but
+they reject different problems. `SubnetNotExists` means the submitted netuid is not a registered
+subnet. `VotingPowerTrackingNotEnabled` means the subnet exists and the signer passed owner checks,
+but voting-power tracking is not active on it
+([Subtensor Standard Errors: SubnetNotExists](https://docs.learnbittensor.org/errors/subtensor#subnetnotexists)).
+
+- **SubnetNotExists** — the target netuid is not a registered subnet.
+- **VotingPowerTrackingNotEnabled** — tracking is not enabled on an existing subnet.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the tracking-enabled gate it represents. It
+does not report whether voting-power tracking is currently enabled on netuid 1 or when a scheduled
+disable would take effect; those depend on live `VotingPowerTrackingEnabled` and
+`VotingPowerDisableAtBlock` storage at observation time
+([Subtensor Storage Query Examples](https://docs.learnbittensor.org/subtensor-nodes/subtensor-storage-query-examples),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: VotingPowerTrackingNotEnabled](https://docs.learnbittensor.org/subtensor-api/errors#votingpowertrackingnotenabled)
+- [Subtensor API Errors: InvalidVotingPowerEmaAlpha](https://docs.learnbittensor.org/subtensor-api/errors#invalidvotingpoweremaalpha)
+- [Exponential Moving Averages](https://docs.learnbittensor.org/learn/ema)
