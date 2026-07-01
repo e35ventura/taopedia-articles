@@ -1,0 +1,93 @@
+---
+title: "Bad Enc Key Len"
+summary:
+  "How the BadEncKeyLen error blocks announce_next_key when a block author submits an ML-KEM
+  encapsulation key whose byte length does not match MLKEM768_ENC_KEY_LEN."
+category: "Safety"
+tags: ["Safety", "Errors"]
+infoboxTitle: Bad Enc Key Len
+infoboxCaption: Error raised when an announced ML-KEM encapsulation key has invalid length.
+infoboxRows:
+  - label: Error
+    value: BadEncKeyLen
+  - label: Trigger
+    value: enc_key.len() != MLKEM768_ENC_KEY_LEN
+  - label: Checked in
+    value: announce_next_key
+  - label: Check type
+    value: ML-KEM encapsulation key length validation
+---
+
+# Bad Enc Key Len
+
+`BadEncKeyLen` is a MEV Shield pallet error raised when a block author announces an ML-KEM
+encapsulation key whose byte length does not match the expected constant. The API errors reference
+describes it as "The announced ML-KEM encapsulation key length is invalid"
+([Subtensor API Errors: BadEncKeyLen](https://docs.learnbittensor.org/subtensor-api/errors#badenckeylen)).
+
+## What It Means
+
+The [MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield) pallet rotates encryption keys
+through an inherent call, `announce_next_key`, that block authors submit each block. When the call
+includes a `Some(enc_key)` payload, the runtime checks that `enc_key.len()` equals
+`MLKEM768_ENC_KEY_LEN` before storing the key in `AuthorKeys`. If the length check fails,
+`BadEncKeyLen` is returned and the key is not stored
+([Subtensor source: shield/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/shield/src/lib.rs),
+[Subtensor API Errors: BadEncKeyLen](https://docs.learnbittensor.org/subtensor-api/errors#badenckeylen)).
+
+When `enc_key` is `None`, the pallet removes the author from `AuthorKeys` instead of running the
+length check. That path is documented for node failure and does not raise `BadEncKeyLen`
+([Subtensor source: shield/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/shield/src/lib.rs)).
+
+This is a key-format rejection on the author announcement inherent, not proof that the pending
+encrypted-extrinsic queue is full or that a submitted extrinsic weight exceeds block limits.
+
+## Why It Appears
+
+This error appears when a block producer's `announce_next_key` inherent supplies an encapsulation
+key with the wrong byte length. That can happen when node software constructs a malformed key
+buffer, truncates or pads key material incorrectly, or passes a value sized for a different
+algorithm than the ML-KEM-768 constant enforced in the shield pallet
+([Subtensor source: shield/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/shield/src/lib.rs)).
+
+When debugging on this call, compare against the next rejection on the same path. `Unreachable` is
+returned when `find_current_author` cannot resolve a block author for the inherent
+([Subtensor source: shield/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/shield/src/lib.rs)).
+
+## Distinction from Too Many Pending Extrinsics
+
+`BadEncKeyLen` and `TooManyPendingExtrinsics` both belong to the MEV Shield pallet, but they fire on
+different extrinsics. `BadEncKeyLen` is returned from `announce_next_key` when an announced
+encapsulation key fails the length check. `TooManyPendingExtrinsics` is returned from
+`store_encrypted` when the pending queue count is at its configured maximum
+([Too Many Pending Extrinsics](https://docs.learnbittensor.org/subtensor-api/errors#toomanypendingextrinsics),
+[Subtensor source: shield/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/shield/src/lib.rs)).
+
+- **BadEncKeyLen** — announced ML-KEM encapsulation key has invalid length on `announce_next_key`.
+- **TooManyPendingExtrinsics** — pending queue is at capacity on `store_encrypted`.
+
+## Distinction from Unreachable
+
+`BadEncKeyLen` and `Unreachable` both appear on `announce_next_key`, but at different steps.
+`Unreachable` is returned when the inherent cannot resolve the current block author. `BadEncKeyLen`
+is returned later when a `Some(enc_key)` payload fails the `MLKEM768_ENC_KEY_LEN` comparison
+([Subtensor source: shield/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/shield/src/lib.rs)).
+
+- **Unreachable** — current block author cannot be resolved for the inherent.
+- **BadEncKeyLen** — announced encapsulation key byte length is invalid.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the length check on `announce_next_key`. It
+does not report which block authors currently hold keys in `AuthorKeys` on any network; that is live
+chain state readable from storage
+([Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage),
+[MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield)).
+
+## Further Reading
+
+- [Subtensor API Errors: BadEncKeyLen](https://docs.learnbittensor.org/subtensor-api/errors#badenckeylen)
+- [MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield)
+- [Using MEV Shield with the Bittensor SDK](https://docs.learnbittensor.org/sdk/mev-protection)
+- [Subtensor source: shield/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/shield/src/lib.rs)
+- [Subtensor API Errors: TooManyPendingExtrinsics](https://docs.learnbittensor.org/subtensor-api/errors#toomanypendingextrinsics)
