@@ -1,0 +1,91 @@
+---
+title: "Not Enough Balance To Pay Swap Cold Key"
+summary:
+  "How the NotEnoughBalanceToPaySwapColdKey error stops a coldkey swap when the account cannot pay
+  the required swap cost and still preserve the existential deposit."
+category: "Wallets"
+tags: ["Wallets", "Errors"]
+infoboxTitle: Not Enough Balance To Pay Swap Cold Key
+infoboxCaption:
+  Error raised when a coldkey swap cannot collect the required swap cost from the account.
+infoboxRows:
+  - label: Error
+    value: NotEnoughBalanceToPaySwapColdKey
+  - label: Trigger
+    value: Coldkey swap account cannot fund the required swap charge
+  - label: Checked in
+    value: swap_coldkey (charge_swap_cost)
+  - label: Check type
+    value: Swap-cost balance check
+---
+
+# Not Enough Balance To Pay Swap Cold Key
+
+`NotEnoughBalanceToPaySwapColdKey` is a documented Subtensor standard error raised when a coldkey
+swap cannot collect its required swap cost from the account
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetopayswapcoldkey)).
+
+## What It Means
+
+Coldkey swap logic charges a swap cost before the rest of the coldkey-transfer work can proceed. The
+runtime helper `charge_swap_cost` calls `recycle_tao` and maps a failed charge to
+`NotEnoughBalanceToPaySwapColdKey`, so the swap stops at the cost-payment step instead of continuing
+into the later state transfers
+([Subtensor source: swap_coldkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_coldkey.rs)).
+
+The practical meaning is narrow: the account cannot pay the required swap charge while preserving
+the minimum balance rules used by the runtime
+([Subtensor test: swap_coldkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/tests/swap_coldkey.rs)).
+
+## Why It Appears
+
+Current test coverage shows this error in both coldkey-swap entry points that collect the swap cost.
+`announce_coldkey_swap` returns `NotEnoughBalanceToPaySwapColdKey` when the account has no balance
+or only enough balance to fall below the existential-deposit requirement after the charge, and
+`swap_coldkey` fails for the same reason during the charged swap path
+([Subtensor test: swap_coldkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/tests/swap_coldkey.rs),
+[Subtensor source: swap_coldkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_coldkey.rs)).
+
+For a reader, the useful takeaway is that this error is about paying the coldkey-swap fee, not about
+whether the destination coldkey is valid
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetopayswapcoldkey)).
+
+## Distinction from Cold Key Already Associated
+
+`NotEnoughBalanceToPaySwapColdKey` and `ColdKeyAlreadyAssociated` can both stop a coldkey swap, but
+they fail at different checks. `NotEnoughBalanceToPaySwapColdKey` means the account cannot fund the
+swap charge. `ColdKeyAlreadyAssociated` means the chosen destination coldkey already has staking
+hotkeys associated with it
+([Subtensor Standard Errors: ColdKeyAlreadyAssociated](https://docs.learnbittensor.org/errors/subtensor#coldkeyalreadyassociated),
+[Subtensor source: swap_coldkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_coldkey.rs)).
+
+- `NotEnoughBalanceToPaySwapColdKey` means the swap cost cannot be paid safely.
+- `ColdKeyAlreadyAssociated` means the destination coldkey is already associated with staking
+  hotkeys.
+
+## Distinction from New Cold Key Is Hotkey
+
+`NotEnoughBalanceToPaySwapColdKey` and `NewColdKeyIsHotkey` also block different parts of the same
+coldkey-swap flow. `NotEnoughBalanceToPaySwapColdKey` is a balance check on paying the swap charge.
+`NewColdKeyIsHotkey` is a destination-role check that rejects a target account already acting as a
+hotkey
+([Subtensor Standard Errors: NewColdKeyIsHotkey](https://docs.learnbittensor.org/errors/subtensor#newcoldkeyishotkey),
+[Subtensor source: swap_coldkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_coldkey.rs)).
+
+- `NotEnoughBalanceToPaySwapColdKey` means the cost payment fails.
+- `NewColdKeyIsHotkey` means the destination account is already a hotkey.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the swap-cost check behind it. It does not
+document the full coldkey-swap procedure or every transfer that happens after the cost is paid;
+those are separate parts of the coldkey-swap flow
+([Subtensor source: swap_coldkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_coldkey.rs)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetopayswapcoldkey)
+- [Subtensor Standard Errors: ColdKeyAlreadyAssociated](https://docs.learnbittensor.org/errors/subtensor#coldkeyalreadyassociated)
+- [Subtensor Standard Errors: NewColdKeyIsHotkey](https://docs.learnbittensor.org/errors/subtensor#newcoldkeyishotkey)
+- [Subtensor source: swap_coldkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_coldkey.rs)
+- [Subtensor test: swap_coldkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/tests/swap_coldkey.rs)
