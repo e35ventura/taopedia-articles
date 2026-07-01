@@ -1,0 +1,87 @@
+---
+title: "Cannot Release Yet"
+summary:
+  "How the CannotReleaseYet error blocks a safe-mode deposit release when the required waiting
+  period since the deposit block has not yet elapsed."
+category: "Wallets"
+tags: ["Wallets", "Errors", "Security"]
+infoboxTitle: Cannot Release Yet
+infoboxCaption:
+  Error raised when a safe-mode deposit release is attempted before the waiting period ends.
+infoboxRows:
+  - label: Error
+    value: CannotReleaseYet
+  - label: Pallet
+    value: safe-mode
+  - label: Trigger
+    value: release_deposit called before the required waiting period has elapsed
+  - label: Check type
+    value: Time-lock check on the deposit waiting period
+---
+
+# Cannot Release Yet
+
+`CannotReleaseYet` is a safe-mode pallet error raised when a deposit release is attempted for an
+account and block pair where the required waiting period since the deposit block has not yet
+elapsed. The API errors reference documents this error on the safe-mode release path
+([Subtensor API Errors: CannotReleaseYet](https://docs.learnbittensor.org/subtensor-api/errors#cannotreleaseyet)).
+
+## What It Means
+
+When an account deposits funds to enter or extend safe mode, the deposit is locked for a waiting
+period tied to the block at which the deposit was made. `release_deposit` can only reclaim the
+deposit after that waiting period has passed. `CannotReleaseYet` fires when a deposit does exist for
+the account at the given block but the required number of blocks since the deposit has not yet
+elapsed
+([Subtensor API Errors: CannotReleaseYet](https://docs.learnbittensor.org/subtensor-api/errors#cannotreleaseyet),
+[Subtensor API Errors: NoDeposit](https://docs.learnbittensor.org/subtensor-api/errors#nodeposit)).
+
+This is a time-lock rejection, not proof that no deposit exists, that the release delay is
+unconfigured, or that the caller is not the deposit owner.
+
+## Why It Appears
+
+This error appears when `release_deposit` is called before the waiting period since the deposit
+block has fully elapsed. The deposit exists on-chain, but the release cannot proceed until enough
+blocks have passed since the original deposit
+([Subtensor API Errors: CannotReleaseYet](https://docs.learnbittensor.org/subtensor-api/errors#cannotreleaseyet)).
+
+The practical meaning is narrow: wait for the required number of blocks to pass before retrying the
+release.
+
+## Distinction from No Deposit
+
+`CannotReleaseYet` and `NoDeposit` both block `release_deposit`, but they detect different
+conditions. `NoDeposit` fires when no deposit is recorded at the given block, so there is nothing to
+release. `CannotReleaseYet` fires when a deposit does exist but the required waiting period has not
+yet elapsed
+([Subtensor API Errors: NoDeposit](https://docs.learnbittensor.org/subtensor-api/errors#nodeposit),
+[Subtensor API Errors: CannotReleaseYet](https://docs.learnbittensor.org/subtensor-api/errors#cannotreleaseyet)).
+
+- **CannotReleaseYet** — a deposit exists but the waiting period has not passed.
+- **NoDeposit** — no deposit is recorded at the given block.
+
+## Distinction from Not Configured
+
+`CannotReleaseYet` and `NotConfigured` both appear on the `release_deposit` path, but at different
+conditions. `NotConfigured` fires when a deposit exists but no release delay is set for the network,
+blocking the permissionless release entirely. `CannotReleaseYet` fires when a release delay is
+configured and a deposit exists, but not enough blocks have passed since the deposit
+([Subtensor API Errors: NotConfigured](https://docs.learnbittensor.org/subtensor-api/errors#notconfigured),
+[Subtensor API Errors: CannotReleaseYet](https://docs.learnbittensor.org/subtensor-api/errors#cannotreleaseyet)).
+
+- **CannotReleaseYet** — release delay is configured; deposit exists; but wait period not finished.
+- **NotConfigured** — no release delay configured; permissionless release is disabled entirely.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the time-lock check that raises it. It does not
+report the current safe-mode release delay configuration or the current block number on chain; those
+are live chain state
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: CannotReleaseYet](https://docs.learnbittensor.org/subtensor-api/errors#cannotreleaseyet)
+- [Subtensor API Errors: NoDeposit](https://docs.learnbittensor.org/subtensor-api/errors#nodeposit)
+- [Subtensor API Errors: NotConfigured](https://docs.learnbittensor.org/subtensor-api/errors#notconfigured)
