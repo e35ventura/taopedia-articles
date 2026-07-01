@@ -1,0 +1,103 @@
+---
+title: "EVM Key Associate Rate Limit Exceeded"
+summary:
+  "How the EvmKeyAssociateRateLimitExceeded error blocks associate_evm_key when an EVM key
+  association attempt on a subnet arrives before the association rate limit has cleared."
+category: "Wallets"
+tags: ["Wallets", "Errors"]
+infoboxTitle: EVM Key Associate Rate Limit Exceeded
+infoboxCaption: Error raised when EVM key association is attempted too frequently.
+infoboxRows:
+  - label: Error
+    value: EvmKeyAssociateRateLimitExceeded
+  - label: Trigger
+    value: associate_evm_key submitted before the cooldown clears
+  - label: Extrinsic
+    value: associate_evm_key
+  - label: Example netuid
+    value: netuid 1
+---
+
+# EVM Key Associate Rate Limit Exceeded
+
+`EvmKeyAssociateRateLimitExceeded` means an `associate_evm_key` call for netuid 1 or another named
+subnet arrived before the association rate limit had cleared. The Subtensor API errors reference
+summarizes it as exceeding the rate limit for associating an EVM key
+([Subtensor API Errors: EvmKeyAssociateRateLimitExceeded](https://docs.learnbittensor.org/subtensor-api/errors#evmkeyassociateratelimitexceeded)).
+
+The custom-errors reference lists the same label as "Rate limit exceeded for associate EVM key
+extrinsic" ([Subtensor Custom Errors](https://docs.learnbittensor.org/errors/custom)).
+
+The extrinsic is listed among Subtensor methods as `associate_evm_key` with `netuid`, `evm_key`,
+`block_number`, and `signature` parameters
+([Subtensor Extrinsics](https://docs.learnbittensor.org/navigating-subtensor/subtensor-extrinsics)).
+
+## What It Means
+
+Associating an EVM address with a hotkey links Ethereum-style account context to a Bittensor hotkey
+on a named subnet ([Token Bridging](https://docs.learnbittensor.org/evm-tutorials/bridge-vtao)).
+
+`EvmKeyAssociateRateLimitExceeded` is a pacing gate on that association path. It means a prior
+`associate_evm_key` attempt on the subnet already consumed the allowed window and the new call
+arrived too soon
+([Subtensor API Errors: EvmKeyAssociateRateLimitExceeded](https://docs.learnbittensor.org/subtensor-api/errors#evmkeyassociateratelimitexceeded),
+[Subtensor Custom Errors](https://docs.learnbittensor.org/errors/custom)).
+
+This is a rate-limit rejection, not a signature-recovery failure and not a rejection of the claimed
+EVM address itself.
+
+## Why It Appears
+
+This error appears when a hotkey submits `associate_evm_key` on a netuid before the association
+cooldown from an earlier attempt has elapsed. That can happen when automation retries the
+association call, when a client resubmits after a transient failure, or when two association
+attempts are queued too close together on the same subnet
+([Subtensor Extrinsics](https://docs.learnbittensor.org/navigating-subtensor/subtensor-extrinsics),
+[Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+
+When debugging on netuid 1, rule out cryptographic association failures first.
+`UnableToRecoverPublicKey` means the chain could not recover a valid public key from the submitted
+signature. `InvalidRecoveredPublicKey` means a valid key was recovered but its address did not match
+the claim. Those errors belong to the proof step after pacing checks have already passed
+([Unable To Recover Public Key](https://docs.learnbittensor.org/errors/subtensor#unabletorecoverpublickey),
+[Invalid Recovered Public Key](https://docs.learnbittensor.org/errors/subtensor#invalidrecoveredpublickey)).
+
+The practical meaning is narrow: the association attempt arrived before the rate limit reset.
+
+## Distinction from Unable To Recover Public Key
+
+`EvmKeyAssociateRateLimitExceeded` and `UnableToRecoverPublicKey` both appear on
+`associate_evm_key`, but at different stages. `EvmKeyAssociateRateLimitExceeded` is the pacing
+rejection when association attempts are too frequent on the netuid. `UnableToRecoverPublicKey` is
+the later cryptographic rejection when recovered bytes do not form a valid public key
+([Subtensor Standard Errors: UnableToRecoverPublicKey](https://docs.learnbittensor.org/errors/subtensor#unabletorecoverpublickey)).
+
+- **EvmKeyAssociateRateLimitExceeded** — the association call arrived too soon on the netuid.
+- **UnableToRecoverPublicKey** — signature recovery did not yield a valid public key.
+
+## Distinction from Hot Key Set Tx Rate Limit Exceeded
+
+`EvmKeyAssociateRateLimitExceeded` and `HotKeySetTxRateLimitExceeded` both name documented
+rate-limit errors, but on different extrinsics. `EvmKeyAssociateRateLimitExceeded` paces
+`associate_evm_key` on a netuid. `HotKeySetTxRateLimitExceeded` paces hotkey set or swap
+transactions
+([Subtensor Standard Errors: HotKeySetTxRateLimitExceeded](https://docs.learnbittensor.org/errors/subtensor#hotkeysettxratelimitexceeded)).
+
+- **EvmKeyAssociateRateLimitExceeded** — EVM key association on the netuid is rate-limited.
+- **HotKeySetTxRateLimitExceeded** — hotkey set or swap arrived too soon.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the association pacing gate it represents. It
+does not describe the signed message format for `associate_evm_key` or the exact cooldown length for
+the association limit; those details belong to the extrinsic documentation and live chain
+configuration
+([Subtensor Extrinsics](https://docs.learnbittensor.org/navigating-subtensor/subtensor-extrinsics),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: EvmKeyAssociateRateLimitExceeded](https://docs.learnbittensor.org/subtensor-api/errors#evmkeyassociateratelimitexceeded)
+- [Subtensor Custom Errors](https://docs.learnbittensor.org/errors/custom)
+- [Subtensor Extrinsics](https://docs.learnbittensor.org/navigating-subtensor/subtensor-extrinsics)
+- [Token Bridging](https://docs.learnbittensor.org/evm-tutorials/bridge-vtao)
