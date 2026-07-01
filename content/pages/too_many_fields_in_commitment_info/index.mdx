@@ -1,0 +1,59 @@
+---
+title: "Too Many Fields In Commitment Info"
+summary:
+  "How the TooManyFieldsInCommitmentInfo error blocks a set_commitment call when the submitted
+  commitment contains more fields than the configured maximum."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Too Many Fields In Commitment Info
+infoboxCaption: Error raised when a commitment submission exceeds the maximum field count.
+infoboxRows:
+  - label: Error
+    value: TooManyFieldsInCommitmentInfo
+  - label: Trigger
+    value: info.fields.len() exceeds T::MaxFields::get()
+  - label: Checked in
+    value: set_commitment extrinsic
+  - label: Check type
+    value: Field count upper-bound check
+---
+
+# Too Many Fields In Commitment Info
+
+`TooManyFieldsInCommitmentInfo` is a commitments pallet error raised by the `set_commitment`
+extrinsic when the submitted commitment contains more fields than the pallet allows. The pallet
+defines it as "Account passed too many additional fields to their commitment"
+([Subtensor source: commitments/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/commitments/src/lib.rs)).
+
+## What It Means
+
+`set_commitment` accepts a `CommitmentInfo` value containing a list of typed data fields. After
+verifying the caller is eligible to commit, the extrinsic counts the submitted fields and compares
+that count against `T::MaxFields`, a compile-time configuration constant. If the count exceeds the
+maximum, `TooManyFieldsInCommitmentInfo` fires and the call is rejected before any space accounting
+or state changes occur
+([Subtensor source: commitments/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/commitments/src/lib.rs)).
+
+## Distinction from Space Limit Exceeded
+
+`TooManyFieldsInCommitmentInfo` and `SpaceLimitExceeded` both block `set_commitment` based on the
+content of the submitted fields, but at different checks. `TooManyFieldsInCommitmentInfo` fires when
+the raw count of fields exceeds the maximum, regardless of their sizes. `SpaceLimitExceeded` fires
+when the cumulative data size of the fields would exhaust the caller's per-epoch space allowance,
+regardless of whether the field count itself is within bounds
+([Space Limit Exceeded](https://docs.learnbittensor.org/errors/subtensor#spacelimitexceeded),
+[Subtensor source: commitments/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/commitments/src/lib.rs)).
+
+- **TooManyFieldsInCommitmentInfo** — the number of fields exceeds the configured maximum.
+- **SpaceLimitExceeded** — the total data size exceeds the per-epoch space allowance.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the field count check that raises it. It does
+not describe what types of data fields a commitment can contain or how `MaxFields` is configured
+([Subtensor source: commitments/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/commitments/src/lib.rs)).
+
+## Further Reading
+
+- [Space Limit Exceeded](https://docs.learnbittensor.org/errors/subtensor#spacelimitexceeded)
+- [Subtensor source: commitments/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/commitments/src/lib.rs)
