@@ -1,0 +1,51 @@
+---
+title: "Weight Exceeds Absolute Max"
+summary:
+  "How the WeightExceedsAbsoluteMax error blocks a root configuration call when the submitted weight
+  value exceeds the absolute ceiling of half the total block weight."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Weight Exceeds Absolute Max
+infoboxCaption: Error raised when a weight configuration value exceeds half the block weight.
+infoboxRows:
+  - label: Error
+    value: WeightExceedsAbsoluteMax
+  - label: Trigger
+    value: Submitted value exceeds MAX_ON_INITIALIZE_WEIGHT (2_000_000_000_000)
+  - label: Checked in
+    value: set_on_initialize_weight and set_max_extrinsic_weight extrinsics
+  - label: Check type
+    value: Upper-bound check against a fixed compile-time constant
+---
+
+# Weight Exceeds Absolute Max
+
+`WeightExceedsAbsoluteMax` is a shield pallet error raised when a root call attempts to configure a
+processing weight limit above the absolute ceiling. The pallet defines it as "Weight exceeds the
+absolute maximum (half of total block weight)"
+([Subtensor source: shield/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/shield/src/lib.rs)).
+
+## What It Means
+
+The shield pallet queues encrypted extrinsics and processes them in `on_initialize`. Two root
+extrinsics — `set_on_initialize_weight` and `set_max_extrinsic_weight` — control how much block
+weight the pallet may consume during that processing. Both check the submitted value against
+`MAX_ON_INITIALIZE_WEIGHT`, a compile-time constant set to `2_000_000_000_000` (representing two
+seconds of computation in a four-second block). If the submitted value exceeds that ceiling,
+`WeightExceedsAbsoluteMax` fires and the configuration is rejected
+([Subtensor source: shield/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/shield/src/lib.rs)).
+
+The ceiling exists to prevent a misconfiguration from reserving more than half the block weight for
+encrypted extrinsic processing, which would starve other block operations
+([Subtensor source: shield/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/shield/src/lib.rs)).
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the weight ceiling check that raises it. It
+does not describe how encrypted extrinsics are submitted, queued, or decrypted during
+`on_initialize`
+([Subtensor source: shield/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/shield/src/lib.rs)).
+
+## Further Reading
+
+- [Subtensor source: shield/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/shield/src/lib.rs)
