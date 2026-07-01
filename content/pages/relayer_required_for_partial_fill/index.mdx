@@ -1,0 +1,118 @@
+---
+title: "Relayer Required For Partial Fill"
+summary:
+  "How the RelayerRequiredForPartialFill error blocks limit-order execution when a partial fill is
+  submitted for an order that does not name any allowed relayers."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Relayer Required For Partial Fill
+infoboxCaption:
+  Error raised when partial execution is requested without a relayer list on the order.
+infoboxRows:
+  - label: Error
+    value: RelayerRequiredForPartialFill
+  - label: Trigger
+    value: partial_fill is set while order.relayer is absent
+  - label: Checked in
+    value: is_order_valid, called by execute_orders and execute_batched_orders
+  - label: Check type
+    value: Partial-fill relayer requirement
+---
+
+# Relayer Required For Partial Fill
+
+`RelayerRequiredForPartialFill` is a documented limit-orders error raised when a relayer tries to
+execute only part of a limit order but the order itself does not name any allowed relayers. The
+Subtensor API error reference describes it as "A relayer must be set on the order when using partial
+fills"
+([Subtensor API Errors: RelayerRequiredForPartialFill](https://docs.learnbittensor.org/subtensor-api/errors#relayerrequiredforpartialfill)).
+
+## What It Means
+
+Signed limit orders may carry an optional partial-fill amount so execution can complete in more than
+one step. The `is_order_valid` helper — used by both `execute_orders` and `execute_batched_orders` —
+requires orders that use partial fills to also store a relayer restriction on the order payload.
+`RelayerRequiredForPartialFill` means a partial fill was submitted while that relayer field was
+absent
+([Subnet Liquidity Pools](https://docs.learnbittensor.org/subnets/understanding-subnets#liquidity-pools),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+The check runs only when the signed order includes a partial-fill value. Full one-shot executions
+without a partial-fill field do not pass through this gate
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+This check runs after price-condition and optional allowed-relayer membership validation, and before
+the partial-fills-enabled and partial-amount bounds checks on the same path
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+This is a partial-fill configuration rejection, not proof that the signature is invalid or that the
+executing relayer fails an existing allowed-relayer list.
+
+## Why It Appears
+
+This error appears when a relayer submits a signed order envelope with a partial-fill amount for an
+order that was created without a relayer restriction field. That can happen when a client reuses a
+full-execution order template but adds a partial-fill field at submission time, or when automation
+requests a partial step against an order that only supports one-shot fulfillment
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+When debugging, compare against the relayer checks that run earlier on the same path.
+`RelayerMissMatch` applies only when the order already lists allowed relayers and the caller is not
+included. `RelayerRequiredForPartialFill` applies when partial fill was requested but no relayer
+list exists on the order at all
+([Relayer Miss Match](https://docs.learnbittensor.org/errors/subtensor#relayermissmatch),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+The next rejection on the same partial-fill path is `PartialFillsNotEnabled` when the order does
+name relayers but was not created with partial fills turned on
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+## Distinction from Relayer Miss Match
+
+`RelayerRequiredForPartialFill` and `RelayerMissMatch` both involve relayer fields on limit orders,
+but at different checks. `RelayerMissMatch` means the order already lists allowed relayers and the
+executing account is not on that list. `RelayerRequiredForPartialFill` means a partial fill was
+requested while the order stored no relayer restriction at all
+([Relayer Miss Match](https://docs.learnbittensor.org/errors/subtensor#relayermissmatch),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+- **RelayerMissMatch** — the caller is not on the order's allowed relayer list.
+- **RelayerRequiredForPartialFill** — partial fill was requested without any relayer list on the
+  order.
+
+## Distinction from Partial Fills Not Enabled
+
+`RelayerRequiredForPartialFill` and `PartialFillsNotEnabled` both appear on the partial-fill branch
+of `is_order_valid`, but at different checks. `RelayerRequiredForPartialFill` means the order has no
+relayer field while a partial fill was submitted. `PartialFillsNotEnabled` means the relayer field
+is present but the order was not created with partial fills enabled
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+- **RelayerRequiredForPartialFill** — no relayer list exists on the order.
+- **PartialFillsNotEnabled** — partial fills are not enabled on the order.
+
+## Distinction from Incorrect Partial Fill Amount
+
+`RelayerRequiredForPartialFill` and `IncorrectPartialFillAmount` both involve partial execution, but
+at different stages. `RelayerRequiredForPartialFill` is returned before the runtime checks whether
+partial fills are enabled and whether the submitted partial amount is within bounds.
+`IncorrectPartialFillAmount` is returned later when the partial-fill amount or full-fill retry rules
+fail those bounds checks
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+- **RelayerRequiredForPartialFill** — partial fill was requested without a relayer list.
+- **IncorrectPartialFillAmount** — the partial-fill amount or fill state is invalid.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the partial-fill relayer requirement that
+raises it. It does not describe how to construct partial-fill order payloads off chain; that
+workflow is documented separately
+([Subnet Liquidity Pools](https://docs.learnbittensor.org/subnets/understanding-subnets#liquidity-pools),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+## Further Reading
+
+- [Subtensor API Errors: RelayerRequiredForPartialFill](https://docs.learnbittensor.org/subtensor-api/errors#relayerrequiredforpartialfill)
+- [Relayer Miss Match](https://docs.learnbittensor.org/errors/subtensor#relayermissmatch)
+- [Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)
