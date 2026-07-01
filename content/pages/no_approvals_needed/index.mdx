@@ -1,0 +1,89 @@
+---
+title: "No Approvals Needed"
+summary:
+  "How the NoApprovalsNeeded error blocks a multisig approval submission when the pending call has
+  already accumulated enough approvals to meet the threshold."
+category: "Wallets"
+tags: ["Wallets", "Errors", "Security"]
+infoboxTitle: No Approvals Needed
+infoboxCaption: Error raised when a multisig call has already reached its approval threshold.
+infoboxRows:
+  - label: Error
+    value: NoApprovalsNeeded
+  - label: Pallet
+    value: multisig
+  - label: Trigger
+    value: Approval submitted after the pending call has already met the threshold
+  - label: Check type
+    value: Approval threshold state on the pending multisig call
+---
+
+# No Approvals Needed
+
+`NoApprovalsNeeded` is a multisig pallet error raised when a signatory submits an approval for a
+pending multisig call that has already accumulated enough approvals to meet the threshold. The API
+errors reference describes it as "Call doesn't need any (more) approvals"
+([Subtensor API Errors: NoApprovalsNeeded](https://docs.learnbittensor.org/subtensor-api/errors#noapprovalsneeded)).
+
+## What It Means
+
+Bittensor multisig wallets are structured as M of N, where M is the threshold of approvals required
+before a call executes. Once the pending call reaches M approvals, no further approvals are accepted
+([Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)).
+
+`NoApprovalsNeeded` fires when a signatory attempts to approve a pending call that has already met
+its approval threshold
+([Subtensor API Errors: NoApprovalsNeeded](https://docs.learnbittensor.org/subtensor-api/errors#noapprovalsneeded),
+[Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)).
+
+This is a threshold-state rejection, not proof that the call has already executed, that the
+signatory has already approved, or that the signatory is not registered for the multisig.
+
+## Why It Appears
+
+This error appears when an approval is submitted for a pending multisig call that is already at or
+beyond its approval threshold. The multisig documentation describes the process as co-signatories
+agreeing until the threshold of approvals is met
+([Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)).
+
+The practical meaning is narrow: check the current approval count of the pending call before
+submitting another approval.
+
+## Distinction from Already Approved
+
+`NoApprovalsNeeded` and `AlreadyApproved` both block approval submissions, but at different
+conditions. `AlreadyApproved` fires when the threshold has not yet been reached but this specific
+signatory has already contributed their approval. `NoApprovalsNeeded` fires when the threshold is
+already met and no further approvals are accepted from any signatory
+([Subtensor API Errors: AlreadyApproved](https://docs.learnbittensor.org/subtensor-api/errors#alreadyapproved),
+[Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)).
+
+- **NoApprovalsNeeded** — the threshold is already met; no more approvals are needed.
+- **AlreadyApproved** — this signatory has already approved; threshold may not yet be reached.
+
+## Distinction from Sender In Signatories
+
+`NoApprovalsNeeded` and `SenderInSignatories` both block multisig approval actions, but they catch
+different problems. `SenderInSignatories` fires when the sender's own address appears in the
+`other_signatories` list parameter — a structural check on the call parameters. `NoApprovalsNeeded`
+fires when the call parameters are structurally valid but the pending call no longer requires
+further approvals
+([Subtensor API Errors: SenderInSignatories](https://docs.learnbittensor.org/subtensor-api/errors#senderinsignatories),
+[Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)).
+
+- **NoApprovalsNeeded** — pending call has already met its threshold.
+- **SenderInSignatories** — sender's address is listed in other_signatories.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the threshold-state check that raises it. It
+does not report the current approval count or threshold for any pending multisig call on chain;
+those are live chain state ([Multisig Wallets](https://docs.learnbittensor.org/keys/multisig),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: NoApprovalsNeeded](https://docs.learnbittensor.org/subtensor-api/errors#noapprovalsneeded)
+- [Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)
+- [Subtensor API Errors: AlreadyApproved](https://docs.learnbittensor.org/subtensor-api/errors#alreadyapproved)
+- [Subtensor API Errors: SenderInSignatories](https://docs.learnbittensor.org/subtensor-api/errors#senderinsignatories)
