@@ -1,0 +1,79 @@
+---
+title: "Hotkey Account Not Exists"
+summary:
+  "How the HotKeyAccountNotExists error blocks a call when the named hotkey is not present as an
+  existing hotkey account."
+category: "Wallets"
+tags: ["Wallets", "Errors"]
+infoboxTitle: Hotkey Account Not Exists
+infoboxCaption: Error raised when a call names a hotkey account the runtime cannot find.
+infoboxRows:
+  - label: Error
+    value: HotKeyAccountNotExists
+  - label: Trigger
+    value: The call names a hotkey the runtime does not recognize as an existing hotkey account
+  - label: Checked in
+    value: Shared hotkey existence checks used before several wallet and staking operations
+  - label: Check type
+    value: Hotkey account existence check
+---
+
+# Hotkey Account Not Exists
+
+`HotKeyAccountNotExists` is a documented Subtensor standard error raised when a call names a hotkey
+that the runtime does not recognize as an existing hotkey account
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#hotkeyaccountnotexists)).
+
+## What It Means
+
+In Bittensor, a hotkey can be referenced by wallet, staking, serving, and related operations only
+after the runtime can identify it as a real hotkey account. `HotKeyAccountNotExists` means that
+basic existence check failed, so the call stops before any later action that depends on that hotkey
+can be carried out
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#hotkeyaccountnotexists),
+[Subtensor source: misc.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/misc.rs)).
+
+The practical meaning is narrow: the problem is not yet about subnet membership, stake amount, or
+pool liquidity. The named hotkey itself is missing for the purpose of the attempted call.
+
+## Why It Appears
+
+This error appears when a wallet, script, or integration submits a call for a hotkey that is not
+present as a recognized hotkey account on chain. The runtime uses this label on several operations
+that need a valid hotkey before they can continue, including stake movement and related balance
+actions
+([Subtensor source: misc.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/misc.rs),
+[Subtensor test: staking.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/tests/staking.rs)).
+
+For a reader, the useful takeaway is simple: the call did not fail because the hotkey was on the
+wrong subnet. It failed earlier because the runtime could not treat the named account as an existing
+hotkey.
+
+## Distinction from Hotkey Registration Errors
+
+`HotKeyAccountNotExists`, `HotKeyNotRegisteredInSubNet`, and `HotKeyNotRegisteredInNetwork` are
+related but not identical. `HotKeyAccountNotExists` means the hotkey itself is missing as an account
+the runtime can use. The registration errors are later membership failures for a hotkey that does
+exist, but is not registered where the call expects it
+([Subtensor Standard Errors: HotKeyNotRegisteredInSubNet](https://docs.learnbittensor.org/errors/subtensor#hotkeynotregisteredinsubnet),
+[Subtensor Standard Errors: HotKeyNotRegisteredInNetwork](https://docs.learnbittensor.org/errors/subtensor#hotkeynotregisteredinnetwork)).
+
+- `HotKeyAccountNotExists` means the named hotkey account itself is not available for the call.
+- `HotKeyNotRegisteredInSubNet` means the hotkey exists, but not on the specified subnet.
+- `HotKeyNotRegisteredInNetwork` means the hotkey exists, but not on any network the call accepts.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the hotkey existence check it represents. It
+does not identify whether a specific live address should be registered on a subnet or whether that
+hotkey has enough stake for a later operation. Those are separate questions checked after account
+existence
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#hotkeyaccountnotexists)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#hotkeyaccountnotexists)
+- [Subtensor Standard Errors: HotKeyNotRegisteredInSubNet](https://docs.learnbittensor.org/errors/subtensor#hotkeynotregisteredinsubnet)
+- [Subtensor Standard Errors: HotKeyNotRegisteredInNetwork](https://docs.learnbittensor.org/errors/subtensor#hotkeynotregisteredinnetwork)
+- [Subtensor source: misc.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/misc.rs)
+- [Subtensor test: staking.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/tests/staking.rs)
