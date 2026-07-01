@@ -1,0 +1,110 @@
+---
+title: "Cap Too Low"
+summary:
+  "How the CapTooLow error blocks crowdloan creation or cap updates when the submitted funding cap
+  is too low relative to the creator deposit or current total raised."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Cap Too Low
+infoboxCaption:
+  Error raised when a crowdloan cap is below required lower bounds on create or update_cap.
+infoboxRows:
+  - label: Error
+    value: CapTooLow
+  - label: Trigger
+    value: cap <= deposit on create; new_cap < raised on update_cap
+  - label: Checked in
+    value: create and update_cap extrinsics
+  - label: Check type
+    value: Funding-cap lower-bound comparison
+---
+
+# Cap Too Low
+
+`CapTooLow` is a crowdloan pallet error raised when a submitted funding cap sits below a required
+lower bound. The pallet defines it as "The crowdloan cap is too low"
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+## What It Means
+
+Each [crowdloan](https://docs.learnbittensor.org/subnets/crowdloans) names a funding cap — the total
+amount the campaign can raise. The runtime applies `CapTooLow` on two extrinsics with different
+comparisons.
+
+On `create`, the cap must be strictly greater than the creator's initial deposit. On `update_cap`,
+the new cap must be at least as large as total raised so far
+([Crowdloans: Crowdloan Lifecycle](https://docs.learnbittensor.org/subnets/crowdloans#crowdloan-lifecycle),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+This is a cap-floor rejection on campaign setup or cap updates, not proof that total raised already
+equals the cap on `finalize`, that the creator deposit is below the runtime minimum, or that the
+campaign was already finalized.
+
+## Why It Appears
+
+On `create`, this error appears when the submitted cap is less than or equal to the creator deposit.
+On `update_cap`, it appears when the crowdloan creator submits a new cap below current total raised
+after the campaign loads and creator-origin checks pass
+([Crowdloans: Can the campaign parameters be updated mid‑flight?](https://docs.learnbittensor.org/subnets/crowdloans#can-the-campaign-parameters-be-updated-midflight),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+When debugging, compare against other rejections on the same call. On `create`, `DepositTooLow`
+means the initial deposit is below the runtime minimum deposit. On `update_cap`, `AlreadyFinalized`
+means the campaign already completed finalization and `InvalidOrigin` means the signer is not the
+crowdloan creator. `CapNotRaised` is the separate rejection on `finalize` when total raised still
+differs from the cap
+([Deposit Too Low](https://docs.learnbittensor.org/errors/subtensor#deposittoolow),
+[Cap Not Raised](https://docs.learnbittensor.org/errors/subtensor#capnotraised),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+The practical meaning is narrow: raise the cap above the relevant lower bound before retrying
+`create` or `update_cap`.
+
+## Distinction from Cap Not Raised
+
+`CapTooLow` and `CapNotRaised` both involve the funding cap, but on different extrinsics and checks.
+`CapTooLow` rejects a cap parameter that is too small relative to the creator deposit on `create` or
+to total raised on `update_cap`. `CapNotRaised` rejects `finalize` when total raised still differs
+from the cap ([Cap Not Raised](https://docs.learnbittensor.org/errors/subtensor#capnotraised),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+- **CapTooLow** — the submitted cap is below a required lower bound.
+- **CapNotRaised** — raised total still differs from the cap on finalize.
+
+## Distinction from Deposit Too Low
+
+`CapTooLow` and `DepositTooLow` both appear on `create`, but at different checks. `DepositTooLow`
+means the initial deposit is below the runtime minimum deposit. `CapTooLow` means the funding cap is
+not strictly greater than the deposit
+([Deposit Too Low](https://docs.learnbittensor.org/errors/subtensor#deposittoolow),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+- **CapTooLow** — the cap is not greater than the creator deposit.
+- **DepositTooLow** — the creator deposit is below the runtime minimum deposit.
+
+## Distinction from Cap Raised
+
+`CapTooLow` and `CapRaised` both involve the funding cap, but on different extrinsics. `CapTooLow`
+rejects cap settings that are too low on `create` or `update_cap`. `CapRaised` rejects `contribute`
+when total raised has already reached the stored cap
+([Cap Raised](https://docs.learnbittensor.org/errors/subtensor#capraised),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+- **CapTooLow** — the submitted cap is below a required lower bound.
+- **CapRaised** — the crowdloan's total funding cap is already full on contribute.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the cap lower-bound checks on `create` and
+`update_cap`. It does not report a particular crowdloan's live cap or raised amount on any network;
+those are campaign state readers can query separately
+([Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Crowdloans: Crowdloan Lifecycle](https://docs.learnbittensor.org/subnets/crowdloans#crowdloan-lifecycle)
+- [Crowdloans: Can the campaign parameters be updated mid‑flight?](https://docs.learnbittensor.org/subnets/crowdloans#can-the-campaign-parameters-be-updated-midflight)
+- [Cap Not Raised](https://docs.learnbittensor.org/errors/subtensor#capnotraised)
+- [Deposit Too Low](https://docs.learnbittensor.org/errors/subtensor#deposittoolow)
+- [Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)
