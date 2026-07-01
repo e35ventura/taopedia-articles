@@ -1,0 +1,97 @@
+---
+title: "Zero Share In Batch"
+summary:
+  "How the ZeroShareInBatch error blocks execute_batched_orders when pro-rata distribution computes
+  a zero unit share for an order."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Zero Share In Batch
+infoboxCaption: Error raised when a batched order's computed payout share is zero.
+infoboxRows:
+  - label: Error
+    value: ZeroShareInBatch
+  - label: Trigger
+    value: Pro-rata distribution floors an order share to zero
+  - label: Checked in
+    value: distribute_alpha_pro_rata and distribute_tao_pro_rata
+  - label: Check type
+    value: Non-zero per-order share guard
+---
+
+# Zero Share In Batch
+
+`ZeroShareInBatch` is a documented limit-orders error raised when batched execution computes a zero
+payout share for at least one order during pro-rata distribution. The Subtensor API error reference
+describes it as "An order's pro-rata share in the batch rounded down to zero"
+([Subtensor API Errors: ZeroShareInBatch](https://docs.learnbittensor.org/subtensor-api/errors#zeroshareinbatch)).
+
+## What It Means
+
+After `execute_batched_orders` validates orders, nets buy and sell sides, and performs any residual
+pool swap, the runtime distributes outputs pro-rata across participating orders. In
+`distribute_alpha_pro_rata` and `distribute_tao_pro_rata`, it computes each order's share with
+integer arithmetic and rejects the batch if any computed share is zero
+([Subnet Liquidity Pools](https://docs.learnbittensor.org/subnets/understanding-subnets#liquidity-pools),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+This check protects against consuming an order's input in the batch while giving that order no
+output due to floor rounding. The rejection is all-or-nothing for the dispatch, so intermediate
+state does not finalize on that failure path
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+This is a distribution-stage rounding safety rejection, not proof that a signature was invalid or
+that the residual pool swap returned zero output.
+
+## Why It Appears
+
+This error appears when at least one order's proportional slice of the distributed output rounds
+down to zero in integer math. That can occur in highly imbalanced batches, or when a specific
+order's net amount is too small relative to total side volume and available output
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+When debugging, compare against earlier batched failures. `DuplicateOrderInBatch` means the same
+order ID appears more than once. `OrderNetUidMismatch` means an order targets a different subnet
+than the batch parameter. `PriceConditionNotMet` is a per-order validation rejection before
+distribution logic is reached
+([Duplicate Order In Batch](https://docs.learnbittensor.org/errors/subtensor#duplicateorderinbatch),
+[Order Netuid Mismatch](https://docs.learnbittensor.org/errors/subtensor#ordernetuidmismatch),
+[Price Condition Not Met](https://docs.learnbittensor.org/errors/subtensor#priceconditionnotmet),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+## Distinction from Swap Returned Zero
+
+`ZeroShareInBatch` and `SwapReturnedZero` both block batched execution, but at different stages.
+`SwapReturnedZero` is raised during residual pool swap when non-zero net input yields zero swap
+output. `ZeroShareInBatch` is raised later, during per-order pro-rata distribution of available
+output ([Swap Returned Zero](https://docs.learnbittensor.org/errors/subtensor#swapreturnedzero),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+- **SwapReturnedZero** — residual pool swap output is zero.
+- **ZeroShareInBatch** — a per-order computed distribution share is zero.
+
+## Distinction from Duplicate Order In Batch
+
+`ZeroShareInBatch` and `DuplicateOrderInBatch` are both hard failures on batched execution, but they
+enforce different invariants. `DuplicateOrderInBatch` rejects repeated order IDs during early
+classification. `ZeroShareInBatch` rejects later when distribution math would allocate zero output
+to an included order
+([Duplicate Order In Batch](https://docs.learnbittensor.org/errors/subtensor#duplicateorderinbatch),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+- **DuplicateOrderInBatch** — batch contains repeated order IDs.
+- **ZeroShareInBatch** — distribution math yields zero output for an order.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the non-zero-share guard in batched
+distribution. It does not report live pool liquidity, per-order net sizes, or finalized per-order
+outputs for a specific batch; those are runtime state values readers can query separately
+([Subnet Liquidity Pools](https://docs.learnbittensor.org/subnets/understanding-subnets#liquidity-pools),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: ZeroShareInBatch](https://docs.learnbittensor.org/subtensor-api/errors#zeroshareinbatch)
+- [Swap Returned Zero](https://docs.learnbittensor.org/errors/subtensor#swapreturnedzero)
+- [Duplicate Order In Batch](https://docs.learnbittensor.org/errors/subtensor#duplicateorderinbatch)
+- [Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)
