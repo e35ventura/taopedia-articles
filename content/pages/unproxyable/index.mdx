@@ -1,0 +1,84 @@
+---
+title: "Unproxyable"
+summary:
+  "How the Unproxyable error blocks a proxy call when the requested call is incompatible with the
+  active proxy type's filter."
+category: "Wallets"
+tags: ["Wallets", "Errors"]
+infoboxTitle: Unproxyable
+infoboxCaption: Error raised when a proxy tries to submit a call its proxy type does not allow.
+infoboxRows:
+  - label: Error
+    value: Unproxyable
+  - label: Trigger
+    value: The requested call is not permitted by the matched proxy type filter
+  - label: Checked in
+    value: Proxy execution filter check
+  - label: Check type
+    value: Proxy-type compatibility check
+---
+
+# Unproxyable
+
+`Unproxyable` is a documented proxy-pallet error raised when a proxy relationship exists, but the
+call being attempted is not compatible with that proxy type's allowed call filter
+([Subtensor API Errors: Unproxyable](https://docs.learnbittensor.org/subtensor-api/errors#unproxyable)).
+
+## What It Means
+
+In the proxy pallet, a delegate can act for another account only within the permissions granted by
+the stored proxy type. `Unproxyable` means the runtime found a proxy relationship, but the specific
+call still failed the proxy type's filter, so the delegate could not submit that call on behalf of
+the target account
+([Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs)).
+
+The practical meaning is narrow: the problem is not that the proxy relationship is missing. The
+relationship exists, but it is not broad enough for the requested call.
+
+## Why It Appears
+
+This error appears when a delegate uses a proxy path for a call the matched proxy type does not
+permit. The proxy pallet distinguishes between finding the proxy definition and checking whether the
+call fits that definition's filter. `Unproxyable` is the filter-side rejection
+([Subtensor API Errors: Unproxyable](https://docs.learnbittensor.org/subtensor-api/errors#unproxyable),
+[Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs)).
+
+For a reader, the useful takeaway is that the delegate may still be a valid proxy in general, but
+not for this category of call.
+
+## Distinction from Not Proxy
+
+`Unproxyable` and `NotProxy` both stop proxy execution, but they fail at different checks.
+`NotProxy` means the runtime cannot find the needed proxy relationship at all. `Unproxyable` means
+the proxy relationship was found, but the requested call is outside that proxy type's permitted
+scope
+([Subtensor API Errors: NotProxy](https://docs.learnbittensor.org/subtensor-api/errors#notproxy),
+[Subtensor API Errors: Unproxyable](https://docs.learnbittensor.org/subtensor-api/errors#unproxyable)).
+
+- `NotProxy` means the required proxy relationship is not found.
+- `Unproxyable` means the relationship exists, but the call is not allowed by its proxy type.
+
+## Distinction from Unannounced
+
+`Unproxyable` and `Unannounced` also name different proxy failures. `Unannounced` means the delegate
+did not satisfy the announcement timing requirement for a delayed proxy action. `Unproxyable` means
+timing is not the problem; the requested call itself is incompatible with the matched proxy type
+([Subtensor API Errors: Unannounced](https://docs.learnbittensor.org/subtensor-api/errors#unannounced),
+[Subtensor API Errors: Unproxyable](https://docs.learnbittensor.org/subtensor-api/errors#unproxyable)).
+
+- `Unannounced` means a delayed proxy call was not properly announced in time.
+- `Unproxyable` means the call is outside the permissions of the proxy type.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the proxy-type filter check behind it. It does
+not describe every proxy type or every announcement rule; those are separate parts of proxy-pallet
+behavior
+([Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs)).
+
+## Further Reading
+
+- [Subtensor API Errors: Unproxyable](https://docs.learnbittensor.org/subtensor-api/errors#unproxyable)
+- [Subtensor API Errors: NotProxy](https://docs.learnbittensor.org/subtensor-api/errors#notproxy)
+- [Subtensor API Errors: Unannounced](https://docs.learnbittensor.org/subtensor-api/errors#unannounced)
+- [Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs)
