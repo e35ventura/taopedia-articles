@@ -1,0 +1,91 @@
+---
+title: "Zero Share In Batch"
+summary:
+  "How the ZeroShareInBatch error blocks a batched limit-order execution when any order's pro-rata
+  share of the pool output rounds down to zero, rolling back the entire batch to protect signers
+  from paying input and receiving nothing."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Zero Share In Batch
+infoboxCaption: Error raised when an order's pro-rata batch share rounds down to zero.
+infoboxRows:
+  - label: Error
+    value: ZeroShareInBatch
+  - label: Trigger
+    value: A buyer's alpha share or a seller's net TAO share floors to zero
+  - label: Checked in
+    value: distribute_assets, called by do_execute_batched_orders
+  - label: Check type
+    value: Integer floor check on pro-rata distribution
+---
+
+# Zero Share In Batch
+
+`ZeroShareInBatch` is a Subtensor standard error raised during batched limit-order execution when
+any order's pro-rata share of the pool output rounds down to zero in integer arithmetic. The pallet
+defines it as "An order's pro-rata share in the batch rounded down to zero. The whole batch is
+rejected so the order's input is never consumed without delivering any output (conservation), and
+the order stays retryable in a differently-composed batch"
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+## What It Means
+
+`execute_batched_orders` pools all buy and sell inputs, sends them through the subnet's liquidity
+pool in a single swap, then distributes the resulting output back to each order's signer
+proportionally. For buyers, each signer's alpha share is computed as
+`total_alpha × signer_net / total_buy_net`, floored to a whole unit. For sellers, each signer's
+TAO payout is computed similarly and then reduced by the relayer fee. When any result floors to
+zero, the pallet raises `ZeroShareInBatch` and rolls back the entire batch — including the
+up-front asset collection and the pool swap — rather than transferring nothing to that signer while
+still marking their order as terminal
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+This rollback is intentional conservation: the order stays open and retryable in a batch composed
+differently, so no signer loses input without receiving output
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+## Why It Appears
+
+The error appears when the total pool output is small relative to the number of orders in the
+batch, causing at least one order's fractional share to floor to zero in 64-bit integer arithmetic.
+This is most likely when a batch contains many orders with very different sizes, an order's net
+amount is very small compared to the total, or the pool returns a small output due to liquidity
+conditions at execution time
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+## Distinction from Duplicate Order In Batch
+
+`ZeroShareInBatch` and `DuplicateOrderInBatch` are both hard-fail errors that reject the entire
+batch, but they fire at different stages. `DuplicateOrderInBatch` fires during the pre-execution
+validation pass when the same order ID appears twice in the batch's input list.
+`ZeroShareInBatch` fires during the distribution phase, after the pool swap has already been
+attempted, when integer rounding produces a zero payout for at least one signer
+([Subtensor Standard Errors: DuplicateOrderInBatch](https://docs.learnbittensor.org/subtensor-api/errors),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+- **DuplicateOrderInBatch** — an order ID appears more than once in the batch input.
+- **ZeroShareInBatch** — an order's pro-rata output share rounds to zero during distribution.
+
+## Distinction from Swap Returned Zero
+
+`ZeroShareInBatch` and `SwapReturnedZero` both involve a zero-output outcome in batched order
+execution, but they detect it at different points.`SwapReturnedZero` fires when the pool swap
+itself returns zero total output. `ZeroShareInBatch` fires when the swap returns a non-zero total
+but the distribution arithmetic floors at least one individual signer's share to zero
+([Subtensor Standard Errors: SwapReturnedZero](https://docs.learnbittensor.org/subtensor-api/errors),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+- **SwapReturnedZero** — the pool swap produced zero total output for the batch.
+- **ZeroShareInBatch** — the swap produced non-zero output but one signer's share rounded to zero.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the integer floor check that raises it. It
+does not describe how batched orders are composed, how fees are calculated, or how liquidity pool
+pricing works
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+## Further Reading
+
+- [Subtensor API: Errors](https://docs.learnbittensor.org/subtensor-api/errors)
+- [Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)
