@@ -1,0 +1,119 @@
+---
+title: "Trimming Would Exceed Max Immune Percentage"
+summary:
+  "How the TrimmingWouldExceedMaxImmunePercentage error blocks a subnet owner's UID trim when the
+  protected immune share at the requested target would reach the documented 80% ceiling."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Trimming Would Exceed Max Immune Percentage
+infoboxCaption:
+  Error raised when a UID trim would leave too large a share of immune neurons at the target count.
+infoboxRows:
+  - label: Error
+    value: TrimmingWouldExceedMaxImmunePercentage
+  - label: Trigger
+    value: Immune UID share would meet or exceed the 80% ceiling at the trim target
+  - label: Checked in
+    value: UID trimming
+  - label: Example netuid
+    value: netuid 1
+---
+
+# Trimming Would Exceed Max Immune Percentage
+
+`TrimmingWouldExceedMaxImmunePercentage` means a subnet owner's UID trim on netuid 1 or another
+named subnet would leave too large a share of protected immune neurons at the requested target
+count. The Subtensor API errors reference summarizes it as "Trimming would exceed the max immune
+neurons percentage"
+([Subtensor API Errors: TrimmingWouldExceedMaxImmunePercentage](https://docs.learnbittensor.org/subtensor-api/errors#trimmingwouldexceedmaximmunepercentage)).
+
+[UID trimming](https://docs.learnbittensor.org/subnets/uid-trimming) lets a subnet owner shrink the
+live neuron count toward a lower maximum, remove low emitters first, and compress survivors into
+consecutive indices. Temporally immune UIDs and owner-controlled UIDs are skipped during that
+process ([UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming)).
+
+## What It Means
+
+UID trimming documentation states that the maximum number of immune UIDs must not exceed 80% of the
+maximum UID count. The chain enforces that ceiling before low emitters are removed, so a trim cannot
+proceed if the protected immune share at the requested target would violate the limit
+([UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming),
+[Subtensor Constants: maxImmuneUidsPercentage](https://docs.learnbittensor.org/subtensor-api/constants#maximmuneuidspercentage)).
+
+`TrimmingWouldExceedMaxImmunePercentage` is that immune-share rejection. It means the owner-selected
+target count would leave immune neurons at or above the documented ceiling once temporally immune
+and owner-protected UIDs are counted, so the trim stops before any deregistrations run.
+
+This is an immune-composition gate on the trim target. It does not, by itself, say anything about
+trim timing cooldowns, whether the subnet exists, or whether the requested count is outside the
+documented minimum and maximum UID bounds.
+
+## Why It Appears
+
+This error appears when a subnet owner submits a UID trim whose target maximum would still leave too
+many protected immune slots relative to that target. That can happen when many neurons remain inside
+the immunity window, when owner-protected UIDs already occupy a large share of the table, or when
+the requested target is low enough that the surviving immune set would cross the 80% line
+([UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming)).
+
+When debugging a failed trim on netuid 1, compare against other early trim rejections before
+assuming a performance-selection problem. `InvalidValue` means the submitted target count falls
+outside the allowed minimum or maximum UID bounds for the subnet. `HotKeySetTxRateLimitExceeded`
+means a prior trim has not cleared the documented trimming cooldown yet
+([Subtensor Standard Errors: InvalidValue](https://docs.learnbittensor.org/errors/subtensor#invalidvalue),
+[Chain Rate Limits: UID trimming rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#uid-trimming-rate-limit)).
+
+The practical meaning is narrow: the owner must choose a different target count, wait for some
+immune protection to expire, or otherwise reduce protected immune share before the trim can proceed.
+
+## Distinction from Invalid Value
+
+`TrimmingWouldExceedMaxImmunePercentage` and `InvalidValue` both appear on UID trimming calls, but
+they test different inputs. `InvalidValue` means the submitted target UID count is outside the
+subnet's allowed minimum or maximum bounds. `TrimmingWouldExceedMaxImmunePercentage` means the
+target count is within range, but the protected immune share at that count would violate the 80%
+ceiling
+([Subtensor Standard Errors: InvalidValue](https://docs.learnbittensor.org/errors/subtensor#invalidvalue)).
+
+- **TrimmingWouldExceedMaxImmunePercentage** — immune neurons would exceed the allowed share at the
+  target count.
+- **InvalidValue** — the submitted target UID count is out of allowed bounds.
+
+## Distinction from Hotkey Set Tx Rate Limit Exceeded
+
+`TrimmingWouldExceedMaxImmunePercentage` and `HotKeySetTxRateLimitExceeded` both block subnet-owner
+UID trims, but at different checks. `TrimmingWouldExceedMaxImmunePercentage` is the immune-share
+rejection on the requested target count. `HotKeySetTxRateLimitExceeded` is the timing rejection when
+another trim was attempted before the documented trimming cooldown cleared
+([Chain Rate Limits: UID trimming rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#uid-trimming-rate-limit),
+[Subtensor Standard Errors: HotKeySetTxRateLimitExceeded](https://docs.learnbittensor.org/errors/subtensor#hotkeysettxratelimitexceeded)).
+
+- **TrimmingWouldExceedMaxImmunePercentage** — too many immune UIDs would remain at the target.
+- **HotKeySetTxRateLimitExceeded** — the trim was attempted too soon after the last trim.
+
+## Distinction from Min Allowed UIDs
+
+`TrimmingWouldExceedMaxImmunePercentage` and the documented minimum trim target both constrain how
+far an owner can shrink a subnet, but they guard different properties. The minimum allowed UID count
+is the floor below which a trim cannot target. `TrimmingWouldExceedMaxImmunePercentage` is the
+separate immune-share ceiling that can block a target even when that target is above the documented
+minimum of 64 UIDs ([UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming),
+[Min Allowed UIDs](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#minalloweduids)).
+
+- **TrimmingWouldExceedMaxImmunePercentage** — immune share at the target would exceed 80%.
+- **Min allowed UIDs** — the target count is below the subnet's documented trim floor.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the immune-share gate it represents. It does
+not report how many immune UIDs a live subnet currently has or which specific neurons would survive
+a trim on netuid 1; those depend on chain state at observation time
+([UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: TrimmingWouldExceedMaxImmunePercentage](https://docs.learnbittensor.org/subtensor-api/errors#trimmingwouldexceedmaximmunepercentage)
+- [UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming)
+- [Subtensor Constants: maxImmuneUidsPercentage](https://docs.learnbittensor.org/subtensor-api/constants#maximmuneuidspercentage)
+- [Chain Rate Limits: UID trimming rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#uid-trimming-rate-limit)
