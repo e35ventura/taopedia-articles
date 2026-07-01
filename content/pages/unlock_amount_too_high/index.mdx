@@ -1,0 +1,72 @@
+---
+title: "Unlock Amount Too High"
+summary:
+  "How the UnlockAmountTooHigh error blocks an unlock call when the requested amount exceeds what is
+  currently locked for the account."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Unlock Amount Too High
+infoboxCaption: Error raised when an unlock request exceeds the locked amount.
+infoboxRows:
+  - label: Error
+    value: UnlockAmountTooHigh
+  - label: Trigger
+    value: Requested unlock amount exceeds the currently locked balance
+  - label: Description
+    value: '"Trying to unlock more than locked"'
+  - label: Related concept
+    value: Conviction lock
+---
+
+# Unlock Amount Too High
+
+`UnlockAmountTooHigh` is a documented Subtensor standard error raised when an unlock call requests
+an amount that exceeds the balance currently locked for the account. The standard-errors reference
+describes it as "Trying to unlock more than locked"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#unlockamounttoohigh),
+[Subtensor API Errors: UnlockAmountTooHigh](https://docs.learnbittensor.org/subtensor-api/errors#unlockamounttoohigh)).
+
+## What It Means
+
+Conviction locks hold a balance in place for a specified period in Bittensor. Unlocking removes some
+or all of that locked balance, but only up to the amount that is currently locked.
+`UnlockAmountTooHigh` is the rejection when the requested unlock amount is larger than the locked
+balance available to release
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#unlockamounttoohigh)).
+
+This is an amount-validation rejection, not proof that the lock has expired, that the unlock
+cooldown has not passed, or that the account has no lock at all.
+
+## Why It Appears
+
+This error appears when an unlock call requests more than the balance currently held in a conviction
+lock. That can happen when a client tracks the locked amount locally and the live value has since
+changed, when automation passes a hard-coded ceiling that exceeds the actual lock, or when a partial
+unlock was already applied and the remaining locked amount is now smaller than the requested value
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#unlockamounttoohigh)).
+
+The practical meaning is narrow: the requested unlock amount must not exceed the balance currently
+locked before the call can succeed.
+
+## Distinction from No Existing Lock
+
+`UnlockAmountTooHigh` and `NoExistingLock` both block unlock-related calls, but at different checks.
+`NoExistingLock` fires when the account has no conviction lock at all. `UnlockAmountTooHigh` fires
+when a lock exists but the requested amount is above what is locked
+([Subtensor Standard Errors: NoExistingLock](https://docs.learnbittensor.org/errors/subtensor#noexistinglock)).
+
+- **UnlockAmountTooHigh** — lock exists but requested amount exceeds the locked balance.
+- **NoExistingLock** — no conviction lock exists for the account.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the amount comparison that raises it. It does
+not report the live locked balance for any specific account or subnet; that depends on chain state
+at the time of the call
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#unlockamounttoohigh)
+- [Subtensor API Errors: UnlockAmountTooHigh](https://docs.learnbittensor.org/subtensor-api/errors#unlockamounttoohigh)
+- [Subtensor Standard Errors: NoExistingLock](https://docs.learnbittensor.org/errors/subtensor#noexistinglock)
