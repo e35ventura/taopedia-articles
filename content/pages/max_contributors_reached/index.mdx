@@ -1,0 +1,72 @@
+---
+title: "Max Contributors Reached"
+summary:
+  "How the MaxContributorsReached error blocks a crowdloan contribution when the crowdloan already
+  has 500 contributors, the network-wide maximum."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Max Contributors Reached
+infoboxCaption: Error raised when a crowdloan already has the maximum number of contributors.
+infoboxRows:
+  - label: Error
+    value: MaxContributorsReached
+  - label: Trigger
+    value: contributors_count already at MaxContributors (500)
+  - label: Checked in
+    value: contribute extrinsic
+  - label: Check type
+    value: Count comparison against a fixed limit
+---
+
+# Max Contributors Reached
+
+`MaxContributorsReached` is a documented Subtensor standard error raised by the `contribute`
+extrinsic in the crowdloan pallet. The Subtensor API error reference describes it as "The maximum
+number of contributors has been reached"
+([Subtensor API: Errors](https://docs.learnbittensor.org/subtensor-api/errors)).
+
+## What It Means
+
+Each [crowdloan](https://docs.learnbittensor.org/subnets/crowdloans) tracks how many accounts have
+contributed to it. The `contribute` extrinsic checks that count against `MaxContributors`, a fixed
+runtime constant set to 500, and raises `MaxContributorsReached` when the count has already reached
+that limit — blocking any `contribute` call, including from accounts that have already contributed
+before
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+The limit is a fixed constant, not per-crowdloan state. Any crowdloan with 500 contributors already
+recorded fails this check for any caller regardless of how much of its funding cap remains
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+## Why It Appears
+
+This check runs after confirming the contribution period has not ended and the crowdloan has not yet
+raised its full cap, but before the contribution itself is processed. A popular crowdloan that fills
+its contributor slots before filling its funding cap will reject any `contribute` call here —
+including from accounts with existing contributions — even though additional funding would still be
+accepted per the cap
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+## Distinction from Cap Raised
+
+`MaxContributorsReached` and `CapRaised` both block new contributions, but they reflect different
+limits. `CapRaised` fires when the crowdloan's total raised amount has reached its funding cap.
+`MaxContributorsReached` fires when the number of contributing accounts has reached 500,
+independently of how much total funding has been raised
+([Subtensor Standard Errors: CapRaised](https://docs.learnbittensor.org/subtensor-api/errors),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+- **CapRaised** — the crowdloan's total funding has hit its cap.
+- **MaxContributorsReached** — the crowdloan already has 500 contributors.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the count check that raises it. It does not
+describe how crowdloans are created, funded, or finalized; those are documented separately
+([Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans)).
+
+## Further Reading
+
+- [Subtensor API: Errors](https://docs.learnbittensor.org/subtensor-api/errors)
+- [Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans)
+- [Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)
