@@ -1,0 +1,84 @@
+---
+title: "Fee Overflow"
+summary:
+  "How the FeeOverflow error blocks an EVM action when converting the transaction fee overflows
+  during calculation."
+category: "Wallets"
+tags: ["Wallets", "Errors", "EVM"]
+infoboxTitle: Fee Overflow
+infoboxCaption: Error raised when EVM fee conversion overflows during calculation.
+infoboxRows:
+  - label: Error
+    value: FeeOverflow
+  - label: Pallet
+    value: evm
+  - label: Trigger
+    value: Fee conversion overflows when mapping EVM fee to substrate balance
+  - label: Check type
+    value: EVM fee conversion
+---
+
+# Fee Overflow
+
+`FeeOverflow` is an EVM pallet error raised when calculating the total fee overflows. The API errors
+reference summarizes it as "Calculating total fee overflowed"
+([Subtensor API Errors: FeeOverflow](https://docs.learnbittensor.org/subtensor-api/errors#feeoverflow)).
+
+## What It Means
+
+Bittensor's EVM layer charges fees for Ethereum-compatible transactions on Subtensor. Before a fee
+can be withdrawn from the mapped account, the runtime converts the EVM fee amount into the substrate
+balance unit used for withdrawal. `FeeOverflow` means that conversion step overflowed, so the fee
+path stops before balance is checked or withdrawn
+([Bittensor EVM Smart Contracts](https://docs.learnbittensor.org/evm-tutorials),
+[Subtensor API Errors: FeeOverflow](https://docs.learnbittensor.org/subtensor-api/errors#feeoverflow)).
+
+This is a fee-calculation rejection on the conversion step. It does not, by itself, mean the mapped
+account lacked balance to pay the fee or that the transaction's gas limit or gas price was invalid.
+
+## Why It Appears
+
+This error appears when the EVM fee amount cannot be converted safely into the substrate balance
+representation used for fee withdrawal. The practical meaning is narrow: the submitted fee magnitude
+is too large for the conversion path, so the call must be retried with fee parameters that convert
+without overflowing
+([Subtensor API Errors: FeeOverflow](https://docs.learnbittensor.org/subtensor-api/errors#feeoverflow),
+[Token Bridging](https://docs.learnbittensor.org/evm-tutorials/bridge-vtao)).
+
+## Distinction from Balance Low
+
+`FeeOverflow` and `BalanceLow` both block EVM fee handling, but at different checks. `FeeOverflow`
+means fee conversion overflowed before withdrawal. `BalanceLow` means conversion succeeded but the
+mapped account could not fund the withdrawal
+([Subtensor API Errors: BalanceLow](https://docs.learnbittensor.org/subtensor-api/errors#balancelow),
+[Subtensor API Errors: FeeOverflow](https://docs.learnbittensor.org/subtensor-api/errors#feeoverflow)).
+
+- **FeeOverflow** — fee calculation overflowed during conversion.
+- **BalanceLow** — the account cannot fund the required fee withdrawal.
+
+## Distinction from Gas Limit Too High
+
+`FeeOverflow` and `GasLimitTooHigh` both reject EVM transaction parameters, but on different checks.
+`GasLimitTooHigh` means the submitted gas limit exceeds the runtime maximum allowed for the call.
+`FeeOverflow` means the fee amount overflowed during conversion, independent of whether the gas
+limit itself was within bounds
+([Subtensor API Errors: GasLimitTooHigh](https://docs.learnbittensor.org/subtensor-api/errors#gaslimittoohigh),
+[Subtensor API Errors: FeeOverflow](https://docs.learnbittensor.org/subtensor-api/errors#feeoverflow)).
+
+- **FeeOverflow** — fee conversion overflowed during calculation.
+- **GasLimitTooHigh** — the submitted gas limit exceeds the allowed maximum.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the fee-conversion check it represents on EVM
+paths. It does not report the live balance of any EVM address or compute a safe fee for a specific
+transaction; those depend on chain state and call parameters at submission time
+([Bittensor EVM Smart Contracts](https://docs.learnbittensor.org/evm-tutorials),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: FeeOverflow](https://docs.learnbittensor.org/subtensor-api/errors#feeoverflow)
+- [Subtensor API Errors: BalanceLow](https://docs.learnbittensor.org/subtensor-api/errors#balancelow)
+- [Subtensor API Errors: GasLimitTooHigh](https://docs.learnbittensor.org/subtensor-api/errors#gaslimittoohigh)
+- [Bittensor EVM Smart Contracts](https://docs.learnbittensor.org/evm-tutorials)
