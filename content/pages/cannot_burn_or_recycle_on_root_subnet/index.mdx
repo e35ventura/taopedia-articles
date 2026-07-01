@@ -1,0 +1,100 @@
+---
+title: "Cannot Burn Or Recycle On Root Subnet"
+summary:
+  "How the CannotBurnOrRecycleOnRootSubnet error blocks burn_alpha and recycle_alpha calls that
+  target the Root Subnet, since Subnet Zero does not support subnet alpha burn or recycle paths."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Cannot Burn Or Recycle On Root Subnet
+infoboxCaption: Error raised when burn or recycle alpha targets Subnet Zero.
+infoboxRows:
+  - label: Error
+    value: CannotBurnOrRecycleOnRootSubnet
+  - label: Trigger
+    value: netuid is the Root Subnet
+  - label: Checked in
+    value: do_burn_alpha and do_recycle_alpha
+  - label: Related concept
+    value: Root Subnet
+---
+
+# Cannot Burn Or Recycle On Root Subnet
+
+`CannotBurnOrRecycleOnRootSubnet` is a documented Subtensor standard error raised when a burn or
+recycle alpha call targets the Root Subnet. The standard-errors reference describes it as "Cannot
+burn/recycle TAO from root subnet"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#cannotburnorrecycleonrootsubnet)).
+
+## What It Means
+
+`burn_alpha` and `recycle_alpha` let a coldkey destroy or recycle subnet alpha tied to a hotkey on
+an ordinary mining subnet. The Root Subnet, also called Subnet Zero, is a subnet-agnostic staking
+path where stake stays TAO-denominated rather than in a subnet's local alpha context
+([Root Subnet](https://docs.learnbittensor.org/resources/glossary#root-subnetsubnet-zero),
+[Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)).
+
+In `recycle_alpha.rs`, both `do_burn_alpha` and `do_recycle_alpha` reject the call when
+`netuid.is_root()` is true, returning `CannotBurnOrRecycleOnRootSubnet` before subtoken, hotkey, or
+stake checks run
+([Subtensor source: recycle_alpha.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/recycle_alpha.rs)).
+
+The check is a subnet-kind gate: Root Subnet exists on chain, but these alpha burn and recycle
+extrinsics are reserved for ordinary subnets only.
+
+## Why It Appears
+
+This error appears when a wallet submits `burn_alpha` or `recycle_alpha` with the Root Subnet as the
+target netuid. That can happen when a client defaults to Subnet Zero, copies a netuid from another
+flow, or confuses root staking with subnet alpha operations on an ordinary mining subnet
+([Subtensor source: recycle_alpha.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/recycle_alpha.rs)).
+
+When debugging, rule out earlier existence failures first. `SubnetNotExists` means the targeted
+netuid is not present on chain. `CannotBurnOrRecycleOnRootSubnet` means the netuid is the Root
+Subnet, which does exist but is excluded from these paths
+([Subtensor Standard Errors: SubnetNotExists](https://docs.learnbittensor.org/errors/subtensor#subnetnotexists)).
+
+On ordinary subnets, later gates can still reject the call after this check passes, including
+`SubtokenDisabled`, `HotKeyAccountNotExists`, and `InsufficientLiquidity`
+([Subtensor source: recycle_alpha.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/recycle_alpha.rs)).
+
+For a reader, the practical meaning is narrow: burn and recycle alpha are not available on the Root
+Subnet. The problem is not that the subnet is missing, that subtoken trading is disabled on an
+ordinary subnet, or that the hotkey lacks enough staked alpha on a valid mining subnet.
+
+## Distinction from Subnet Not Exists
+
+`CannotBurnOrRecycleOnRootSubnet` and `SubnetNotExists` both appear when a burn or recycle call
+names a problematic netuid, but they reject different conditions. `SubnetNotExists` means the subnet
+is absent from chain state. `CannotBurnOrRecycleOnRootSubnet` means the subnet is the Root Subnet,
+which is present but excluded from these alpha burn and recycle paths
+([Subtensor Standard Errors: SubnetNotExists](https://docs.learnbittensor.org/errors/subtensor#subnetnotexists),
+[Subtensor source: recycle_alpha.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/recycle_alpha.rs)).
+
+- **SubnetNotExists** — the targeted subnet does not exist.
+- **CannotBurnOrRecycleOnRootSubnet** — the targeted subnet is the Root Subnet.
+
+## Distinction from Can Not Set Root Network Weights
+
+`CannotBurnOrRecycleOnRootSubnet` and `CanNotSetRootNetworkWeights` both involve the Root Subnet,
+but on different extrinsic families. `CannotBurnOrRecycleOnRootSubnet` blocks alpha burn and recycle
+calls that target Subnet Zero. `CanNotSetRootNetworkWeights` blocks weight-setting calls that target
+the root network through the ordinary set-weights path
+([Can Not Set Root Network Weights](https://docs.learnbittensor.org/errors/subtensor#cannotsetrootnetworkweights)).
+
+- **CannotBurnOrRecycleOnRootSubnet** — burn or recycle alpha was aimed at the Root Subnet.
+- **CanNotSetRootNetworkWeights** — ordinary weight submission targeted the root network.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the `netuid.is_root()` gate in `do_burn_alpha`
+and `do_recycle_alpha`. It does not describe every other extrinsic that touches the Root Subnet,
+such as root staking or root registration flows; those are documented separately
+([Root Subnet](https://docs.learnbittensor.org/resources/glossary#root-subnetsubnet-zero),
+[Subtensor source: recycle_alpha.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/recycle_alpha.rs)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#cannotburnorrecycleonrootsubnet)
+- [Glossary: Root Subnet/Subnet Zero](https://docs.learnbittensor.org/resources/glossary#root-subnetsubnet-zero)
+- [Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)
+- [Subtensor source: recycle_alpha.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/recycle_alpha.rs)
