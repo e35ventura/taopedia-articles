@@ -1,0 +1,98 @@
+---
+title: "Too Many Registrations This Block"
+summary:
+  "How the TooManyRegistrationsThisBlock error blocks root_register when the Root Subnet has already
+  reached its per-block registration limit."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Too Many Registrations This Block
+infoboxCaption: Error raised when root registration bursts exceed the block cap.
+infoboxRows:
+  - label: Error
+    value: TooManyRegistrationsThisBlock
+  - label: Trigger
+    value: Root registrations this block reached MaxRegistrationsPerBlock
+  - label: Checked in
+    value: root_register path
+  - label: Related hyperparameter
+    value: MaxRegistrationsPerBlock
+---
+
+# Too Many Registrations This Block
+
+`TooManyRegistrationsThisBlock` means a `root_register` call arrived after the Root Subnet had
+already used its allowed registration slots in the current block. The standard-errors reference
+describes it as "Too many registrations in this block"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#toomanyregistrationsthisblock)).
+
+The check applies on the Root Subnet validator-entry path only. Ordinary mining-subnet registration
+is priced through continuous burn economics rather than this per-block cap
+([Subnet Hyperparameters: MaxRegistrationsPerBlock](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#maxregistrationsperblock),
+[Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register)).
+
+## What It Means
+
+`root_register` admits validators to the Root Subnet, also called Subnet Zero. Before stake and
+membership checks run, the chain counts how many root registrations have already succeeded in the
+current block and compares that count to the Root Subnet's `MaxRegistrationsPerBlock` setting.
+`TooManyRegistrationsThisBlock` means the block cap is already full, so the call is rejected
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#toomanyregistrationsthisblock),
+[Root Subnet / Subnet Zero](https://docs.learnbittensor.org/resources/glossary#root-subnetsubnet-zero)).
+
+This is a burst-rate gate on root registration. It runs early in the `root_register` path, before
+later failures such as duplicate-hotkey or stake-comparison errors.
+
+## Why It Appears
+
+This error appears when multiple `root_register` calls compete in the same block and the Root
+Subnet's per-block allowance is exhausted before the caller's transaction executes. Automation that
+retries root registration aggressively within one block, or mempools that land several root
+registrations in the same block, can see this failure even when the hotkey would otherwise be
+eligible
+([Subnet Hyperparameters: MaxRegistrationsPerBlock](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#maxregistrationsperblock)).
+
+When debugging, rule out the adjacent root registration pacing failure first.
+`TooManyRegistrationsThisInterval` means the broader interval allowance for root registrations has
+been exhausted, not just the current block
+([Subtensor Standard Errors: TooManyRegistrationsThisInterval](https://docs.learnbittensor.org/errors/subtensor#toomanyregistrationsthisinterval)).
+
+The practical meaning is narrow: the Root Subnet's per-block registration cap is full. The problem
+is not that the hotkey is already registered on the Root Subnet, that root stake is too low to
+displace an incumbent, or that ordinary subnet registration burn pricing changed.
+
+## Distinction from Too Many Registrations This Interval
+
+`TooManyRegistrationsThisBlock` and `TooManyRegistrationsThisInterval` are paired burst limits on
+`root_register`. `TooManyRegistrationsThisBlock` means the current block's registration count has
+hit `MaxRegistrationsPerBlock`. `TooManyRegistrationsThisInterval` means the wider interval counter
+has exceeded its allowed target, checked immediately after the per-block gate on the same path
+([Subtensor Standard Errors: TooManyRegistrationsThisInterval](https://docs.learnbittensor.org/errors/subtensor#toomanyregistrationsthisinterval)).
+
+- **TooManyRegistrationsThisBlock** — the block's root registration cap is full.
+- **TooManyRegistrationsThisInterval** — the interval's root registration cap is full.
+
+## Distinction from Hotkey Already Registered In Subnet
+
+`TooManyRegistrationsThisBlock` and `HotKeyAlreadyRegisteredInSubNet` both appear on
+`root_register`, but at different stages. `TooManyRegistrationsThisBlock` is the early per-block
+pacing rejection before membership is evaluated. `HotKeyAlreadyRegisteredInSubNet` means the hotkey
+already holds a UID on the Root Subnet
+([Subtensor Standard Errors: HotKeyAlreadyRegisteredInSubNet](https://docs.learnbittensor.org/errors/subtensor#hotkeyalreadyregisteredinsubnet)).
+
+- **TooManyRegistrationsThisBlock** — the block's root registration allowance is exhausted.
+- **HotKeyAlreadyRegisteredInSubNet** — the hotkey already has a root UID.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the per-block cap on `root_register`. It does
+not describe ordinary mining-subnet registration, how root stake displacement works, or the live
+`MaxRegistrationsPerBlock` value on a network; those are documented separately
+([Subnet Hyperparameters: MaxRegistrationsPerBlock](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#maxregistrationsperblock),
+[Stake Too Low For Root](https://docs.learnbittensor.org/errors/subtensor#staketoolowforroot)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#toomanyregistrationsthisblock)
+- [Subtensor Standard Errors: TooManyRegistrationsThisInterval](https://docs.learnbittensor.org/errors/subtensor#toomanyregistrationsthisinterval)
+- [Subnet Hyperparameters: MaxRegistrationsPerBlock](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#maxregistrationsperblock)
+- [Glossary: Root Subnet / Subnet Zero](https://docs.learnbittensor.org/resources/glossary#root-subnetsubnet-zero)
