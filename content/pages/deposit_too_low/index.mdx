@@ -1,0 +1,94 @@
+---
+title: "Deposit Too Low"
+summary:
+  "How the DepositTooLow error blocks crowdloan creation when the submitted deposit is below the
+  runtime's required minimum deposit."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Deposit Too Low
+infoboxCaption: Error raised when a crowdloan deposit is below the runtime minimum.
+infoboxRows:
+  - label: Error
+    value: DepositTooLow
+  - label: Trigger
+    value: deposit < MinimumDeposit
+  - label: Checked in
+    value: create extrinsic
+  - label: Check type
+    value: Deposit floor validation during crowdloan creation
+---
+
+# Deposit Too Low
+
+`DepositTooLow` is a documented crowdloan error raised on the crowdloan creation path. The Subtensor
+API errors reference lists it under the crowdloan pallet
+([Subtensor API Errors: DepositTooLow](https://docs.learnbittensor.org/subtensor-api/errors#deposittoolow)).
+
+## What It Means
+
+A crowdloan creator must lock a deposit when opening a crowdloan. `DepositTooLow` means the deposit
+submitted to `create` is below the runtime's minimum deposit requirement, so the runtime rejects the
+crowdloan before it is created ([Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+In the runtime, `create` validates the deposit before later crowdloan-configuration checks such as
+whether the cap is large enough and whether the minimum contribution clears the absolute minimum. If
+the submitted `deposit` is less than `T::MinimumDeposit::get()`, the call returns `DepositTooLow`
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+The practical meaning is narrow: the opening deposit itself is below the runtime floor.
+
+## Why It Appears
+
+This error appears when someone tries to create a crowdloan with a deposit smaller than the minimum
+allowed by the runtime
+([Subtensor API Errors: DepositTooLow](https://docs.learnbittensor.org/subtensor-api/errors#deposittoolow),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+The tests show the boundary directly. A `create` call that uses a deposit of `4` fails with
+`DepositTooLow`, while the same path accepts the minimum valid deposit used in the happy-path test
+setup
+([Subtensor test: crowdloan/tests.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/tests.rs)).
+
+This is not a rejection about the contribution floor, and it is not a rejection about the crowdloan
+cap. It is the specific check for the creator's required deposit.
+
+## Distinction from Minimum Contribution Too Low
+
+`DepositTooLow` and `MinimumContributionTooLow` are both crowdloan creation checks, but they guard
+different inputs. `MinimumContributionTooLow` means the crowdloan's per-contribution minimum is
+below the runtime's absolute contribution floor. `DepositTooLow` means the creator's opening deposit
+is below the runtime's deposit floor
+([Subtensor API Errors: MinimumContributionTooLow](https://docs.learnbittensor.org/subtensor-api/errors#minimumcontributiontoolow),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+- **MinimumContributionTooLow** — the submitted contribution minimum is below the absolute minimum
+  contribution.
+- **DepositTooLow** — the submitted crowdloan deposit is below the required minimum deposit.
+
+## Distinction from Cap Too Low
+
+`DepositTooLow` and `CapTooLow` can both block crowdloan creation, but they reject different funding
+inputs. `CapTooLow` means the crowdloan's funding cap is too small relative to the submitted
+deposit. `DepositTooLow` means the deposit itself is below the runtime floor even before the runtime
+considers whether the cap is large enough
+([Subtensor API Errors: CapTooLow](https://docs.learnbittensor.org/subtensor-api/errors#captoolow),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+- **CapTooLow** — the funding cap is too small for the submitted deposit.
+- **DepositTooLow** — the deposit is too small for the runtime's minimum deposit rule.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the deposit-floor check that raises it. It does
+not describe every other crowdloan creation rule or contribution rule; those are separate parts of
+the crowdloan flow ([Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans)).
+
+## Further Reading
+
+- [Subtensor API Errors: DepositTooLow](https://docs.learnbittensor.org/subtensor-api/errors#deposittoolow)
+- [Subtensor API Errors: MinimumContributionTooLow](https://docs.learnbittensor.org/subtensor-api/errors#minimumcontributiontoolow)
+- [Subtensor API Errors: CapTooLow](https://docs.learnbittensor.org/subtensor-api/errors#captoolow)
+- [Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans)
+- [Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)
+- [Subtensor test: crowdloan/tests.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/tests.rs)
