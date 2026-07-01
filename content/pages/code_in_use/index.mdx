@@ -1,0 +1,89 @@
+---
+title: "Code In Use"
+summary:
+  "How the CodeInUse error blocks a contract code removal when the code hash is still referenced by
+  at least one contract."
+category: "Smart Contracts"
+tags: ["Smart Contracts", "Errors", "EVM"]
+infoboxTitle: Code In Use
+infoboxCaption: Error raised when contract code removal is denied because the code is still in use.
+infoboxRows:
+  - label: Error
+    value: CodeInUse
+  - label: Pallet
+    value: contracts
+  - label: Trigger
+    value: Code removal attempted while the code is still referenced by at least one contract
+  - label: Check type
+    value: Refcount guard on the code-removal path
+---
+
+# Code In Use
+
+`CodeInUse` is a contracts pallet error raised when the runtime refuses to remove contract code
+because at least one contract still references it. The API errors reference summarizes it as "Code
+removal was denied because the code is still in use by at least one contract."
+([Subtensor API Errors: CodeInUse](https://docs.learnbittensor.org/subtensor-api/errors#codeinuse)).
+
+## What It Means
+
+Bittensor runs an Ethereum-compatible execution layer on Subtensor for smart contracts
+([Bittensor EVM Smart Contracts](https://docs.learnbittensor.org/evm-tutorials)). Stored contract
+code is referenced by every contract instance that was instantiated from it, and the runtime tracks
+that reference count. `CodeInUse` means a removal request targets a code hash whose reference count
+is non-zero, so the runtime refuses to delete the code or release its deposit
+([Subtensor API Errors: CodeInUse](https://docs.learnbittensor.org/subtensor-api/errors#codeinuse)).
+
+This is a refcount guard on the code-removal path. It does not, by itself, mean no code exists at
+the supplied hash, that the supplied instantiate code exceeded the size limit, or that the contract
+code failed validation during upload.
+
+## Why It Appears
+
+This error appears when the runtime receives a removal request for a stored code hash while at least
+one contract still depends on it. The contracts pallet source confirms the guard as a refcount check
+on the removal helper: the helper verifies `code_info.refcount == 0` before it releases the deposit
+and clears the stored code
+([polkadot-sdk: substrate/frame/contracts/src/wasm/mod.rs:180](https://github.com/paritytech/polkadot-sdk/blob/master/substrate/frame/contracts/src/wasm/mod.rs#L180)).
+The API errors page describes the effect at the user level: removal is denied while the code is
+still in use
+([Subtensor API Errors: CodeInUse](https://docs.learnbittensor.org/subtensor-api/errors#codeinuse)).
+
+## Distinction from Code Not Found
+
+`CodeInUse` and `CodeNotFound` both arise on the code-removal path, but they fire at different
+guards inside the same helper. `CodeInUse` is summarized as "Code removal was denied because the
+code is still in use by at least one contract." `CodeNotFound` is summarized as "No code could be
+found at the supplied code hash."
+([Subtensor API Errors: CodeInUse](https://docs.learnbittensor.org/subtensor-api/errors#codeinuse),
+[Subtensor API Errors: CodeNotFound](https://docs.learnbittensor.org/subtensor-api/errors#codenotfound)).
+
+- **CodeInUse** — the code exists but is still referenced by at least one contract.
+- **CodeNotFound** — no code exists at the supplied code hash.
+
+## Distinction from Code Too Large
+
+`CodeInUse` and `CodeTooLarge` are both contracts pallet errors but they reject different problems
+on different code paths. `CodeInUse` is summarized as "Code removal was denied because the code is
+still in use by at least one contract." `CodeTooLarge` is summarized as "The code supplied to
+`instantiate_with_code` exceeds the limit specified in the current schedule."
+([Subtensor API Errors: CodeInUse](https://docs.learnbittensor.org/subtensor-api/errors#codeinuse),
+[Subtensor API Errors: CodeTooLarge](https://docs.learnbittensor.org/subtensor-api/errors#codetoolarge)).
+
+- **CodeInUse** — the stored code is still referenced at removal time.
+- **CodeTooLarge** — the supplied instantiate code exceeds the schedule size limit.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the refcount guard it represents on the
+code-removal path. It does not enumerate which contracts currently reference a particular code hash
+or report the live reference count on a network
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks),
+[Subtensor API Errors: CodeInUse](https://docs.learnbittensor.org/subtensor-api/errors#codeinuse)).
+
+## Further Reading
+
+- [Subtensor API Errors: CodeInUse](https://docs.learnbittensor.org/subtensor-api/errors#codeinuse)
+- [Subtensor API Errors: CodeNotFound](https://docs.learnbittensor.org/subtensor-api/errors#codenotfound)
+- [Subtensor API Errors: CodeTooLarge](https://docs.learnbittensor.org/subtensor-api/errors#codetoolarge)
+- [Bittensor EVM Smart Contracts](https://docs.learnbittensor.org/evm-tutorials)
