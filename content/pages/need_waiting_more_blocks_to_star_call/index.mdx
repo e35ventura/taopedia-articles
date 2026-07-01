@@ -1,0 +1,93 @@
+---
+title: "Need Waiting More Blocks To Star Call"
+summary:
+  "How the NeedWaitingMoreBlocksToStarCall error signals that a subnet start call was attempted
+  before the required delay after registration had elapsed."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Need Waiting More Blocks To Star Call
+infoboxCaption: Error raised when a subnet activation attempt is made too early.
+infoboxRows:
+  - label: Error
+    value: NeedWaitingMoreBlocksToStarCall
+  - label: Trigger
+    value: Start call attempted before the registration-to-activation delay ends
+  - label: Checked in
+    value: start_call activation path
+  - label: Related concept
+    value: Start call
+---
+
+# Need Waiting More Blocks To Star Call
+
+`NeedWaitingMoreBlocksToStarCall` means a subnet activation attempt was made too early after the
+subnet was registered. The standard-errors reference exposes this label for the start-call delay
+condition
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#needwaitingmoreblockstostarcall)).
+
+Official subnet documentation already separates registration from activation: a subnet is first
+registered, then later activated by a start call that begins its first emission period
+([Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet)).
+
+## What It Means
+
+This error is a timing rejection on subnet activation. A start call can be valid in general but
+still fail if the required wait after registration has not yet passed. In Subtensor, `do_start_call`
+compares the current block number against the subnet's registration block plus the configured
+start-call delay and returns `NeedWaitingMoreBlocksToStarCall` when activation is still too early
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#needwaitingmoreblockstostarcall),
+[Subtensor source: subnet.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/subnet.rs)).
+
+For a reader, the practical meaning is narrow: the subnet exists, but the activation delay has not
+finished yet. The label is about waiting longer, not about registration failure, ownership failure,
+or a subnet that has already started emissions.
+
+## Why It Appears
+
+Subnet registration and subnet activation are separate steps. The official start-call docs explain
+that activation is not always available immediately after registration because the chain carries a
+configurable delay before the start call can be dispatched
+([Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet),
+[Subtensor Constants: initialStartCallDelay](https://docs.learnbittensor.org/subtensor-api/constants#initialstartcalldelay)).
+
+This error appears when a start call is attempted during that waiting window. In plain terms, the
+subnet has been created, but it is still too soon to turn on its first emission period
+([Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet),
+[Subtensor source: subnet.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/subnet.rs)).
+
+## Distinction from First Emission Block Number Already Set
+
+`NeedWaitingMoreBlocksToStarCall` and `FirstEmissionBlockNumberAlreadySet` both appear on the
+start-call path, but they reject different states. `NeedWaitingMoreBlocksToStarCall` means the
+activation was attempted before the waiting period ended. `FirstEmissionBlockNumberAlreadySet` means
+the subnet's first emission block has already been recorded, so the start call has already been
+processed
+([Subtensor source: subnet.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/subnet.rs)).
+
+- **NeedWaitingMoreBlocksToStarCall** — the subnet is still inside the registration-to-start delay.
+- **FirstEmissionBlockNumberAlreadySet** — the subnet has already had its first emission block set.
+
+## Distinction from Start Call
+
+Start call is the activation step itself. `NeedWaitingMoreBlocksToStarCall` is the specific timing
+error returned when that activation step is attempted before it is allowed
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#needwaitingmoreblockstostarcall),
+[Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet)).
+
+- **Start call** — the activation action that begins a subnet's first emission period.
+- **NeedWaitingMoreBlocksToStarCall** — the timing rejection returned when that action is too early.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the registration-to-activation delay behind it.
+It does not report the live delay value on a particular network or whether a particular subnet has
+already waited long enough; those are live chain facts to check at the time of use
+([Subtensor Constants: initialStartCallDelay](https://docs.learnbittensor.org/subtensor-api/constants#initialstartcalldelay),
+[Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#needwaitingmoreblockstostarcall)
+- [Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet)
+- [Subtensor Constants: initialStartCallDelay](https://docs.learnbittensor.org/subtensor-api/constants#initialstartcalldelay)
+- [Subtensor source: subnet.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/subnet.rs)
