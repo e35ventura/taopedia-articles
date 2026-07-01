@@ -1,0 +1,104 @@
+---
+title: "Not Enough Alpha Out To Recycle"
+summary:
+  "How the NotEnoughAlphaOutToRecycle error blocks recycle_alpha when the subnet does not have
+  enough AlphaOut available to recycle the requested amount."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Not Enough Alpha Out To Recycle
+infoboxCaption: Error raised when subnet AlphaOut cannot cover the recycle request.
+infoboxRows:
+  - label: Error
+    value: NotEnoughAlphaOutToRecycle
+  - label: Trigger
+    value: Requested recycle exceeds subnet AlphaOut
+  - label: Extrinsic
+    value: recycle_alpha
+  - label: Example netuid
+    value: netuid 1
+---
+
+# Not Enough Alpha Out To Recycle
+
+`NotEnoughAlphaOutToRecycle` means a `recycle_alpha` call on netuid 1 or another named subnet named
+more alpha than the subnet's AlphaOut tracker can supply for recycling. The standard-errors
+reference describes it as "Not enough AlphaOut to recycle"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notenoughalphaouttorecycle)).
+
+The Subtensor API errors reference summarizes the same label as not having enough AlphaOut on the
+subnet to recycle
+([Subtensor API Errors: NotEnoughAlphaOutToRecycle](https://docs.learnbittensor.org/subtensor-api/errors#notenoughalphaouttorecycle)).
+
+## What It Means
+
+Recycling removes alpha from circulation and reduces the subnet's AlphaOut tracker. The glossary
+documents manual alpha recycling through the `recycle_alpha` extrinsic, which lowers both the
+caller's stake and the subnet's `SubnetAlphaOut` balance
+([Glossary: Recycling and burning](https://docs.learnbittensor.org/resources/glossary#recycling-and-burning)).
+
+`NotEnoughAlphaOutToRecycle` is a subnet-supply gate on that recycle path. It means the requested
+recycle amount exceeds the AlphaOut the subnet can honor for the call
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notenoughalphaouttorecycle),
+[Subtensor API Errors: NotEnoughAlphaOutToRecycle](https://docs.learnbittensor.org/subtensor-api/errors#notenoughalphaouttorecycle)).
+
+This is a subnet AlphaOut availability rejection, not a coldkey balance failure and not a pool
+liquidity simulation failure on an ordinary add-stake or remove-stake swap.
+
+## Why It Appears
+
+This error appears when a coldkey submits `recycle_alpha` with an amount larger than the subnet's
+available AlphaOut. That can happen when a client reads an outdated AlphaOut figure, when automation
+retries a larger recycle after an earlier partial success, or when the requested amount simply
+exceeds what the subnet tracker currently allows
+([Glossary: Recycling and burning](https://docs.learnbittensor.org/resources/glossary#recycling-and-burning),
+[Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees)).
+
+On netuid 1, readers can compare a proposed recycle amount against live subnet state through the
+storage query patterns described in the Subtensor documentation before resubmitting the call
+([Subtensor Storage Query Examples](https://docs.learnbittensor.org/subtensor-nodes/subtensor-storage-query-examples)).
+
+When debugging, rule out root-subnet and stake-balance failures first.
+`CannotBurnOrRecycleOnRootSubnet` means burn or recycle actions are not allowed on the root subnet.
+`NotEnoughStakeToWithdraw` means the hotkey-coldkey pair lacks enough staked alpha on the subnet for
+the requested removal amount
+([Subtensor Standard Errors: CannotBurnOrRecycleOnRootSubnet](https://docs.learnbittensor.org/errors/subtensor#cannotburnorrecycleonrootsubnet),
+[Subtensor Standard Errors: NotEnoughStakeToWithdraw](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketowithdraw)).
+
+The practical meaning is narrow: the subnet does not have enough AlphaOut for the recycle request.
+
+## Distinction from Not Enough Stake To Withdraw
+
+`NotEnoughAlphaOutToRecycle` and `NotEnoughStakeToWithdraw` both involve alpha amounts on a subnet,
+but they compare against different balances. `NotEnoughAlphaOutToRecycle` means the subnet's
+AlphaOut tracker cannot cover the recycle request. `NotEnoughStakeToWithdraw` means the
+hotkey-coldkey pair does not hold enough staked alpha for a removal path
+([Subtensor Standard Errors: NotEnoughStakeToWithdraw](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketowithdraw)).
+
+- **NotEnoughAlphaOutToRecycle** — subnet AlphaOut is too low for the recycle amount.
+- **NotEnoughStakeToWithdraw** — the pair's staked alpha is too low for the request.
+
+## Distinction from Insufficient Liquidity
+
+`NotEnoughAlphaOutToRecycle` and `InsufficientLiquidity` both block staking-related extrinsics, but
+on different paths. `NotEnoughAlphaOutToRecycle` applies to `recycle_alpha` when subnet AlphaOut is
+insufficient. `InsufficientLiquidity` applies when a pool swap behind add-stake or remove-stake
+cannot simulate or complete
+([Insufficient Liquidity](https://docs.learnbittensor.org/errors/subtensor#insufficientliquidity)).
+
+- **NotEnoughAlphaOutToRecycle** — subnet AlphaOut cannot cover the recycle request.
+- **InsufficientLiquidity** — the subnet pool cannot support the swap behind the stake action.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the subnet AlphaOut gate it represents. It does
+not report the live AlphaOut balance on a particular netuid; that value is subnet chain state
+readers can query for the selected netuid
+([Subtensor Storage Query Examples](https://docs.learnbittensor.org/subtensor-nodes/subtensor-storage-query-examples),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor Standard Errors: NotEnoughAlphaOutToRecycle](https://docs.learnbittensor.org/errors/subtensor#notenoughalphaouttorecycle)
+- [Glossary: Recycling and burning](https://docs.learnbittensor.org/resources/glossary#recycling-and-burning)
+- [Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees)
+- [Subtensor API Errors: NotEnoughAlphaOutToRecycle](https://docs.learnbittensor.org/subtensor-api/errors#notenoughalphaouttorecycle)
