@@ -1,0 +1,90 @@
+---
+title: "Resume Failed"
+summary:
+  "How the ResumeFailed error blocks a GRANDPA resume request when the authority set is not in a
+  paused state."
+category: "Consensus"
+tags: ["Consensus", "Errors"]
+infoboxTitle: Resume Failed
+infoboxCaption:
+  Error raised when a GRANDPA resume request arrives when the authority set is not paused.
+infoboxRows:
+  - label: Error
+    value: ResumeFailed
+  - label: Pallet
+    value: grandpa
+  - label: Trigger
+    value: GRANDPA resume requested when the authority set is live or already pending a resume
+  - label: Check type
+    value: Paused-state guard on the resume path
+---
+
+# Resume Failed
+
+`ResumeFailed` is a grandpa pallet error raised when a GRANDPA resume request arrives while the
+authority set is not in a paused state. The API errors reference summarizes it as "Attempt to signal
+GRANDPA resume when the authority set isn't paused (either live or already pending resume)."
+([Subtensor API Errors: ResumeFailed](https://docs.learnbittensor.org/subtensor-api/errors#resumefailed)).
+
+## What It Means
+
+GRANDPA is the block finality gadget on Subtensor. The authority set that votes on finality can be
+in one of several states, and a resume request can only be accepted when the set is currently paused
+(that is, not voting on finality after a prior pause operation). `ResumeFailed` means a resume
+request reached the `schedule_resume` path when the authority set was either live or already had a
+resume pending, so the runtime rejects the request rather than queue a redundant resume
+([Subtensor API Errors: ResumeFailed](https://docs.learnbittensor.org/subtensor-api/errors#resumefailed)).
+
+This is the paused-state guard on the resume path. It does not, by itself, mean the authority set
+was already live and voting, that a forced authority change was already scheduled, or that the
+authority set had been signaled to pause from a live state.
+
+## Why It Appears
+
+This error appears when a GRANDPA resume request reaches the `schedule_resume` helper and the
+authority set is not currently paused. The pinned grandpa-pallet source describes the guard: the
+helper checks that the current authority set state is `Paused` before scheduling the resume, and
+returns `Error::<T>::ResumeFailed` when the state is anything else
+([opentensor/polkadot-sdk: substrate/frame/grandpa/src/lib.rs#L493](https://github.com/opentensor/polkadot-sdk/blob/7cc54bf2d50ae3921d718736dfeb0de9468539c7/substrate/frame/grandpa/src/lib.rs#L493)).
+
+The practical meaning is narrow: the authority set must be paused before a resume can be scheduled.
+A set that is already live or already pending a resume rejects the request.
+
+## Distinction from Pause Failed
+
+`ResumeFailed` and `PauseFailed` are both grandpa-pallet errors on the authority-set lifecycle path,
+but they fire in opposite directions. `ResumeFailed` is the paused-state guard that fires when a
+resume request arrives and the authority set is not paused. `PauseFailed` is the live-state guard
+that fires when a pause request arrives and the authority set is not live
+([Subtensor API Errors: ResumeFailed](https://docs.learnbittensor.org/subtensor-api/errors#resumefailed),
+[Subtensor API Errors: PauseFailed](https://docs.learnbittensor.org/subtensor-api/errors#pausefailed)).
+
+- **ResumeFailed** — the authority set is not paused when a resume is requested.
+- **PauseFailed** — the authority set is not live when a pause is requested.
+
+## Distinction from Change Pending
+
+`ResumeFailed` and `ChangePending` are both grandpa-pallet errors that block an authority-set
+operation, but they fire at different checks. `ResumeFailed` is the paused-state guard on the resume
+path. `ChangePending` is the no-existing-change-pending guard that fires when an authority-set
+change request arrives while another change is already pending
+([Subtensor API Errors: ResumeFailed](https://docs.learnbittensor.org/subtensor-api/errors#resumefailed),
+[Subtensor API Errors: ChangePending](https://docs.learnbittensor.org/subtensor-api/errors#changepending)).
+
+- **ResumeFailed** — a resume request arrived while the authority set is not paused.
+- **ChangePending** — an authority-set change request arrived while another change is already
+  pending.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the paused-state guard it represents on the
+GRANDPA resume path. It does not report the current authority-set state, list the extrinsic that
+submits the resume request, or describe the session framework that tracks authority-set transitions
+([Subtensor API Errors: ResumeFailed](https://docs.learnbittensor.org/subtensor-api/errors#resumefailed)).
+
+## Further Reading
+
+- [Subtensor API Errors: ResumeFailed](https://docs.learnbittensor.org/subtensor-api/errors#resumefailed)
+- [Subtensor API Errors: PauseFailed](https://docs.learnbittensor.org/subtensor-api/errors#pausefailed)
+- [Subtensor API Errors: ChangePending](https://docs.learnbittensor.org/subtensor-api/errors#changepending)
+- [opentensor/polkadot-sdk: frame/grandpa/src/lib.rs#L493](https://github.com/opentensor/polkadot-sdk/blob/7cc54bf2d50ae3921d718736dfeb0de9468539c7/substrate/frame/grandpa/src/lib.rs#L493)
