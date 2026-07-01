@@ -1,0 +1,112 @@
+---
+title: "Limit Orders Disabled"
+summary:
+  "How the LimitOrdersDisabled error blocks execute_orders and execute_batched_orders when the
+  limit-orders pallet is turned off in runtime storage."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Limit Orders Disabled
+infoboxCaption: Error raised when limit-order execution is disabled on chain.
+infoboxRows:
+  - label: Error
+    value: LimitOrdersDisabled
+  - label: Trigger
+    value: LimitOrdersEnabled storage is false
+  - label: Checked in
+    value: execute_orders and execute_batched_orders extrinsics
+  - label: Check type
+    value: Pallet enablement gate
+---
+
+# Limit Orders Disabled
+
+`LimitOrdersDisabled` is a documented limit-orders error raised when a relayer tries to execute
+limit orders while the pallet is disabled. The Subtensor API error reference describes it as "Limit
+orders are disabled"
+([Subtensor API Errors: LimitOrdersDisabled](https://docs.learnbittensor.org/subtensor-api/errors#limitordersdisabled)).
+
+## What It Means
+
+The limit-orders pallet stores an on-chain enablement flag in `LimitOrdersEnabled`. Both
+`execute_orders` and `execute_batched_orders` read that flag at the start of the call and return
+`LimitOrdersDisabled` when execution is turned off
+([Subnet Liquidity Pools](https://docs.learnbittensor.org/subnets/understanding-subnets#liquidity-pools),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+The check runs immediately after the relayer origin is confirmed and before any order in the batch
+is validated or executed. When the pallet is disabled, no limit-order fulfillment logic runs in that
+call
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+This is a pallet-wide execution gate, not proof that an individual order has a bad signature,
+expired, or failed a price-condition check.
+
+## Why It Appears
+
+This error appears when a relayer submits `execute_orders` or `execute_batched_orders` while
+`LimitOrdersEnabled` is false. That can happen when the network has not yet enabled the pallet after
+deployment, when root has disabled execution through `set_pallet_status`, or when automation retries
+execution against a network where the feature is currently off
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+When debugging, compare against rejections that apply only after execution is allowed.
+`InvalidSignature`, `OrderExpired`, and `PriceConditionNotMet` are all returned later by
+`is_order_valid` for individual orders inside an enabled pallet
+([Invalid Signature](https://docs.learnbittensor.org/errors/subtensor#invalidsignature),
+[Order Expired](https://docs.learnbittensor.org/errors/subtensor#orderexpired),
+[Price Condition Not Met](https://docs.learnbittensor.org/errors/subtensor#priceconditionnotmet),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+`cancel_order` does not perform this enablement check, so signers can still register cancellations
+while execution is disabled
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+## Distinction from Invalid Signature
+
+`LimitOrdersDisabled` and `InvalidSignature` both block limit-order work, but at different scopes.
+`LimitOrdersDisabled` is returned before any order validation when the pallet execution flag is off.
+`InvalidSignature` is returned by `is_order_valid` for a specific order whose signature does not
+verify ([Invalid Signature](https://docs.learnbittensor.org/errors/subtensor#invalidsignature),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+- **LimitOrdersDisabled** — limit-order execution is disabled network-wide.
+- **InvalidSignature** — one order's signature does not verify.
+
+## Distinction from Price Condition Not Met
+
+`LimitOrdersDisabled` and `PriceConditionNotMet` both appear on execution paths, but at different
+stages. `LimitOrdersDisabled` is the first gate on `execute_orders` and `execute_batched_orders`
+when the pallet is off. `PriceConditionNotMet` is returned later by `is_order_valid` when the market
+price does not satisfy an individual order's limit rule
+([Price Condition Not Met](https://docs.learnbittensor.org/errors/subtensor#priceconditionnotmet),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+- **LimitOrdersDisabled** — the pallet is not accepting executions.
+- **PriceConditionNotMet** — the market price does not satisfy the order limit.
+
+## Distinction from Unauthorized on cancel_order
+
+`LimitOrdersDisabled` and `Unauthorized` both involve limit-order calls, but on different
+extrinsics. `LimitOrdersDisabled` applies only to the execution extrinsics when the pallet flag is
+off. `Unauthorized` applies to `cancel_order` when the caller is not the order signer and is not
+gated by `LimitOrdersEnabled`
+([Unauthorized](https://docs.learnbittensor.org/errors/subtensor#unauthorized),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+- **LimitOrdersDisabled** — execution is disabled on execute_orders paths.
+- **Unauthorized** — a non-signer attempted to cancel an order.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the `LimitOrdersEnabled` gate on execution
+extrinsics. It does not report whether limit-order execution is currently enabled on any network;
+that is runtime configuration readers can query separately
+([Subnet Liquidity Pools](https://docs.learnbittensor.org/subnets/understanding-subnets#liquidity-pools),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: LimitOrdersDisabled](https://docs.learnbittensor.org/subtensor-api/errors#limitordersdisabled)
+- [Invalid Signature](https://docs.learnbittensor.org/errors/subtensor#invalidsignature)
+- [Price Condition Not Met](https://docs.learnbittensor.org/errors/subtensor#priceconditionnotmet)
+- [Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)
