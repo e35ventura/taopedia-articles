@@ -1,0 +1,80 @@
+---
+title: "Too Many Holds"
+summary:
+  "How the TooManyHolds error blocks a new balance hold when the number of active holds on an
+  account has reached the maximum permitted by the runtime."
+category: "Wallets"
+tags: ["Wallets", "Errors", "Security"]
+infoboxTitle: Too Many Holds
+infoboxCaption:
+  Error raised when placing a new hold would exceed the maximum number of holds allowed per account.
+infoboxRows:
+  - label: Error
+    value: TooManyHolds
+  - label: Pallet
+    value: balances
+  - label: Trigger
+    value: New hold would exceed the runtime maximum for holds per account
+  - label: Check type
+    value: Count check when inserting a new hold reason
+---
+
+# Too Many Holds
+
+`TooManyHolds` is a balances pallet error raised when placing a new hold on an account would exceed
+the maximum number of holds the runtime permits. The pallet source describes it as "Number of holds
+exceed `VariantCountOf<T::RuntimeHoldReason>`"
+([Subtensor API Errors: TooManyHolds](https://docs.learnbittensor.org/subtensor-api/errors#toomanyholds)).
+
+## What It Means
+
+Balance holds are used by pallets to reserve a specific amount of an account's free balance for a
+stated purpose. Each hold is tracked by a hold reason, and each account may have a limited number of
+holds active at the same time. `TooManyHolds` fires when a pallet tries to place a new hold on an
+account that already holds the maximum number
+([Subtensor API Errors: TooManyHolds](https://docs.learnbittensor.org/subtensor-api/errors#toomanyholds)).
+
+Unlike reserved balance, held balance remains part of the free balance total but cannot be spent
+while the hold is active. Holds are released when the originating pallet removes them
+([Subtensor API Errors: TooManyHolds](https://docs.learnbittensor.org/subtensor-api/errors#toomanyholds)).
+
+## Why It Appears
+
+This error appears when a pallet places a hold on an account and the insertion into the on-chain
+hold list fails because the list is full. The maximum number of holds is determined by the number of
+distinct hold reasons registered in the runtime
+([Subtensor API Errors: TooManyHolds](https://docs.learnbittensor.org/subtensor-api/errors#toomanyholds)).
+
+## Distinction from Too Many Reserves
+
+`TooManyHolds` and `TooManyReserves` both block pallet-initiated balance reservations, but they
+apply to different mechanisms. `TooManyReserves` applies to the named-reserve API where reserves are
+tracked as named slots. `TooManyHolds` applies to the newer holds API where holds are tracked by
+typed hold reasons
+([Subtensor API Errors: TooManyReserves](https://docs.learnbittensor.org/subtensor-api/errors#toomanyreserves)).
+
+- **TooManyReserves** — named-reserve slots are full.
+- **TooManyHolds** — typed hold reasons are at the limit.
+
+## Distinction from Too Many Freezes
+
+`TooManyHolds` and `TooManyFreezes` both limit per-account balance tracking entries, but they track
+different things. `TooManyFreezes` applies to balance freezes, which prevent spending but leave
+funds in the free balance. `TooManyHolds` applies to holds, which reserve funds from a stated
+balance purpose
+([Subtensor API Errors: TooManyFreezes](https://docs.learnbittensor.org/subtensor-api/errors#toomanyfreezes)).
+
+- **TooManyHolds** — hold list is full; new hold cannot be placed.
+- **TooManyFreezes** — freeze list is full; new freeze cannot be placed.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the hold-count check that raises it. It does
+not report the current number of active holds on any account; that is live chain state
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: TooManyHolds](https://docs.learnbittensor.org/subtensor-api/errors#toomanyholds)
+- [Subtensor API Errors: TooManyReserves](https://docs.learnbittensor.org/subtensor-api/errors#toomanyreserves)
+- [Subtensor API Errors: TooManyFreezes](https://docs.learnbittensor.org/subtensor-api/errors#toomanyfreezes)
