@@ -1,0 +1,99 @@
+---
+title: "Call Filtered"
+summary:
+  "How the CallFiltered error blocks a dispatched call when the runtime's call filter does not allow
+  that call for the current origin."
+category: "Core Concepts"
+tags: ["Transactions", "Errors"]
+infoboxTitle: Call Filtered
+infoboxCaption: Error raised when a runtime call is blocked by the active dispatch filter.
+infoboxRows:
+  - label: Error
+    value: CallFiltered
+  - label: Trigger
+    value: Runtime call filter rejects the dispatched call for that origin
+  - label: Checked in
+    value: filtered dispatch paths such as utility and proxy wrappers
+  - label: Check type
+    value: Dispatch-filter rejection
+---
+
+# Call Filtered
+
+`CallFiltered` is a documented runtime error raised when a dispatched call is blocked by the
+runtime's active call filter. The Subtensor API errors reference lists it under system errors
+([Subtensor API Errors: CallFiltered](https://docs.learnbittensor.org/subtensor-api/errors#callfiltered)).
+
+## What It Means
+
+Some dispatch paths do not allow every runtime call for every origin. `CallFiltered` means the call
+reached a filtered dispatch path, but the runtime's call filter did not permit that specific inner
+call for the current origin, so dispatch stopped there
+([Subtensor source: utility/tests.rs](https://github.com/opentensor/subtensor/blob/main/pallets/utility/src/tests.rs),
+[Subtensor test: pallet_proxy runtime tests](https://github.com/opentensor/subtensor/blob/main/runtime/tests/pallet_proxy.rs)).
+
+This is a filter-based rejection, not proof that the call list is too long and not proof that the
+outer extrinsic used a forbidden origin like `None`. The runtime rejects the call because that call
+is not allowed through the relevant filtered path for that origin
+([Subtensor API Errors: CallFiltered](https://docs.learnbittensor.org/subtensor-api/errors#callfiltered),
+[Subtensor source: utility/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/utility/src/lib.rs)).
+
+The practical meaning is narrow: the call itself is blocked by the runtime filter in that dispatch
+context.
+
+## Why It Appears
+
+This error appears when a wrapper or dispatch path attempts to execute an inner call that the
+runtime's filter does not permit for that origin
+([Subtensor API Errors: CallFiltered](https://docs.learnbittensor.org/subtensor-api/errors#callfiltered)).
+
+The tests show this on multiple paths. In utility tests, `as_derivative` rejects a filtered balance
+transfer with `CallFiltered`. Other utility tests show `batch_all` surfacing the same filtered inner
+call error when a nested call is not permitted. In runtime proxy tests, `ProxyExecuted` records
+`Err(SystemError::CallFiltered)` when the proxied inner call does not pass the proxy-type filter
+([Subtensor source: utility/tests.rs](https://github.com/opentensor/subtensor/blob/main/pallets/utility/src/tests.rs),
+[Subtensor test: pallet_proxy runtime tests](https://github.com/opentensor/subtensor/blob/main/runtime/tests/pallet_proxy.rs)).
+
+This is not the specific utility error for oversized batches, and it is not the rejection for an
+outer utility call with `None` origin. It is the system-level filtered-dispatch rejection for the
+inner call being attempted.
+
+## Distinction from Too Many Calls
+
+`CallFiltered` and `TooManyCalls` can both stop utility batching, but they apply at different
+checks. `TooManyCalls` rejects the outer utility extrinsic because the submitted call list is too
+large. `CallFiltered` rejects an inner call because the runtime filter does not permit that call for
+the origin that reached dispatch
+([Subtensor API Errors: TooManyCalls](https://docs.learnbittensor.org/subtensor-api/errors#toomanycalls),
+[Subtensor source: utility/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/utility/src/lib.rs)).
+
+- **TooManyCalls** — the outer batch contains too many calls.
+- **CallFiltered** — an inner call is blocked by the runtime filter.
+
+## Distinction from Bad Origin
+
+`CallFiltered` and `BadOrigin` can both reject dispatch attempts, but they mean different things.
+`BadOrigin` applies when the outer call is invoked from an origin that is not permitted at all, such
+as `None` on utility batching. `CallFiltered` applies when the outer path is allowed to run, but the
+inner call is filtered out for that origin or wrapper context
+([Subtensor API Errors: BadOrigin](https://docs.learnbittensor.org/subtensor-api/errors#badorigin),
+[Subtensor source: utility/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/utility/src/lib.rs)).
+
+- **BadOrigin** — the outer dispatch origin is not allowed.
+- **CallFiltered** — the inner call is not allowed through the active filter.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the filtered-dispatch rejection it marks. It
+does not catalog every proxy type, utility wrapper, or runtime filter rule that might lead to the
+error in every context; those are separate parts of the runtime's dispatch design
+([Subtensor source: utility/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/utility/src/lib.rs)).
+
+## Further Reading
+
+- [Subtensor API Errors: CallFiltered](https://docs.learnbittensor.org/subtensor-api/errors#callfiltered)
+- [Subtensor API Errors: TooManyCalls](https://docs.learnbittensor.org/subtensor-api/errors#toomanycalls)
+- [Subtensor API Errors: BadOrigin](https://docs.learnbittensor.org/subtensor-api/errors#badorigin)
+- [Subtensor source: utility/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/utility/src/lib.rs)
+- [Subtensor source: utility/tests.rs](https://github.com/opentensor/subtensor/blob/main/pallets/utility/src/tests.rs)
+- [Subtensor test: pallet_proxy runtime tests](https://github.com/opentensor/subtensor/blob/main/runtime/tests/pallet_proxy.rs)
