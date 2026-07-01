@@ -1,0 +1,102 @@
+---
+title: "Order Netuid Mismatch"
+summary:
+  "How the OrderNetUidMismatch error blocks execute_batched_orders when an order in the batch
+  targets a different subnet than the batch netuid parameter."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Order Netuid Mismatch
+infoboxCaption: Error raised when a batched order targets the wrong subnet.
+infoboxRows:
+  - label: Error
+    value: OrderNetUidMismatch
+  - label: Trigger
+    value: order.netuid does not equal the batch netuid argument
+  - label: Checked in
+    value: validate_and_classify, called by execute_batched_orders
+  - label: Check type
+    value: Batch netuid consistency check
+---
+
+# Order Netuid Mismatch
+
+`OrderNetUidMismatch` is a documented limit-orders error raised when a batched limit-order
+submission mixes subnets. The Subtensor API error reference describes it as "An order in the batch
+targets a different netuid than the batch netuid parameter"
+([Subtensor API Errors: OrderNetUidMismatch](https://docs.learnbittensor.org/subtensor-api/errors#ordernetuidmismatch)).
+
+## What It Means
+
+`execute_batched_orders` names one subnet in its extrinsic arguments and expects every order in the
+batch to target that same subnet. Inside `validate_and_classify`, the runtime compares each order's
+stored netuid field against the batch netuid and returns `OrderNetUidMismatch` when they differ
+([Subnet Liquidity Pools](https://docs.learnbittensor.org/subnets/understanding-subnets#liquidity-pools),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+The check runs after duplicate order IDs are rejected for the batch and before per-order signature,
+expiry, and price validation through `is_order_valid`. A mismatch stops the whole batched call
+before those later checks run for the offending entry
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+This is a batch-consistency rejection on the aggregated execution path, not proof that an order's
+signature is invalid or that the market price fails the limit rule.
+
+## Why It Appears
+
+This error appears when a relayer submits `execute_batched_orders` with a batch netuid that does not
+match one or more orders inside the batch. That can happen when automation builds a multi-subnet
+queue but passes the wrong netuid argument, or when a client reuses signed orders from another
+subnet in the same batch
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+When debugging, compare against the other hard failures in the same classification loop.
+`DuplicateOrderInBatch` means the same derived order ID appears twice in one batch.
+`InvalidSignature`, `OrderExpired`, and `PriceConditionNotMet` are returned later by
+`is_order_valid` only after the batch netuid matches for that order
+([Duplicate Order In Batch](https://docs.learnbittensor.org/errors/subtensor#duplicateorderinbatch),
+[Invalid Signature](https://docs.learnbittensor.org/errors/subtensor#invalidsignature),
+[Order Expired](https://docs.learnbittensor.org/errors/subtensor#orderexpired),
+[Price Condition Not Met](https://docs.learnbittensor.org/errors/subtensor#priceconditionnotmet),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+`execute_orders` does not take a batch netuid parameter and does not raise this error; each order
+carries its own netuid through the non-aggregated execution path instead
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+## Distinction from Duplicate Order In Batch
+
+`OrderNetUidMismatch` and `DuplicateOrderInBatch` both appear in `validate_and_classify`, but at
+different checks. `DuplicateOrderInBatch` means the same order ID was included more than once in the
+batch. `OrderNetUidMismatch` means an order's netuid field does not equal the batch netuid argument
+([Duplicate Order In Batch](https://docs.learnbittensor.org/errors/subtensor#duplicateorderinbatch),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+- **DuplicateOrderInBatch** — the batch repeats the same order ID.
+- **OrderNetUidMismatch** — an order targets a different subnet than the batch parameter.
+
+## Distinction from Invalid Signature
+
+`OrderNetUidMismatch` and `InvalidSignature` both block batched execution, but at different stages.
+`OrderNetUidMismatch` is returned during batch classification before `is_order_valid` runs.
+`InvalidSignature` is returned by `is_order_valid` when the Sr25519 signature does not verify for a
+specific order
+([Invalid Signature](https://docs.learnbittensor.org/errors/subtensor#invalidsignature),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+- **OrderNetUidMismatch** — the order's netuid does not match the batch parameter.
+- **InvalidSignature** — the order's signature does not verify.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the batch netuid comparison that raises it. It
+does not report which netuid a particular order targets on any network; that is order state readers
+can inspect separately
+([Subnet Liquidity Pools](https://docs.learnbittensor.org/subnets/understanding-subnets#liquidity-pools),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: OrderNetUidMismatch](https://docs.learnbittensor.org/subtensor-api/errors#ordernetuidmismatch)
+- [Duplicate Order In Batch](https://docs.learnbittensor.org/errors/subtensor#duplicateorderinbatch)
+- [Invalid Signature](https://docs.learnbittensor.org/errors/subtensor#invalidsignature)
+- [Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)
