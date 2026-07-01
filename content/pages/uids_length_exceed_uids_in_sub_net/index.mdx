@@ -1,0 +1,88 @@
+---
+title: "Uids Length Exceed Uids In Sub Net"
+summary:
+  "How the UidsLengthExceedUidsInSubNet error blocks a weight-setting call when it names more UIDs
+  than the target subnet allows."
+category: "Validation"
+tags: ["Validation", "Errors"]
+infoboxTitle: Uids Length Exceed Uids In Sub Net
+infoboxCaption: Error raised when a weight-setting call includes too many UIDs for the subnet.
+infoboxRows:
+  - label: Error
+    value: UidsLengthExceedUidsInSubNet
+  - label: Trigger
+    value: Submitted UID list is longer than the subnet allows for that operation
+  - label: Checked in
+    value: set_weights
+  - label: Check type
+    value: UID-count limit check
+---
+
+# Uids Length Exceed Uids In Sub Net
+
+`UidsLengthExceedUidsInSubNet` is a documented Subtensor standard error raised by `set_weights` when
+the submitted UID list is longer than the target subnet allows
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#uidslengthexceeduidsinsubnet)).
+
+## What It Means
+
+The `set_weights` call submits a UID list and a value list for a target subnet. After confirming
+that the UID list and value list have matching lengths and that the mechanism exists, the runtime
+checks whether the number of submitted UIDs is within the allowed limit for that subnet.
+`UidsLengthExceedUidsInSubNet` means that count check failed, so the call is rejected before later
+checks continue
+([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+The practical meaning is narrow: the submission names too many UIDs for the target subnet. The
+problem is the size of the UID list, not the registration status of the hotkey or the validity of an
+individual UID.
+
+## Why It Appears
+
+This error appears when a weight-setting call includes a UID list whose length is above the
+permitted size for that subnet. The current runtime code raises `UidsLengthExceedUidsInSubNet`
+immediately after the mechanism check and before the later check that the hotkey is registered on
+the network
+([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+The current test coverage shows this exact failure on the `set_weights` path: a submitted call with
+too many UIDs returns `UidsLengthExceedUidsInSubNet`
+([Subtensor test: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/tests/weights.rs)).
+
+## Distinction from Duplicate Uids
+
+`UidsLengthExceedUidsInSubNet` and `DuplicateUids` both inspect the submitted UID list, but they
+check different properties. `DuplicateUids` means the list repeats the same UID more than once.
+`UidsLengthExceedUidsInSubNet` means the list is too long for the subnet, even if every UID is
+unique
+([Subtensor Standard Errors: DuplicateUids](https://docs.learnbittensor.org/errors/subtensor#duplicateuids),
+[Subtensor Standard Errors: UidsLengthExceedUidsInSubNet](https://docs.learnbittensor.org/errors/subtensor#uidslengthexceeduidsinsubnet)).
+
+- `DuplicateUids` means the list repeats a UID.
+- `UidsLengthExceedUidsInSubNet` means the list is longer than allowed.
+
+## Distinction from Uid Vec Contain Invalid One
+
+`UidsLengthExceedUidsInSubNet` and `UidVecContainInvalidOne` also fail for different reasons.
+`UidsLengthExceedUidsInSubNet` is a count limit on the UID list. `UidVecContainInvalidOne` is the
+later failure for a listed UID that is not valid for the target subnet
+([Subtensor Standard Errors: UidVecContainInvalidOne](https://docs.learnbittensor.org/errors/subtensor#uidveccontaininvalidone),
+[Subtensor Standard Errors: UidsLengthExceedUidsInSubNet](https://docs.learnbittensor.org/errors/subtensor#uidslengthexceeduidsinsubnet)).
+
+- `UidsLengthExceedUidsInSubNet` means too many UIDs were submitted.
+- `UidVecContainInvalidOne` means at least one submitted UID is invalid for the subnet.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the UID-count limit check that raises it. It
+does not describe every later `set_weights` validation rule, such as hotkey registration or
+individual UID validity
+([Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#uidslengthexceeduidsinsubnet)
+- [Subtensor Standard Errors: DuplicateUids](https://docs.learnbittensor.org/errors/subtensor#duplicateuids)
+- [Subtensor Standard Errors: UidVecContainInvalidOne](https://docs.learnbittensor.org/errors/subtensor#uidveccontaininvalidone)
+- [Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)
+- [Subtensor test: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/tests/weights.rs)
