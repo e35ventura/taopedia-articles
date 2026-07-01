@@ -1,0 +1,75 @@
+---
+title: "Key Swap Cost"
+summary:
+  "How KeySwapCost is a fixed, network-wide TAO fee charged when a coldkey swaps a hotkey or a
+  coldkey on Bittensor."
+category: "Wallets"
+tags: ["Wallets", "Tokenomics"]
+infoboxTitle: Key Swap Cost
+infoboxCaption: Fixed TAO fee charged for a hotkey or coldkey swap.
+infoboxRows:
+  - label: Constant
+    value: KeySwapCost
+  - label: Scope
+    value: Global (network-wide constant)
+  - label: Unit
+    value: TAO
+  - label: Charged on
+    value: swap_hotkey and coldkey swap
+  - label: Disposition
+    value: Recycled from the caller's balance
+---
+
+# Key Swap Cost
+
+Key swap cost is a fixed, network-wide fee, defined by the runtime constant `KeySwapCost`, that a
+coldkey pays when it swaps a hotkey or a coldkey. It is one global amount for the whole network,
+read directly in TAO by the runtime helper `get_key_swap_cost`
+([Subtensor source: utils/misc.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/misc.rs),
+[Subtensor Constants](https://docs.learnbittensor.org/subtensor-api/constants)).
+
+## When It Is Charged
+
+On a hotkey swap, the runtime reads the swap cost, requires the coldkey to hold at least that much
+free balance, and rejects the call with `NotEnoughBalanceToPaySwapHotKey` when it does not. If the
+balance is sufficient, the cost is removed from the coldkey's account and recycled
+([Subtensor source: swap/swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs)).
+
+On a coldkey swap, the same cost is charged once, at the first announcement of the swap. A later
+re-announcement of the same swap does not charge it again
+([Subtensor source: macros/dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)).
+
+## What It Is and Is Not
+
+Key swap cost is a flat TAO amount, not a percentage of stake or balance, and it is the same for
+every account because it comes from a single network-wide constant rather than a per-subnet or
+per-account setting
+([Subtensor source: utils/misc.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/misc.rs)).
+
+Because the charged TAO is recycled rather than transferred to another account, paying the cost
+reduces the caller's balance without crediting a counterparty
+([Subtensor source: swap/swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs)).
+
+## Distinction from Swap Rate Limits
+
+Key swap cost and the swap rate limits guard different things on a swap. Key swap cost is a one-time
+TAO fee for performing a swap. The rate limits instead cap how often swaps may occur, and a swap
+attempted too soon is rejected on timing rather than on cost
+([Subtensor source: swap/swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs)).
+
+- **Key swap cost** — the flat TAO fee a swap charges.
+- **Swap rate limits** — how frequently a swap may be performed.
+
+## Reader Boundary
+
+This page defines the `KeySwapCost` constant and when it is charged. It does not document the full
+hotkey or coldkey swap procedures or the exact configured amount, which the runtime sets and readers
+can read from chain constants
+([Subtensor Constants](https://docs.learnbittensor.org/subtensor-api/constants)).
+
+## Further Reading
+
+- [Subtensor Constants](https://docs.learnbittensor.org/subtensor-api/constants)
+- [Subtensor source: utils/misc.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/misc.rs)
+- [Subtensor source: swap/swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs)
+- [Subtensor source: macros/dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)
