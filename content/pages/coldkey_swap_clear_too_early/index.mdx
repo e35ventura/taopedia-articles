@@ -1,0 +1,114 @@
+---
+title: "Coldkey Swap Clear Too Early"
+summary:
+  "How the ColdkeySwapClearTooEarly error blocks clearing a coldkey swap announcement before the
+  reannouncement delay has elapsed since the announcement's first valid execution block."
+category: "Wallets"
+tags: ["Wallets", "Errors"]
+infoboxTitle: Coldkey Swap Clear Too Early
+infoboxCaption: Error raised when a clear call arrives before the reannouncement delay elapses.
+infoboxRows:
+  - label: Error
+    value: ColdkeySwapClearTooEarly
+  - label: Trigger
+    value: Clear submitted before reannouncement delay elapses
+  - label: Checked in
+    value: clear_coldkey_swap_announcement
+  - label: Related concept
+    value: Coldkey swap announcement
+---
+
+# Coldkey Swap Clear Too Early
+
+`ColdkeySwapClearTooEarly` is a documented Subtensor API error raised by
+`clear_coldkey_swap_announcement`, the extrinsic that removes a pending coldkey swap announcement
+without finalizing the swap
+([Subtensor API Errors: ColdkeySwapClearTooEarly](https://docs.learnbittensor.org/subtensor-api/errors#coldkeyswapcleartooearly),
+[Coldkey Swap](https://docs.learnbittensor.org/keys/coldkey-swap)).
+
+## What It Means
+
+A coldkey swap begins with an announcement that commits a hash of the destination coldkey and starts
+a mandatory waiting period before finalize is allowed
+([Coldkey Swap](https://docs.learnbittensor.org/keys/coldkey-swap)).
+
+`clear_coldkey_swap_announcement` lets the source coldkey drop a pending announcement so normal
+wallet operations can resume. The extrinsic first confirms that an announcement record exists, then
+compares the current block against the stored execution block plus the reannouncement delay.
+`ColdkeySwapClearTooEarly` is the rejection when that delay has not yet elapsed
+([Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs),
+[Coldkey Swap: Clear a coldkey swap announcement](https://docs.learnbittensor.org/keys/coldkey-swap#clear-a-coldkey-swap-announcement)).
+
+This is a timing rejection on the clear path, not proof that the announcement was disputed or that
+the caller lacks permission to clear it once the delay has passed.
+
+## Why It Appears
+
+This error appears when a coldkey calls `clear_coldkey_swap_announcement` before the reannouncement
+delay has elapsed since the announcement's first valid execution block. That can happen when
+operators try to cancel a swap immediately after announcing it, when automation retries the clear
+call too soon, or when the client does not account for both the announcement delay and the separate
+reannouncement delay documented for clearing
+([Coldkey Swap: Clear a coldkey swap announcement](https://docs.learnbittensor.org/keys/coldkey-swap#clear-a-coldkey-swap-announcement),
+[Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)).
+
+When debugging, compare against other clear-path rejections on the same extrinsic.
+`ColdkeySwapAnnouncementNotFound` means no announcement record exists for the calling coldkey.
+`ColdkeySwapDisputed` blocks signed calls while a dispute is active, which can prevent clearing
+until the dispute is resolved
+([Coldkey Swap Announcement Not Found](https://docs.learnbittensor.org/errors/subtensor#coldkeyswapannouncementnotfound),
+[Subtensor Standard Errors: ColdkeySwapDisputed](https://docs.learnbittensor.org/errors/subtensor#coldkeyswapdisputed)).
+
+The practical meaning is narrow: wait until the reannouncement delay elapses, then submit the clear
+call again.
+
+## Distinction from Coldkey Swap Announcement Not Found
+
+`ColdkeySwapClearTooEarly` and `ColdkeySwapAnnouncementNotFound` are both raised by
+`clear_coldkey_swap_announcement`, but at different steps. `ColdkeySwapAnnouncementNotFound` means
+there is no announcement record to clear. `ColdkeySwapClearTooEarly` means a record exists but the
+reannouncement delay has not yet passed
+([Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)).
+
+- **ColdkeySwapAnnouncementNotFound** — no announcement record exists for the caller.
+- **ColdkeySwapClearTooEarly** — an announcement exists, but the clear call is too early.
+
+## Distinction from Coldkey Swap Too Early
+
+`ColdkeySwapClearTooEarly` and `ColdkeySwapTooEarly` both involve coldkey swap timing, but on
+different extrinsics. `ColdkeySwapTooEarly` is raised by `swap_coldkey_announced` when finalize
+arrives before the announcement pending window elapses. `ColdkeySwapClearTooEarly` is raised by
+`clear_coldkey_swap_announcement` when the separate reannouncement delay for clearing has not
+elapsed
+([Coldkey Swap Too Early](https://docs.learnbittensor.org/errors/subtensor#coldkeyswaptooearly)).
+
+- **ColdkeySwapClearTooEarly** — the clear call arrived before the reannouncement delay elapsed.
+- **ColdkeySwapTooEarly** — finalize arrived before the announcement pending window elapsed.
+
+## Distinction from Coldkey Swap Reannounced Too Early
+
+`ColdkeySwapClearTooEarly` and `ColdkeySwapReannouncedTooEarly` both use the reannouncement delay,
+but on different calls. `ColdkeySwapReannouncedTooEarly` blocks a new `announce_coldkey_swap` call
+that would overwrite an existing announcement before the delay allows reannouncement.
+`ColdkeySwapClearTooEarly` blocks removing the announcement through the clear extrinsic before that
+same delay elapses
+([Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)).
+
+- **ColdkeySwapClearTooEarly** — clearing the announcement is too early.
+- **ColdkeySwapReannouncedTooEarly** — reannouncing over the existing record is too early.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the reannouncement-delay check on the clear
+path. It does not report the live `ColdkeySwapReannouncementDelay` value on a network or whether a
+particular coldkey currently has a pending announcement; those are chain configuration and account
+state readers can query separately
+([Subtensor Constants: initialColdkeySwapReannouncementDelay](https://docs.learnbittensor.org/subtensor-api/constants#initialcoldkeyswapreannouncementdelay),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: ColdkeySwapClearTooEarly](https://docs.learnbittensor.org/subtensor-api/errors#coldkeyswapcleartooearly)
+- [Coldkey Swap: Clear a coldkey swap announcement](https://docs.learnbittensor.org/keys/coldkey-swap#clear-a-coldkey-swap-announcement)
+- [Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)
+- [Subtensor Standard Errors: ColdkeySwapReannouncedTooEarly](https://docs.learnbittensor.org/errors/subtensor#coldkeyswapreannouncedtooearly)
