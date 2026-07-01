@@ -1,0 +1,113 @@
+---
+title: "Max Contribution Reached"
+summary:
+  "How the MaxContributionReached error blocks a crowdloan contribution when a contributor's
+  cumulative total has already reached the campaign's optional per-contributor maximum."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Max Contribution Reached
+infoboxCaption:
+  Error raised when a contributor has already hit the crowdloan's per-contributor maximum.
+infoboxRows:
+  - label: Error
+    value: MaxContributionReached
+  - label: Trigger
+    value: current_contribution >= max_contribution on contribute
+  - label: Checked in
+    value: contribute extrinsic
+  - label: Check type
+    value: Per-contributor cumulative maximum comparison
+---
+
+# Max Contribution Reached
+
+`MaxContributionReached` is a crowdloan pallet error raised by the `contribute` extrinsic. The
+pallet defines it as "The contributor has already reached the maximum contribution"
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+## What It Means
+
+A [crowdloan](https://docs.learnbittensor.org/subnets/crowdloans) can optionally set a
+per-contributor maximum cumulative contribution through `set_max_contribution`. When that optional
+cap is configured, `contribute` compares the caller's existing recorded total against the stored
+maximum and returns `MaxContributionReached` when the contributor has already reached or exceeded
+that ceiling
+([Crowdloans: Crowdloan Lifecycle](https://docs.learnbittensor.org/subnets/crowdloans#crowdloan-lifecycle),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+This check runs only when a per-contributor maximum is stored for the crowdloan. Campaigns without
+that optional cap never raise this error on `contribute`.
+
+This is a per-contributor cumulative limit rejection, not proof that the crowdloan's total funding
+cap is full, that the contribution deadline has passed, or that the crowdloan has reached the
+runtime contributor-count limit.
+
+## Why It Appears
+
+This error appears when a contributor calls `contribute` after their cumulative recorded total for
+that crowdloan already equals or exceeds the configured per-contributor maximum. That can happen
+when a client retries a contribution after earlier deposits filled the personal cap, or when a
+wallet does not account for prior cumulative totals for the same account
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+When debugging, compare against other rejections on the same call. `CapRaised` means the crowdloan's
+total funding cap is already full. `ContributionTooLow` means the submitted amount is below the
+crowdloan's minimum contribution. `MaxContributorsReached` means the crowdloan has already reached
+the runtime limit on unique contributor count
+([Cap Raised](https://docs.learnbittensor.org/errors/subtensor#capraised),
+[Contribution Too Low](https://docs.learnbittensor.org/errors/subtensor#contributiontoolow),
+[Max Contributors Reached](https://docs.learnbittensor.org/errors/subtensor#maxcontributorsreached),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+The practical meaning is narrow: this contributor cannot add more to the campaign under the current
+per-contributor maximum setting.
+
+## Distinction from Cap Raised
+
+`MaxContributionReached` and `CapRaised` both block `contribute`, but at different checks.
+`CapRaised` means total raised has already reached the crowdloan's funding cap.
+`MaxContributionReached` means this contributor's cumulative total has already reached the optional
+per-contributor maximum ([Cap Raised](https://docs.learnbittensor.org/errors/subtensor#capraised),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+- **MaxContributionReached** — this contributor hit the per-contributor maximum.
+- **CapRaised** — the crowdloan's total funding cap is full.
+
+## Distinction from Max Contributors Reached
+
+`MaxContributionReached` and `MaxContributorsReached` both block `contribute`, but at different
+checks. `MaxContributorsReached` means the crowdloan already has the runtime maximum number of
+unique contributors. `MaxContributionReached` means the calling contributor's cumulative total has
+already reached an optional per-contributor maximum configured for that campaign
+([Max Contributors Reached](https://docs.learnbittensor.org/errors/subtensor#maxcontributorsreached),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+- **MaxContributionReached** — this contributor hit the per-contributor maximum.
+- **MaxContributorsReached** — the crowdloan hit the unique-contributor count limit.
+
+## Distinction from Maximum Contribution Too Low
+
+`MaxContributionReached` and `MaximumContributionTooLow` both involve per-contributor maximums, but
+on different extrinsics. `MaxContributionReached` blocks `contribute` when a contributor's
+cumulative total has already reached the stored maximum. `MaximumContributionTooLow` blocks
+`set_max_contribution` when the creator submits a maximum that would be too low for existing bounds
+([Maximum Contribution Too Low](https://docs.learnbittensor.org/errors/subtensor#maximumcontributiontoolow),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+- **MaxContributionReached** — the contributor cannot contribute further under the stored maximum.
+- **MaximumContributionTooLow** — the proposed maximum is below required lower bounds.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the per-contributor maximum check on
+`contribute`. It does not report whether a particular crowdloan has a per-contributor maximum
+configured or what that value is on any network; those are campaign state readers can query
+separately ([Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Crowdloans: Crowdloan Lifecycle](https://docs.learnbittensor.org/subnets/crowdloans#crowdloan-lifecycle)
+- [Cap Raised](https://docs.learnbittensor.org/errors/subtensor#capraised)
+- [Max Contributors Reached](https://docs.learnbittensor.org/errors/subtensor#maxcontributorsreached)
+- [Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)
