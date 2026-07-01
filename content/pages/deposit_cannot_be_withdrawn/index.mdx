@@ -1,0 +1,107 @@
+---
+title: "Deposit Cannot Be Withdrawn"
+summary:
+  "How the DepositCannotBeWithdrawn error blocks a crowdloan creator from withdrawing when only the
+  locked initial deposit remains in their contribution record."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Deposit Cannot Be Withdrawn
+infoboxCaption:
+  Error raised when a crowdloan creator tries to withdraw without excess over the locked deposit.
+infoboxRows:
+  - label: Error
+    value: DepositCannotBeWithdrawn
+  - label: Trigger
+    value: creator contribution <= deposit after deposit retention on withdraw
+  - label: Checked in
+    value: withdraw extrinsic, creator path
+  - label: Check type
+    value: Creator deposit retention on withdrawal
+---
+
+# Deposit Cannot Be Withdrawn
+
+`DepositCannotBeWithdrawn` is a crowdloan pallet error raised by the `withdraw` extrinsic on the
+creator path. The pallet defines it as "The deposit cannot be withdrawn from the crowdloan"
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+## What It Means
+
+During an active [crowdloan](https://docs.learnbittensor.org/subnets/crowdloans), contributors can
+call `withdraw` to reclaim funds before finalization. For the crowdloan creator, the pallet keeps
+the initial deposit locked and allows withdrawal only from amounts above that deposit. After
+subtracting the locked deposit from the creator's recorded contribution, `withdraw` returns
+`DepositCannotBeWithdrawn` when nothing remains to withdraw
+([Crowdloans: Crowdloan Lifecycle](https://docs.learnbittensor.org/subnets/crowdloans#crowdloan-lifecycle),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+This is a creator-deposit retention rejection on the withdraw path, not proof that the campaign was
+finalized, that the caller has no contribution record at all, or that a non-creator account lacks
+withdrawable funds.
+
+## Why It Appears
+
+This error appears when the crowdloan creator calls `withdraw` while their recorded contribution
+equals the locked deposit or otherwise leaves no amount above the deposit after retention. That can
+happen when a client treats the full creator contribution as withdrawable, retries withdrawal after
+earlier partial withdrawals, or confuses creator deposit recovery with the `dissolve` cleanup path
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+When debugging, compare against other rejections on the same call. `AlreadyFinalized` means the
+campaign already completed finalization. `NoContribution` means the caller's recorded contribution
+is zero before the creator deposit retention step runs
+([Already Finalized](https://docs.learnbittensor.org/errors/subtensor#alreadyfinalized),
+[No Contribution](https://docs.learnbittensor.org/errors/subtensor#nocontribution),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+The practical meaning is narrow: only amounts above the locked creator deposit are withdrawable
+during an active campaign; deposit recovery follows the documented dissolution path instead.
+
+## Distinction from No Contribution
+
+`DepositCannotBeWithdrawn` and `NoContribution` both appear on `withdraw`, but at different checks.
+`NoContribution` means the caller's recorded contribution is zero. `DepositCannotBeWithdrawn` means
+the creator does have a contribution record, but after retaining the deposit no withdrawable amount
+remains ([No Contribution](https://docs.learnbittensor.org/errors/subtensor#nocontribution),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+- **DepositCannotBeWithdrawn** — only the locked creator deposit would be withdrawn.
+- **NoContribution** — the caller has no recorded contribution to withdraw.
+
+## Distinction from Already Finalized
+
+`DepositCannotBeWithdrawn` and `AlreadyFinalized` both block `withdraw`, but at different checks.
+`AlreadyFinalized` means the campaign already completed finalization. `DepositCannotBeWithdrawn`
+means the campaign is still non-finalized but the creator has no excess above the locked deposit to
+withdraw ([Already Finalized](https://docs.learnbittensor.org/errors/subtensor#alreadyfinalized),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+- **DepositCannotBeWithdrawn** — the creator has no withdrawable amount above the deposit.
+- **AlreadyFinalized** — the campaign was already finalized.
+
+## Distinction from Deposit Too Low
+
+`DepositCannotBeWithdrawn` and `DepositTooLow` both involve the creator deposit, but on different
+extrinsics. `DepositTooLow` is raised on `create` when the submitted initial deposit is below the
+runtime minimum. `DepositCannotBeWithdrawn` is raised on `withdraw` when the creator tries to pull
+funds but only the locked deposit would move
+([Deposit Too Low](https://docs.learnbittensor.org/errors/subtensor#deposittoolow),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+- **DepositCannotBeWithdrawn** — the creator cannot withdraw the locked deposit during the campaign.
+- **DepositTooLow** — the submitted create deposit is below the runtime minimum.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the creator deposit retention check on
+`withdraw`. It does not report a particular crowdloan's live deposit or contribution amounts on any
+network; those are campaign state readers can query separately
+([Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Crowdloans: Crowdloan Lifecycle](https://docs.learnbittensor.org/subnets/crowdloans#crowdloan-lifecycle)
+- [No Contribution](https://docs.learnbittensor.org/errors/subtensor#nocontribution)
+- [Already Finalized](https://docs.learnbittensor.org/errors/subtensor#alreadyfinalized)
+- [Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)
