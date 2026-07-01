@@ -39,7 +39,10 @@ const unsafeContentPatterns = [
     pattern: /<\s*(iframe|object|embed|link|meta|style)\b/i,
     reason: "active HTML elements are not allowed",
   },
-  { pattern: /\son[a-z]+\s*=/i, reason: "inline event handlers are not allowed" },
+  // HTML accepts a forward slash as an attribute separator inside a tag, so
+  // `<img src=x/onerror=alert(1)>` smuggles an event handler past a whitespace-only
+  // check. Treat both whitespace and a slash as the boundary before an on* handler.
+  { pattern: /[\s/]on[a-z]+\s*=/i, reason: "inline event handlers are not allowed" },
   { pattern: /\bjavascript\s*:/i, reason: "javascript: URLs are not allowed" },
   { pattern: /\bdata\s*:\s*text\/html/i, reason: "HTML data URLs are not allowed" },
   { pattern: /\bset:html\b/i, reason: "raw HTML injection directives are not allowed" },
