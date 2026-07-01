@@ -1,0 +1,87 @@
+---
+title: "Not Requested"
+summary:
+  "How the NotRequested error blocks removing a preimage request when no outstanding preimage
+  request exists for that hash."
+category: "Core Concepts"
+tags: ["Transactions", "Errors"]
+infoboxTitle: Not Requested
+infoboxCaption:
+  Error raised when a preimage request-removal call targets a hash that no longer has an outstanding
+  request.
+infoboxRows:
+  - label: Error
+    value: NotRequested
+  - label: Pallet
+    value: preimage
+  - label: Trigger
+    value: Preimage request-removal call submitted for a hash with no outstanding request
+  - label: Check type
+    value: Has-outstanding-request guard on the unrequest path
+---
+
+# Not Requested
+
+`NotRequested` is a preimage pallet error raised when a preimage request-removal call targets a hash
+that no longer has any outstanding preimage request. The API errors reference summarizes it as "The
+preimage request cannot be removed since no outstanding requests exist."
+([Subtensor API Errors: NotRequested](https://docs.learnbittensor.org/subtensor-api/errors#notrequested)).
+
+## What It Means
+
+Subtensor uses the preimage pallet to track the bytes behind a runtime call before other workflows
+refer to that call by hash. A request record can exist even before the preimage bytes are fully
+noted on-chain. `NotRequested` means the runtime looked up the submitted hash on the unrequest path
+and found no outstanding request that could be removed
+([Subtensor API Errors: NotRequested](https://docs.learnbittensor.org/subtensor-api/errors#notrequested)).
+
+This is a missing-request failure on the preimage unrequest path. It does not, by itself, mean the
+hash still has active requests, that the caller failed an authorization check, or that the preimage
+was too large to store.
+
+## Why It Appears
+
+This error appears when the preimage pallet receives an `unrequest_preimage` call for a hash whose
+stored status is absent or already in the unrequested state. The upstream preimage pallet source
+confirms the guard: `do_unrequest_preimage` rejects the call with `Error::<T>::NotRequested` when
+the hash has no request record to remove or when the status is already `Unrequested`
+([opentensor/polkadot-sdk: substrate/frame/preimage/src/lib.rs#L429-L459](https://github.com/opentensor/polkadot-sdk/blob/7cc54bf2d50ae3921d718736dfeb0de9468539c7/substrate/frame/preimage/src/lib.rs#L429-L459),
+[opentensor/polkadot-sdk: substrate/frame/preimage/src/lib.rs#L235-L237](https://github.com/opentensor/polkadot-sdk/blob/7cc54bf2d50ae3921d718736dfeb0de9468539c7/substrate/frame/preimage/src/lib.rs#L235-L237)).
+
+The practical meaning is narrow: there is no outstanding preimage request left for this call to
+remove.
+
+## Distinction from Requested
+
+`NotRequested` and `Requested` both concern preimage request state, but they fail at opposite
+conditions. `NotRequested` means there is no outstanding request left to remove. `Requested` means
+outstanding requests still exist, so the preimage itself cannot be removed yet
+([Subtensor API Errors: NotRequested](https://docs.learnbittensor.org/subtensor-api/errors#notrequested),
+[Subtensor API Errors: Requested](https://docs.learnbittensor.org/subtensor-api/errors#requested)).
+
+- **NotRequested** — no outstanding request exists to remove.
+- **Requested** — outstanding requests still exist for the hash.
+
+## Distinction from Not Noted
+
+`NotRequested` and `NotNoted` can both appear when a hash is missing some expected preimage state,
+but they fail on different paths. `NotRequested` is the guard on removing a preimage request.
+`NotNoted` is the guard on clearing a preimage entry that was never noted on-chain
+([Subtensor API Errors: NotRequested](https://docs.learnbittensor.org/subtensor-api/errors#notrequested),
+[Subtensor API Errors: NotNoted](https://docs.learnbittensor.org/subtensor-api/errors#notnoted)).
+
+- **NotRequested** — no outstanding preimage request exists for the hash.
+- **NotNoted** — no noted preimage status exists to clear.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the has-outstanding-request guard it represents
+on the preimage unrequest path. It does not identify which upstream workflow previously requested
+the hash or report whether the preimage bytes themselves are currently stored on-chain
+([Subtensor API Errors: NotRequested](https://docs.learnbittensor.org/subtensor-api/errors#notrequested)).
+
+## Further Reading
+
+- [Subtensor API Errors: NotRequested](https://docs.learnbittensor.org/subtensor-api/errors#notrequested)
+- [Subtensor API Errors: Requested](https://docs.learnbittensor.org/subtensor-api/errors#requested)
+- [Subtensor API Errors: NotNoted](https://docs.learnbittensor.org/subtensor-api/errors#notnoted)
