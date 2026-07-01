@@ -1,0 +1,81 @@
+---
+title: "No Deposit"
+summary:
+  "How the NoDeposit error blocks a safe-mode deposit release when no deposit is recorded for the
+  specified account at the given block, meaning there is nothing to release at that block."
+category: "Wallets"
+tags: ["Wallets", "Errors", "Security"]
+infoboxTitle: No Deposit
+infoboxCaption:
+  Error raised when a safe-mode deposit release is attempted for an account that has no deposit at
+  the specified block.
+infoboxRows:
+  - label: Error
+    value: NoDeposit
+  - label: Pallet
+    value: safe-mode
+  - label: Trigger
+    value: release_deposit called for an account and block with no recorded deposit
+  - label: Check type
+    value: Deposit existence check before the release path proceeds
+---
+
+# No Deposit
+
+`NoDeposit` is a safe-mode pallet error raised when a deposit release is attempted for an account
+and block pair that has no recorded deposit. The API errors reference describes it as "There is no
+deposit recorded for this account and block"
+([Subtensor API Errors: NoDeposit](https://docs.learnbittensor.org/subtensor-api/errors#nodeposit)).
+
+## What It Means
+
+When an account deposits funds to enter or extend safe mode, the deposit is recorded against the
+block number at which the call was made. To reclaim the deposit later, the caller must pass the
+exact block number used at deposit time. `NoDeposit` fires when no deposit is found in the on-chain
+record for the supplied account and block pair
+([Subtensor API Errors: NoDeposit](https://docs.learnbittensor.org/subtensor-api/errors#nodeposit)).
+
+This error also fires during a force deposit release — called by a privileged origin — when no
+deposit exists for the account at the given block
+([Subtensor API Errors: NoDeposit](https://docs.learnbittensor.org/subtensor-api/errors#nodeposit)).
+
+## Why It Appears
+
+This error appears when either the account never made a deposit at the given block, or the deposit
+at that block was already released. Common causes are supplying the wrong block number or attempting
+to release a deposit that has already been claimed
+([Subtensor API Errors: NoDeposit](https://docs.learnbittensor.org/subtensor-api/errors#nodeposit)).
+
+## Distinction from Cannot Release Yet
+
+`NoDeposit` and `CannotReleaseYet` both block `release_deposit`, but they detect different
+conditions. `NoDeposit` fires when no deposit is recorded at the given block, so there is nothing to
+release. `CannotReleaseYet` fires when a deposit does exist but the required waiting period since
+that block has not elapsed
+([Subtensor API Errors: CannotReleaseYet](https://docs.learnbittensor.org/subtensor-api/errors#cannotreleaseyet)).
+
+- **NoDeposit** — no deposit exists for this account at the given block.
+- **CannotReleaseYet** — a deposit exists but the waiting period has not passed.
+
+## Distinction from Not Configured
+
+`NoDeposit` and `NotConfigured` both appear on the `release_deposit` path but at different stages.
+`NoDeposit` fires when the deposit lookup finds nothing. `NotConfigured` fires when a deposit does
+exist but no release delay is set for the network, blocking the permissionless release entirely
+([Subtensor API Errors: NotConfigured](https://docs.learnbittensor.org/subtensor-api/errors#notconfigured)).
+
+- **NoDeposit** — no deposit recorded; nothing to release.
+- **NotConfigured** — deposit exists but permissionless release is disabled.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the deposit existence check that raises it. It
+does not report current deposits on chain or the block at which a past safe-mode entry occurred;
+those are live chain state
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: NoDeposit](https://docs.learnbittensor.org/subtensor-api/errors#nodeposit)
+- [Subtensor API Errors: CannotReleaseYet](https://docs.learnbittensor.org/subtensor-api/errors#cannotreleaseyet)
+- [Subtensor API Errors: NotConfigured](https://docs.learnbittensor.org/subtensor-api/errors#notconfigured)
