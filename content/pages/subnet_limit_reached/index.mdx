@@ -1,0 +1,134 @@
+---
+title: "Subnet Limit Reached"
+summary:
+  "How the SubnetLimitReached error blocks do_register_network when the chain is at its subnet cap
+  and get_network_to_prune finds no eligible non-immune subnet to replace."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Subnet Limit Reached
+infoboxCaption: Error raised when no subnet slot is available for registration.
+infoboxRows:
+  - label: Error
+    value: SubnetLimitReached
+  - label: Trigger
+    value: Subnet count is at SubnetLimit and no prune candidate exists
+  - label: Checked in
+    value: do_register_network
+  - label: Check type
+    value: Capacity gate before lock-cost validation
+---
+
+# Subnet Limit Reached
+
+`SubnetLimitReached` means a subnet-registration call arrived when the chain already occupies every
+allowed subnet slot and no eligible subnet can be pruned to make room. In `do_register_network`, the
+runtime compares the current non-root subnet count against `get_max_subnets()` and returns this
+error when `get_network_to_prune()` finds no candidate
+([Subtensor source: subnet.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/subnet.rs),
+[Subnet Deregistration](https://docs.learnbittensor.org/subnets/subnet-deregistration)).
+
+The check runs after mechanism, registration-window, and rate-limit gates and before lock-cost,
+pruning, and subnet initialization
+([Subtensor source: subnet.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/subnet.rs)).
+
+## What It Means
+
+Subnet registration is capped by the network-wide `SubnetLimit` storage value, read through
+`get_max_subnets()` in `misc.rs`. In step 5 of `do_register_network`, the runtime counts active
+non-root subnets from `NetworksAdded` and, when that count is already at the limit, asks
+`get_network_to_prune()` whether an existing subnet can be dissolved to recycle its netuid
+([Subtensor source: subnet.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/subnet.rs),
+[Subtensor source: misc.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/misc.rs)).
+
+When no prune candidate exists, the call stops with `SubnetLimitReached`. When a candidate does
+exist, registration continues and the selected subnet is dissolved later in the same extrinsic
+([Subtensor source: subnet.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/subnet.rs)).
+
+`get_network_to_prune()` in `root.rs` scans non-root subnets, skips any still inside the network
+immunity period, and selects the lowest moving alpha price. If prices tie, the earliest registration
+timestamp wins
+([Subtensor source: root.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/root.rs),
+[Subnet Deregistration: Selection criteria](https://docs.learnbittensor.org/subnets/subnet-deregistration#selection-criteria)).
+
+## Why It Appears
+
+This error appears when the chain is at its subnet cap and every existing subnet is ineligible for
+automatic pruning. The subnet-deregistration guide describes one common case: when all occupied
+subnets are still within the network immunity period, `get_network_to_prune()` returns nothing and
+registration fails with `SubnetLimitReached`
+([Subnet Deregistration: All subnets immune](https://docs.learnbittensor.org/subnets/subnet-deregistration#all-subnets-immune)).
+
+It can also appear when the cap is reached but no non-immune subnet satisfies the prune-selection
+rules at submission time. That is a capacity failure on the add-network path, not a balance or
+timing failure on the same extrinsic
+([Subnet Deregistration: Trigger](https://docs.learnbittensor.org/subnets/subnet-deregistration#trigger)).
+
+When debugging, rule out earlier gates on the same extrinsic. `MechanismDoesNotExist` means the
+submitted mechanism index is not supported on the registration path. `NetworkTxRateLimitExceeded`
+means the network-wide subnet-creation cooldown has not elapsed. `CannotAffordLockCost` is the later
+rejection when the coldkey cannot fund the current lock cost after capacity logic has already passed
+([Subtensor Standard Errors: MechanismDoesNotExist](https://docs.learnbittensor.org/errors/subtensor#mechanismdoesnotexist),
+[Subtensor Standard Errors: NetworkTxRateLimitExceeded](https://docs.learnbittensor.org/errors/subtensor#networktxratelimitexceeded)).
+
+The practical meaning is narrow: no subnet slot is available without an eligible prune target.
+
+## Distinction from Cannot Afford Lock Cost
+
+`SubnetLimitReached` and `CannotAffordLockCost` are both raised in `do_register_network`, but at
+different stages. `SubnetLimitReached` is the step-5 capacity rejection when the subnet count is at
+the limit and no prune candidate exists. `CannotAffordLockCost` is the step-6 affordability check
+after capacity logic has already passed or identified a recycle netuid
+([Subtensor source: subnet.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/subnet.rs)).
+
+- **SubnetLimitReached** — no subnet slot is available without a prune candidate.
+- **CannotAffordLockCost** — the coldkey cannot fund the lock cost.
+
+## Distinction from Network Tx Rate Limit Exceeded
+
+`SubnetLimitReached` and `NetworkTxRateLimitExceeded` both block subnet creation, but they enforce
+different rules. `NetworkTxRateLimitExceeded` is the timing gate on how often a new subnet can be
+created. `SubnetLimitReached` is the capacity gate on how many subnets may exist at once when no
+eligible subnet can be pruned
+([Subtensor Standard Errors: NetworkTxRateLimitExceeded](https://docs.learnbittensor.org/errors/subtensor#networktxratelimitexceeded),
+[Subnet Deregistration: Rate limiting](https://docs.learnbittensor.org/subnets/subnet-deregistration#rate-limiting)).
+
+- **SubnetLimitReached** — subnet cap reached with no prune candidate.
+- **NetworkTxRateLimitExceeded** — subnet-creation cooldown has not elapsed.
+
+## Distinction from No Neuron Id Available
+
+`SubnetLimitReached` and `NoNeuronIdAvailable` both signal capacity exhaustion, but at different
+scopes. `SubnetLimitReached` applies to creating a new subnet on the add-network path.
+`NoNeuronIdAvailable` applies to registering a neuron on an existing subnet when no UID slot is free
+or pruneable
+([Subtensor Standard Errors: NoNeuronIdAvailable](https://docs.learnbittensor.org/errors/subtensor#noneuronidavailable),
+[Subtensor source: registration.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)).
+
+- **SubnetLimitReached** — the network has no available subnet slot.
+- **NoNeuronIdAvailable** — the targeted subnet has no available neuron UID.
+
+## Distinction from Subnet Not Exists
+
+`SubnetLimitReached` and `SubnetNotExists` both involve subnet presence, but in opposite directions.
+`SubnetLimitReached` means the chain cannot add another subnet because the cap is full and no prune
+target is eligible. `SubnetNotExists` means a call targeted a netuid that is not present
+([Subtensor Standard Errors: SubnetNotExists](https://docs.learnbittensor.org/errors/subtensor#subnetnotexists)).
+
+- **SubnetLimitReached** — subnet creation blocked by network capacity.
+- **SubnetNotExists** — the named subnet does not exist.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the capacity check in `do_register_network`. It
+does not quote a live subnet count, immunity countdown, or prune candidate for any network, and it
+does not describe token liquidation after a subnet is dissolved; those are documented separately
+([Subnet Deregistration](https://docs.learnbittensor.org/subnets/subnet-deregistration),
+[Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet)).
+
+## Further Reading
+
+- [Subnet Deregistration](https://docs.learnbittensor.org/subnets/subnet-deregistration)
+- [Subtensor source: subnet.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/subnet.rs)
+- [Subtensor source: root.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/root.rs)
+- [Subtensor source: misc.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/misc.rs)
+- [Subtensor Standard Errors: NetworkTxRateLimitExceeded](https://docs.learnbittensor.org/errors/subtensor#networktxratelimitexceeded)
