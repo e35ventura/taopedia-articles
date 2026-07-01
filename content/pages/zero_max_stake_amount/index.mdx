@@ -1,0 +1,109 @@
+---
+title: "Zero Max Stake Amount"
+summary:
+  "How the ZeroMaxStakeAmount error blocks a price-protected staking call when no stake amount can
+  execute within the submitted limit price on the subnet."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Zero Max Stake Amount
+infoboxCaption: Error raised when no amount fits the price limit.
+infoboxRows:
+  - label: Error
+    value: ZeroMaxStakeAmount
+  - label: Trigger
+    value: No executable amount within the limit price
+  - label: Related concept
+    value: Price protection
+  - label: Example netuid
+    value: netuid 1
+---
+
+# Zero Max Stake Amount
+
+`ZeroMaxStakeAmount` means a price-protected staking call on netuid 1 or another named subnet could
+not execute any stake amount within the submitted limit price. The standard-errors reference
+describes it as "Zero max stake amount"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#zeromaxstakeamount)).
+
+The staking implementation reference lists the same label as "No amount executable within price
+limit" on limit-variant staking paths such as `add_stake_limit` and `remove_stake_limit`
+([Staking Implementation](https://docs.learnbittensor.org/navigating-subtensor/swap-stake)).
+
+## What It Means
+
+Staking moves value through each subnet's TAO and alpha reserves
+([Staking and Delegation](https://docs.learnbittensor.org/staking-and-delegation/delegation)).
+
+Price protection lets staking and unstaking calls name a limit price and optional partial-fill
+behavior on the limit variants documented in the staking implementation guide
+([Price Protection](https://docs.learnbittensor.org/learn/price-protection),
+[Staking Implementation](https://docs.learnbittensor.org/navigating-subtensor/swap-stake)).
+
+`ZeroMaxStakeAmount` means the limit-price search found no executable stake amount on the netuid
+under the submitted protection settings
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#zeromaxstakeamount),
+[Staking Implementation](https://docs.learnbittensor.org/navigating-subtensor/swap-stake)).
+
+This is a price-protection sizing rejection, not a coldkey balance failure and not a blanket pool
+liquidity failure on an ordinary unstake path.
+
+## Why It Appears
+
+This error appears when a limit-protected add-stake or remove-stake call names a limit price so
+tight, or faces pool conditions so adverse, that zero alpha or TAO can trade within the allowed band
+on the subnet. That can happen when the limit price is far from the current pool ratio, when strict
+protection rejects partial fills, or when a client copies an outdated limit from an earlier block
+([Price Protection](https://docs.learnbittensor.org/learn/price-protection),
+[Understanding Slippage](https://docs.learnbittensor.org/learn/slippage)).
+
+On netuid 1, readers can compare a proposed limit against live subnet pool context through the
+subnet documentation and storage query patterns described for hyperparameters and reserves before
+resubmitting a protected stake call
+([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
+
+When debugging, rule out balance and stake-size failures first. `NotEnoughBalanceToStake` means the
+coldkey cannot fund the requested add-stake amount. `NotEnoughStakeToWithdraw` means the pair lacks
+enough staked alpha for the removal. `AmountTooLow` means the submitted amount is below the minimum
+stake increment
+([Subtensor Standard Errors: NotEnoughBalanceToStake](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake),
+[Subtensor Standard Errors: NotEnoughStakeToWithdraw](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketowithdraw),
+[Subtensor Standard Errors: AmountTooLow](https://docs.learnbittensor.org/errors/subtensor#amounttoolow)).
+
+The practical meaning is narrow: no stake amount can execute within the submitted price limit.
+
+## Distinction from Slippage Too High
+
+`ZeroMaxStakeAmount` and `SlippageTooHigh` both involve price protection on staking paths, but they
+reject different outcomes. `ZeroMaxStakeAmount` means no executable amount remains within the limit
+price. `SlippageTooHigh` means price protection triggered in strict mode because movement exceeded
+tolerance
+([Subtensor Standard Errors: SlippageTooHigh](https://docs.learnbittensor.org/errors/subtensor#slippagetoohigh),
+[Staking Implementation](https://docs.learnbittensor.org/navigating-subtensor/swap-stake)).
+
+- **ZeroMaxStakeAmount** — no amount can execute within the limit price.
+- **SlippageTooHigh** — strict price protection rejected the trade.
+
+## Distinction from Insufficient Liquidity
+
+`ZeroMaxStakeAmount` and `InsufficientLiquidity` both can appear when a pool-backed conversion
+fails, but at different checks. `ZeroMaxStakeAmount` is the limit-price result when zero stake
+amount is executable within the submitted protection band. `InsufficientLiquidity` means the pool
+swap behind the action could not simulate or complete
+([Subtensor Standard Errors: InsufficientLiquidity](https://docs.learnbittensor.org/errors/subtensor#insufficientliquidity)).
+
+- **ZeroMaxStakeAmount** — no executable amount within the limit price.
+- **InsufficientLiquidity** — the pool cannot support the swap simulation or execution.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the zero-executable-amount price-limit gate it
+represents. It does not quote a live limit price or pool ratio on a particular netuid; those values
+are subnet chain state readers can query for the selected netuid
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor Standard Errors: ZeroMaxStakeAmount](https://docs.learnbittensor.org/errors/subtensor#zeromaxstakeamount)
+- [Staking Implementation](https://docs.learnbittensor.org/navigating-subtensor/swap-stake)
+- [Price Protection](https://docs.learnbittensor.org/learn/price-protection)
+- [Understanding Slippage](https://docs.learnbittensor.org/learn/slippage)
