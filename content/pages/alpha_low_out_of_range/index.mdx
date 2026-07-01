@@ -1,0 +1,100 @@
+---
+title: "Alpha Low Out Of Range"
+summary:
+  "How the AlphaLowOutOfRange error blocks sudo_set_alpha_values when the submitted alpha low u16
+  value falls below the chain floor or above the submitted alpha high bound."
+category: "Consensus"
+tags: ["Consensus", "Errors"]
+infoboxTitle: Alpha Low Out Of Range
+infoboxCaption: Error raised when alpha low is outside the allowed range.
+infoboxRows:
+  - label: Error
+    value: AlphaLowOutOfRange
+  - label: Trigger
+    value: alpha_low is below the floor or above alpha_high
+  - label: Checked in
+    value: do_set_alpha_values
+  - label: Related hyperparameter
+    value: alpha_low
+---
+
+# Alpha Low Out Of Range
+
+`AlphaLowOutOfRange` means a `sudo_set_alpha_values` call submitted an alpha low bound that fails
+the chain's range check. The standard-errors reference describes it as "Alpha low value is out of
+allowed range"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#alphalowoutofrange)).
+
+The check applies only after liquid alpha is enabled on the target subnet, authorization has passed,
+and the submitted `alpha_high` has cleared the alpha high floor
+([Subnet Hyperparameters: LiquidAlphaEnabled](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#liquidalphaenabled)).
+
+## What It Means
+
+The `sudo_set_alpha_values` extrinsic writes the `(alpha_low, alpha_high)` pair that bounds liquid
+alpha bond smoothing. In `do_set_alpha_values`, the runtime computes a minimum floor from
+`u16::MAX / 40` and returns `AlphaLowOutOfRange` when the submitted `alpha_low` is strictly below
+that floor or strictly above the submitted `alpha_high` value
+([Subtensor source: run_epoch.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/epoch/run_epoch.rs),
+[Subnet Hyperparameters: alpha_low](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#alphalow)).
+
+Alpha low is the lower bound of the liquid alpha range that sets how slowly validator-miner bonds
+smooth when alignment is weak
+([Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)).
+
+## Why It Appears
+
+This error appears when a caller submits `sudo_set_alpha_values` with an `alpha_low` that is too
+small, inverted relative to `alpha_high`, or otherwise outside the allowed pair. Mis-scaled units,
+copied extrinsics with swapped bounds, or automation that does not validate the pair before
+submission can hit this error even when liquid alpha is already enabled on the subnet
+([Subtensor source: run_epoch.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/epoch/run_epoch.rs)).
+
+When debugging, rule out earlier gates on the same extrinsic first. `LiquidAlphaDisabled` means
+liquid alpha is not enabled on the subnet. `AlphaHighTooLow` means the submitted `alpha_high` value
+is below the minimum floor before the alpha low check runs
+([Subtensor Standard Errors: LiquidAlphaDisabled](https://docs.learnbittensor.org/errors/subtensor#liquidalphadisabled),
+[Subtensor Standard Errors: AlphaHighTooLow](https://docs.learnbittensor.org/errors/subtensor#alphahightoolow)).
+
+The practical meaning is narrow: the submitted alpha low u16 is outside the allowed range relative
+to the floor and the submitted alpha high.
+
+## Distinction from Alpha High Too Low
+
+`AlphaLowOutOfRange` and `AlphaHighTooLow` are both range checks in `do_set_alpha_values`, but they
+guard different submitted values and run in sequence. `AlphaHighTooLow` compares only `alpha_high`
+against the minimum floor. `AlphaLowOutOfRange` compares `alpha_low` against the same floor and also
+requires `alpha_low` to stay at or below the submitted `alpha_high`
+([Subtensor source: run_epoch.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/epoch/run_epoch.rs)).
+
+- **AlphaHighTooLow** — the submitted alpha high is below the minimum floor.
+- **AlphaLowOutOfRange** — alpha low is below the floor or above alpha high.
+
+## Distinction from Liquid Alpha Disabled
+
+`AlphaLowOutOfRange` and `LiquidAlphaDisabled` can both appear on `sudo_set_alpha_values`, but at
+different stages. `LiquidAlphaDisabled` is the feature toggle rejection when `LiquidAlphaEnabled` is
+false. `AlphaLowOutOfRange` is the later pair-range rejection after the toggle and alpha high floor
+checks have already passed
+([Subtensor Standard Errors: LiquidAlphaDisabled](https://docs.learnbittensor.org/errors/subtensor#liquidalphadisabled),
+[Subtensor source: run_epoch.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/epoch/run_epoch.rs)).
+
+- **LiquidAlphaDisabled** — liquid alpha is not enabled on the subnet.
+- **AlphaLowOutOfRange** — alpha low is below the floor or above alpha high.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the alpha low range check in
+`do_set_alpha_values`. It does not describe how liquid alpha varies bonds during an epoch, how to
+read live alpha bounds for a subnet, or how bonds moving average behaves when liquid alpha is off;
+those are documented separately
+([Subnet Hyperparameters: alpha_low](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#alphalow),
+[Yuma Consensus: Bonding mechanics](https://docs.learnbittensor.org/learn/yuma-consensus#bonding)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#alphalowoutofrange)
+- [Subtensor Standard Errors: AlphaHighTooLow](https://docs.learnbittensor.org/errors/subtensor#alphahightoolow)
+- [Subnet Hyperparameters: LiquidAlphaEnabled](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#liquidalphaenabled)
+- [Subnet Hyperparameters: alpha_low](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#alphalow)
+- [Subtensor source: run_epoch.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/epoch/run_epoch.rs)
