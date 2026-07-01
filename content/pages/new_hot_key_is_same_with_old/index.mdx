@@ -1,0 +1,90 @@
+---
+title: "New Hot Key Is Same With Old"
+summary:
+  "How the NewHotKeyIsSameWithOld error stops a swap_hotkey call when the submitted new hotkey is
+  identical to the old hotkey."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: New Hot Key Is Same With Old
+infoboxCaption:
+  Error raised when swap_hotkey is submitted with a new hotkey equal to the old hotkey.
+infoboxRows:
+  - label: Error
+    value: NewHotKeyIsSameWithOld
+  - label: Trigger
+    value: swap_hotkey submitted with the new hotkey equal to the old hotkey
+  - label: Checked in
+    value: swap_hotkey (do_swap_hotkey)
+  - label: Check type
+    value: Old-vs-new hotkey identity check
+---
+
+# New Hot Key Is Same With Old
+
+`NewHotKeyIsSameWithOld` is a Subtensor pallet error raised by the `swap_hotkey` extrinsic when the
+submitted new hotkey is the same account as the old hotkey. The Subtensor API errors reference lists
+it under the subtensor pallet
+([Subtensor API Errors: NewHotKeyIsSameWithOld](https://docs.learnbittensor.org/subtensor-api/errors#newhotkeyissamewithold)).
+
+## What It Means
+
+`swap_hotkey` replaces one hotkey with another under the same coldkey. The runtime requires the
+replacement to actually change the key: `do_swap_hotkey` compares the old and new hotkey accounts
+and, when they are identical, stops with `NewHotKeyIsSameWithOld` before any swap work is done
+([Subtensor source: swap/swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs)).
+
+This is an identity check on the two supplied keys, not a statement about stake, registration, or
+rate limits. The call is rejected simply because a swap to the same account would be a no-op
+([Subtensor API Errors: NewHotKeyIsSameWithOld](https://docs.learnbittensor.org/subtensor-api/errors#newhotkeyissamewithold),
+[Subtensor source: swap/swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs)).
+
+## Why It Appears
+
+This error is straightforward to reproduce: submit `swap_hotkey` with the new hotkey set to the same
+account as the old hotkey. It commonly comes from tooling or scripts that pass the current hotkey
+into both the old and new fields, or that compute the "new" hotkey from stale input that resolves
+back to the existing one
+([Subtensor source: swap/swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs)).
+
+Ordering matters when reading this error. `do_swap_hotkey` first confirms the signing coldkey owns
+the old hotkey, and that it owns the new hotkey if that account already exists, before it reaches
+the same-key comparison. So `NewHotKeyIsSameWithOld` is only returned once the ownership checks have
+already passed
+([Subtensor source: swap/swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs)).
+
+## Distinction from Non Associated Cold Key
+
+`NewHotKeyIsSameWithOld` and `NonAssociatedColdKey` guard different conditions on the same
+`swap_hotkey` call, and they run in a fixed order. `NonAssociatedColdKey` is returned first if the
+signing coldkey does not own the old hotkey (or the new hotkey when it already exists).
+`NewHotKeyIsSameWithOld` is returned afterward, only when ownership holds but the two keys are equal
+([Subtensor API Errors: NonAssociatedColdKey](https://docs.learnbittensor.org/subtensor-api/errors#nonassociatedcoldkey),
+[Subtensor source: swap/swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs)).
+
+- **NonAssociatedColdKey** — the signing coldkey does not own the hotkey being acted on.
+- **NewHotKeyIsSameWithOld** — ownership holds, but the new hotkey equals the old one.
+
+## Distinction from Hotkey Swap On Subnet Interval Not Passed
+
+`NewHotKeyIsSameWithOld` and `HotKeySwapOnSubnetIntervalNotPassed` both reject a hotkey swap, but
+for unrelated reasons. `NewHotKeyIsSameWithOld` is about the two keys being identical. The interval
+error is about timing: it blocks a swap that is attempted again before the required per-subnet
+waiting period has elapsed
+([Subtensor API Errors: HotKeySwapOnSubnetIntervalNotPassed](https://docs.learnbittensor.org/subtensor-api/errors#hotkeyswaponsubnetintervalnotpassed),
+[Subtensor source: swap/swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs)).
+
+- **NewHotKeyIsSameWithOld** — the new hotkey is not different from the old one.
+- **HotKeySwapOnSubnetIntervalNotPassed** — the swap is too soon after a previous swap.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the same-key check on `swap_hotkey`. It does
+not document the full swap procedure, how stake and registrations are moved, or the other guards the
+extrinsic applies; those are separate parts of the hotkey-swap flow
+([Subtensor source: swap/swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs)).
+
+## Further Reading
+
+- [Subtensor API Errors: NewHotKeyIsSameWithOld](https://docs.learnbittensor.org/subtensor-api/errors#newhotkeyissamewithold)
+- [Subtensor API Errors: NonAssociatedColdKey](https://docs.learnbittensor.org/subtensor-api/errors#nonassociatedcoldkey)
+- [Subtensor source: swap/swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/swap/swap_hotkey.rs)
