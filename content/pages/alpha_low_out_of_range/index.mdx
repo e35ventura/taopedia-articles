@@ -1,0 +1,102 @@
+---
+title: "Alpha Low Out Of Range"
+summary:
+  "How the AlphaLowOutOfRange error blocks sudo_set_alpha_values when the submitted alpha low value
+  falls below the chain's minimum floor or above the submitted alpha high bound."
+category: "Consensus"
+tags: ["Consensus", "Errors"]
+infoboxTitle: Alpha Low Out Of Range
+infoboxCaption: Error raised when alpha low is outside the allowed range.
+infoboxRows:
+  - label: Error
+    value: AlphaLowOutOfRange
+  - label: Trigger
+    value: alpha_low is below the minimum floor or above alpha_high
+  - label: Checked in
+    value: sudo_set_alpha_values path
+  - label: Related hyperparameter
+    value: alpha_low
+---
+
+# Alpha Low Out Of Range
+
+`AlphaLowOutOfRange` means a `sudo_set_alpha_values` call submitted an alpha low bound outside the
+allowed range. The standard-errors reference describes it as "Alpha low value is out of allowed
+range"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#alphalowoutofrange)).
+
+The check applies only after liquid alpha is enabled on the target subnet and the submitted alpha
+high value has already passed its own floor check
+([Subnet Hyperparameters: LiquidAlphaEnabled](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#liquidalphaenabled),
+[Alpha High Too Low](https://docs.learnbittensor.org/errors/subtensor#alphahightoolow)).
+
+## What It Means
+
+`sudo_set_alpha_values` writes the alpha low and alpha high pair that bounds liquid alpha bond
+smoothing. `AlphaLowOutOfRange` means the submitted alpha low was either below the chain's minimum
+allowed floor or above the alpha high value named in the same call, so the chain rejected the update
+and left the stored bounds unchanged
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#alphalowoutofrange),
+[Subnet Hyperparameters: alpha_low](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#alphalow)).
+
+Alpha low is the lower bound of the liquid alpha range that sets how slowly validator-miner bonds
+can smooth when alignment is weak
+([Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)).
+
+## Why It Appears
+
+This error appears when a caller submits `sudo_set_alpha_values` with an alpha low that is too small
+or that sits above the alpha high submitted in the same extrinsic. Swapped bounds, mis-scaled
+values, or automation that does not validate the pair before broadcast can hit this error even when
+liquid alpha is already enabled on the subnet
+([Subnet Hyperparameters: alpha_low](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#alphalow)).
+
+When debugging, rule out earlier gates on the same extrinsic first. `LiquidAlphaDisabled` means
+liquid alpha is not enabled on the subnet. `AlphaHighTooLow` means the submitted alpha high is below
+the minimum floor, which is checked before the alpha low range test runs
+([Subtensor Standard Errors: LiquidAlphaDisabled](https://docs.learnbittensor.org/errors/subtensor#liquidalphadisabled),
+[Subtensor Standard Errors: AlphaHighTooLow](https://docs.learnbittensor.org/errors/subtensor#alphahightoolow)).
+
+The practical meaning is narrow: the submitted alpha low does not form a valid lower bound relative
+to the chain floor and the alpha high in the same call. The problem is not that liquid alpha is
+still off or that alpha high alone is below the minimum floor.
+
+## Distinction from Alpha High Too Low
+
+`AlphaLowOutOfRange` and `AlphaHighTooLow` are both bound checks on `sudo_set_alpha_values`, but
+they guard different submitted values and run in sequence. `AlphaHighTooLow` rejects an alpha high
+that is below the minimum floor. `AlphaLowOutOfRange` rejects an alpha low that is below that same
+floor or above the submitted alpha high, and it is only reached after the alpha high floor check has
+already passed
+([Subtensor Standard Errors: AlphaHighTooLow](https://docs.learnbittensor.org/errors/subtensor#alphahightoolow)).
+
+- **AlphaHighTooLow** — the submitted alpha high is below the minimum floor.
+- **AlphaLowOutOfRange** — alpha low is below the floor or above alpha high.
+
+## Distinction from Liquid Alpha Disabled
+
+`AlphaLowOutOfRange` and `LiquidAlphaDisabled` can both appear on alpha-bounds updates, but at
+different stages. `LiquidAlphaDisabled` is the feature-toggle rejection when liquid alpha is still
+off. `AlphaLowOutOfRange` is a later range rejection after the toggle and alpha high floor checks
+have already passed
+([Subtensor Standard Errors: LiquidAlphaDisabled](https://docs.learnbittensor.org/errors/subtensor#liquidalphadisabled)).
+
+- **LiquidAlphaDisabled** — liquid alpha is not enabled on the subnet.
+- **AlphaLowOutOfRange** — alpha low is outside the allowed range.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the alpha low range check on
+`sudo_set_alpha_values`. It does not describe how liquid alpha varies bonds during an epoch, how to
+read live alpha bounds for a subnet, or how bonds moving average behaves when liquid alpha is off;
+those are documented separately
+([Subnet Hyperparameters: alpha_low](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#alphalow),
+[Consensus-based Weights](https://docs.learnbittensor.org/concepts/consensus-based-weights)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#alphalowoutofrange)
+- [Subnet Hyperparameters: LiquidAlphaEnabled](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#liquidalphaenabled)
+- [Subnet Hyperparameters: alpha_low](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#alphalow)
+- [Subnet Hyperparameters: alpha_high](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#alphahigh)
+- [Alpha High Too Low](https://docs.learnbittensor.org/errors/subtensor#alphahightoolow)
