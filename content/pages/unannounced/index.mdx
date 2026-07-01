@@ -1,0 +1,79 @@
+---
+title: "Unannounced"
+summary:
+  "How the Unannounced error blocks delayed proxy execution when the required announcement is
+  missing or still inside its waiting window."
+category: "Wallets"
+tags: ["Wallets", "Errors"]
+infoboxTitle: Unannounced
+infoboxCaption: Error raised when a delayed proxy call has not been announced early enough.
+infoboxRows:
+  - label: Error
+    value: Unannounced
+  - label: Trigger
+    value: delayed proxy call has no usable matured announcement
+  - label: Checked in
+    value: proxy and proxy_announced flows
+  - label: Check type
+    value: Announcement timing and record check
+---
+
+# Unannounced
+
+`Unannounced` is a documented proxy-pallet error raised when a delayed proxy call has not been
+announced early enough to execute. The Subtensor API errors reference summarizes it as:
+"Announcement, if made at all, was made too recently"
+([Subtensor API Errors: Unannounced](https://docs.learnbittensor.org/subtensor-api/errors#unannounced)).
+
+## What It Means
+
+Proxy relationships can include a delay. When that delay is nonzero, the call cannot go straight
+through the immediate `proxy` path. The runtime first requires an announcement record, then waits
+until the configured delay has elapsed. `Unannounced` is the rejection when that requirement is not
+yet satisfied
+([Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs)).
+
+This is an announcement-readiness failure, not a missing-proxy-definition failure. The proxy
+relationship may exist, but the delayed call still cannot execute until the announcement state is
+usable
+([Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs)).
+
+## Why It Appears
+
+The proxy pallet raises `Unannounced` on two closely related paths. First, the direct `proxy` call
+rejects a matched proxy definition whose delay is nonzero. Second, `proxy_announced` rejects a call
+when the matching announcement is missing or the required waiting period has not elapsed yet
+([Subtensor API Errors: Unannounced](https://docs.learnbittensor.org/subtensor-api/errors#unannounced),
+[Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs)).
+
+The tests show both cases. A delayed proxy setup fails on the immediate `proxy` path, and the
+announced path also fails until the block delay has matured. Once the announcement exists and enough
+blocks have passed, the announced execution succeeds
+([Subtensor test: proxy/tests.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/tests.rs)).
+
+## Distinction from Not Proxy
+
+`Unannounced` and `NotProxy` both appear in proxy execution flows, but they reject different
+preconditions. `NotProxy` means the runtime cannot find the required proxy definition at all.
+`Unannounced` means the proxy definition was found, but the delayed-call announcement requirement is
+still not satisfied
+([Subtensor API Errors: NotProxy](https://docs.learnbittensor.org/subtensor-api/errors#notproxy),
+[Subtensor API Errors: Unannounced](https://docs.learnbittensor.org/subtensor-api/errors#unannounced)).
+
+- **NotProxy** — the required proxy relationship is not found.
+- **Unannounced** — the delayed proxy relationship exists, but the announcement is missing or too
+  recent.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the delayed-announcement gate that raises it.
+It does not describe every proxy type, deposit rule, or announcement lifecycle detail beyond the
+specific readiness check behind `Unannounced`
+([Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs)).
+
+## Further Reading
+
+- [Subtensor API Errors: Unannounced](https://docs.learnbittensor.org/subtensor-api/errors#unannounced)
+- [Subtensor API Errors: NotProxy](https://docs.learnbittensor.org/subtensor-api/errors#notproxy)
+- [Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs)
+- [Subtensor test: proxy/tests.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/tests.rs)
