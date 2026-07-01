@@ -1,0 +1,101 @@
+---
+title: "Registration Price Limit Exceeded"
+summary:
+  "How the RegistrationPriceLimitExceeded error blocks register_limit when the subnet's current
+  dynamic registration burn is above the caller's limit_price cap."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Registration Price Limit Exceeded
+infoboxCaption: Error raised when the burn cost exceeds the submitted price cap.
+infoboxRows:
+  - label: Error
+    value: RegistrationPriceLimitExceeded
+  - label: Trigger
+    value: Current registration burn is above limit_price
+  - label: Checked in
+    value: register_limit path
+  - label: Related concept
+    value: Dynamic registration burn
+---
+
+# Registration Price Limit Exceeded
+
+`RegistrationPriceLimitExceeded` means a `register_limit` call named a price cap below the subnet's
+current dynamic registration burn. The standard-errors reference lists this error on registration
+paths
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#registrationpricelimitexceeded)).
+
+`register_limit` is the capped-price variant of ordinary neuron registration. It compares the
+subnet's live burn cost against a caller-supplied `limit_price` before entering the shared
+registration flow
+([Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## What It Means
+
+Ordinary `register` pays whatever dynamic burn the subnet currently charges. `register_limit` adds a
+ceiling: the extrinsic only proceeds when the current burn is at or below `limit_price`.
+`RegistrationPriceLimitExceeded` means that comparison failed, so the chain rejected the call before
+delegating into the shared registration path
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#registrationpricelimitexceeded)).
+
+This is a price-cap gate on `register_limit` only. Plain `register` does not accept a `limit_price`
+argument and never raises this error.
+
+## Why It Appears
+
+This error appears when a wallet submits `register_limit` with a `limit_price` below the subnet's
+current burn. That can happen when the dynamic burn rose after the cap was chosen, when automation
+reuses an outdated limit from an earlier block, or when a client mis-scales the TAO amount attached
+to the extrinsic
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+When debugging, rule out earlier gates on the same extrinsic first.
+`RegistrationNotPermittedOnRootSubnet` means the target was the Root Subnet. `SubnetNotExists` means
+the subnet is absent from chain state
+([Subtensor Standard Errors: RegistrationNotPermittedOnRootSubnet](https://docs.learnbittensor.org/errors/subtensor#registrationnotpermittedonrootsubnet),
+[Subtensor Standard Errors: SubnetNotExists](https://docs.learnbittensor.org/errors/subtensor#subnetnotexists)).
+
+The practical meaning is narrow: the caller's price cap is below the current burn. The problem is
+not that the coldkey lacks enough free balance to pay the burn, that the hotkey already holds a UID
+on the subnet, or that the subnet has no available neuron slot.
+
+## Distinction from Not Enough Balance To Stake
+
+`RegistrationPriceLimitExceeded` and `NotEnoughBalanceToStake` both appear around registration, but
+at different stages and on different checks. `RegistrationPriceLimitExceeded` is the
+`register_limit` price-cap comparison against the current burn. `NotEnoughBalanceToStake` is the
+later funding check inside the shared registration path when the coldkey cannot cover the burn
+amount
+([Subtensor Standard Errors: NotEnoughBalanceToStake](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake)).
+
+- **RegistrationPriceLimitExceeded** — the submitted `limit_price` is below the current burn.
+- **NotEnoughBalanceToStake** — free balance cannot fund the registration burn.
+
+## Distinction from No Neuron Id Available
+
+`RegistrationPriceLimitExceeded` and `NoNeuronIdAvailable` both block registration, but at different
+points. `RegistrationPriceLimitExceeded` fails before the shared registration path runs, when the
+burn is above the caller's cap. `NoNeuronIdAvailable` means the price and earlier gates already
+passed, but the subnet has no UID slot or prune candidate left to assign
+([Subtensor Standard Errors: NoNeuronIdAvailable](https://docs.learnbittensor.org/errors/subtensor#noneuronidavailable)).
+
+- **RegistrationPriceLimitExceeded** — the burn exceeds the submitted price cap.
+- **NoNeuronIdAvailable** — the subnet has no assignable UID.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the burn-versus-cap check on `register_limit`.
+It does not describe how the dynamic burn is recalibrated each interval, how plain `register`
+differs in every later validation step, or the live burn value on a specific subnet; those are
+documented separately
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#registrationpricelimitexceeded)
+- [Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register)
+- [Subtensor Standard Errors: NotEnoughBalanceToStake](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake)
+- [Subtensor Standard Errors: NoNeuronIdAvailable](https://docs.learnbittensor.org/errors/subtensor#noneuronidavailable)
+- [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
