@@ -1,0 +1,91 @@
+---
+title: "Wrong Timepoint"
+summary:
+  "How the WrongTimepoint error blocks a multisig approval or cancellation when the caller supplies
+  a timepoint that does not match the block number and extrinsic index recorded when the operation
+  was first submitted."
+category: "Wallets"
+tags: ["Wallets", "Errors", "Security"]
+infoboxTitle: Wrong Timepoint
+infoboxCaption:
+  Error raised when the caller-supplied timepoint does not match the on-chain record for the
+  multisig operation.
+infoboxRows:
+  - label: Error
+    value: WrongTimepoint
+  - label: Pallet
+    value: multisig
+  - label: Trigger
+    value: Provided timepoint does not match the stored timepoint for the in-progress operation
+  - label: Check type
+    value: Equality check between caller-supplied and on-chain timepoints
+---
+
+# Wrong Timepoint
+
+`WrongTimepoint` is a multisig pallet error raised when a signatory submits an approval or
+cancellation for an in-progress multisig operation but provides a timepoint that does not match the
+block and extrinsic index when the operation was first recorded. The API errors reference describes
+it as "A different timepoint was given to the multisig operation that is underway"
+([Subtensor API Errors: WrongTimepoint](https://docs.learnbittensor.org/subtensor-api/errors#wrongtimepoint)).
+
+## What It Means
+
+When a multisig operation begins, the first signatory's submission is recorded on-chain with a
+timepoint — the block number and extrinsic index of that initial submission. Every subsequent
+approval via `as_multi` or `approve_as_multi`, and any cancellation via `cancel_as_multi`, must
+supply the same timepoint so the pallet can confirm the caller is referencing the correct, current
+operation ([Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)).
+
+`WrongTimepoint` fires when a caller provides a timepoint that differs from the one recorded
+on-chain. The pallet treats this as a mismatch against the stored operation and rejects the
+submission
+([Subtensor API Errors: WrongTimepoint](https://docs.learnbittensor.org/subtensor-api/errors#wrongtimepoint),
+[Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)).
+
+## Why It Appears
+
+This error appears when the caller supplies an incorrect block number, an incorrect extrinsic index,
+or both. The most common cause is using a stale or copied timepoint from a different operation or a
+different block than when this specific multisig call was first recorded
+([Subtensor API Errors: WrongTimepoint](https://docs.learnbittensor.org/subtensor-api/errors#wrongtimepoint)).
+
+## Distinction from No Timepoint
+
+`WrongTimepoint` and `NoTimepoint` both block approvals for an in-progress operation, but at a
+different point in the timepoint check. `NoTimepoint` fires when the timepoint is absent entirely.
+`WrongTimepoint` fires when a timepoint was provided but its value does not equal the on-chain
+record
+([Subtensor API Errors: NoTimepoint](https://docs.learnbittensor.org/subtensor-api/errors#notimepoint),
+[Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)).
+
+- **NoTimepoint** — the timepoint parameter was omitted.
+- **WrongTimepoint** — the timepoint was provided but has a different value than what is stored.
+
+## Distinction from Unexpected Timepoint
+
+`WrongTimepoint` and `UnexpectedTimepoint` both occur when a caller supplies a timepoint, but in
+different situations. `WrongTimepoint` fires when an operation already exists on-chain and the
+supplied timepoint does not match its recorded start. `UnexpectedTimepoint` fires when no operation
+has been recorded for the call hash yet and the caller supplied a timepoint anyway — no comparison
+to a stored value is possible
+([Subtensor API Errors: UnexpectedTimepoint](https://docs.learnbittensor.org/subtensor-api/errors#unexpectedtimepoint),
+[Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)).
+
+- **WrongTimepoint** — operation exists; the provided timepoint does not match its start.
+- **UnexpectedTimepoint** — no operation recorded yet; no stored timepoint exists to compare
+  against.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the timepoint equality check that raises it. It
+does not report the timepoint of any specific multisig operation currently on chain; that is live
+chain state ([Multisig Wallets](https://docs.learnbittensor.org/keys/multisig),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: WrongTimepoint](https://docs.learnbittensor.org/subtensor-api/errors#wrongtimepoint)
+- [Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)
+- [Subtensor API Errors: NoTimepoint](https://docs.learnbittensor.org/subtensor-api/errors#notimepoint)
+- [Subtensor API Errors: UnexpectedTimepoint](https://docs.learnbittensor.org/subtensor-api/errors#unexpectedtimepoint)
