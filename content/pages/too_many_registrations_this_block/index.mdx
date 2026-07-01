@@ -1,0 +1,114 @@
+---
+title: "Too Many Registrations This Block"
+summary:
+  "How the TooManyRegistrationsThisBlock error blocks root_register when the Root Subnet has already
+  reached its per-block registration cap for the current block."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Too Many Registrations This Block
+infoboxCaption: Error raised when root registration exceeds the per-block cap.
+infoboxRows:
+  - label: Error
+    value: TooManyRegistrationsThisBlock
+  - label: Trigger
+    value: Root registrations this block reached MaxRegistrationsPerBlock
+  - label: Checked in
+    value: do_root_register
+  - label: Related hyperparameter
+    value: MaxRegistrationsPerBlock
+---
+
+# Too Many Registrations This Block
+
+`TooManyRegistrationsThisBlock` means a `root_register` call arrived after the Root Subnet had
+already used its per-block registration allowance. The standard-errors reference describes it as
+"Too many registrations in this block"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#toomanyregistrationsthisblock)).
+
+The check runs on the Root Subnet only, after Root Subnet existence validation and before interval
+pacing, hotkey membership, and stake-displacement checks
+([Subtensor source: root.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/root.rs)).
+
+## What It Means
+
+Root validator admission through `do_root_register` paces how many successful registrations can land
+in one block. The runtime compares `get_registrations_this_block(NetUid::ROOT)` against
+`get_max_registrations_per_block(NetUid::ROOT)` and returns `TooManyRegistrationsThisBlock` when the
+current block count has already reached that cap
+([Subtensor source: root.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/root.rs),
+[Subnet Hyperparameters: MaxRegistrationsPerBlock](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#maxregistrationsperblock)).
+
+This is a per-block rate gate on Root Subnet registration, not a stake comparison and not an
+ordinary mining-subnet burn-registration rejection
+([Root Subnet / Subnet Zero](https://docs.learnbittensor.org/resources/glossary#root-subnetsubnet-zero)).
+
+## Why It Appears
+
+This error appears when multiple `root_register` calls compete in the same block and one of them
+arrives after the Root Subnet's per-block cap is already full. That can happen from automation that
+retries root registration in the same block, from batching several root registrations together, or
+from mempool ordering that places a later registration behind an earlier successful one in the same
+block
+([Subtensor source: root.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/root.rs)).
+
+When debugging, rule out earlier and later gates on the same extrinsic. `RootNetworkDoesNotExist`
+means Root Subnet chain state was missing. `TooManyRegistrationsThisInterval` means the interval
+pacing cap was exceeded instead of the per-block cap. `HotKeyAlreadyRegisteredInSubNet` means the
+hotkey already holds a root UID
+([Subtensor Standard Errors: RootNetworkDoesNotExist](https://docs.learnbittensor.org/errors/subtensor#rootnetworkdoesnotexist),
+[Subtensor Standard Errors: TooManyRegistrationsThisInterval](https://docs.learnbittensor.org/errors/subtensor#toomanyregistrationsthisinterval),
+[Subtensor Standard Errors: HotKeyAlreadyRegisteredInSubNet](https://docs.learnbittensor.org/errors/subtensor#hotkeyalreadyregisteredinsubnet)).
+
+The practical meaning is narrow: the Root Subnet's per-block registration cap is already full.
+
+## Distinction from Too Many Registrations This Interval
+
+`TooManyRegistrationsThisBlock` and `TooManyRegistrationsThisInterval` are both pacing checks in
+`do_root_register`, but they measure different windows. `TooManyRegistrationsThisBlock` compares
+registrations in the current block against `MaxRegistrationsPerBlock`.
+`TooManyRegistrationsThisInterval` compares registrations in the current interval against three
+times `TargetRegistrationsPerInterval`
+([Subtensor source: root.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/root.rs),
+[Subnet Hyperparameters: TargetRegistrationsPerInterval](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#targetregistrationsperinterval)).
+
+- **TooManyRegistrationsThisBlock** — the per-block registration cap is full.
+- **TooManyRegistrationsThisInterval** — the interval registration cap is full.
+
+## Distinction from Stake Too Low For Root
+
+`TooManyRegistrationsThisBlock` and `StakeTooLowForRoot` both appear on `root_register`, but at
+different stages. `TooManyRegistrationsThisBlock` is the per-block rate check that runs before any
+stake comparison. `StakeTooLowForRoot` is the later displacement rejection when the Root Subnet is
+full and the registering hotkey's root stake is not high enough to replace the weakest validator
+([Subtensor Standard Errors: StakeTooLowForRoot](https://docs.learnbittensor.org/errors/subtensor#staketoolowforroot),
+[Subtensor source: root.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/root.rs)).
+
+- **TooManyRegistrationsThisBlock** — too many root registrations landed in the same block.
+- **StakeTooLowForRoot** — root stake was too low to displace the weakest root validator.
+
+## Distinction from Registration Not Permitted On Root Subnet
+
+`TooManyRegistrationsThisBlock` applies to the dedicated `root_register` path on the Root Subnet.
+`RegistrationNotPermittedOnRootSubnet` rejects ordinary registration-style extrinsics such as
+`register` or `set_children` when they target the Root Subnet instead of an ordinary mining subnet
+([Subtensor Standard Errors: RegistrationNotPermittedOnRootSubnet](https://docs.learnbittensor.org/errors/subtensor#registrationnotpermittedonrootsubnet),
+[Subtensor source: root.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/root.rs)).
+
+- **TooManyRegistrationsThisBlock** — the Root Subnet per-block registration cap is full.
+- **RegistrationNotPermittedOnRootSubnet** — a registration-style call targeted the Root Subnet on
+  the wrong extrinsic family.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the per-block pacing check in
+`do_root_register`. It does not describe root validator displacement rules, senate membership, or
+ordinary mining-subnet burn registration; those are documented separately
+([Stake Too Low For Root](https://docs.learnbittensor.org/errors/subtensor#staketoolowforroot),
+[Register](https://docs.learnbittensor.org/miners)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#toomanyregistrationsthisblock)
+- [Subnet Hyperparameters: MaxRegistrationsPerBlock](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#maxregistrationsperblock)
+- [Subtensor source: root.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/root.rs)
+- [Subtensor Standard Errors: StakeTooLowForRoot](https://docs.learnbittensor.org/errors/subtensor#staketoolowforroot)
