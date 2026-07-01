@@ -1,0 +1,112 @@
+---
+title: "Hotkey Not Registered In Network"
+summary:
+  "How the HotKeyNotRegisteredInNetwork error blocks serve-axon and related serving paths when the
+  target hotkey does not hold a UID slot on the specified subnet."
+category: "Wallets"
+tags: ["Wallets", "Errors"]
+infoboxTitle: Hotkey Not Registered In Network
+infoboxCaption: Error raised when a serving hotkey lacks a UID on the named subnet.
+infoboxRows:
+  - label: Error
+    value: HotKeyNotRegisteredInNetwork
+  - label: Trigger
+    value: Hotkey is not registered on the submitted netuid
+  - label: Checked in
+    value: validate_serve_axon and prometheus serving paths
+  - label: Check type
+    value: Per-subnet UID membership for serving
+---
+
+# Hotkey Not Registered In Network
+
+`HotKeyNotRegisteredInNetwork` means a serving call named a hotkey that does not hold a UID on the
+submitted netuid. The standard-errors reference describes it as "The hotkey is not registered in the
+specified subnet"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#hotkeynotregisteredinnetwork)).
+
+The check runs before IP, port, and serving rate-limit validation on axon publish paths
+([Subtensor source: serving.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/serving.rs)).
+
+## What It Means
+
+Axon and prometheus serving extrinsics publish a hotkey's network endpoint for a specific subnet. In
+`validate_serve_axon`, the runtime calls `is_hotkey_registered_on_network(netuid, hotkey_id)` and
+returns `HotKeyNotRegisteredInNetwork` when that lookup fails
+([Subtensor source: serving.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/serving.rs),
+[Glossary: Axon](https://docs.learnbittensor.org/resources/glossary#axon)).
+
+The same membership check appears on prometheus serving paths that publish validator endpoint data
+for a subnet
+([Subtensor source: serving.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/serving.rs)).
+
+## Why It Appears
+
+This error appears when a caller tries to serve axon or prometheus information for a hotkey on a
+netuid where that hotkey has no UID slot. That can happen when automation targets the wrong netuid,
+when serving is attempted before registration completes, or when a hotkey was pruned from the subnet
+but serving calls still use the old mapping
+([Subtensor source: serving.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/serving.rs)).
+
+When debugging, rule out later gates on the same extrinsic. `InvalidIpType` and `InvalidIpAddress`
+mean the endpoint fields failed format checks after membership passed. `ServingRateLimitExceeded`
+means the hotkey republished serving data too soon
+([Subtensor Standard Errors: InvalidIpType](https://docs.learnbittensor.org/errors/subtensor#invalidiptype),
+[Subtensor Standard Errors: InvalidIpAddress](https://docs.learnbittensor.org/errors/subtensor#invalidipaddress),
+[Subtensor Standard Errors: ServingRateLimitExceeded](https://docs.learnbittensor.org/errors/subtensor#servingratelimitexceeded)).
+
+The practical meaning is narrow: the hotkey is not registered on the subnet named in the serving
+call.
+
+## Distinction from Hotkey Not Registered In Subnet
+
+`HotKeyNotRegisteredInNetwork` and `HotKeyNotRegisteredInSubNet` share the same standard-errors
+wording, but they are raised on different extrinsic families. `HotKeyNotRegisteredInNetwork` is the
+serving-path rejection in `validate_serve_axon` and related prometheus checks.
+`HotKeyNotRegisteredInSubNet` is the rejection on other subnet-scoped extrinsics such as weight
+submission when the signing hotkey lacks a UID on the targeted netuid
+([Hotkey Not Registered In Subnet](https://docs.learnbittensor.org/errors/subtensor#hotkeynotregisteredinsubnet),
+[Subtensor source: serving.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/serving.rs)).
+
+- **HotKeyNotRegisteredInNetwork** — the hotkey lacks a UID on the netuid for a serving call.
+- **HotKeyNotRegisteredInSubNet** — the hotkey lacks a UID on the netuid for another subnet-scoped
+  extrinsic.
+
+## Distinction from Hotkey Account Not Exists
+
+`HotKeyNotRegisteredInNetwork` and `HotKeyAccountNotExists` both involve hotkey validity, but at
+different scopes. `HotKeyNotRegisteredInNetwork` means the hotkey account is present but has no UID
+on the named subnet. `HotKeyAccountNotExists` means the hotkey account itself is absent from chain
+state
+([Subtensor Standard Errors: HotKeyAccountNotExists](https://docs.learnbittensor.org/errors/subtensor#hotkeyaccountnotexists),
+[Subtensor source: serving.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/serving.rs)).
+
+- **HotKeyNotRegisteredInNetwork** — the hotkey exists but is not registered on the subnet.
+- **HotKeyAccountNotExists** — the hotkey account does not exist.
+
+## Distinction from Serving Rate Limit Exceeded
+
+`HotKeyNotRegisteredInNetwork` and `ServingRateLimitExceeded` both appear on axon serving paths, but
+at different stages. `HotKeyNotRegisteredInNetwork` is the membership check before endpoint fields
+are accepted. `ServingRateLimitExceeded` is the later pacing rejection when the hotkey republishes
+too frequently
+([Subtensor Standard Errors: ServingRateLimitExceeded](https://docs.learnbittensor.org/errors/subtensor#servingratelimitexceeded),
+[Subtensor source: serving.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/serving.rs)).
+
+- **HotKeyNotRegisteredInNetwork** — the hotkey is not registered on the subnet.
+- **ServingRateLimitExceeded** — the hotkey served axon data too soon.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the subnet membership check on serving paths.
+It does not describe how to register a neuron, how axon TLS fields are validated, or the live
+serving rate limit for a subnet; those are documented separately
+([Glossary: Axon](https://docs.learnbittensor.org/resources/glossary#axon),
+[Chain Rate Limits: Axon serve rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#hotkeynotregisteredinnetwork)
+- [Subtensor Standard Errors: HotKeyNotRegisteredInSubNet](https://docs.learnbittensor.org/errors/subtensor#hotkeynotregisteredinsubnet)
+- [Subtensor source: serving.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/serving.rs)
+- [Glossary: Axon](https://docs.learnbittensor.org/resources/glossary#axon)
