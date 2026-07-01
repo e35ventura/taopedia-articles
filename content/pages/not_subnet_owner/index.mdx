@@ -1,0 +1,99 @@
+---
+title: "Not Subnet Owner"
+summary:
+  "How the NotSubnetOwner error blocks a set_subnet_identity call when the signing coldkey is not
+  the subnet's registered owner."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Not Subnet Owner
+infoboxCaption:
+  Error raised when a subnet-owner call is signed by a coldkey that does not own the subnet.
+infoboxRows:
+  - label: Error
+    value: NotSubnetOwner
+  - label: Trigger
+    value: set_subnet_identity signer is not the subnet's owner coldkey
+  - label: Checked in
+    value: set_subnet_identity (do_set_subnet_identity)
+  - label: Check type
+    value: Subnet-owner authorization check
+---
+
+# Not Subnet Owner
+
+`NotSubnetOwner` is a Subtensor pallet error raised when a subnet-owner-only call is signed by a
+coldkey that is not the registered owner of the target subnet. The Subtensor API errors reference
+lists it under the subtensor pallet
+([Subtensor API Errors: NotSubnetOwner](https://docs.learnbittensor.org/subtensor-api/errors#notsubnetowner)).
+
+## What It Means
+
+Every subnet records an owner coldkey in the runtime's `SubnetOwner` storage map, read through the
+`get_subnet_owner` helper. The `set_subnet_identity` extrinsic writes a subnet's on-chain identity
+fields, and before writing them it checks that the signing coldkey equals that stored owner. When
+the signer is not the owner, the runtime stops with `NotSubnetOwner` and no identity is written
+([Subtensor source: utils/identity.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/identity.rs),
+[Subtensor source: macros/dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)).
+
+This is an ownership authorization failure, not proof that the subnet does not exist and not proof
+that the origin type is wrong. The call is signed and the subnet is present; the signer simply does
+not match the owner recorded for that subnet
+([Subtensor API Errors: NotSubnetOwner](https://docs.learnbittensor.org/subtensor-api/errors#notsubnetowner)).
+
+## Why It Appears
+
+This error appears when an account other than the current owner submits `set_subnet_identity` for a
+subnet, such as a validator, miner, or delegate coldkey that does not hold ownership. It also
+appears when the target subnet has no owner recorded: because no signed coldkey can equal an unset
+owner, every non-owner signer is rejected with `NotSubnetOwner`. The pallet's own tests cover both a
+non-owner signer and the no-owner case
+([Subtensor source: utils/identity.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/identity.rs),
+[Subtensor tests: serving.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/tests/serving.rs)).
+
+Ownership can change hands, so a coldkey that could set the identity before may see `NotSubnetOwner`
+afterward. The check always compares against the owner currently stored for the subnet, not against
+any earlier owner.
+
+## Distinction from Bad Origin
+
+`NotSubnetOwner` and `BadOrigin` both reject calls made by the wrong account, but they come from
+different owner checks. `set_subnet_identity` performs its own explicit owner comparison and returns
+`NotSubnetOwner`. Other owner-gated calls instead route through the shared helpers
+`ensure_subnet_owner_or_root` and `ensure_subnet_owner`, which return `BadOrigin` when a signed
+account is neither the subnet owner nor root
+([Subtensor source: utils/misc.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/misc.rs),
+[Subtensor API Errors: BadOrigin](https://docs.learnbittensor.org/subtensor-api/errors#badorigin)).
+
+- **NotSubnetOwner** — the explicit owner check in `set_subnet_identity` fails.
+- **BadOrigin** — the shared owner-or-root helper rejects a non-owner, non-root signer.
+
+Because of this split, seeing `NotSubnetOwner` points specifically at the identity path, while a
+non-owner rejection on an owner-or-root call surfaces as [[Bad Origin]] instead.
+
+## Distinction from Unauthorized
+
+`NotSubnetOwner` and [[Unauthorized]] are both "wrong signer" errors, but they guard different
+objects. `Unauthorized` protects a specific record's designated signer, such as the account allowed
+to cancel a limit order. `NotSubnetOwner` protects subnet-level ownership on the identity call. A
+signer can be authorized for one and not the other
+([Subtensor API Errors: Unauthorized](https://docs.learnbittensor.org/subtensor-api/errors#unauthorized)).
+
+- **Unauthorized** — the signer is not the account tied to that specific record.
+- **NotSubnetOwner** — the signer is not the owner of that subnet.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the subnet-owner check it marks on
+`set_subnet_identity`. It does not enumerate every owner-gated extrinsic or the exact fields the
+identity call writes; those belong to the wider subnet-administration surface and can change as
+dispatches are added
+([Subtensor source: macros/dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)).
+
+## Further Reading
+
+- [Subtensor API Errors: NotSubnetOwner](https://docs.learnbittensor.org/subtensor-api/errors#notsubnetowner)
+- [Subtensor API Errors: BadOrigin](https://docs.learnbittensor.org/subtensor-api/errors#badorigin)
+- [Subtensor source: utils/identity.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/identity.rs)
+- [Subtensor source: utils/misc.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/misc.rs)
+- [Subtensor source: macros/dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)
+- [Subtensor tests: serving.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/tests/serving.rs)
