@@ -1,0 +1,57 @@
+---
+title: "No Contribution"
+summary:
+  "How the NoContribution error signals that a crowdloan operation failed because the relevant
+  account has no recorded contribution for that crowdloan."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: No Contribution
+infoboxCaption: Error raised when an account has no usable contribution for a crowdloan.
+infoboxRows:
+  - label: Error
+    value: NoContribution
+  - label: Checked in
+    value: withdraw and dissolve extrinsics
+  - label: Check type
+    value: Contribution-record existence or zero-amount check
+---
+
+# No Contribution
+
+`NoContribution` is a documented Subtensor standard error raised by the crowdloan pallet. The
+Subtensor API error reference describes it as "The contributor has no contribution for this
+crowdloan" ([Subtensor API: Errors](https://docs.learnbittensor.org/subtensor-api/errors)).
+
+## What It Means
+
+The error covers two distinct cases where an account has no usable contribution record for a given
+[crowdloan](https://docs.learnbittensor.org/subnets/crowdloans).
+
+In the `withdraw` extrinsic, the caller's recorded contribution amount is looked up and compared
+against zero. If the stored amount is zero, `NoContribution` is raised, meaning the caller has
+nothing to withdraw
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+In the `dissolve` extrinsic, the crowdloan creator's contribution entry is looked up in storage. If
+no entry exists at all, `NoContribution` is raised as part of a check that only proceeds when the
+creator's contribution can be confirmed
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+## Why It Appears
+
+An account that never contributed to a crowdloan will have either no contribution entry or a zero
+amount recorded. Both paths return the same error for the same conceptual reason: there is no
+contribution on record to act on
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the two contribution-lookup checks that raise
+it. It does not describe the rest of the crowdloan withdrawal or dissolution flow; those are
+documented separately ([Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans)).
+
+## Further Reading
+
+- [Subtensor API: Errors](https://docs.learnbittensor.org/subtensor-api/errors)
+- [Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans)
+- [Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)
