@@ -1,0 +1,112 @@
+---
+title: "Subnet Moving Price"
+summary:
+  "How the subnet moving price is an on-chain EMA of a subnet's alpha price that weights each
+  subnet's share of TAO emissions under Dynamic TAO."
+category: "Tokenomics"
+tags: ["Tokenomics", "Subnets"]
+infoboxTitle: Subnet Moving Price
+infoboxCaption: Per-subnet EMA of the alpha price used to weight subnet emission shares.
+infoboxRows:
+  - label: Storage
+    value: SubnetMovingPrice
+  - label: Meaning
+    value: EMA of a subnet's alpha price
+  - label: Used for
+    value: Subnet emission share allocation
+  - label: Updated
+    value: Each block, per subnet
+  - label: Example
+    value: netuid 1
+---
+
+# Subnet Moving Price
+
+Subnet moving price is an on-chain value, stored per subnet as `SubnetMovingPrice`, that holds an
+exponential moving average (EMA) of a subnet's alpha price. Under Dynamic TAO it is the price signal
+used to split block emissions across subnets, in place of the instantaneous spot price
+([Subtensor source: coinbase/subnet_emissions.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/subnet_emissions.rs)).
+
+## What It Controls
+
+When the runtime allocates emissions across subnets, each subnet's share is its moving price divided
+by the sum of all participating subnets' moving prices. A subnet with a higher moving price relative
+to the total receives a larger share of the block's emission. The share calculation reads the moving
+price, described in the code as the subnet EMA price, rather than the active spot alpha price
+([Subtensor source: coinbase/subnet_emissions.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/subnet_emissions.rs)).
+
+Two subnet types bypass the stored EMA. The root subnet and a stable-mechanism subnet both use a
+moving price of `1.0` rather than a tracked EMA
+([Subtensor source: staking/stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)).
+
+## How It Updates
+
+The moving price is refreshed with a standard EMA step: the new value is the smoothing weight times
+the current spot alpha price plus one minus that weight times the previous moving price. The spot
+price input is capped at `1.0` before it is blended in
+([Subtensor source: staking/stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)).
+
+The smoothing weight is not fixed. It grows with how many blocks have passed since the subnet's
+`start_call`, approaching the global `SubnetMovingAlpha` value as the subnet ages, and its ramp is
+governed by the per-subnet `EMAPriceHalvingBlocks` hyperparameter. A younger subnet therefore has a
+smaller smoothing weight, so its moving price tracks the spot price more slowly at first
+([Subtensor source: staking/stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)).
+
+## Distinction from Alpha Price
+
+Alpha price is the instantaneous spot price of a subnet's alpha, read from the pool. Subnet moving
+price is the EMA of that spot price over time. Emission-share allocation uses the moving price, not
+the spot price, so a brief spot-price spike does not immediately move a subnet's emission share by
+the same amount
+([Subtensor source: coinbase/subnet_emissions.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/subnet_emissions.rs)).
+
+- **Alpha price** — the current spot price from the pool.
+- **Subnet moving price** — the EMA of that price used to weight emissions.
+
+## Distinction from EMA Price Halving Period
+
+The EMA price halving period, stored as `EMAPriceHalvingBlocks`, is an input to the moving price,
+not the moving price itself. It sets how quickly the smoothing weight ramps up, and therefore how
+fast the moving price closes the gap to the spot price. Subnet moving price is the resulting EMA
+value that the halving period shapes
+([Subtensor source: staking/stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)).
+
+- **EMA price halving period** — the parameter controlling how fast the EMA tracks the spot price.
+- **Subnet moving price** — the EMA value that drives emission shares.
+
+## Chain Reads for netuid 1
+
+Because the value is stored per subnet, it is read per netuid. `SubnetMovingPrice` is a storage map
+keyed by netuid, so a reader can query the stored moving price for the documented example netuid —
+for instance netuid 1 — from chain state with a Polkadot.js Apps chain-state query against that
+storage item
+([Subtensor source: pallets/subtensor/src/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/lib.rs)).
+
+That read path keeps the live value claim tied to a parseable netuid rather than to any single
+network-wide number
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Per-Subnet Live Value Boundary
+
+Subnet moving price is per-subnet chain state. The EMA held for one netuid reflects only that
+subnet's own price history and can differ from every other subnet's moving price
+([Subtensor source: coinbase/subnet_emissions.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/subnet_emissions.rs)).
+
+This article uses netuid 1 as an example label for reading one subnet's stored value on Finney
+mainnet. That example helps a reader verify one entry; it is not proof that every subnet holds the
+same live moving price
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Reader Boundary
+
+This page defines subnet moving price and the emission-share weighting it drives. It does not
+document the full emission pipeline, the exact fixed-point representation of the stored value, or
+the live number held on any particular subnet; each subnet stores its own `SubnetMovingPrice`
+([Subtensor source: coinbase/subnet_emissions.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/subnet_emissions.rs)).
+
+## Further Reading
+
+- [Subtensor source: coinbase/subnet_emissions.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/subnet_emissions.rs)
+- [Subtensor source: staking/stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)
+- [Subtensor source: pallets/subtensor/src/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/lib.rs)
+- [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)
