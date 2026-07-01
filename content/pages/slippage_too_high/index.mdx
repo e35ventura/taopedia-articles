@@ -1,0 +1,131 @@
+---
+title: "Slippage Too High"
+summary:
+  "How the SlippageTooHigh error blocks a price-protected add-stake or remove-stake call on netuid 1
+  or another named subnet when strict protection rejects an amount above the limit-price band."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Slippage Too High
+infoboxCaption: Error raised when strict price protection rejects the trade.
+infoboxRows:
+  - label: Error
+    value: SlippageTooHigh
+  - label: Trigger
+    value: Requested amount exceeds the limit-price maximum with partial fills disabled
+  - label: Checked in
+    value: add_stake_limit and remove_stake_limit
+  - label: Example netuid
+    value: netuid 1
+---
+
+# Slippage Too High
+
+`SlippageTooHigh` means a price-protected staking call on netuid 1 or another named subnet asked for
+more than the submitted limit price allows while partial execution was disabled. The Subtensor API
+errors reference summarizes it as "Transaction slippage is above your limit"
+([Subtensor API Errors: SlippageTooHigh](https://docs.learnbittensor.org/subtensor-api/errors#slippagetoohigh),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#slippagetoohigh)).
+
+## What It Means
+
+Staking moves value through each subnet's TAO and alpha reserves
+([Staking and Delegation](https://docs.learnbittensor.org/staking-and-delegation/delegation)).
+
+`add_stake_limit` and `remove_stake_limit` let a coldkey name a limit price and choose whether the
+call may partially fill when pool movement would exceed that band
+([Staking Implementation](https://docs.learnbittensor.org/navigating-subtensor/swap-stake),
+[Price Protection](https://docs.learnbittensor.org/learn/price-protection)).
+
+`SlippageTooHigh` is the strict-mode rejection on those limit variants. The runtime first computes
+the largest stake or unstake amount that still fits the submitted limit price, then compares the
+caller's requested size against that cap. When partial fills are disabled and the request is larger,
+the extrinsic fails with this error instead of trimming the amount
+([Staking Implementation](https://docs.learnbittensor.org/navigating-subtensor/swap-stake),
+[Understanding Slippage](https://docs.learnbittensor.org/learn/slippage)).
+
+This is a price-protection rejection, not proof that the coldkey lacks balance for an ordinary
+add-stake call or that the subnet pool has no liquidity at any size.
+
+## Why It Appears
+
+This error appears when a coldkey submits `add_stake_limit` or `remove_stake_limit` with strict
+fill-or-kill protection and names an amount larger than the limit price currently permits on the
+subnet. That can happen when the limit price is tighter than the live pool ratio, when a client
+reuses a quote from an earlier block, or when the caller intentionally disallows partial fills so
+the trade must execute fully within the band
+([Price Protection](https://docs.learnbittensor.org/learn/price-protection),
+[Understanding Slippage](https://docs.learnbittensor.org/learn/slippage)).
+
+On netuid 1, readers can compare a proposed limit against live subnet pool context through the
+subnet documentation and storage query patterns described for hyperparameters and reserves before
+resubmitting a protected stake call
+([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
+
+When debugging, compare against other limit-path rejections on the same call. `ZeroMaxStakeAmount`
+means no executable amount remains within the submitted limit price at all. `InsufficientLiquidity`
+means the pool swap behind the action could not simulate or complete. `AmountTooLow` means the
+submitted amount is below the minimum stake increment
+([Subtensor Standard Errors: ZeroMaxStakeAmount](https://docs.learnbittensor.org/errors/subtensor#zeromaxstakeamount),
+[Subtensor Standard Errors: InsufficientLiquidity](https://docs.learnbittensor.org/errors/subtensor#insufficientliquidity),
+[Subtensor Standard Errors: AmountTooLow](https://docs.learnbittensor.org/errors/subtensor#amounttoolow)).
+
+The practical meaning is narrow: lower the requested amount, relax the limit price, allow partial
+fills, or wait for pool conditions that fit the submitted protection.
+
+## Distinction from Zero Max Stake Amount
+
+`SlippageTooHigh` and `ZeroMaxStakeAmount` both involve price protection on limit staking paths, but
+they reject different outcomes. `ZeroMaxStakeAmount` means the limit-price search found no
+executable stake amount on the subnet. `SlippageTooHigh` means some amount could execute within the
+band, but the caller requested more than that maximum while partial fills were disabled
+([Subtensor Standard Errors: ZeroMaxStakeAmount](https://docs.learnbittensor.org/errors/subtensor#zeromaxstakeamount)).
+
+- **SlippageTooHigh** — strict protection rejected an oversized request.
+- **ZeroMaxStakeAmount** — no amount can execute within the limit price.
+
+## Distinction from Insufficient Liquidity
+
+`SlippageTooHigh` and `InsufficientLiquidity` both can appear when a pool-backed conversion fails,
+but at different checks. `InsufficientLiquidity` means the swap simulation or execution could not
+complete in the pool. `SlippageTooHigh` means strict price protection blocked the requested size
+even though a smaller amount might still fit the limit
+([Subtensor Standard Errors: InsufficientLiquidity](https://docs.learnbittensor.org/errors/subtensor#insufficientliquidity)).
+
+- **SlippageTooHigh** — strict limit protection blocked the requested size.
+- **InsufficientLiquidity** — the pool could not support the swap behind the action.
+
+## Distinction from Not Enough Balance To Stake
+
+`SlippageTooHigh` and `NotEnoughBalanceToStake` both appear on add-stake paths, but they test
+different conditions. `NotEnoughBalanceToStake` means the coldkey cannot fund the TAO amount the
+call would withdraw. `SlippageTooHigh` means the requested add-stake size exceeds what the submitted
+limit price allows under strict protection
+([Subtensor Standard Errors: NotEnoughBalanceToStake](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake)).
+
+- **SlippageTooHigh** — strict price protection rejected the requested add-stake size.
+- **NotEnoughBalanceToStake** — the coldkey cannot fund the withdrawal amount.
+
+## Distinction from Not Enough Stake To Withdraw
+
+`SlippageTooHigh` and `NotEnoughStakeToWithdraw` both appear on remove-stake paths, but they test
+different conditions. `NotEnoughStakeToWithdraw` means the hotkey-coldkey pair does not hold enough
+staked alpha for the removal. `SlippageTooHigh` means the requested unstake size exceeds what the
+submitted limit price allows under strict protection
+([Subtensor Standard Errors: NotEnoughStakeToWithdraw](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketowithdraw)).
+
+- **SlippageTooHigh** — strict price protection rejected the requested unstake size.
+- **NotEnoughStakeToWithdraw** — the pair lacks enough staked alpha for the request.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the strict price-protection gate it represents.
+It does not quote a live limit price, pool ratio, or maximum executable amount on netuid 1 or any
+other subnet; those values are subnet chain state readers can query for the selected netuid
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: SlippageTooHigh](https://docs.learnbittensor.org/subtensor-api/errors#slippagetoohigh)
+- [Staking Implementation](https://docs.learnbittensor.org/navigating-subtensor/swap-stake)
+- [Price Protection](https://docs.learnbittensor.org/learn/price-protection)
+- [Understanding Slippage](https://docs.learnbittensor.org/learn/slippage)
