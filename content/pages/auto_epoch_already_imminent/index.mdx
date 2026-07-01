@@ -1,0 +1,136 @@
+---
+title: "Auto Epoch Already Imminent"
+summary:
+  "How the AutoEpochAlreadyImminent error blocks a manual epoch trigger on netuid 1 or another named
+  subnet when the next automatic tempo epoch is already too close for an early trigger to matter."
+category: "Consensus"
+tags: ["Consensus", "Errors"]
+infoboxTitle: Auto Epoch Already Imminent
+infoboxCaption: Error raised when the automatic epoch is already near.
+infoboxRows:
+  - label: Error
+    value: AutoEpochAlreadyImminent
+  - label: Trigger
+    value: Automatic epoch is within the admin freeze window
+  - label: Checked in
+    value: Manual epoch trigger path
+  - label: Example netuid
+    value: netuid 1
+---
+
+# Auto Epoch Already Imminent
+
+`AutoEpochAlreadyImminent` means a subnet owner tried to arm a manual epoch trigger on netuid 1 or
+another named subnet when the next automatic tempo epoch on that netuid is already so close that the
+trigger would have no practical effect. The Subtensor API errors reference summarizes it as blocking
+the call because the next automatic epoch is already imminent
+([Subtensor API Errors: AutoEpochAlreadyImminent](https://docs.learnbittensor.org/subtensor-api/errors#autoepochalreadyimminent),
+[Subtensor source: tempo_control.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/tempo_control.rs)).
+
+## What It Means
+
+An epoch is the consensus period inside a subnet, paced by tempo
+([Glossary: Epoch](https://docs.learnbittensor.org/resources/glossary#epoch),
+[Subnet Hyperparameters: tempo](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#tempo)).
+
+Subnet owners can schedule a manual epoch ahead of the automatic tempo boundary. A successful manual
+trigger arms the epoch to fire after the admin freeze window elapses
+([Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase),
+[Subnet Hyperparameters: AdminFreezeWindow](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#adminfreezewindow)).
+
+`AutoEpochAlreadyImminent` is a timing rejection on that manual trigger path. It means fewer blocks
+remain until the next automatic epoch on the submitted netuid than the admin freeze window requires,
+so arming a manual trigger now would schedule an epoch that lands after the automatic one has
+already occurred
+([Subtensor source: tempo_control.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/tempo_control.rs)).
+
+This is a scheduling rejection, not proof that the signer lacks subnet-owner permission or that a
+manual trigger is already pending.
+
+## Why It Appears
+
+This error appears when a subnet owner submits a manual epoch trigger near the end of the current
+tempo cycle on netuid 1 or another named subnet. That can happen when operators retry a trigger call
+late in the epoch, when automation does not account for how close the automatic boundary is, or when
+tempo and block height make the remaining cycle shorter than the admin freeze window
+([Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase),
+[Subtensor source: tempo_control.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/tempo_control.rs)).
+
+When debugging on netuid 1, readers can read the live tempo with
+`btcli subnet hyperparameters --netuid 1 --network finney` to understand the automatic epoch cadence
+before deciding whether to arm a manual trigger
+([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
+
+When debugging, compare against other manual-trigger rejections on the same call.
+`EpochTriggerAlreadyPending` means a manual trigger is already armed for the subnet.
+`DynamicTempoBlockedByCommitReveal` means commit-reveal weight submission is enabled and manual
+triggers are disallowed on that netuid. `TxRateLimitExceeded` means the subnet owner must wait out
+the owner hyperparameter rate limit before trying again
+([Subtensor API Errors: EpochTriggerAlreadyPending](https://docs.learnbittensor.org/subtensor-api/errors#epochtriggeralreadypending),
+[Subtensor API Errors: DynamicTempoBlockedByCommitReveal](https://docs.learnbittensor.org/subtensor-api/errors#dynamictempoblockedbycommitreveal),
+[Subtensor source: tempo_control.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/tempo_control.rs)).
+
+The practical meaning is narrow: wait for the imminent automatic epoch on the submitted netuid or
+try again earlier in the next tempo cycle if an early trigger is still needed.
+
+## Distinction from Epoch Trigger Already Pending
+
+`AutoEpochAlreadyImminent` and `EpochTriggerAlreadyPending` both appear on manual epoch trigger
+paths, but they reject different scheduling problems. `EpochTriggerAlreadyPending` means a manual
+trigger is already armed and a second one cannot be stacked. `AutoEpochAlreadyImminent` means the
+automatic epoch is already so close that a new manual trigger would have no effect
+([Subtensor API Errors: EpochTriggerAlreadyPending](https://docs.learnbittensor.org/subtensor-api/errors#epochtriggeralreadypending)).
+
+- **AutoEpochAlreadyImminent** — the automatic epoch is already imminent.
+- **EpochTriggerAlreadyPending** — a manual trigger is already pending for the subnet.
+
+## Distinction from Dynamic Tempo Blocked By Commit Reveal
+
+`AutoEpochAlreadyImminent` and `DynamicTempoBlockedByCommitReveal` both block manual epoch triggers,
+but for different reasons. `DynamicTempoBlockedByCommitReveal` means commit-reveal weight submission
+is enabled on the subnet, so out-of-schedule manual epochs are not allowed.
+`AutoEpochAlreadyImminent` applies on subnets that allow manual triggers but only rejects the call
+when the automatic epoch boundary is already near
+([Subtensor API Errors: DynamicTempoBlockedByCommitReveal](https://docs.learnbittensor.org/subtensor-api/errors#dynamictempoblockedbycommitreveal)).
+
+- **AutoEpochAlreadyImminent** — the automatic epoch is too close for a manual trigger to matter.
+- **DynamicTempoBlockedByCommitReveal** — commit-reveal blocks manual epoch triggers on the netuid.
+
+## Distinction from Admin Action Prohibited During Weights Window
+
+`AutoEpochAlreadyImminent` and `AdminActionProhibitedDuringWeightsWindow` both involve epoch timing
+on a subnet, but on different calls. `AutoEpochAlreadyImminent` blocks arming a manual epoch when
+the automatic boundary is already within the admin freeze window.
+`AdminActionProhibitedDuringWeightsWindow` blocks subnet-owner hyperparameter changes during the
+protected freeze window, which can also be active after a manual trigger is armed
+([Admin Action Prohibited During Weights Window](https://docs.learnbittensor.org/errors/subtensor#adminactionprohibitedduringweightswindow)).
+
+- **AutoEpochAlreadyImminent** — automatic epoch timing blocks a new manual trigger.
+- **AdminActionProhibitedDuringWeightsWindow** — an admin change arrived during the freeze window.
+
+## Distinction from Tempo Out Of Bounds
+
+`AutoEpochAlreadyImminent` and `TempoOutOfBounds` both involve subnet tempo settings, but on
+different operations. `TempoOutOfBounds` is raised when a subnet owner submits a tempo value outside
+the allowed range. `AutoEpochAlreadyImminent` is raised when a manual epoch trigger arrives too late
+in the current tempo cycle
+([Subtensor source: tempo_control.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/tempo_control.rs)).
+
+- **AutoEpochAlreadyImminent** — manual trigger timing conflicts with the imminent automatic epoch.
+- **TempoOutOfBounds** — the submitted tempo value is outside the allowed range.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the automatic-epoch proximity check on the
+manual trigger path. It does not report how many blocks remain until the next automatic epoch on
+netuid 1 or any other live subnet; that depends on chain state, tempo, and the selected netuid at
+observation time
+([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: AutoEpochAlreadyImminent](https://docs.learnbittensor.org/subtensor-api/errors#autoepochalreadyimminent)
+- [Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase)
+- [Glossary: Epoch](https://docs.learnbittensor.org/resources/glossary#epoch)
+- [Subtensor source: tempo_control.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/tempo_control.rs)
