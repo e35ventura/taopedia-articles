@@ -1,0 +1,94 @@
+---
+title: "Unreachable"
+summary:
+  "How the Unreachable error blocks MEV Shield key-announcement when the runtime cannot resolve the
+  current block author for the announce_next_key inherent."
+category: "Safety"
+tags: ["Safety", "Errors"]
+infoboxTitle: Unreachable
+infoboxCaption: Error raised when the current block author cannot be resolved.
+infoboxRows:
+  - label: Error
+    value: Unreachable
+  - label: Trigger
+    value: current block author is unavailable for key announcement
+  - label: Checked in
+    value: announce_next_key
+  - label: Check type
+    value: Block-author resolution guard
+---
+
+# Unreachable
+
+`Unreachable` is a MEV Shield pallet error listed in the Subtensor API errors reference under
+`api.errors.mevShield.Unreachable`
+([Subtensor API Errors: Unreachable](https://docs.learnbittensor.org/subtensor-api/errors#unreachable)).
+
+## What It Means
+
+The [MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield) pallet rotates encryption keys
+through a block inherent called `announce_next_key`. That inherent is submitted each block so the
+current block author can publish an ML-KEM encapsulation key for future shielded transactions.
+Before key rotation proceeds, the runtime must resolve which account is the current block author.
+`Unreachable` is returned when that author lookup fails, so the inherent cannot continue
+([Subtensor source: shield/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/shield/src/lib.rs),
+[MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield)).
+
+This is a block-author resolution failure on the key-announcement inherent, not proof that an
+announced encapsulation key has an invalid length and not proof that the encrypted-extrinsic queue
+is full.
+
+## Why It Appears
+
+This error appears when the `announce_next_key` inherent runs in a block context where the runtime
+cannot determine the current block author. In normal validator operation that lookup succeeds, so
+this rejection marks an unexpected boundary in block-author resolution rather than an ordinary
+wallet or user submission mistake
+([Subtensor API Errors: Unreachable](https://docs.learnbittensor.org/subtensor-api/errors#unreachable),
+[Subtensor source: shield/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/shield/src/lib.rs)).
+
+When debugging on this inherent, compare against the next rejection on the same path. `BadEncKeyLen`
+is returned later when an announced encapsulation key fails the runtime length check, while
+`Unreachable` is returned before key rotation begins because the author could not be resolved
+([Subtensor API Errors: BadEncKeyLen](https://docs.learnbittensor.org/subtensor-api/errors#badenckeylen),
+[Subtensor source: shield/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/shield/src/lib.rs)).
+
+## Distinction from Bad Enc Key Len
+
+`Unreachable` and `BadEncKeyLen` both appear on `announce_next_key`, but at different steps.
+`Unreachable` means the runtime could not resolve the current block author. `BadEncKeyLen` means
+author resolution succeeded but the announced encapsulation key failed validation
+([Subtensor API Errors: Unreachable](https://docs.learnbittensor.org/subtensor-api/errors#unreachable),
+[Subtensor API Errors: BadEncKeyLen](https://docs.learnbittensor.org/subtensor-api/errors#badenckeylen),
+[Subtensor source: shield/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/shield/src/lib.rs)).
+
+- **Unreachable** — current block author cannot be resolved.
+- **BadEncKeyLen** — announced encapsulation key has an invalid length.
+
+## Distinction from Too Many Pending Extrinsics
+
+`Unreachable` and `TooManyPendingExtrinsics` both belong to the MEV Shield pallet, but on different
+extrinsics. `Unreachable` is returned from the `announce_next_key` inherent when block-author
+resolution fails. `TooManyPendingExtrinsics` is returned from encrypted-extrinsic submission when
+the pending queue is at capacity
+([Too Many Pending Extrinsics](https://docs.learnbittensor.org/subtensor-api/errors#toomanypendingextrinsics),
+[Subtensor source: shield/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/shield/src/lib.rs)).
+
+- **Unreachable** — block author cannot be resolved on `announce_next_key`.
+- **TooManyPendingExtrinsics** — pending queue is at capacity on encrypted-extrinsic submission.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the block-author resolution check on
+`announce_next_key`. It does not report which block author produced a given block on any network;
+that is ordinary block metadata outside this error condition
+([Subtensor source: shield/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/shield/src/lib.rs),
+[MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield)).
+
+## Further Reading
+
+- [Subtensor API Errors: Unreachable](https://docs.learnbittensor.org/subtensor-api/errors#unreachable)
+- [MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield)
+- [Subtensor API Errors: BadEncKeyLen](https://docs.learnbittensor.org/subtensor-api/errors#badenckeylen)
+- [Subtensor API Errors: TooManyPendingExtrinsics](https://docs.learnbittensor.org/subtensor-api/errors#toomanypendingextrinsics)
+- [Subtensor source: shield/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/shield/src/lib.rs)
