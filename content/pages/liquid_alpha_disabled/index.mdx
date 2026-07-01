@@ -1,0 +1,103 @@
+---
+title: "Liquid Alpha Disabled"
+summary:
+  "How the LiquidAlphaDisabled error blocks sudo_set_alpha_values when the target subnet has not
+  enabled the liquid alpha feature through its LiquidAlphaEnabled setting."
+category: "Consensus"
+tags: ["Consensus", "Errors"]
+infoboxTitle: Liquid Alpha Disabled
+infoboxCaption: Error raised when alpha bounds are set while liquid alpha is off.
+infoboxRows:
+  - label: Error
+    value: LiquidAlphaDisabled
+  - label: Trigger
+    value: LiquidAlphaEnabled is false for the subnet
+  - label: Checked in
+    value: do_set_alpha_values
+  - label: Related hyperparameter
+    value: LiquidAlphaEnabled
+---
+
+# Liquid Alpha Disabled
+
+`LiquidAlphaDisabled` is a documented Subtensor standard error raised when a subnet owner or root
+tries to write alpha low and alpha high bounds while liquid alpha is turned off. The standard-errors
+reference describes it as "Attempting to set alpha high/low while disabled"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#liquidalphadisabled)).
+
+## What It Means
+
+The `sudo_set_alpha_values` extrinsic writes the `(alpha_low, alpha_high)` pair that bounds liquid
+alpha bond smoothing on a subnet. Before range checks run, `do_set_alpha_values` reads
+`LiquidAlphaEnabled` for the target netuid and returns `LiquidAlphaDisabled` when that toggle is
+false
+([Subtensor source: run_epoch.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/epoch/run_epoch.rs),
+[Subnet Hyperparameters: LiquidAlphaEnabled](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#liquidalphaenabled)).
+
+When liquid alpha is disabled, bond smoothing follows the fixed alpha derived from bonds moving
+average instead of the alpha low and alpha high bounds, so the bounds are not consulted on that path
+([Liquid Alpha Enabled](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#liquidalphaenabled),
+[Yuma Consensus: Bonding mechanics](https://docs.learnbittensor.org/learn/yuma-consensus#bonding)).
+
+## Why It Appears
+
+This error appears when a caller submits `sudo_set_alpha_values` on a subnet whose
+`LiquidAlphaEnabled` setting is still false. That can happen when automation sets alpha bounds
+before enabling the feature, when a copied extrinsic targets the wrong netuid, or when a subnet
+owner has tuned alpha low and alpha high but has not yet flipped the liquid alpha toggle
+([Subnet Hyperparameters: LiquidAlphaEnabled](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#liquidalphaenabled)).
+
+When debugging, rule out earlier authorization gates first. `SubnetDoesNotExist` means the targeted
+subnet is not present. `BadOrigin` means the signer is not root or the subnet owner for that netuid
+([Subtensor Standard Errors: SubnetNotExists](https://docs.learnbittensor.org/errors/subtensor#subnetnotexists),
+[Subtensor Standard Errors: BadOrigin](https://docs.learnbittensor.org/errors/subtensor#badorigin)).
+
+The practical meaning is narrow: liquid alpha is off, so alpha bounds cannot be written yet.
+
+## Distinction from Alpha High Too Low
+
+`LiquidAlphaDisabled` and `AlphaHighTooLow` both appear on `sudo_set_alpha_values`, but they reject
+different problems. `LiquidAlphaDisabled` is the feature toggle: liquid alpha must be enabled before
+bounds can be stored. `AlphaHighTooLow` is a range floor on the submitted `alpha_high` u16 value
+after the toggle check passes
+([Subtensor Standard Errors: AlphaHighTooLow](https://docs.learnbittensor.org/errors/subtensor#alphahightoolow),
+[Subtensor source: run_epoch.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/epoch/run_epoch.rs)).
+
+- **LiquidAlphaDisabled** — liquid alpha is not enabled on the subnet.
+- **AlphaHighTooLow** — the submitted alpha high value is below the configured minimum.
+
+## Distinction from Alpha Low Out Of Range
+
+`LiquidAlphaDisabled` fires before any bound comparison runs. `AlphaLowOutOfRange` means liquid
+alpha is enabled and authorization passed, but the submitted `alpha_low` value is below the minimum
+floor or above the submitted `alpha_high` bound
+([Subtensor Standard Errors: AlphaLowOutOfRange](https://docs.learnbittensor.org/errors/subtensor#alphalowoutofrange),
+[Subtensor source: run_epoch.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/epoch/run_epoch.rs)).
+
+- **LiquidAlphaDisabled** — liquid alpha is not enabled on the subnet.
+- **AlphaLowOutOfRange** — alpha low is below the floor or above alpha high.
+
+## Distinction from Liquid Alpha Enabled
+
+[[Liquid Alpha Enabled]] documents the per-subnet toggle that turns liquid alpha bond smoothing on
+or off. `LiquidAlphaDisabled` is the rejection label when a bounds setter hits that toggle while it
+is still false
+([Subnet Hyperparameters: LiquidAlphaEnabled](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#liquidalphaenabled)).
+
+- **Liquid alpha enabled** — the hyperparameter that controls whether liquid alpha is active.
+- **LiquidAlphaDisabled** — the error when alpha bounds are set while that toggle is off.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the `LiquidAlphaEnabled` gate in
+`do_set_alpha_values`. It does not describe how liquid alpha varies bonds during an epoch, how to
+read live alpha bounds for a subnet, or how bonds moving average behaves when the toggle is off;
+those are documented separately in [[Alpha High]], [[Alpha Low]], and
+[Yuma Consensus](https://docs.learnbittensor.org/learn/yuma-consensus).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#liquidalphadisabled)
+- [Subnet Hyperparameters: LiquidAlphaEnabled](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#liquidalphaenabled)
+- [Subtensor source: run_epoch.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/epoch/run_epoch.rs)
+- [Yuma Consensus: Bonding mechanics](https://docs.learnbittensor.org/learn/yuma-consensus#bonding)
