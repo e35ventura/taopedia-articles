@@ -1,0 +1,96 @@
+---
+title: "Too Many Calls"
+summary:
+  "How the TooManyCalls error blocks utility batch extrinsics when the submitted call list exceeds
+  the runtime batchedCallsLimit constant."
+category: "Protocol"
+tags: ["Protocol", "Errors"]
+infoboxTitle: Too Many Calls
+infoboxCaption: Error raised when a batch wrapper carries more calls than the runtime allows.
+infoboxRows:
+  - label: Error
+    value: TooManyCalls
+  - label: Trigger
+    value: Batch call count exceeds batchedCallsLimit
+  - label: Checked in
+    value: batch, batch_all, and force_batch
+  - label: Check type
+    value: Batch size limit guard
+---
+
+# Too Many Calls
+
+`TooManyCalls` is a utility pallet error raised when a batch wrapper is submitted with more inner
+calls than the runtime allows. The API errors reference lists it under the utility pallet as
+`api.errors.utility.TooManyCalls`
+([Subtensor API Errors: TooManyCalls](https://docs.learnbittensor.org/subtensor-api/errors#toomanycalls)).
+
+## What It Means
+
+Bittensor runtimes expose utility batch extrinsics that group multiple actions into one outer
+transaction. The batch documentation names three variants — `batch`, `batch_all`, and `force_batch`
+— that share the same grouping idea but differ in failure handling
+([Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions)).
+
+Each of those three extrinsics checks the submitted call count against the runtime constant
+`batchedCallsLimit` before dispatching inner calls. When the list is longer than that limit,
+`TooManyCalls` is returned and no inner call runs
+([Subtensor source: utility/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/utility/src/lib.rs),
+[Subtensor Constants: utility](https://docs.learnbittensor.org/subtensor-api/constants#utility)).
+
+This is a batch-size rejection at the wrapper layer, not proof that an individual inner call lacks
+authority, fails fee checks, or violates its own runtime rules.
+
+## Why It Appears
+
+This error appears when a wallet, script, or integration builds a batch transaction whose call list
+is longer than `batchedCallsLimit`. That can happen when tooling concatenates too many actions into
+one wrapper, when generated batches grow without a size guard, or when a retry loop appends calls
+past the runtime ceiling
+([Subtensor Constants: utility](https://docs.learnbittensor.org/subtensor-api/constants#utility),
+[Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions)).
+
+When debugging, compare against other utility-pallet failures on different extrinsics.
+`InvalidDerivedAccount` concerns derived-account decoding on `as_derivative`, while `TooManyCalls`
+concerns batch list length on the three batch wrappers
+([Subtensor API Errors: InvalidDerivedAccount](https://docs.learnbittensor.org/subtensor-api/errors#invalidderivedaccount),
+[Subtensor source: utility/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/utility/src/lib.rs)).
+
+## Distinction from Bad Origin
+
+`TooManyCalls` and `BadOrigin` can both block batch submissions, but they indicate different
+conditions. On the three batch wrappers, a `None` origin is rejected with `BadOrigin` before the
+batch-size check runs. `TooManyCalls` is returned only after a valid origin is present and the call
+count exceeds `batchedCallsLimit`
+([Subtensor source: utility/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/utility/src/lib.rs),
+[Subtensor API Errors: TooManyCalls](https://docs.learnbittensor.org/subtensor-api/errors#toomanycalls)).
+
+- **BadOrigin** — origin type does not satisfy extrinsic requirements.
+- **TooManyCalls** — batch call list exceeds the runtime limit.
+
+## Distinction from Invalid Derived Account
+
+`TooManyCalls` and `InvalidDerivedAccount` both belong to the utility pallet, but on different
+extrinsics. `TooManyCalls` is returned from `batch`, `batch_all`, or `force_batch` when the inner
+call list is too long. `InvalidDerivedAccount` is returned from `as_derivative` when derived-account
+input cannot be decoded into a valid account identifier
+([Subtensor API Errors: InvalidDerivedAccount](https://docs.learnbittensor.org/subtensor-api/errors#invalidderivedaccount),
+[Subtensor source: utility/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/utility/src/lib.rs)).
+
+- **TooManyCalls** — batch wrapper carries too many inner calls.
+- **InvalidDerivedAccount** — derived-account input is invalid on `as_derivative`.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the batch-size guard shared by the three batch
+wrappers. It does not report the current `batchedCallsLimit` value on any live network; readers can
+read that constant from chain metadata for the runtime they use
+([Subtensor Constants: utility](https://docs.learnbittensor.org/subtensor-api/constants#utility),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: TooManyCalls](https://docs.learnbittensor.org/subtensor-api/errors#toomanycalls)
+- [Batch Transactions](https://docs.learnbittensor.org/learn/batch-transactions)
+- [Subtensor Constants: utility](https://docs.learnbittensor.org/subtensor-api/constants#utility)
+- [Subtensor source: utility/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/utility/src/lib.rs)
