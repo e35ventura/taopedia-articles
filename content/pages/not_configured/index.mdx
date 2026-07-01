@@ -1,0 +1,86 @@
+---
+title: "Not Configured"
+summary:
+  "How the NotConfigured error blocks a safe-mode deposit call when the network has not set the
+  required deposit amount or release delay, disabling that operation entirely until the parameter is
+  configured."
+category: "Wallets"
+tags: ["Wallets", "Errors", "Security"]
+infoboxTitle: Not Configured
+infoboxCaption:
+  Error raised when a safe-mode deposit or release call requires a network parameter that has not
+  been set.
+infoboxRows:
+  - label: Error
+    value: NotConfigured
+  - label: Pallet
+    value: safe-mode
+  - label: Trigger
+    value: enter, extend, or release_deposit called when the required parameter is absent
+  - label: Check type
+    value: Presence check on a network-configured optional parameter
+---
+
+# Not Configured
+
+`NotConfigured` is a safe-mode pallet error raised when a deposit-related call requires a
+network-configured parameter that has not been set. The API errors reference describes it as "This
+functionality is not available when safe-mode is entered"
+([Subtensor API Errors: NotConfigured](https://docs.learnbittensor.org/subtensor-api/errors#notconfigured)).
+
+## What It Means
+
+The safe-mode pallet exposes three deposit operations that each depend on a network-level
+configuration value:
+
+- **`enter`** — requires a configured deposit amount for entering safe mode.
+- **`extend`** — requires a configured deposit amount for extending safe mode.
+- **`release_deposit`** — requires a configured release delay before permissionless deposit release
+  is available.
+
+When any of these parameters is absent, the corresponding operation is disabled. Calling it raises
+`NotConfigured`
+([Subtensor API Errors: NotConfigured](https://docs.learnbittensor.org/subtensor-api/errors#notconfigured)).
+
+## Why It Appears
+
+This error appears when a caller attempts a deposit operation that the network has not enabled. The
+deposit amount for `enter` or `extend`, and the release delay for `release_deposit`, are each
+optional. If the network does not set them, those operations are unavailable and any call to them
+fails immediately with `NotConfigured`
+([Subtensor API Errors: NotConfigured](https://docs.learnbittensor.org/subtensor-api/errors#notconfigured)).
+
+## Distinction from Cannot Release Yet
+
+`NotConfigured` and `CannotReleaseYet` both block `release_deposit`, but they fire under opposite
+conditions. `NotConfigured` fires when no release delay is set at all, meaning permissionless
+release is disabled. `CannotReleaseYet` fires when a release delay is set but has not yet elapsed
+for the caller's deposit
+([Subtensor API Errors: CannotReleaseYet](https://docs.learnbittensor.org/subtensor-api/errors#cannotreleaseyet)).
+
+- **NotConfigured** — no release delay is set; permissionless release is disabled.
+- **CannotReleaseYet** — a release delay is set but the waiting period is not over.
+
+## Distinction from No Deposit
+
+`NotConfigured` and `NoDeposit` both block `release_deposit`, but they check different things.
+`NoDeposit` fires when the lookup for the caller's deposit at the given block finds nothing.
+`NotConfigured` fires when a deposit does exist but the network has not configured a release delay,
+so the permissionless release path is not available
+([Subtensor API Errors: NoDeposit](https://docs.learnbittensor.org/subtensor-api/errors#nodeposit)).
+
+- **NoDeposit** — no deposit recorded; nothing to release.
+- **NotConfigured** — deposit exists but permissionless release is disabled.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the parameter presence checks that raise it. It
+does not report whether the network has configured deposit amounts or a release delay; those are
+live chain state
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: NotConfigured](https://docs.learnbittensor.org/subtensor-api/errors#notconfigured)
+- [Subtensor API Errors: CannotReleaseYet](https://docs.learnbittensor.org/subtensor-api/errors#cannotreleaseyet)
+- [Subtensor API Errors: NoDeposit](https://docs.learnbittensor.org/subtensor-api/errors#nodeposit)
