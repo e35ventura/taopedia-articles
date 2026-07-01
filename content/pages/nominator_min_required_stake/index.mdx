@@ -1,0 +1,75 @@
+---
+title: "Nominator Min Required Stake"
+summary:
+  "How NominatorMinRequiredStake is a single global floor below which a nominator's delegation is
+  cleared from a hotkey on Bittensor."
+category: "Staking"
+tags: ["Staking", "Tokenomics"]
+infoboxTitle: Nominator Min Required Stake
+infoboxCaption: Global minimum stake a nominator must hold before a delegation is cleared.
+infoboxRows:
+  - label: Storage
+    value: NominatorMinRequiredStake
+  - label: Scope
+    value: Global (single network-wide value)
+  - label: Type
+    value: u64 (rao)
+  - label: Set by
+    value: Root
+  - label: Setter
+    value: sudo_set_nominator_min_required_stake
+---
+
+# Nominator Min Required Stake
+
+Nominator min required stake is a single global value, stored on chain as
+`NominatorMinRequiredStake`, that sets the smallest stake a nominator may hold on a hotkey before
+the runtime clears the nomination. It is one network-wide value, not a per-subnet setting
+([Subtensor source: pallets/subtensor/src/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/lib.rs)).
+
+## What It Controls
+
+A nominator is a coldkey that stakes to a hotkey it does not own, delegating to that hotkey. This
+value is the floor for such a delegation. When a nominator's stake on a hotkey is greater than zero
+but less than the required minimum, the runtime treats it as a small nomination and removes it with
+a forced unstake that deletes the staking account, applying no fees
+([Subtensor source: staking/helpers.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/helpers.rs)).
+
+The stored minimum is a TAO amount. Because a nominator's live stake is held in a subnet's alpha,
+the runtime converts the minimum into alpha using that subnet's current price before comparing, so
+the same global floor is applied to each subnet's alpha stake at its own price
+([Subtensor source: staking/helpers.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/helpers.rs)).
+
+## Setter and Default
+
+The value is changed only by the root origin through the `sudo_set_nominator_min_required_stake`
+extrinsic. When the new minimum is higher than the previous one, the same call immediately sweeps
+existing nominations that now fall below the raised floor by running the small-nomination cleanup
+([Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+The storage default is zero, so no floor applies until it is set to a positive value
+([Subtensor source: pallets/subtensor/src/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/lib.rs)).
+
+## Distinction from Stake Threshold
+
+Both are global root-set stake minimums, but they gate different things. Nominator min required
+stake is the floor below which a nominator's delegation to a hotkey is cleared. Stake threshold is
+the minimum stake weight a neuron needs before it can be considered for a validator permit during
+the epoch
+([Subtensor source: pallets/subtensor/src/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/lib.rs)).
+
+- **Nominator min required stake** — the floor below which a small delegation is removed.
+- **Stake threshold** — the stake weight needed to be eligible for a validator permit.
+
+## Reader Boundary
+
+This page defines the global `NominatorMinRequiredStake` value and the small-nomination clearing it
+drives. It does not document the full staking and delegation flow or the exact conversion arithmetic
+between TAO and a subnet's alpha
+([Subtensor source: staking/helpers.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/helpers.rs)).
+
+## Further Reading
+
+- [Subtensor source: pallets/subtensor/src/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/lib.rs)
+- [Subtensor source: staking/helpers.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/helpers.rs)
+- [Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)
