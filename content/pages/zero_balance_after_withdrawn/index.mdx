@@ -1,0 +1,118 @@
+---
+title: "Zero Balance After Withdrawn"
+summary:
+  "How the ZeroBalanceAfterWithdrawn error blocks a coldkey withdrawal when removing the requested
+  TAO would leave the account with no remaining balance under the chain's preservation rules."
+category: "Wallets"
+tags: ["Wallets", "Errors"]
+infoboxTitle: Zero Balance After Withdrawn
+infoboxCaption: Error raised when a withdrawal would zero out the coldkey account.
+infoboxRows:
+  - label: Error
+    value: ZeroBalanceAfterWithdrawn
+  - label: Trigger
+    value: Withdrawal would leave zero spendable coldkey balance
+  - label: Scope
+    value: Coldkey TAO withdrawal preservation
+  - label: Related concept
+    value: Existential deposit
+---
+
+# Zero Balance After Withdrawn
+
+`ZeroBalanceAfterWithdrawn` means a coldkey withdrawal was rejected because completing the move
+would leave the account with zero balance in a way the chain does not allow. The standard-errors
+reference describes it as "Balance would be zero after withdrawal"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#zerobalanceafterwithdrawn)).
+
+## What It Means
+
+Coldkey balance moves on Subtensor follow the underlying account preservation rules for TAO. Some
+withdrawals must leave enough balance for the account to remain valid after the move.
+`ZeroBalanceAfterWithdrawn` is the rejection when the requested withdrawal would violate that rule
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#zerobalanceafterwithdrawn),
+[Glossary: Coldkey](https://docs.learnbittensor.org/resources/glossary#coldkey)).
+
+This is an account-preservation failure, not a subnet pool failure and not proof that the coldkey
+lacks any TAO at all. The account may still hold balance, but not enough to cover the requested
+withdrawal while satisfying the chain's post-withdrawal constraints.
+
+## Why It Appears
+
+This error appears when a transfer or withdrawal names an amount that would zero out the coldkey
+account under the path's preservation mode. That can happen when a client requests the full visible
+balance without reserving the portion the chain must keep, when fees are deducted after the amount
+was chosen, or when a partial withdrawal still overshoots what the account can spend safely
+([Glossary: Transfer](https://docs.learnbittensor.org/resources/glossary#transfer),
+[Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees)).
+
+When debugging, compare against other coldkey funding errors on the same extrinsic.
+`InsufficientBalance` means the account cannot fund the requested amount under the path's spend
+rules at all. `BalanceWithdrawalError` means the withdrawal step failed for a balances-layer reason
+after earlier checks passed. `NotEnoughBalanceToStake` is the add-stake rejection when free balance
+cannot cover the named stake amount
+([Subtensor Standard Errors: InsufficientBalance](https://docs.learnbittensor.org/errors/subtensor#insufficientbalance),
+[Subtensor Standard Errors: BalanceWithdrawalError](https://docs.learnbittensor.org/errors/subtensor#balancewithdrawalerror),
+[Subtensor Standard Errors: NotEnoughBalanceToStake](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake)).
+
+The practical meaning is narrow: the withdrawal would leave the coldkey with zero balance in a way
+the chain rejects.
+
+## Distinction from Insufficient Balance
+
+`ZeroBalanceAfterWithdrawn` and `InsufficientBalance` both block coldkey TAO moves, but they name
+different rejection reasons. `InsufficientBalance` means the account cannot fund the requested
+amount under the operation's spend rules. `ZeroBalanceAfterWithdrawn` means the specific problem is
+that the withdrawal would zero out the account
+([Subtensor Standard Errors: InsufficientBalance](https://docs.learnbittensor.org/errors/subtensor#insufficientbalance)).
+
+- **ZeroBalanceAfterWithdrawn** — the withdrawal would zero out the account.
+- **InsufficientBalance** — the coldkey cannot fund the requested amount.
+
+## Distinction from Balance Withdrawal Error
+
+`ZeroBalanceAfterWithdrawn` and `BalanceWithdrawalError` both involve failed coldkey withdrawals,
+but they describe different failure modes. `ZeroBalanceAfterWithdrawn` is the preservation rejection
+when the post-withdrawal balance would be zero. `BalanceWithdrawalError` is the documented failure
+when the runtime cannot complete the withdraw step from the coldkey account
+([Subtensor Standard Errors: BalanceWithdrawalError](https://docs.learnbittensor.org/errors/subtensor#balancewithdrawalerror)).
+
+- **ZeroBalanceAfterWithdrawn** — the withdrawal would zero out the account.
+- **BalanceWithdrawalError** — the coldkey withdrawal step failed.
+
+## Distinction from Not Enough Balance To Stake
+
+`ZeroBalanceAfterWithdrawn` and `NotEnoughBalanceToStake` both appear on value-moving paths, but on
+different extrinsic families. `ZeroBalanceAfterWithdrawn` is a coldkey withdrawal preservation
+rejection. `NotEnoughBalanceToStake` is the add-stake rejection when the coldkey cannot fund the
+requested stake amount
+([Subtensor Standard Errors: NotEnoughBalanceToStake](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake)).
+
+- **ZeroBalanceAfterWithdrawn** — the withdrawal would zero out the coldkey account.
+- **NotEnoughBalanceToStake** — the coldkey cannot fund the requested add-stake amount.
+
+## Distinction from Cannot Afford Lock Cost
+
+`ZeroBalanceAfterWithdrawn` and `CannotAffordLockCost` both involve coldkey TAO on
+registration-related paths, but they test different conditions. `CannotAffordLockCost` is the
+subnet-registration affordability rejection when the coldkey cannot fund the quoted lock cost.
+`ZeroBalanceAfterWithdrawn` is a withdrawal-preservation rejection on balance-move paths
+([Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet)).
+
+- **CannotAffordLockCost** — the coldkey cannot afford the subnet lock cost.
+- **ZeroBalanceAfterWithdrawn** — the withdrawal would zero out the coldkey account.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the account-preservation rejection it
+represents. It does not report a wallet's live free balance, fee reserve, or the exact amount that
+can be withdrawn safely on a network; those depend on chain state at observation time
+([Glossary: Transfer](https://docs.learnbittensor.org/resources/glossary#transfer),
+[Transaction Fees in Bittensor](https://docs.learnbittensor.org/learn/fees)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#zerobalanceafterwithdrawn)
+- [Subtensor Standard Errors: InsufficientBalance](https://docs.learnbittensor.org/errors/subtensor#insufficientbalance)
+- [Subtensor Standard Errors: BalanceWithdrawalError](https://docs.learnbittensor.org/errors/subtensor#balancewithdrawalerror)
+- [Glossary: Coldkey](https://docs.learnbittensor.org/resources/glossary#coldkey)
