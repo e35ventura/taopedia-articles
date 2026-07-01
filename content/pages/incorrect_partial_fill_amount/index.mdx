@@ -1,0 +1,117 @@
+---
+title: "Incorrect Partial Fill Amount"
+summary:
+  "How the IncorrectPartialFillAmount error blocks limit-order execution when a partial-fill amount
+  is out of bounds or when a one-shot fill is submitted against an already partially filled order."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Incorrect Partial Fill Amount
+infoboxCaption: Error raised when partial-fill amount or fill mode is invalid.
+infoboxRows:
+  - label: Error
+    value: IncorrectPartialFillAmount
+  - label: Trigger
+    value: partial_fill is zero, above remaining allowance, or absent on a partially filled order
+  - label: Checked in
+    value: is_order_valid, called by execute_orders and execute_batched_orders
+  - label: Check type
+    value: Partial-fill amount and fill-mode validation
+---
+
+# Incorrect Partial Fill Amount
+
+`IncorrectPartialFillAmount` is a documented limit-orders error raised when a limit-order execution
+submission uses an invalid partial-fill amount or fill mode. The Subtensor API error reference
+describes it as "Incorrect partial fill amount provided"
+([Subtensor API Errors: IncorrectPartialFillAmount](https://docs.learnbittensor.org/subtensor-api/errors#incorrectpartialfillamount)).
+
+## What It Means
+
+The `is_order_valid` helper — used by both `execute_orders` and `execute_batched_orders` — returns
+`IncorrectPartialFillAmount` on two separate branches after shared earlier order validation has
+already passed
+([Subnet Liquidity Pools](https://docs.learnbittensor.org/subnets/understanding-subnets#liquidity-pools),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+On the partial-fill branch, when the signed submission includes a partial-fill amount, the runtime
+first checks relayer presence and partial-fills-enabled status, then requires the submitted amount
+to be greater than zero and less than or equal to the remaining fill allowance. For a new order, the
+allowance is the full order amount. For an order already marked partially filled, the allowance is
+the order amount minus what has already been filled
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+On the one-shot branch, when the signed submission omits a partial-fill amount, the runtime does not
+run the partial-fill relayer or partial-fills-enabled gates. It treats the call as a one-shot full
+execution of the order amount and returns `IncorrectPartialFillAmount` if the order is already in
+partially filled status, because the remaining balance must be completed with an explicit
+partial-fill amount instead
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+This is a fill-amount or fill-mode rejection, not proof that partial fills are disabled on the order
+or that the signature failed verification.
+
+## Why It Appears
+
+On the partial-fill branch, this error appears when the submitted amount is zero, larger than the
+remaining allowance, or otherwise outside the allowed range for the order's current fill state. On
+the one-shot branch, it appears when a relayer retries full execution against an order that already
+has partial fill progress recorded on chain
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+When debugging the partial-fill branch, compare against the two checks that run immediately before
+the amount bounds test on that branch. `RelayerRequiredForPartialFill` means the order has no
+relayer restriction while a partial fill was requested. `PartialFillsNotEnabled` means the order was
+not created with partial fills turned on. Those checks do not run on the one-shot branch
+([Relayer Required For Partial Fill](https://docs.learnbittensor.org/errors/subtensor#relayerrequiredforpartialfill),
+[Partial Fills Not Enabled](https://docs.learnbittensor.org/errors/subtensor#partialfillsnotenabled),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+## Distinction from Partial Fills Not Enabled
+
+`IncorrectPartialFillAmount` and `PartialFillsNotEnabled` both involve partial execution, but on
+different branches. `PartialFillsNotEnabled` is checked only on the partial-fill branch before the
+amount bounds test. `IncorrectPartialFillAmount` on that branch means partial fills are allowed but
+the submitted amount is invalid. The one-shot branch never reaches `PartialFillsNotEnabled`
+([Partial Fills Not Enabled](https://docs.learnbittensor.org/errors/subtensor#partialfillsnotenabled),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+- **PartialFillsNotEnabled** — partial fills are not enabled on the order.
+- **IncorrectPartialFillAmount** — the partial-fill amount or fill mode is invalid.
+
+## Distinction between partial-fill amount and one-shot retry paths
+
+`IncorrectPartialFillAmount` uses the same error label on two branches of `is_order_valid`, but with
+different preceding gates. The partial-fill branch runs relayer-presence and partial-fills-enabled
+checks before the amount bounds test. The one-shot branch skips those partial-fill-specific gates
+and rejects only when the order already has partially filled status
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+- **Partial-fill branch** — the submitted partial amount is zero or above the remaining allowance.
+- **One-shot branch** — full execution was requested against an already partially filled order.
+
+## Distinction from Order Already Processed
+
+`IncorrectPartialFillAmount` and `OrderAlreadyProcessed` both involve order fill state, but at
+different checks. `OrderAlreadyProcessed` means the derived order ID is already stored as fulfilled.
+`IncorrectPartialFillAmount` on the one-shot branch means the order is partially filled but not yet
+fulfilled, and therefore cannot accept another full one-shot execution
+([Order Already Processed](https://docs.learnbittensor.org/errors/subtensor#orderalreadyprocessed),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+- **OrderAlreadyProcessed** — the order is already fulfilled.
+- **IncorrectPartialFillAmount** — the fill amount or fill mode is invalid for the current status.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the partial-fill bounds checks that raise it.
+It does not report live fill progress for any order on a network; that is order state readers can
+query separately
+([Subnet Liquidity Pools](https://docs.learnbittensor.org/subnets/understanding-subnets#liquidity-pools),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: IncorrectPartialFillAmount](https://docs.learnbittensor.org/subtensor-api/errors#incorrectpartialfillamount)
+- [Partial Fills Not Enabled](https://docs.learnbittensor.org/errors/subtensor#partialfillsnotenabled)
+- [Order Already Processed](https://docs.learnbittensor.org/errors/subtensor#orderalreadyprocessed)
+- [Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)
