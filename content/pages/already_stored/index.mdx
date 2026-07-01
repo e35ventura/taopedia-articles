@@ -1,0 +1,91 @@
+---
+title: "Already Stored"
+summary:
+  "How the AlreadyStored error blocks a multisig call submission when the call data for that
+  operation is already recorded on-chain."
+category: "Wallets"
+tags: ["Wallets", "Errors", "Security"]
+infoboxTitle: Already Stored
+infoboxCaption: Error raised when multisig call data is submitted but already exists on-chain.
+infoboxRows:
+  - label: Error
+    value: AlreadyStored
+  - label: Pallet
+    value: multisig
+  - label: Trigger
+    value: Call data submitted for a multisig operation that already has stored call data
+  - label: Check type
+    value: Duplicate call data detection on the pending multisig operation
+---
+
+# Already Stored
+
+`AlreadyStored` is a multisig pallet error raised when a call attempts to store call data for a
+multisig operation that already has call data recorded on-chain. The API errors reference describes
+it as "Call data hash does not match existing call data or extrinsic was not found"
+([Subtensor API Errors: AlreadyStored](https://docs.learnbittensor.org/subtensor-api/errors#alreadystored)).
+
+## What It Means
+
+A Bittensor multisig operation can optionally store the call data on-chain so that any co-signer can
+retrieve it and verify what they are approving without out-of-band communication. The multisig
+pallet allows call data to be submitted once; if call data is already stored for the pending
+operation, submitting it again raises `AlreadyStored`
+([Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)).
+
+`AlreadyStored` fires when call data submission is attempted for a pending multisig operation that
+already has call data on record
+([Subtensor API Errors: AlreadyStored](https://docs.learnbittensor.org/subtensor-api/errors#alreadystored),
+[Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)).
+
+This is a duplicate-storage rejection, not proof that the approval threshold has been met, that the
+timepoint is wrong, or that the signatories list is malformed.
+
+## Why It Appears
+
+This error appears when call data for the pending multisig operation was already submitted and
+stored in a previous extrinsic. The multisig pallet keeps at most one call data record per pending
+operation; a second submission conflicts with the already-stored record
+([Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)).
+
+The practical meaning is narrow: call data for this operation is already on-chain. Submit approvals
+without re-sending the call data, or use the existing stored data to verify what is pending.
+
+## Distinction from Already Approved
+
+`AlreadyStored` and `AlreadyApproved` both block repeat submissions to a pending multisig operation,
+but they catch different duplicates. `AlreadyApproved` fires when a signatory submits a second
+approval for an operation they have already approved. `AlreadyStored` fires when call data is
+submitted for an operation that already has call data stored on-chain
+([Subtensor API Errors: AlreadyApproved](https://docs.learnbittensor.org/subtensor-api/errors#alreadyapproved),
+[Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)).
+
+- **AlreadyStored** — call data for this operation is already on-chain; duplicate data submission.
+- **AlreadyApproved** — this signatory has already approved the pending call.
+
+## Distinction from No Approvals Needed
+
+`AlreadyStored` and `NoApprovalsNeeded` both block submissions to a pending multisig operation, but
+at different conditions. `NoApprovalsNeeded` fires when an approval is submitted after the operation
+has already met its threshold. `AlreadyStored` fires when call data is submitted for an operation
+that already has call data stored, independent of the approval count
+([Subtensor API Errors: NoApprovalsNeeded](https://docs.learnbittensor.org/subtensor-api/errors#noapprovalsneeded),
+[Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)).
+
+- **AlreadyStored** — duplicate call data submission; approval count is not relevant here.
+- **NoApprovalsNeeded** — the approval threshold is already met; no more approvals accepted.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the duplicate call data check that raises it.
+It does not report the current stored call data or approval state of any pending multisig operation
+on chain; those are live chain state
+([Multisig Wallets](https://docs.learnbittensor.org/keys/multisig),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: AlreadyStored](https://docs.learnbittensor.org/subtensor-api/errors#alreadystored)
+- [Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)
+- [Subtensor API Errors: AlreadyApproved](https://docs.learnbittensor.org/subtensor-api/errors#alreadyapproved)
+- [Subtensor API Errors: NoApprovalsNeeded](https://docs.learnbittensor.org/subtensor-api/errors#noapprovalsneeded)
