@@ -1,0 +1,61 @@
+---
+title: "Cap Not Raised"
+summary:
+  "How the CapNotRaised error blocks finalizing a crowdloan when the total amount raised has not yet
+  reached the crowdloan's funding cap."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Cap Not Raised
+infoboxCaption: Error raised when a crowdloan is finalized before its funding cap is fully reached.
+infoboxRows:
+  - label: Error
+    value: CapNotRaised
+  - label: Trigger
+    value: crowdloan.raised != crowdloan.cap at finalization
+  - label: Checked in
+    value: finalize extrinsic
+  - label: Check type
+    value: Total-raised equality check against the crowdloan's cap
+---
+
+# Cap Not Raised
+
+`CapNotRaised` is a documented Subtensor standard error raised by the `finalize` extrinsic in the
+crowdloan pallet. The Subtensor API error reference describes it as "The crowdloan cap has not been
+raised" ([Subtensor API: Errors](https://docs.learnbittensor.org/subtensor-api/errors)).
+
+## What It Means
+
+Finalizing a [crowdloan](https://docs.learnbittensor.org/subnets/crowdloans) requires the total
+amount raised to exactly equal the crowdloan's funding cap. The `finalize` extrinsic checks whether
+`raised == cap` and raises `CapNotRaised` when the raised amount is still below the cap, meaning the
+crowdloan has not yet collected its full funding target
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+This check runs after confirming the crowdloan exists and the caller is its creator, but before the
+finalization is carried out
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+## Distinction from Cap Raised
+
+`CapNotRaised` and `CapRaised` are conceptual opposites that operate on different extrinsics.
+`CapRaised` fires in the `contribute` extrinsic when the crowdloan's raised amount is already at or
+above its cap, blocking further contributions. `CapNotRaised` fires in the `finalize` extrinsic when
+the raised amount has not yet reached the cap, blocking premature finalization
+([Subtensor Standard Errors: CapRaised](https://docs.learnbittensor.org/subtensor-api/errors),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+- **CapRaised** — contributions blocked because the cap has been met.
+- **CapNotRaised** — finalization blocked because the cap has not been met.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the equality check that raises it. It does not
+describe the rest of the crowdloan finalization flow; that is documented separately
+([Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans)).
+
+## Further Reading
+
+- [Subtensor API: Errors](https://docs.learnbittensor.org/subtensor-api/errors)
+- [Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans)
+- [Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)
