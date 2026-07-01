@@ -1,0 +1,89 @@
+---
+title: "No Timepoint"
+summary:
+  "How the NoTimepoint error blocks a multisig approval when the caller omits the timepoint of an
+  already-underway operation, which the multisig pallet requires to confirm the caller's knowledge
+  of the current operation state."
+category: "Wallets"
+tags: ["Wallets", "Errors", "Security"]
+infoboxTitle: No Timepoint
+infoboxCaption:
+  Error raised when a multisig approval is submitted without a timepoint for an in-progress
+  operation.
+infoboxRows:
+  - label: Error
+    value: NoTimepoint
+  - label: Pallet
+    value: multisig
+  - label: Trigger
+    value: Approval submitted without a timepoint while the operation is already recorded on-chain
+  - label: Check type
+    value: Presence check on the caller-supplied timepoint parameter
+---
+
+# No Timepoint
+
+`NoTimepoint` is a multisig pallet error raised when a signatory submits an approval for an
+already-underway multisig operation without providing the operation's timepoint. The API errors
+reference describes it as "No timepoint was given, yet the multisig operation is already underway"
+([Subtensor API Errors: NoTimepoint](https://docs.learnbittensor.org/subtensor-api/errors#notimepoint)).
+
+## What It Means
+
+A Bittensor multisig operation begins when the first signatory submits an approval via `as_multi` or
+`approve_as_multi`. That first submission records the operation on-chain and stamps it with a
+timepoint — the block number and extrinsic index of that initial submission. Every subsequent
+approval for the same call must include that timepoint to prove the approving signatory is aware of
+when the operation started ([Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)).
+
+`NoTimepoint` fires when a later signatory submits an approval without supplying the timepoint at
+all. Because the operation is already recorded on-chain, the pallet requires the timepoint as a
+consistency check. An omitted timepoint means the check cannot run, and the approval is rejected
+([Subtensor API Errors: NoTimepoint](https://docs.learnbittensor.org/subtensor-api/errors#notimepoint),
+[Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)).
+
+## Why It Appears
+
+This error appears when the `maybe_timepoint` parameter is left empty in an `as_multi` or
+`approve_as_multi` call while an on-chain record for the same multisig address and call hash already
+exists. It is a parameter completeness error on the approval side of the operation
+([Subtensor API Errors: NoTimepoint](https://docs.learnbittensor.org/subtensor-api/errors#notimepoint)).
+
+## Distinction from Wrong Timepoint
+
+`NoTimepoint` and `WrongTimepoint` both block approval submissions related to an in-progress
+operation, but they detect different timepoint problems. `NoTimepoint` fires when the timepoint
+parameter is absent entirely. `WrongTimepoint` fires when the timepoint is present but does not
+match the block number and index stored on-chain for the operation
+([Subtensor API Errors: WrongTimepoint](https://docs.learnbittensor.org/subtensor-api/errors#wrongtimepoint),
+[Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)).
+
+- **NoTimepoint** — the timepoint parameter was not provided.
+- **WrongTimepoint** — the timepoint was provided but does not match the on-chain record.
+
+## Distinction from Unexpected Timepoint
+
+`NoTimepoint` and `UnexpectedTimepoint` are mirror images of the same consistency check.
+`NoTimepoint` fires when an operation is already recorded and the caller omitted the timepoint.
+`UnexpectedTimepoint` fires when no operation has been recorded yet and the caller supplied a
+timepoint anyway. Both errors indicate a mismatch between what is recorded on-chain and what the
+caller submitted
+([Subtensor API Errors: UnexpectedTimepoint](https://docs.learnbittensor.org/subtensor-api/errors#unexpectedtimepoint),
+[Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)).
+
+- **NoTimepoint** — operation exists on-chain; timepoint was omitted.
+- **UnexpectedTimepoint** — no operation on-chain yet; timepoint was provided.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the timepoint presence check that raises it. It
+does not report the current state of any pending multisig operation on chain; that is live chain
+state ([Multisig Wallets](https://docs.learnbittensor.org/keys/multisig),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: NoTimepoint](https://docs.learnbittensor.org/subtensor-api/errors#notimepoint)
+- [Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)
+- [Subtensor API Errors: WrongTimepoint](https://docs.learnbittensor.org/subtensor-api/errors#wrongtimepoint)
+- [Subtensor API Errors: UnexpectedTimepoint](https://docs.learnbittensor.org/subtensor-api/errors#unexpectedtimepoint)
