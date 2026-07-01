@@ -1,0 +1,79 @@
+---
+title: "Zero Balance After Withdrawn"
+summary:
+  "How the ZeroBalanceAfterWithdrawn error blocks a withdrawal when the requested amount would bring
+  the account balance to zero."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Zero Balance After Withdrawn
+infoboxCaption: Error raised when a withdrawal would result in a zero account balance.
+infoboxRows:
+  - label: Error
+    value: ZeroBalanceAfterWithdrawn
+  - label: Trigger
+    value: Withdrawal amount would leave the account with zero balance
+  - label: Description
+    value: '"Balance could be zero (can not make account exist) after withdrawal"'
+---
+
+# Zero Balance After Withdrawn
+
+`ZeroBalanceAfterWithdrawn` is a documented Subtensor standard error raised when a withdrawal would
+bring the account balance to zero. The standard-errors reference describes it as "Unsuccessfully
+withdraw, balance could be zero (can not make account exist) after withdrawal"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#zerobalanceafterwithdrawn),
+[Subtensor API Errors: ZeroBalanceAfterWithdrawn](https://docs.learnbittensor.org/subtensor-api/errors#zerobalanceafterwithdrawn)).
+
+## What It Means
+
+`ZeroBalanceAfterWithdrawn` is the rejection when a withdrawal would reduce the account balance to
+zero. The documented description frames this as an account-existence constraint: a zero balance
+cannot make the account exist after the withdrawal
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#zerobalanceafterwithdrawn)).
+
+This is a resulting-balance check, not proof that the account has insufficient stake to cover the
+requested amount or that the withdrawal operation encountered a runtime error.
+
+## Why It Appears
+
+This error appears when a withdrawal is sized to remove the full remaining balance of the account
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#zerobalanceafterwithdrawn)).
+
+The practical meaning is narrow: the withdrawal amount must leave a non-zero balance after the
+operation completes.
+
+## Distinction from Balance Withdrawal Error
+
+`ZeroBalanceAfterWithdrawn` and `BalanceWithdrawalError` both block withdrawal operations, but they
+reject at different conditions. `BalanceWithdrawalError` fires when the withdrawal operation itself
+cannot be completed. `ZeroBalanceAfterWithdrawn` fires when the withdrawal amount would bring the
+account balance to zero
+([Subtensor Standard Errors: BalanceWithdrawalError](https://docs.learnbittensor.org/errors/subtensor#balancewithdrawalerror)).
+
+- **ZeroBalanceAfterWithdrawn** — withdrawal would leave zero balance.
+- **BalanceWithdrawalError** — the withdrawal operation itself cannot be executed.
+
+## Distinction from Not Enough Stake to Withdraw
+
+`ZeroBalanceAfterWithdrawn` and `NotEnoughStakeToWithdraw` both block stake removal, but they check
+different conditions. `NotEnoughStakeToWithdraw` fires when the staked amount is less than the
+requested withdrawal. `ZeroBalanceAfterWithdrawn` fires when the staked amount covers the request
+but completing it would leave the account at zero balance
+([Subtensor Standard Errors: NotEnoughStakeToWithdraw](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketowithdraw)).
+
+- **ZeroBalanceAfterWithdrawn** — stake covers the request, but resulting balance would be zero.
+- **NotEnoughStakeToWithdraw** — staked amount is less than the requested withdrawal.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the resulting-balance check that raises it. It
+does not report the live account balance for any specific account; that depends on chain state at
+the time of the call
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#zerobalanceafterwithdrawn)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#zerobalanceafterwithdrawn)
+- [Subtensor API Errors: ZeroBalanceAfterWithdrawn](https://docs.learnbittensor.org/subtensor-api/errors#zerobalanceafterwithdrawn)
+- [Subtensor Standard Errors: BalanceWithdrawalError](https://docs.learnbittensor.org/errors/subtensor#balancewithdrawalerror)
+- [Subtensor Standard Errors: NotEnoughStakeToWithdraw](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketowithdraw)
