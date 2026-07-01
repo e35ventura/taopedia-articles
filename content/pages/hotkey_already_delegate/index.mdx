@@ -1,0 +1,92 @@
+---
+title: "Hotkey Already Delegate"
+summary:
+  "How the HotKeyAlreadyDelegate error blocks a become_delegate call when the submitting hotkey is
+  already registered as a delegate."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Hotkey Already Delegate
+infoboxCaption:
+  Error raised when a become_delegate call targets a hotkey that is already a delegate.
+infoboxRows:
+  - label: Error
+    value: HotKeyAlreadyDelegate
+  - label: Trigger
+    value: become_delegate called for a hotkey already registered as a delegate
+  - label: Description
+    value: '"The hotkey is attempting to become a delegate when already a delegate"'
+  - label: Related concept
+    value: Delegation
+---
+
+# Hotkey Already Delegate
+
+`HotKeyAlreadyDelegate` is a documented Subtensor standard error raised when a `become_delegate`
+call is submitted for a hotkey that is already registered as a delegate. The standard-errors
+reference describes it as "The hotkey is attempting to become a delegate when already a delegate"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#hotkeyalreadydelegate),
+[Subtensor API Errors: HotKeyAlreadyDelegate](https://docs.learnbittensor.org/subtensor-api/errors#hotkeyalreadydelegate)).
+
+## What It Means
+
+Delegate registration is a one-time state change for a hotkey. Once a hotkey is registered as a
+delegate, it can accept stake from nominators without requiring a repeated registration call. The
+`become_delegate` extrinsic sets that delegate status; once the status is set, the same hotkey
+cannot complete delegate registration again
+([Delegation](https://docs.learnbittensor.org/staking/delegation)).
+
+`HotKeyAlreadyDelegate` is the state-check rejection when the hotkey submitted to `become_delegate`
+is already in delegate state. The call is rejected before any fee is deducted or state is changed.
+
+This is a delegate-status check, not proof that the hotkey is unregistered, that the caller lacks
+permission to control the hotkey, or that the delegate take percentage is out of range.
+
+## Why It Appears
+
+This error appears when `become_delegate` is submitted for a hotkey that has already completed
+delegate registration. Common cases include automation that does not check delegate status before
+calling registration, scripts that replay setup transactions on a hotkey that was already
+configured, or wallet tooling that retries a registration after a prior successful call was
+confirmed
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#hotkeyalreadydelegate)).
+
+The practical meaning is narrow: delegate registration for this hotkey is already complete and does
+not need to be repeated.
+
+## Distinction from Hotkey Not Registered in Network
+
+`HotKeyAlreadyDelegate` and `HotkeyNotRegisteredInNetwork` both involve hotkey registration state,
+but they fire at opposite conditions. `HotkeyNotRegisteredInNetwork` fires when the hotkey has no
+registration record on the network. `HotKeyAlreadyDelegate` fires when the hotkey is registered and
+has already completed delegate status registration
+([Subtensor Standard Errors: HotkeyNotRegisteredInNetwork](https://docs.learnbittensor.org/errors/subtensor#hotkeynotregisteredinnetwork)).
+
+- **HotKeyAlreadyDelegate** — hotkey is registered and already has delegate status.
+- **HotkeyNotRegisteredInNetwork** — hotkey has no network registration record.
+
+## Distinction from Delegate Tx Rate Limit Exceeded
+
+`HotKeyAlreadyDelegate` and `DelegateTxRateLimitExceeded` both block calls on the delegation path,
+but they reject for different reasons. `DelegateTxRateLimitExceeded` is a timing rejection that
+fires when delegate-related calls are submitted too quickly within the rate-limit window.
+`HotKeyAlreadyDelegate` is a state rejection that fires when the hotkey is already in delegate
+status, regardless of timing
+([Subtensor Standard Errors: DelegateTxRateLimitExceeded](https://docs.learnbittensor.org/errors/subtensor#delegatetxratelimitexceeded)).
+
+- **HotKeyAlreadyDelegate** — hotkey is already a delegate; state check fails.
+- **DelegateTxRateLimitExceeded** — delegate call submitted too soon after a prior one.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the delegate-status check that raises it. It
+does not report whether any specific hotkey is currently registered as a delegate; that depends on
+chain state at the time of the call
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#hotkeyalreadydelegate)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#hotkeyalreadydelegate)
+- [Subtensor API Errors: HotKeyAlreadyDelegate](https://docs.learnbittensor.org/subtensor-api/errors#hotkeyalreadydelegate)
+- [Delegation](https://docs.learnbittensor.org/staking/delegation)
+- [Subtensor Standard Errors: HotkeyNotRegisteredInNetwork](https://docs.learnbittensor.org/errors/subtensor#hotkeynotregisteredinnetwork)
+- [Subtensor Standard Errors: DelegateTxRateLimitExceeded](https://docs.learnbittensor.org/errors/subtensor#delegatetxratelimitexceeded)
