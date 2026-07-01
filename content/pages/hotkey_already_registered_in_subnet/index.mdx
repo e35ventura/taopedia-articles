@@ -11,71 +11,80 @@ infoboxRows:
   - label: Error
     value: HotKeyAlreadyRegisteredInSubNet
   - label: Trigger
-    value: do_register while the hotkey already has a UID on netuid
+    value: Registration attempted while the hotkey already has a UID on the subnet
   - label: Checked in
-    value: do_register, step 4
+    value: Subnet registration calls
   - label: Check type
-    value: Uids map membership test
+    value: Duplicate UID slot rejection
 ---
 
 # Hotkey Already Registered In Subnet
 
-`HotKeyAlreadyRegisteredInSubNet` is a documented Subtensor standard error raised by subnet
-registration extrinsics. The standard-errors reference describes it as "The caller is requesting a
-redundant registration for a neuron"
+HotKeyAlreadyRegisteredInSubNet means a registration call tried to assign a neuron slot to a hotkey
+that already holds one on the targeted subnet. The standard-errors reference describes it as "The
+caller is requesting a redundant registration for a neuron"
 ([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#hotkeyalreadyregisteredinsubnet)).
+
+Subnet registration gives a hotkey a UID on one subnet at a time through the burned registration
+path described in the Bittensor glossary
+([Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register)).
 
 ## What It Means
 
-Ordinary subnet registration assigns a UID slot to a hotkey on a specific `netuid`. Before burn
-payment and coldkey pairing checks run, `do_register` asks whether that hotkey already appears in
-the subnet's `Uids` map. `HotKeyAlreadyRegisteredInSubNet` means the map already contains an entry
-for the hotkey, so the extrinsic rejects the duplicate registration attempt instead of appending or
-replacing a neuron
-([Subtensor source: registration.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)).
+Each subnet tracks which hotkeys already occupy neuron slots. When a registration call targets a
+subnet where the hotkey is already listed, the chain rejects the duplicate attempt instead of
+creating a second slot or replacing the existing one
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#hotkeyalreadyregisteredinsubnet)).
 
-This is a per-subnet slot check. The same hotkey may still register on other subnets where it does
-not yet hold a UID, but it cannot register twice on the same `netuid` through this path
-([Subtensor source: registration.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)).
+Membership is scoped per subnet. The same hotkey may still register on other subnets where it has no
+slot yet, but it cannot register twice on the same subnet through this path.
+
+This error is about duplicate membership, not about subnet capacity, registration being turned off,
+or the hotkey being absent on a different subnet. A full subnet raises
+[[no_neuron_id_available|No Neuron Id Available]]. A closed registration gate raises
+[[subnet_registration_disabled|Subnet Registration Disabled]]. The opposite missing-slot case is
+[[hotkey_not_registered_in_subnet|Hotkey Not Registered In Subnet]].
 
 ## Why It Appears
 
-The most direct cause is calling `register` or `register_limit` again for a hotkey that already
-occupies a neuron slot on the chosen subnet. Retry logic, copied extrinsics, or automation that does
-not first confirm current registration state can hit this error even when burn balance and coldkey
-association would otherwise pass
-([Subtensor source: registration.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)).
+The usual cause is submitting registration again for a hotkey that already occupies a slot on the
+chosen subnet. Retry logic, copied transactions, or automation that does not refresh registration
+state first can hit this error even when burn balance and coldkey pairing would otherwise succeed.
 
-Because the check runs before balance withdrawal, it is not a payment failure and does not mean the
-subnet is full. The hotkey already has a slot; the extrinsic is redundant rather than competing for
-a new UID
-([Subtensor Standard Errors: NoNeuronIdAvailable](https://docs.learnbittensor.org/errors/subtensor#noneuronidavailable),
-[Subtensor Standard Errors: NotEnoughBalanceToStake](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake)).
+The practical meaning is narrow: the hotkey already has a slot on that subnet, so the registration
+call is redundant rather than competing for a new UID.
 
 ## Distinction from Hotkey Not Registered In Subnet
 
-`HotKeyAlreadyRegisteredInSubNet` and `HotKeyNotRegisteredInSubNet` are opposite membership outcomes
-for the same subnet hotkey lookup. `HotKeyAlreadyRegisteredInSubNet` is raised inside `do_register`
-when registration is attempted while the hotkey already has a UID on that `netuid`.
-`HotKeyNotRegisteredInSubNet` is raised by other extrinsics, such as `set_weights`, when the signing
-hotkey does not hold a slot on the targeted subnet
-([Subtensor Standard Errors: HotKeyNotRegisteredInSubNet](https://docs.learnbittensor.org/errors/subtensor#hotkeynotregisteredinsubnet),
-[Subtensor source: registration.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs),
-[Subtensor source: weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/weights.rs)).
+These errors describe opposite membership outcomes on the same subnet lookup.
+HotKeyAlreadyRegisteredInSubNet appears when registration is attempted for a hotkey that already
+holds a UID there. HotKeyNotRegisteredInSubNet appears when another subnet-scoped operation, such as
+weight submission, requires a UID the hotkey does not have on the targeted subnet
+([Subtensor Standard Errors: HotKeyNotRegisteredInSubNet](https://docs.learnbittensor.org/errors/subtensor#hotkeynotregisteredinsubnet)).
 
-- **HotKeyAlreadyRegisteredInSubNet** — registration attempted for a hotkey that already has a UID.
-- **HotKeyNotRegisteredInSubNet** — another extrinsic requires a UID the hotkey does not have.
+See [[hotkey_not_registered_in_subnet|Hotkey Not Registered In Subnet]] for the missing-slot case.
+
+## Distinction from No Neuron Id Available
+
+Both errors can appear while troubleshooting registration, but they mean different things.
+HotKeyAlreadyRegisteredInSubNet means the hotkey already holds a UID on the subnet.
+NoNeuronIdAvailable means the subnet has no free neuron slots left for a new registration
+([Subtensor Standard Errors: NoNeuronIdAvailable](https://docs.learnbittensor.org/errors/subtensor#noneuronidavailable)).
+
+See [[no_neuron_id_available|No Neuron Id Available]] for the capacity case.
 
 ## Reader Boundary
 
-This page defines the meaning of the error label and the duplicate-registration check that raises
-it. It does not describe root registration, subnet capacity pruning, or registration rate limits;
-those are separate topics
-([Subtensor source: registration.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)).
+This page defines the meaning of the error label and the duplicate-registration condition that
+raises it. It does not describe root registration, subnet capacity pruning, or registration rate
+limits in full; those are separate topics
+([Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
 
 ## Further Reading
 
 - [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#hotkeyalreadyregisteredinsubnet)
-- [Subtensor Standard Errors: HotKeyNotRegisteredInSubNet](https://docs.learnbittensor.org/errors/subtensor#hotkeynotregisteredinsubnet)
-- [Subtensor Standard Errors: NoNeuronIdAvailable](https://docs.learnbittensor.org/errors/subtensor#noneuronidavailable)
-- [Subtensor source: registration.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)
+- [[hotkey_not_registered_in_subnet|Hotkey Not Registered In Subnet]]
+- [[no_neuron_id_available|No Neuron Id Available]]
+- [[subnet_registration_disabled|Subnet Registration Disabled]]
+- [Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register)
