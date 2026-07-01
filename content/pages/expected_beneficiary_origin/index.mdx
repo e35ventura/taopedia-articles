@@ -1,0 +1,107 @@
+---
+title: "Expected Beneficiary Origin"
+summary:
+  "How the ExpectedBeneficiaryOrigin error blocks terminate_lease when the signing account is not
+  the beneficiary recorded on the subnet lease."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Expected Beneficiary Origin
+infoboxCaption: Error raised when the lease termination signer is not the stored beneficiary.
+infoboxRows:
+  - label: Error
+    value: ExpectedBeneficiaryOrigin
+  - label: Trigger
+    value: Transaction signer does not match lease.beneficiary
+  - label: Checked in
+    value: do_terminate_lease, called by terminate_lease
+  - label: Check type
+    value: Beneficiary identity match
+---
+
+# Expected Beneficiary Origin
+
+`ExpectedBeneficiaryOrigin` is a documented Subtensor standard error raised in `do_terminate_lease`,
+the helper called by the `terminate_lease` extrinsic when a
+[subnet lease](https://docs.learnbittensor.org/subnets/crowdloans)'s beneficiary ends the lease
+after its optional end block. The standard-errors reference describes it as "Expected beneficiary
+origin"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#expectedbeneficiaryorigin)).
+
+## What It Means
+
+`do_terminate_lease` loads the lease record for the supplied lease ID and compares the transaction
+signer against the beneficiary stored on that lease. `ExpectedBeneficiaryOrigin` is raised when
+those accounts do not match
+([Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+This check runs only after the lease lookup succeeds. Later steps in the same function, such as the
+end-block timing check and the beneficiary-hotkey ownership check, are reached only once a stored
+lease has been found and the signer has been confirmed as that lease's beneficiary
+([Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+## Why It Appears
+
+A wallet other than the lease beneficiary can submit `terminate_lease` with a valid lease ID and
+still fail here if the signing account is not the beneficiary recorded on that lease. That includes
+a contributor coldkey, a proxy without beneficiary scope, or any account that targets the wrong
+lease record in automation ([Subnet Lease](https://docs.learnbittensor.org/subnets/crowdloans),
+[Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+Crowdloan documentation states that the beneficiary may terminate a lease only after an optional end
+block has passed. `ExpectedBeneficiaryOrigin` is separate from that timing rule: it rejects the
+signer's identity before the end-block comparison runs
+([Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans),
+[Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+## Distinction from Lease Does Not Exist
+
+`ExpectedBeneficiaryOrigin` and `LeaseDoesNotExist` are both early checks in `do_terminate_lease`,
+but they apply at different stages. `LeaseDoesNotExist` is the storage lookup that fails when no
+lease record matches the supplied lease ID. `ExpectedBeneficiaryOrigin` is the next check,
+confirming the transaction signer is the beneficiary recorded on a lease that was already found
+([Subtensor Standard Errors: LeaseDoesNotExist](https://docs.learnbittensor.org/errors/subtensor#leasedoesnotexist),
+[Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+- **LeaseDoesNotExist** — no lease record exists for the supplied lease ID.
+- **ExpectedBeneficiaryOrigin** — a lease was found, but the signer is not its beneficiary.
+
+## Distinction from Invalid Lease Beneficiary
+
+`ExpectedBeneficiaryOrigin` and `InvalidLeaseBeneficiary` both involve beneficiary identity, but on
+different extrinsics. `InvalidLeaseBeneficiary` blocks leased-network registration in
+`do_register_leased_network` when the caller is not the crowdloan creator.
+`ExpectedBeneficiaryOrigin` blocks lease termination in `do_terminate_lease` when the caller is not
+the stored lease beneficiary
+([Subtensor Standard Errors: InvalidLeaseBeneficiary](https://docs.learnbittensor.org/errors/subtensor#invalidleasebeneficiary),
+[Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+- **InvalidLeaseBeneficiary** — the caller is not the crowdloan creator on registration.
+- **ExpectedBeneficiaryOrigin** — the signer is not the lease beneficiary on termination.
+
+## Distinction from Beneficiary Does Not Own Hotkey
+
+`ExpectedBeneficiaryOrigin` and `BeneficiaryDoesNotOwnHotkey` both gate `do_terminate_lease` by
+checking account associations, but at different stages. `ExpectedBeneficiaryOrigin` confirms the
+transaction signer is the beneficiary recorded on the lease. `BeneficiaryDoesNotOwnHotkey` is a
+later check confirming the hotkey argument supplied for the ownership transfer is owned by that same
+beneficiary coldkey
+([Beneficiary Does Not Own Hotkey](https://docs.learnbittensor.org/errors/subtensor#beneficiarydoesnotownhotkey),
+[Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)).
+
+- **ExpectedBeneficiaryOrigin** — the transaction signer is not the lease's beneficiary.
+- **BeneficiaryDoesNotOwnHotkey** — the beneficiary's supplied hotkey is not owned by them.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the beneficiary-identity check that raises it.
+It does not describe crowdloan contribution rules or the full lease termination sequence beyond this
+signer match; those are documented separately
+([Subnet Lease](https://docs.learnbittensor.org/subnets/crowdloans)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#expectedbeneficiaryorigin)
+- [Subtensor Standard Errors: LeaseDoesNotExist](https://docs.learnbittensor.org/errors/subtensor#leasedoesnotexist)
+- [Subtensor Standard Errors: InvalidLeaseBeneficiary](https://docs.learnbittensor.org/errors/subtensor#invalidleasebeneficiary)
+- [Subnet Lease](https://docs.learnbittensor.org/subnets/crowdloans)
+- [Subtensor source: leasing.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/leasing.rs)
