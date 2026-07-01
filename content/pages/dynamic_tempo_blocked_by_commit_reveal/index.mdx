@@ -1,0 +1,105 @@
+---
+title: "Dynamic Tempo Blocked By Commit Reveal"
+summary:
+  "How the DynamicTempoBlockedByCommitReveal error blocks a manual epoch trigger on a subnet that
+  has commit-reveal weight submission enabled."
+category: "Consensus"
+tags: ["Consensus", "Errors"]
+infoboxTitle: Dynamic Tempo Blocked By Commit Reveal
+infoboxCaption: Error raised when commit-reveal blocks a manual epoch trigger.
+infoboxRows:
+  - label: Error
+    value: DynamicTempoBlockedByCommitReveal
+  - label: Trigger
+    value: Manual epoch trigger on a commit-reveal-enabled subnet
+  - label: Related hyperparameter
+    value: CommitRevealWeightsEnabled
+  - label: Example netuid
+    value: netuid 1
+---
+
+# Dynamic Tempo Blocked By Commit Reveal
+
+`DynamicTempoBlockedByCommitReveal` means a subnet owner tried to arm a manual epoch trigger on
+netuid 1 or another named subnet that has commit-reveal weight submission enabled. The Subtensor API
+errors reference summarizes it as blocking the manual trigger because commit-reveal is enabled and
+an out-of-schedule epoch would desync the reveal window from the subnet's commit-reveal cadence
+([Subtensor API Errors: DynamicTempoBlockedByCommitReveal](https://docs.learnbittensor.org/subtensor-api/errors#dynamictempoblockedbycommitreveal)).
+
+## What It Means
+
+Commit-reveal weight submission lets validators conceal weights until a later reveal step
+([Commit-Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)). The
+`CommitRevealWeightsEnabled` hyperparameter turns that path on per netuid
+([Subnet Hyperparameters: CommitRevealWeightsEnabled](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#commitrevealweightsenabled)).
+
+`DynamicTempoBlockedByCommitReveal` is a compatibility gate on manual epoch triggers. It means the
+subnet already requires commit-reveal weights, so arming a manual epoch outside the automatic tempo
+schedule is rejected
+([Subtensor API Errors: DynamicTempoBlockedByCommitReveal](https://docs.learnbittensor.org/subtensor-api/errors#dynamictempoblockedbycommitreveal)).
+
+This is a commit-reveal scheduling rejection, not a value-range failure on tempo and not an
+authorization failure when the signer otherwise has subnet-owner permission.
+
+## Why It Appears
+
+This error appears when a subnet owner submits a manual epoch trigger on a netuid where
+`CommitRevealWeightsEnabled` is active. That can happen when operators expect the same manual epoch
+controls available on subnets that still accept plain weight submission
+([Subnet Hyperparameters: CommitRevealWeightsEnabled](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#commitrevealweightsenabled),
+[Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase)).
+
+On netuid 1, readers can confirm whether commit-reveal is enabled through the subnet hyperparameter
+reference and live subnet queries described in the hyperparameters guide before attempting a manual
+epoch trigger
+([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
+
+When debugging, rule out authorization and other epoch scheduling failures first. `BadOrigin` and
+`NotSubnetOwner` mean the signer lacks subnet-owner permission. `EpochTriggerAlreadyPending` and
+`AutoEpochAlreadyImminent` are separate manual-trigger scheduling rejections on subnets that allow
+the call
+([Subtensor Standard Errors: BadOrigin](https://docs.learnbittensor.org/errors/subtensor#badorigin),
+[Subtensor Standard Errors: NotSubnetOwner](https://docs.learnbittensor.org/errors/subtensor#notsubnetowner),
+[Subtensor API Errors: EpochTriggerAlreadyPending](https://docs.learnbittensor.org/subtensor-api/errors#epochtriggeralreadypending),
+[Subtensor API Errors: AutoEpochAlreadyImminent](https://docs.learnbittensor.org/subtensor-api/errors#autoepochalreadyimminent)).
+
+The practical meaning is narrow: commit-reveal is enabled on the netuid, so a manual epoch trigger
+is not allowed.
+
+## Distinction from Commit Reveal Enabled
+
+`DynamicTempoBlockedByCommitReveal` and `CommitRevealEnabled` both involve commit-reveal being
+active on a netuid, but on different calls. `DynamicTempoBlockedByCommitReveal` blocks a manual
+epoch trigger because commit-reveal is enabled. `CommitRevealEnabled` blocks a plain batch weight
+entry because that netuid requires the concealed commit-reveal weight path instead
+([Subtensor Standard Errors: CommitRevealEnabled](https://docs.learnbittensor.org/errors/subtensor#commitrevealenabled)).
+
+- **DynamicTempoBlockedByCommitReveal** — commit-reveal blocks a manual epoch trigger.
+- **CommitRevealEnabled** — plain weight submission is not allowed on the netuid.
+
+## Distinction from Epoch Trigger Already Pending
+
+`DynamicTempoBlockedByCommitReveal` and `EpochTriggerAlreadyPending` both appear on manual epoch
+trigger paths, but they reject different problems. `DynamicTempoBlockedByCommitReveal` means
+commit-reveal is enabled on the subnet, so manual triggers are disallowed.
+`EpochTriggerAlreadyPending` means a manual trigger is already armed and a second one cannot be
+stacked
+([Subtensor API Errors: EpochTriggerAlreadyPending](https://docs.learnbittensor.org/subtensor-api/errors#epochtriggeralreadypending)).
+
+- **DynamicTempoBlockedByCommitReveal** — commit-reveal is enabled on the netuid.
+- **EpochTriggerAlreadyPending** — a manual trigger is already pending for the subnet.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the commit-reveal gate it represents. It does
+not report whether commit-reveal is currently enabled on a particular netuid; that setting is subnet
+chain state readers can query for the selected netuid
+([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: DynamicTempoBlockedByCommitReveal](https://docs.learnbittensor.org/subtensor-api/errors#dynamictempoblockedbycommitreveal)
+- [Commit-Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)
+- [Subnet Hyperparameters: CommitRevealWeightsEnabled](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#commitrevealweightsenabled)
+- [Subtensor Standard Errors: CommitRevealEnabled](https://docs.learnbittensor.org/errors/subtensor#commitrevealenabled)
