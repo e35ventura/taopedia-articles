@@ -1,0 +1,98 @@
+---
+title: "Too Many Pending Extrinsics"
+summary:
+  "How the TooManyPendingExtrinsics error blocks an encrypted extrinsic submission when the MEV
+  Shield queue has reached its configured capacity."
+category: "Safety"
+tags: ["Safety", "Errors"]
+infoboxTitle: Too Many Pending Extrinsics
+infoboxCaption: Error raised when the MEV Shield pending-extrinsics queue is at capacity.
+infoboxRows:
+  - label: Error
+    value: TooManyPendingExtrinsics
+  - label: Trigger
+    value: Pending queue count is at its configured maximum
+  - label: Checked in
+    value: storeEncrypted
+  - label: Check type
+    value: Queue count against MaxPendingExtrinsicsLimit
+  - label: Default limit
+    value: 100 pending extrinsics
+---
+
+# Too Many Pending Extrinsics
+
+`TooManyPendingExtrinsics` is a MEV Shield pallet error raised when an encrypted extrinsic
+submission would exceed the queue's configured capacity. The API errors reference describes it as
+"Too many pending extrinsics in storage"
+([Subtensor API Errors: TooManyPendingExtrinsics](https://docs.learnbittensor.org/subtensor-api/errors#toomanypendingextrinsics)).
+
+## What It Means
+
+The [MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield) pallet stores encrypted
+extrinsics in a pending queue until a block producer executes them during `on_initialize`. The
+storage documentation records a configurable maximum for this queue, `MaxPendingExtrinsicsLimit`,
+which defaults to 100 when not explicitly set
+([Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage)).
+
+`TooManyPendingExtrinsics` fires when a call to `storeEncrypted` would push
+`counterForPendingExtrinsics` past that limit
+([Subtensor API Errors: TooManyPendingExtrinsics](https://docs.learnbittensor.org/subtensor-api/errors#toomanypendingextrinsics),
+[Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage)).
+
+This is a queue-capacity rejection, not proof that the encrypted extrinsic is malformed, that the
+ML-KEM encapsulation key has an invalid length, or that the extrinsic weight exceeds block limits.
+
+## Why It Appears
+
+This error appears when the MEV Shield queue already holds the maximum number of pending encrypted
+extrinsics and a new submission arrives before existing entries execute or expire. The storage
+documentation gives the pending queue a default capacity of 100 entries and gives pending extrinsics
+a default lifetime of 10 blocks before they expire
+([Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage),
+[MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield)).
+
+The practical meaning is narrow: new submissions are rejected until the queue count falls below the
+configured maximum.
+
+## Distinction from Weight Exceeds Absolute Max
+
+`TooManyPendingExtrinsics` and `WeightExceedsAbsoluteMax` both block MEV Shield extrinsic storage,
+but they check different constraints. `WeightExceedsAbsoluteMax` fires when the extrinsic weight
+exceeds the absolute maximum, documented as half of the total block weight.
+`TooManyPendingExtrinsics` fires when the queue entry count is at its configured limit, regardless
+of individual extrinsic weight
+([Subtensor API Errors: WeightExceedsAbsoluteMax](https://docs.learnbittensor.org/subtensor-api/errors#weightexceedsabsolutemax),
+[Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage)).
+
+- **TooManyPendingExtrinsics** — queue entry count is at its configured maximum.
+- **WeightExceedsAbsoluteMax** — extrinsic weight exceeds half of total block weight.
+
+## Distinction from Bad Enc Key Len
+
+`TooManyPendingExtrinsics` and `BadEncKeyLen` both block MEV Shield operations, but on different
+extrinsics. `BadEncKeyLen` fires on `announceNextKey` when the announced ML-KEM encapsulation key
+has an invalid length. `TooManyPendingExtrinsics` fires on `storeEncrypted` when the queue entry
+count is at its configured limit
+([Subtensor API Errors: BadEncKeyLen](https://docs.learnbittensor.org/subtensor-api/errors#badenckeylen),
+[Subtensor API Errors: TooManyPendingExtrinsics](https://docs.learnbittensor.org/subtensor-api/errors#toomanypendingextrinsics)).
+
+- **TooManyPendingExtrinsics** — queue is at capacity for new `storeEncrypted` entries.
+- **BadEncKeyLen** — announced ML-KEM encapsulation key has an invalid length.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the queue-capacity check that raises it. It
+does not report the current count of pending extrinsics in the queue on any network; that is live
+chain state readable from `counterForPendingExtrinsics`
+([Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: TooManyPendingExtrinsics](https://docs.learnbittensor.org/subtensor-api/errors#toomanypendingextrinsics)
+- [MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield)
+- [Using MEV Shield with the Bittensor SDK](https://docs.learnbittensor.org/sdk/mev-protection)
+- [Subtensor Storage](https://docs.learnbittensor.org/subtensor-api/storage)
+- [Subtensor API Errors: WeightExceedsAbsoluteMax](https://docs.learnbittensor.org/subtensor-api/errors#weightexceedsabsolutemax)
+- [Subtensor API Errors: BadEncKeyLen](https://docs.learnbittensor.org/subtensor-api/errors#badenckeylen)
