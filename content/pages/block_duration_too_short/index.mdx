@@ -1,0 +1,96 @@
+---
+title: "Block Duration Too Short"
+summary:
+  "How the BlockDurationTooShort error blocks creating or updating a crowdloan when the interval
+  between now and the supplied end block is below the minimum allowed crowdloan duration."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Block Duration Too Short
+infoboxCaption: Error raised when a crowdloan's duration falls below the minimum block limit.
+infoboxRows:
+  - label: Error
+    value: BlockDurationTooShort
+  - label: Trigger
+    value: end block − current block < MinimumBlockDuration
+  - label: Checked in
+    value: create and update_end extrinsics, via ensure_valid_end
+  - label: Check type
+    value: Duration comparison against a fixed minimum constant
+---
+
+# Block Duration Too Short
+
+`BlockDurationTooShort` is a crowdloan pallet error raised when a supplied end block defines a
+campaign that is too brief. The pallet defines it as "The crowdloan block duration is too short"
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+## What It Means
+
+Both the `create` extrinsic and the `update_end` extrinsic route the supplied end block through the
+shared `ensure_valid_end` helper. After confirming the end block is in the future, the helper
+computes the duration from the current block to the end block and compares it against
+`MinimumBlockDuration`, a fixed runtime constant. `BlockDurationTooShort` fires when that duration
+falls below the minimum
+([Crowdloans: Runtime parameters (defaults)](https://docs.learnbittensor.org/subnets/crowdloans#runtime-parameters-defaults),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+The minimum is a runtime constant, not per-crowdloan state, so the same floor applies to every
+crowdloan regardless of how it was configured
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+This is a minimum-duration rejection on the end-block parameter, not proof that the end block is in
+the past or that the duration exceeds the maximum allowed length.
+
+## Why It Appears
+
+This is the second check `ensure_valid_end` runs, after confirming the end block is strictly after
+the current block and before the maximum-duration check. A crowdloan whose end block is in the
+future but too soon fails here
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+When debugging, compare against other rejections from the same helper. `CannotEndInPast` means the
+supplied end block is at or before the current block. `BlockDurationTooLong` means the duration
+exceeds `MaximumBlockDuration`
+([Cannot End In Past](https://docs.learnbittensor.org/errors/subtensor#cannotendinpast),
+[Block Duration Too Long](https://docs.learnbittensor.org/errors/subtensor#blockdurationtoolong),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+The practical meaning is narrow: extend the end block far enough into the future to meet the runtime
+minimum duration before retrying `create` or `update_end`.
+
+## Distinction from Cannot End In Past
+
+`BlockDurationTooShort` and `CannotEndInPast` are both raised by `ensure_valid_end`, but at
+different checks. `CannotEndInPast` means the end block is at or before the current block.
+`BlockDurationTooShort` means the end block is in the future, but the duration between now and then
+is below the minimum required crowdloan length
+([Cannot End In Past](https://docs.learnbittensor.org/errors/subtensor#cannotendinpast),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+- **CannotEndInPast** — the end block is at or before the current block.
+- **BlockDurationTooShort** — the end block is in the future, but the crowdloan would be too short.
+
+## Distinction from Block Duration Too Long
+
+`BlockDurationTooShort` and `BlockDurationTooLong` are both raised by `ensure_valid_end` against the
+same computed duration. `BlockDurationTooShort` fires when the duration falls below the minimum
+constant. `BlockDurationTooLong` fires when it exceeds the maximum constant
+([Block Duration Too Long](https://docs.learnbittensor.org/errors/subtensor#blockdurationtoolong),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+- **BlockDurationTooShort** — duration is below the minimum allowed crowdloan length.
+- **BlockDurationTooLong** — duration exceeds the maximum allowed crowdloan length.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the minimum-duration check that raises it. It
+does not report the live `MinimumBlockDuration` value on any network; that is runtime configuration
+readers can query separately ([Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Crowdloans: Runtime parameters (defaults)](https://docs.learnbittensor.org/subnets/crowdloans#runtime-parameters-defaults)
+- [Cannot End In Past](https://docs.learnbittensor.org/errors/subtensor#cannotendinpast)
+- [Block Duration Too Long](https://docs.learnbittensor.org/errors/subtensor#blockdurationtoolong)
+- [Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)
