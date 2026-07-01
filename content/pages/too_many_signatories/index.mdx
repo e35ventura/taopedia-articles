@@ -1,0 +1,75 @@
+---
+title: "Too Many Signatories"
+summary:
+  "How the TooManySignatories error blocks a multisig call when the other_signatories list exceeds
+  the network's configured maximum, preventing the on-chain record from being stored within its
+  bounded size."
+category: "Wallets"
+tags: ["Wallets", "Errors", "Security"]
+infoboxTitle: Too Many Signatories
+infoboxCaption:
+  Error raised when the other_signatories list in a multisig call exceeds the network maximum.
+infoboxRows:
+  - label: Error
+    value: TooManySignatories
+  - label: Pallet
+    value: multisig
+  - label: Trigger
+    value: other_signatories count equals or exceeds the network's MaxSignatories limit
+  - label: Check type
+    value: Upper-bound check on the co-signer list length
+---
+
+# Too Many Signatories
+
+`TooManySignatories` is a multisig pallet error raised when a multisig call is submitted with more
+co-signers than the network's configured maximum. The API errors reference describes it as "There
+are too many signatories in the list"
+([Subtensor API Errors: TooManySignatories](https://docs.learnbittensor.org/subtensor-api/errors#toomanysignatories)).
+
+## What It Means
+
+Every multisig call passes an `other_signatories` list that identifies the other accounts in the
+multisig arrangement. The network enforces an upper limit on how many entries this list may contain,
+controlled by the `MaxSignatories` configuration parameter. If `other_signatories` contains as many
+or more entries than that limit, the call is rejected before the multisig record is created or
+updated ([Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)).
+
+`TooManySignatories` fires in `as_multi`, `approve_as_multi`, and `cancel_as_multi` whenever the
+length of `other_signatories` meets or exceeds `MaxSignatories`. Note that the check is strictly
+less-than: a list with exactly `MaxSignatories` entries also triggers this error, because the total
+signer count including the caller would exceed the limit
+([Subtensor API Errors: TooManySignatories](https://docs.learnbittensor.org/subtensor-api/errors#toomanysignatories),
+[Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)).
+
+## Why It Appears
+
+This error appears when the `other_signatories` parameter contains too many entries for the
+network's bounded multisig storage. The limit prevents unbounded growth of the signatory list, which
+must be stored and hashed on-chain for every multisig operation
+([Subtensor API Errors: TooManySignatories](https://docs.learnbittensor.org/subtensor-api/errors#toomanysignatories)).
+
+## Distinction from Too Few Signatories
+
+`TooManySignatories` and `TooFewSignatories` both block multisig calls based on the size of
+`other_signatories`, but at opposite bounds. `TooFewSignatories` fires when the list is empty.
+`TooManySignatories` fires when the list is too large
+([Subtensor API Errors: TooFewSignatories](https://docs.learnbittensor.org/subtensor-api/errors#toofewsignatories),
+[Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)).
+
+- **TooFewSignatories** — other_signatories is empty; no co-signers provided.
+- **TooManySignatories** — other_signatories meets or exceeds the network maximum.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the upper-bound check on the co-signer list
+that raises it. It does not report the specific `MaxSignatories` value configured on the current
+network; that is a runtime parameter
+([Multisig Wallets](https://docs.learnbittensor.org/keys/multisig),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: TooManySignatories](https://docs.learnbittensor.org/subtensor-api/errors#toomanysignatories)
+- [Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)
+- [Subtensor API Errors: TooFewSignatories](https://docs.learnbittensor.org/subtensor-api/errors#toofewsignatories)
