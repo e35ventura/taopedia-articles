@@ -1,0 +1,95 @@
+---
+title: "Not Subnet Owner"
+summary:
+  "How the NotSubnetOwner error blocks set_subnet_identity when the signing coldkey does not match
+  the recorded owner for the submitted netuid."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Not Subnet Owner
+infoboxCaption:
+  Error raised when an owner-scoped subnet metadata call is signed by the wrong coldkey.
+infoboxRows:
+  - label: Error
+    value: NotSubnetOwner
+  - label: Trigger
+    value: Signing coldkey does not match the recorded subnet owner for netuid
+  - label: Checked in
+    value: set_subnet_identity ownership guard
+  - label: Example netuid
+    value: netuid 1
+  - label: Check type
+    value: Subnet-owner authorization
+---
+
+# Not Subnet Owner
+
+`NotSubnetOwner` is a documented Subtensor standard error raised when `set_subnet_identity` is
+signed by a coldkey that does not own the submitted `netuid`. The standard-errors reference
+describes it as "Not a subnet owner"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notsubnetowner)).
+
+## What It Means
+
+Subnet owners can update optional metadata fields for a subnet they control through
+`set_subnet_identity`. Before later field validation runs, the runtime compares the signing coldkey
+to the recorded owner for the submitted `netuid` and returns `NotSubnetOwner` when they do not match
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notsubnetowner),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+This is an authorization rejection on the subnet-owner check. It does not, by itself, mean the
+submitted metadata fields failed byte-limit validation or that the extrinsic origin type was wrong.
+
+## Why It Appears
+
+This error appears when a wallet or integration signs `set_subnet_identity` with a coldkey that is
+not the owner of the targeted `netuid`. That can happen when automation uses a participant coldkey
+for an owner-only metadata update, when the wrong wallet file is loaded in tooling, or when a copied
+extrinsic still references a `netuid` the signer does not own
+([Bittensor CLI: Permissions Guide](https://docs.learnbittensor.org/btcli/btcli-permissions),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notsubnetowner)).
+
+When debugging owner-scoped calls on netuid 1, confirm the signing coldkey is the owner of that
+subnet before reading metadata-format or timing errors. Live ownership for registered subnets can be
+checked through explorers such as [TaoStats](https://taostats.io/subnets/1)
+([Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)).
+
+When comparing rejections on the same extrinsic path, `InvalidIdentity` is returned later when
+submitted metadata fields fail byte-limit validation
+([Invalid Identity](https://docs.learnbittensor.org/errors/subtensor#invalididentity)).
+
+## Distinction from Invalid Identity
+
+`NotSubnetOwner` and `InvalidIdentity` both appear on `set_subnet_identity`, but at different
+checks. `NotSubnetOwner` means the signing coldkey is not the recorded owner of the submitted
+`netuid`. `InvalidIdentity` means the metadata fields failed byte-limit validation after the owner
+check passed ([Invalid Identity](https://docs.learnbittensor.org/errors/subtensor#invalididentity)).
+
+- **NotSubnetOwner** — the signer is not the owner of the targeted subnet.
+- **InvalidIdentity** — the submitted metadata fields fail byte-limit validation.
+
+## Distinction from Bad Origin
+
+`NotSubnetOwner` and `BadOrigin` both involve authorization on privileged subnet paths, but at
+different layers. `BadOrigin` is the broad origin rejection when the signer does not meet the
+required permission filter. `NotSubnetOwner` is the narrower error returned when an owner-scoped
+metadata call reaches the subnet-owner check and the signer is not the owner of the named subnet
+([Subtensor Standard Errors: BadOrigin](https://docs.learnbittensor.org/errors/subtensor#badorigin),
+[Subtensor Standard Errors: NotSubnetOwner](https://docs.learnbittensor.org/errors/subtensor#notsubnetowner)).
+
+- **BadOrigin** — the signing account lacks the required privileged permission.
+- **NotSubnetOwner** — the signer is not the owner of the targeted subnet.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the subnet-owner authorization check on
+`set_subnet_identity`. It does not list every metadata field's byte ceiling or report live owner
+addresses for netuid 1 or any other subnet; those depend on chain state at observation time
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#notsubnetowner),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor Standard Errors: NotSubnetOwner](https://docs.learnbittensor.org/errors/subtensor#notsubnetowner)
+- [Invalid Identity](https://docs.learnbittensor.org/errors/subtensor#invalididentity)
+- [Subtensor Standard Errors: BadOrigin](https://docs.learnbittensor.org/errors/subtensor#badorigin)
+- [Bittensor CLI: Permissions Guide](https://docs.learnbittensor.org/btcli/btcli-permissions)
