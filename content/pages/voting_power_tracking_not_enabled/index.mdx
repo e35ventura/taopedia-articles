@@ -1,0 +1,96 @@
+---
+title: "Voting Power Tracking Not Enabled"
+summary:
+  "How the VotingPowerTrackingNotEnabled error blocks disable_voting_power_tracking when the
+  targeted subnet does not currently have voting power tracking enabled."
+category: "Validation"
+tags: ["Validation", "Errors"]
+infoboxTitle: Voting Power Tracking Not Enabled
+infoboxCaption: Error raised when a disable request arrives before voting power tracking is enabled.
+infoboxRows:
+  - label: Error
+    value: VotingPowerTrackingNotEnabled
+  - label: Trigger
+    value: disable_voting_power_tracking is called while tracking is off
+  - label: Checked in
+    value: do_disable_voting_power_tracking
+  - label: Related concept
+    value: Voting power tracking
+---
+
+# Voting Power Tracking Not Enabled
+
+`VotingPowerTrackingNotEnabled` is a documented Subtensor error on the voting-power tracking path.
+The Subtensor API errors reference lists it directly under `subtensorModule`
+([Subtensor API Errors](https://docs.learnbittensor.org/subtensor-api/errors#votingpowertrackingnotenabled)).
+
+## What It Means
+
+Voting power tracking is the subnet feature that records voting-power state and updates its EMA over
+epochs when tracking is turned on
+([Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs),
+[Subtensor source: voting_power.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/voting_power.rs)).
+
+`VotingPowerTrackingNotEnabled` is the guard that rejects a disable request when that feature is not
+currently enabled for the targeted subnet. In `do_disable_voting_power_tracking`, the runtime first
+checks `get_voting_power_tracking_enabled(netuid)`, and returns this error if the flag is false
+([Subtensor source: voting_power.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/voting_power.rs)).
+
+The practical meaning is narrow: the caller tried to disable voting power tracking before that
+subnet had voting power tracking turned on.
+
+## Why It Appears
+
+This error appears when `disable_voting_power_tracking` is submitted for a subnet where tracking has
+not yet been enabled, or where a previous disable has already completed and cleared the enabled
+state
+([Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs),
+[Subtensor source: voting_power.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/voting_power.rs)).
+
+The tests show the boundary directly. Calling `disable_voting_power_tracking` before enabling the
+feature fails with `VotingPowerTrackingNotEnabled`. By contrast, once tracking is enabled, a disable
+call succeeds and schedules shutdown instead of failing on this error
+([Subtensor test: voting_power.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/tests/voting_power.rs)).
+
+This is not a voting-power alpha bound error and not a generic bad-origin rejection. It is the
+specific rejection for trying to disable a feature that is already off.
+
+## Distinction from Invalid Voting Power EMA Alpha
+
+`VotingPowerTrackingNotEnabled` and `InvalidVotingPowerEmaAlpha` both belong to voting-power
+configuration, but they reject different conditions. `InvalidVotingPowerEmaAlpha` is the bound check
+for the submitted EMA smoothing value. `VotingPowerTrackingNotEnabled` is the separate state check
+that a disable request cannot proceed while tracking is already off
+([Subtensor API Errors: InvalidVotingPowerEmaAlpha](https://docs.learnbittensor.org/subtensor-api/errors#invalidvotingpoweremaalpha),
+[Subtensor source: voting_power.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/voting_power.rs)).
+
+- **VotingPowerTrackingNotEnabled** — the feature is already off on the targeted subnet.
+- **InvalidVotingPowerEmaAlpha** — the submitted EMA alpha value is outside the allowed range.
+
+## Distinction from Subnet Not Exists
+
+`VotingPowerTrackingNotEnabled` and `SubnetNotExists` are different checks on subnet-scoped control
+paths. `SubnetNotExists` means the submitted netuid has no subnet record.
+`VotingPowerTrackingNotEnabled` means the subnet exists, but voting power tracking is not enabled
+there at the time of the disable request
+([Subnet Not Exists](https://docs.learnbittensor.org/errors/subtensor#subnetnotexists),
+[Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs),
+[Subtensor source: voting_power.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/voting_power.rs)).
+
+- **SubnetNotExists** — the targeted subnet is absent.
+- **VotingPowerTrackingNotEnabled** — the subnet exists, but tracking is already off.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the enabled-state check that raises it. It does
+not tell a reader whether voting power tracking should be enabled for any live subnet or when a
+scheduled disable will complete in a particular network context; those depend on current chain state
+([Subtensor source: voting_power.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/voting_power.rs)).
+
+## Further Reading
+
+- [Subtensor API Errors](https://docs.learnbittensor.org/subtensor-api/errors#votingpowertrackingnotenabled)
+- [Subtensor API Errors: InvalidVotingPowerEmaAlpha](https://docs.learnbittensor.org/subtensor-api/errors#invalidvotingpoweremaalpha)
+- [Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)
+- [Subtensor source: voting_power.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/voting_power.rs)
+- [Subtensor test: voting_power.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/tests/voting_power.rs)
