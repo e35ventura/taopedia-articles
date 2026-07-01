@@ -1,0 +1,88 @@
+---
+title: "Too Few Signatories"
+summary:
+  "How the TooFewSignatories error blocks a multisig call when the other_signatories list does not
+  contain enough entries to reach the approval threshold."
+category: "Wallets"
+tags: ["Wallets", "Errors", "Security"]
+infoboxTitle: Too Few Signatories
+infoboxCaption: Error raised when the multisig other_signatories list has too few entries.
+infoboxRows:
+  - label: Error
+    value: TooFewSignatories
+  - label: Pallet
+    value: multisig
+  - label: Trigger
+    value: other_signatories list has fewer entries than required
+  - label: Check type
+    value: Signatory count against the approval threshold
+---
+
+# Too Few Signatories
+
+`TooFewSignatories` is a multisig pallet error raised when the `other_signatories` list supplied to
+a multisig call does not contain enough entries. The API errors reference describes it as "There are
+too few signatories in the list"
+([Subtensor API Errors: TooFewSignatories](https://docs.learnbittensor.org/subtensor-api/errors#toofewsignatories)).
+
+## What It Means
+
+Bittensor multisig wallets are structured as M of N, where M is the threshold of approvals required
+and N is the total number of signatories. The `other_signatories` list identifies the co-signing
+accounts other than the sender; together with the sender, they make up the full N signatory set
+([Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)).
+
+`TooFewSignatories` fires when the `other_signatories` list has fewer entries than the multisig
+pallet requires to form a valid signatory set for the given threshold
+([Subtensor API Errors: TooFewSignatories](https://docs.learnbittensor.org/subtensor-api/errors#toofewsignatories),
+[Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)).
+
+This is a signatory-count rejection, not proof that the accounts in the list are wrong, that the
+list is out of order, or that the threshold value is below the minimum.
+
+## Why It Appears
+
+This error appears when the `other_signatories` list is too short for the multisig operation.
+Because every co-signer other than the sender must be named in `other_signatories`, omitting entries
+from this list leaves the signatory set incomplete
+([Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)).
+
+The practical meaning is narrow: include all co-signing accounts in `other_signatories` before
+submitting.
+
+## Distinction from Too Many Signatories
+
+`TooFewSignatories` and `TooManySignatories` both block multisig calls on the signatory count, but
+at opposite bounds. `TooManySignatories` fires when the `other_signatories` list exceeds the maximum
+allowed. `TooFewSignatories` fires when the list falls below the required minimum
+([Subtensor API Errors: TooManySignatories](https://docs.learnbittensor.org/subtensor-api/errors#toomanysignatories),
+[Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)).
+
+- **TooFewSignatories** — other_signatories list has too few entries.
+- **TooManySignatories** — other_signatories list exceeds the maximum.
+
+## Distinction from Minimum Threshold
+
+`TooFewSignatories` and `MinimumThreshold` both block multisig calls on structural parameters, but
+they check different values. `MinimumThreshold` fires when the threshold value M is below 2.
+`TooFewSignatories` fires when the signatory list N has too few entries, regardless of the threshold
+value
+([Subtensor API Errors: MinimumThreshold](https://docs.learnbittensor.org/subtensor-api/errors#minimumthreshold),
+[Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)).
+
+- **TooFewSignatories** — the other_signatories list N has too few entries.
+- **MinimumThreshold** — the threshold value M is less than 2.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the signatory-count check that raises it. It
+does not report the current signatory count or threshold for any multisig on chain; those are live
+chain state ([Multisig Wallets](https://docs.learnbittensor.org/keys/multisig),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: TooFewSignatories](https://docs.learnbittensor.org/subtensor-api/errors#toofewsignatories)
+- [Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)
+- [Subtensor API Errors: TooManySignatories](https://docs.learnbittensor.org/subtensor-api/errors#toomanysignatories)
+- [Subtensor API Errors: MinimumThreshold](https://docs.learnbittensor.org/subtensor-api/errors#minimumthreshold)
