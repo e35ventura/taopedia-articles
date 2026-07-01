@@ -1,0 +1,63 @@
+---
+title: "Too Many Uids Per Mechanism"
+summary:
+  "How the TooManyUIDsPerMechanism error blocks setting a subnet's max allowed UIDs when the product
+  of that value and the subnet's mechanism count would exceed the network-wide limit."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Too Many Uids Per Mechanism
+infoboxCaption: Error raised when max allowed UIDs times mechanism count exceeds 256.
+infoboxRows:
+  - label: Error
+    value: TooManyUIDsPerMechanism
+  - label: Trigger
+    value: max_allowed_uids × mechanism_count > 256
+  - label: Global limit
+    value: 256 (InitialMaxAllowedUids constant)
+  - label: Checked in
+    value: sudo_set_max_allowed_uids
+---
+
+# Too Many Uids Per Mechanism
+
+`TooManyUIDsPerMechanism` is a documented Subtensor standard error raised by
+`sudo_set_max_allowed_uids`. The Subtensor API error reference describes it as "The maximum allowed
+UIDs times mechanism count should not exceed 256"
+([Subtensor API: Errors](https://docs.learnbittensor.org/subtensor-api/errors)).
+
+## What It Means
+
+`sudo_set_max_allowed_uids` sets how many UIDs a subnet may have registered at once. Before
+accepting a new value, the extrinsic checks whether that proposed value, multiplied by the subnet's
+current registered mechanism count, would exceed the network-wide `InitialMaxAllowedUids` constant
+of 256. `TooManyUIDsPerMechanism` is raised when that product would exceed the ceiling
+([Subtensor source: mechanism.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/mechanism.rs),
+[Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+The ceiling is a fixed network-wide constant, not per-subnet chain state. A subnet with multiple
+registered mechanisms is subject to a proportionally lower per-mechanism UID limit, since the total
+across all mechanisms combined must stay within 256
+([Subtensor source: mechanism.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/mechanism.rs)).
+
+## Why It Appears
+
+A subnet that already has multiple mechanisms registered can reach this limit even with a modest
+per-mechanism UID count, because the check multiplies the proposed value by the current mechanism
+count rather than comparing it directly to 256. A proposed `max_allowed_uids` that would be
+individually below 256 can still fail once scaled by the number of registered mechanisms
+([Subtensor source: mechanism.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/mechanism.rs)).
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the product check that raises it. It does not
+describe how mechanisms are registered, how max allowed UIDs interacts with other subnet
+hyperparameters, or the full validation sequence of `sudo_set_max_allowed_uids`; those are
+documented separately
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## Further Reading
+
+- [Subtensor API: Errors](https://docs.learnbittensor.org/subtensor-api/errors)
+- [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+- [Subtensor source: mechanism.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/mechanism.rs)
+- [Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)
