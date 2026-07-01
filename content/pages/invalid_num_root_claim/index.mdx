@@ -1,0 +1,96 @@
+---
+title: "Invalid Num Root Claim"
+summary:
+  "How the InvalidNumRootClaim error blocks sudo_set_num_root_claims when the submitted root-claim
+  count exceeds the chain's maximum allowed value."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Invalid Num Root Claim
+infoboxCaption: Error raised when a root-claim count exceeds the chain maximum.
+infoboxRows:
+  - label: Error
+    value: InvalidNumRootClaim
+  - label: Trigger
+    value: Submitted NumRootClaim value above the chain maximum
+  - label: Checked in
+    value: sudo_set_num_root_claims
+  - label: Related concept
+    value: Root claims
+---
+
+# Invalid Num Root Claim
+
+`InvalidNumRootClaim` means a root-origin call tried to set the global root-claim count parameter to
+a value above the chain maximum. The Subtensor API errors reference summarizes it as "Invalid number
+of root claims"
+([Subtensor API Errors: InvalidNumRootClaim](https://docs.learnbittensor.org/subtensor-api/errors#invalidnumrootclaim),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#invalidnumrootclaim)).
+
+## What It Means
+
+[Root claims](https://docs.learnbittensor.org/staking-and-delegation/root-claims) handle alpha
+dividends earned through Root Subnet staking. The chain stores a global `NumRootClaim` parameter
+that governs automatic root-claim behavior, and root origin can update it through
+`sudo_set_num_root_claims`
+([Root Claims](https://docs.learnbittensor.org/staking-and-delegation/root-claims),
+[Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)).
+
+`InvalidNumRootClaim` means the submitted count was greater than the maximum the runtime accepts.
+The check is a range rejection on the proposed parameter value, not proof that a particular coldkey
+lacks claimable dividends or that a manual `claim_root` call listed too many subnets.
+
+## Why It Appears
+
+This error appears when root origin submits `sudo_set_num_root_claims` with a count above the chain
+maximum. That can happen when governance tooling carries a stale upper bound, when a script
+increments the parameter without reading the live cap, or when a configuration value is copied from
+another network
+([Subtensor API Errors: InvalidNumRootClaim](https://docs.learnbittensor.org/subtensor-api/errors#invalidnumrootclaim),
+[Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)).
+
+When debugging, compare against other root-claim configuration rejections.
+`InvalidRootClaimThreshold` means a subnet-scoped root-claim threshold update exceeded its allowed
+range on a named netuid. Manual `claim_root` calls that list more subnets than permitted per call
+are governed separately in the root-claims documentation
+([Subtensor API Errors: InvalidRootClaimThreshold](https://docs.learnbittensor.org/subtensor-api/errors#invalidrootclaimthreshold),
+[Root Claims](https://docs.learnbittensor.org/staking-and-delegation/root-claims)).
+
+The practical meaning is narrow: submit a count at or below the chain maximum, or query the live
+parameter before retrying.
+
+## Distinction from Invalid Root Claim Threshold
+
+`InvalidNumRootClaim` and `InvalidRootClaimThreshold` both reject out-of-range root-claim
+configuration values, but on different parameters. `InvalidNumRootClaim` blocks a global
+`NumRootClaim` update from root origin. `InvalidRootClaimThreshold` blocks a per-netuid threshold
+update that exceeds its allowed range
+([Subtensor API Errors: InvalidRootClaimThreshold](https://docs.learnbittensor.org/subtensor-api/errors#invalidrootclaimthreshold)).
+
+- **InvalidNumRootClaim** — the global root-claim count exceeds the chain maximum.
+- **InvalidRootClaimThreshold** — a subnet root-claim threshold exceeds its allowed range.
+
+## Distinction from Invalid Value
+
+`InvalidNumRootClaim` and `InvalidValue` both signal parameter values outside allowed bounds, but
+`InvalidNumRootClaim` is the specific label on the global root-claim count path. `InvalidValue` is
+the broader default used when many unrelated hyperparameter updates fall outside their permitted
+ranges
+([Subtensor Standard Errors: InvalidValue](https://docs.learnbittensor.org/errors/subtensor#invalidvalue)).
+
+- **InvalidNumRootClaim** — the proposed `NumRootClaim` count is too high.
+- **InvalidValue** — a generic out-of-range parameter on another path.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the global root-claim count ceiling it
+represents. It does not report the live `NumRootClaim` value or the current maximum on any network;
+those are chain parameters readers can query separately
+([Root Claims](https://docs.learnbittensor.org/staking-and-delegation/root-claims),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: InvalidNumRootClaim](https://docs.learnbittensor.org/subtensor-api/errors#invalidnumrootclaim)
+- [Root Claims](https://docs.learnbittensor.org/staking-and-delegation/root-claims)
+- [Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)
+- [Subtensor API Errors: InvalidRootClaimThreshold](https://docs.learnbittensor.org/subtensor-api/errors#invalidrootclaimthreshold)
