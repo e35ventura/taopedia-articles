@@ -1,0 +1,78 @@
+---
+title: "Not Found"
+summary:
+  "How the NotFound error blocks proxy-removal and announcement-removal paths when the targeted
+  proxy registration or announcement record does not exist."
+category: "Wallets"
+tags: ["Wallets", "Errors"]
+infoboxTitle: Not Found
+infoboxCaption: Error raised when a targeted proxy or announcement record is missing.
+infoboxRows:
+  - label: Error
+    value: NotFound
+  - label: Trigger
+    value: targeted proxy registration or announcement record is absent
+  - label: Checked in
+    value: proxy removal and announcement editing paths
+  - label: Check type
+    value: Storage-lookup existence check
+---
+
+# Not Found
+
+`NotFound` is a documented proxy-pallet error. The Subtensor API errors reference summarizes it as
+"Proxy registration not found"
+([Subtensor API Errors: NotFound](https://docs.learnbittensor.org/subtensor-api/errors#notfound)).
+
+## What It Means
+
+In the proxy pallet, several update and removal paths first look up an existing stored proxy
+definition or pending announcement set. `NotFound` is the rejection when that expected record is
+missing, so the runtime has nothing to remove or edit
+([Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs)).
+
+This is a missing-target-record failure. The call reached a mutation path, but the specific proxy
+registration or announcement entry it expected to find was not present in storage
+([Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs)).
+
+## Why It Appears
+
+The current proxy code raises `NotFound` in more than one narrow path. Removing a proxy fails with
+`NotFound` if the delegator has no matching stored proxy definition. Announcement-editing helpers
+also fail with `NotFound` when no pending announcements exist for that delegate or when none of the
+stored announcements match the targeted real account and call hash
+([Subtensor API Errors: NotFound](https://docs.learnbittensor.org/subtensor-api/errors#notfound),
+[Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs)).
+
+The tests show the same pattern on both announcement paths and proxy-removal paths. Removing a
+nonexistent announcement fails with `NotFound`, rejecting an announcement with no matching record
+fails with `NotFound`, and removing a proxy definition that is not present also fails with the same
+error
+([Subtensor test: proxy/tests.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/tests.rs)).
+
+## Distinction from Not Proxy
+
+`NotFound` and `NotProxy` both involve missing proxy-related state, but they fail on different
+questions. `NotProxy` means the runtime cannot find a proxy relationship for executing a proxied
+call. `NotFound` means a mutation path such as remove or reject expected an existing stored record
+to edit, but that specific record was absent
+([Subtensor API Errors: NotProxy](https://docs.learnbittensor.org/subtensor-api/errors#notproxy),
+[Subtensor API Errors: NotFound](https://docs.learnbittensor.org/subtensor-api/errors#notfound)).
+
+- **NotProxy** — the proxy relationship needed for execution is not found.
+- **NotFound** — the stored proxy or announcement record targeted for removal or editing is not
+  found.
+
+## Reader Boundary
+
+This page defines the meaning of the error label in proxy-pallet mutation paths that expect an
+existing stored record. It does not describe every proxy-type filter or delayed-announcement rule;
+it focuses on the missing-record check behind `NotFound`
+([Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs)).
+
+## Further Reading
+
+- [Subtensor API Errors: NotFound](https://docs.learnbittensor.org/subtensor-api/errors#notfound)
+- [Subtensor API Errors: NotProxy](https://docs.learnbittensor.org/subtensor-api/errors#notproxy)
+- [Subtensor source: proxy/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/lib.rs)
+- [Subtensor test: proxy/tests.rs](https://github.com/opentensor/subtensor/blob/main/pallets/proxy/src/tests.rs)
