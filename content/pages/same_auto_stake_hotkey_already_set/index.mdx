@@ -1,0 +1,104 @@
+---
+title: "Same Auto Stake Hotkey Already Set"
+summary:
+  "How the SameAutoStakeHotkeyAlreadySet error blocks set_coldkey_auto_stake_hotkey when the
+  submitted destination hotkey is already the coldkey's configured autostake target on that subnet."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Same Auto Stake Hotkey Already Set
+infoboxCaption: Error raised when autostake is set again to the already configured hotkey.
+infoboxRows:
+  - label: Error
+    value: SameAutoStakeHotkeyAlreadySet
+  - label: Trigger
+    value: Submitted hotkey matches the current autostake destination on that netuid
+  - label: Checked in
+    value: set_coldkey_auto_stake_hotkey
+  - label: Related concept
+    value: Autostaking
+---
+
+# Same Auto Stake Hotkey Already Set
+
+`SameAutoStakeHotkeyAlreadySet` is a documented Subtensor error on the autostake-destination path.
+The Subtensor API errors reference summarizes it as `Same auto stake hotkey already set`, and the
+chain-extension error table describes it as `Auto-stake hotkey is already configured`
+([Subtensor API Errors](https://docs.learnbittensor.org/subtensor-api/errors#sameautostakehotkeyalreadyset),
+[Subtensor chain-extension error table](https://github.com/opentensor/subtensor/blob/main/docs/wasm-contracts.md)).
+
+## What It Means
+
+Autostaking routes a miner's emissions into stake with a chosen validator destination rather than
+leaving those emissions idle after they are credited
+([Auto Staking for Miners](https://docs.learnbittensor.org/miners/autostaking),
+[Staking and delegation overview](https://docs.learnbittensor.org/staking-and-delegation/delegation)).
+
+`SameAutoStakeHotkeyAlreadySet` is the no-op guard on that configuration path. In
+`set_coldkey_auto_stake_hotkey`, the runtime reads the current autostake destination for the signing
+coldkey and target netuid, then rejects the call if the submitted hotkey is identical to that
+already stored destination
+([Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)).
+
+The practical meaning is narrow: the caller tried to set autostaking to the same destination hotkey
+that was already configured for that subnet.
+
+## Why It Appears
+
+This error appears when a wallet, script, or contract submits `set_coldkey_auto_stake_hotkey` with a
+hotkey that is already the coldkey's autostake destination on the selected netuid. The runtime
+accepts the first configuration, but rejects the repeated same-hotkey submission as redundant
+([Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs),
+[Subtensor test: auto_stake_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/tests/auto_stake_hotkey.rs)).
+
+The unit tests show the boundary directly. A first call that sets the destination succeeds, while a
+second call with the same coldkey, same netuid, and same hotkey fails with
+`SameAutoStakeHotkeyAlreadySet`. A later call that changes the destination to a different hotkey is
+allowed instead of failing on this error
+([Subtensor test: auto_stake_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/tests/auto_stake_hotkey.rs)).
+
+This is not a stake-balance failure and not proof that autostaking itself is disabled. It is the
+specific rejection for resubmitting the already stored destination.
+
+## Distinction from Hotkey Not Registered In Subnet
+
+`SameAutoStakeHotkeyAlreadySet` and `HotKeyNotRegisteredInSubNet` can both appear on
+`set_coldkey_auto_stake_hotkey`, but they reject different stages. `HotKeyNotRegisteredInSubNet`
+means the submitted destination hotkey does not hold a UID on the targeted subnet.
+`SameAutoStakeHotkeyAlreadySet` means that registration check already passed and the submitted
+hotkey is the same as the destination already stored for that coldkey on that subnet
+([Hotkey Not Registered In Subnet](https://docs.learnbittensor.org/errors/subtensor#hotkeynotregisteredinsubnet),
+[Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs),
+[Subtensor test: auto_stake_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/tests/auto_stake_hotkey.rs)).
+
+- **SameAutoStakeHotkeyAlreadySet** — the submitted destination is already stored.
+- **HotKeyNotRegisteredInSubNet** — the submitted hotkey is not registered on that subnet.
+
+## Distinction from Subnet Not Exists
+
+`SameAutoStakeHotkeyAlreadySet` and `SubnetNotExists` are also different gates on the same call.
+`SubnetNotExists` means the submitted `netuid` has no subnet record at all.
+`SameAutoStakeHotkeyAlreadySet` is the later redundancy check after the subnet lookup and hotkey
+registration lookup have already passed
+([Subnet Not Exists](https://docs.learnbittensor.org/errors/subtensor#subnetnotexists),
+[Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs),
+[Subtensor test: auto_stake_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/tests/auto_stake_hotkey.rs)).
+
+- **SubnetNotExists** — the targeted subnet is absent.
+- **SameAutoStakeHotkeyAlreadySet** — the subnet exists, but the autostake destination is already
+  that hotkey.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the duplicate-destination check that raises it.
+It does not tell a reader which validator to choose for autostaking or how miner rewards are earned
+before autostaking routes them; those topics belong to the autostaking and delegation references
+([Auto Staking for Miners](https://docs.learnbittensor.org/miners/autostaking),
+[Staking and delegation overview](https://docs.learnbittensor.org/staking-and-delegation/delegation)).
+
+## Further Reading
+
+- [Subtensor API Errors](https://docs.learnbittensor.org/subtensor-api/errors#sameautostakehotkeyalreadyset)
+- [Auto Staking for Miners](https://docs.learnbittensor.org/miners/autostaking)
+- [Staking and delegation overview](https://docs.learnbittensor.org/staking-and-delegation/delegation)
+- [Subtensor source: dispatches.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)
+- [Subtensor test: auto_stake_hotkey.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/tests/auto_stake_hotkey.rs)
