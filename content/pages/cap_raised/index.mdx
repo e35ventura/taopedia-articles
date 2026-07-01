@@ -1,0 +1,69 @@
+---
+title: "Cap Raised"
+summary:
+  "How the CapRaised error blocks a crowdloan contribution when the crowdloan has already reached
+  its total funding cap."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Cap Raised
+infoboxCaption: Error raised when a crowdloan's funding cap has been fully reached.
+infoboxRows:
+  - label: Error
+    value: CapRaised
+  - label: Trigger
+    value: crowdloan.raised >= crowdloan.cap
+  - label: Checked in
+    value: contribute extrinsic
+  - label: Check type
+    value: Total-raised comparison against the crowdloan's own cap
+---
+
+# Cap Raised
+
+`CapRaised` is a documented Subtensor standard error raised by the `contribute` extrinsic in the
+crowdloan pallet. The Subtensor API error reference describes it as "The crowdloan cap has been
+fully raised" ([Subtensor API: Errors](https://docs.learnbittensor.org/subtensor-api/errors)).
+
+## What It Means
+
+Each [crowdloan](https://docs.learnbittensor.org/subnets/crowdloans) has a funding cap — a total
+amount that can be raised for that specific crowdloan. The `contribute` extrinsic compares the
+crowdloan's current total raised amount against that cap and raises `CapRaised` when the raised
+amount is already at or above the cap, meaning no more funding is needed
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+The cap is set per crowdloan at creation rather than being a network-wide constant, so this check is
+specific to the state of the particular crowdloan being contributed to
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+## Why It Appears
+
+`contribute` checks the cap before processing the contribution. This check runs after confirming the
+contribution period has not ended but before the contributor count limit is checked. A crowdloan
+that has already received contributions totaling its cap will reject any further contribution call
+with this error
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+## Distinction from Contribution Period Ended
+
+`CapRaised` and `ContributionPeriodEnded` both block contributions, but they reflect different
+states. `ContributionPeriodEnded` fires when the current block has passed the crowdloan's deadline,
+regardless of how much has been raised. `CapRaised` fires when the funding target has been reached,
+regardless of when
+([Subtensor Standard Errors: ContributionPeriodEnded](https://docs.learnbittensor.org/subtensor-api/errors),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+- **ContributionPeriodEnded** — the contribution deadline has passed.
+- **CapRaised** — the crowdloan's total funding cap has been reached.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the total-raised comparison that raises it. It
+does not describe how crowdloan caps are set or the rest of the contribution flow; those are
+documented separately ([Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans)).
+
+## Further Reading
+
+- [Subtensor API: Errors](https://docs.learnbittensor.org/subtensor-api/errors)
+- [Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans)
+- [Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)
