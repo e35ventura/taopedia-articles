@@ -13,50 +13,48 @@ infoboxRows:
   - label: Trigger
     value: Pool swap simulation or execution fails
   - label: Checked in
-    value: add_stake and remove_stake paths
+    value: add_stake and remove_stake extrinsics
   - label: Related concept
     value: Subnet pool reserves
 ---
 
 # Insufficient Liquidity
 
-`InsufficientLiquidity` is a documented Subtensor standard error raised on staking paths. The
-standard-errors reference describes it as "Not enough liquidity in the pool"
+`InsufficientLiquidity` means the subnet pool could not simulate or complete the TAO-alpha
+conversion needed for the requested stake action. The standard-errors reference describes it as "Not
+enough liquidity in the pool"
 ([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#insufficientliquidity)).
+
+Staking and unstaking move value through each subnet's TAO and alpha reserves
+([Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets),
+[Staking and Delegation Overview](https://docs.learnbittensor.org/staking-and-delegation/delegation)).
 
 ## What It Means
 
-Staking and unstaking move value through each subnet's TAO and alpha reserves. Before balances
-update, the runtime simulates or executes the pool conversion behind the call.
-`InsufficientLiquidity` means that conversion could not be completed in the pool for the requested
-action, so the extrinsic stops before stake counters change
-([Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets),
-[Understanding Slippage](https://docs.learnbittensor.org/learn/slippage),
-[Subtensor source: stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)).
+Add-stake and remove-stake calls depend on the subnet pool to convert between TAO and alpha.
+`InsufficientLiquidity` means that conversion could not be completed for the requested action, so
+the extrinsic is rejected
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#insufficientliquidity),
+[Understanding Slippage](https://docs.learnbittensor.org/learn/slippage)).
 
-On add-stake paths, this can appear when the simulated TAO-to-alpha swap fails, when the swap would
-return zero alpha, or when the hotkey stake pool cannot accept the credited alpha amount
-([Subtensor source: stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)).
-
-On remove-stake paths, this can appear when the simulated alpha-to-TAO conversion for the unstake
-amount cannot be priced through the pool
-([Subtensor source: stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)).
+For debugging, treat this as a pool-conversion failure, not as proof that the named amount is below
+the minimum stake increment, that free balance cannot fund the call, or that a slippage cap blocked
+execution
+([Subtensor Standard Errors: AmountTooLow](https://docs.learnbittensor.org/errors/subtensor#amounttoolow),
+[Subtensor Standard Errors: NotEnoughBalanceToStake](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake),
+[Subtensor Standard Errors: SlippageTooHigh](https://docs.learnbittensor.org/errors/subtensor#slippagetoohigh)).
 
 ## Why It Appears
 
 This error appears when the subnet pool cannot support the conversion behind a stake or unstake
 call. That can happen when reserves are too thin for the trade size, when pool state prevents the
-swap from simulating cleanly, or when the credited alpha amount cannot be applied to the hotkey
-stake pool ([Understanding Slippage](https://docs.learnbittensor.org/learn/slippage),
+swap from simulating cleanly, or when pricing through the pool fails for the requested amount
+([Understanding Slippage](https://docs.learnbittensor.org/learn/slippage),
 [Managing Your Stakes](https://docs.learnbittensor.org/staking-and-delegation/managing-stake-sdk),
-[Subtensor source: stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)).
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#insufficientliquidity)).
 
-For a reader, the practical meaning is narrow: the pool could not complete the conversion needed for
-this staking action. The problem is not that the named amount is below the minimum stake increment,
-that free balance cannot fund the call, or that a slippage cap blocked execution
-([Amount Too Low](https://docs.learnbittensor.org/errors/subtensor#amounttoolow),
-[Subtensor Standard Errors: NotEnoughBalanceToStake](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake),
-[Subtensor Standard Errors: SlippageTooHigh](https://docs.learnbittensor.org/errors/subtensor#slippagetoohigh)).
+The practical meaning is narrow: the pool could not complete the conversion needed for this staking
+action.
 
 ## Distinction from Amount Too Low
 
@@ -64,20 +62,33 @@ that free balance cannot fund the call, or that a slippage cap blocked execution
 different failures. `InsufficientLiquidity` means the pool could not simulate or complete the swap
 needed for the action. `AmountTooLow` means the named amount is below the chain's minimum stake
 increment or is zero on an unstake path
-([Amount Too Low](https://docs.learnbittensor.org/errors/subtensor#amounttoolow),
-[Subtensor source: stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)).
+([Subtensor Standard Errors: AmountTooLow](https://docs.learnbittensor.org/errors/subtensor#amounttoolow),
+[Subtensor Standard Errors: InsufficientLiquidity](https://docs.learnbittensor.org/errors/subtensor#insufficientliquidity)).
 
 - **InsufficientLiquidity** — the pool could not support the swap.
 - **AmountTooLow** — the stake amount is below the minimum allowed increment.
 
+## Distinction from Slippage Too High
+
+`InsufficientLiquidity` and `SlippageTooHigh` both relate to subnet pool conversions, but they
+reject different conditions. `InsufficientLiquidity` means the pool could not complete the swap
+needed for the action. `SlippageTooHigh` means the caller's own slippage ceiling was exceeded with
+partial execution disabled
+([Subtensor Standard Errors: SlippageTooHigh](https://docs.learnbittensor.org/errors/subtensor#slippagetoohigh),
+[Subtensor Standard Errors: InsufficientLiquidity](https://docs.learnbittensor.org/errors/subtensor#insufficientliquidity),
+[Understanding Slippage](https://docs.learnbittensor.org/learn/slippage)).
+
+- **InsufficientLiquidity** — the pool could not support the swap.
+- **SlippageTooHigh** — the named amount exceeds the caller's slippage cap.
+
 ## Distinction from Not Enough Balance To Stake
 
-`InsufficientLiquidity` and `NotEnoughBalanceToStake` both block add-stake calls, but at different
-stages. `NotEnoughBalanceToStake` is the funding check on whether the coldkey's free balance can
-cover the requested TAO amount. `InsufficientLiquidity` is the later pool-conversion failure after
-the swap path cannot complete
-([Not Enough Balance To Stake](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake),
-[Subtensor source: stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)).
+`InsufficientLiquidity` and `NotEnoughBalanceToStake` both block add-stake calls, but they compare
+different conditions. `NotEnoughBalanceToStake` means the coldkey's free balance cannot cover the
+requested TAO amount. `InsufficientLiquidity` means the subnet pool could not complete the
+conversion for the action
+([Subtensor Standard Errors: NotEnoughBalanceToStake](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake),
+[Subtensor Standard Errors: InsufficientLiquidity](https://docs.learnbittensor.org/errors/subtensor#insufficientliquidity)).
 
 - **InsufficientLiquidity** — the pool could not support the swap.
 - **NotEnoughBalanceToStake** — free balance cannot fund the requested stake amount.
@@ -85,8 +96,8 @@ the swap path cannot complete
 ## Reader Boundary
 
 This page defines the meaning of the error label on common add-stake and remove-stake paths. It does
-not describe every move-stake or order-swap path that can also raise `InsufficientLiquidity`, or how
-to size trades against live reserve levels; those are documented separately
+not describe how to size trades against live reserve levels, or every staking path that can return
+this error; those are separate topics
 ([Understanding Slippage](https://docs.learnbittensor.org/learn/slippage),
 [Managing Your Stakes](https://docs.learnbittensor.org/staking-and-delegation/managing-stake-sdk)).
 
@@ -94,5 +105,7 @@ to size trades against live reserve levels; those are documented separately
 
 - [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#insufficientliquidity)
 - [Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)
-- [Amount Too Low](https://docs.learnbittensor.org/errors/subtensor#amounttoolow)
-- [Subtensor source: stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)
+- [Understanding Slippage](https://docs.learnbittensor.org/learn/slippage)
+- [Subtensor Standard Errors: AmountTooLow](https://docs.learnbittensor.org/errors/subtensor#amounttoolow)
+- [Subtensor Standard Errors: SlippageTooHigh](https://docs.learnbittensor.org/errors/subtensor#slippagetoohigh)
+- [Subtensor Standard Errors: NotEnoughBalanceToStake](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake)
