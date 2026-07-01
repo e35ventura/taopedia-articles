@@ -1,0 +1,115 @@
+---
+title: "UID Map Could Not Be Cleared"
+summary:
+  "How the UidMapCouldNotBeCleared error blocks a subnet owner's UID trim when the chain cannot
+  reset the subnet's hotkey-to-UID map during survivor compression."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: UID Map Could Not Be Cleared
+infoboxCaption:
+  Error raised when UID trimming cannot complete the hotkey-to-UID map reset step on a subnet.
+infoboxRows:
+  - label: Error
+    value: UidMapCouldNotBeCleared
+  - label: Trigger
+    value: The subnet UID map cannot be cleared during trim compression
+  - label: Checked in
+    value: UID trimming
+  - label: Example netuid
+    value: netuid 1
+---
+
+# UID Map Could Not Be Cleared
+
+`UidMapCouldNotBeCleared` means a subnet owner's UID trim on netuid 1 or another named subnet could
+not finish resetting the subnet's hotkey-to-UID map during survivor compression. The Subtensor API
+errors reference summarizes it as "The UID map for the subnet could not be cleared"
+([Subtensor API Errors: UidMapCouldNotBeCleared](https://docs.learnbittensor.org/subtensor-api/errors#uidmapcouldnotbecleared)).
+
+[UID trimming](https://docs.learnbittensor.org/subnets/uid-trimming) removes low emitters, keeps
+protected immune neurons, and compresses survivors into consecutive indices. The guide also states
+that associated storage is migrated and cleaned up as part of that process
+([UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming)).
+
+## What It Means
+
+After a trim selects which UIDs to remove, the chain reindexes the survivors and updates the maps
+that tie hotkeys to UID slots on the subnet. `UidMapCouldNotBeCleared` means that reset step for the
+subnet's hotkey-to-UID map did not complete, so the trim aborts before the new compressed layout is
+written
+([Subtensor API Errors: UidMapCouldNotBeCleared](https://docs.learnbittensor.org/subtensor-api/errors#uidmapcouldnotbecleared),
+[UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming)).
+
+This is a storage-reset failure on the trim path. It does not, by itself, say anything about immune
+share limits, trim timing cooldowns, or whether the submitted target count is outside the documented
+minimum and maximum UID bounds.
+
+## Why It Appears
+
+This error appears late in a UID trim, after earlier trim checks have passed and the chain has begun
+compressing survivors. The API label points to a failure while clearing the subnet's UID map rather
+than while choosing which low emitters to remove
+([UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming)).
+
+When debugging a failed trim on netuid 1, compare against earlier trim rejections before treating
+this as a routine owner-configuration problem. `TrimmingWouldExceedMaxImmunePercentage` means the
+protected immune share at the target would violate the documented 80% ceiling. `InvalidValue` means
+the submitted target count falls outside the allowed minimum or maximum UID bounds.
+`HotKeySetTxRateLimitExceeded` means a prior trim has not cleared the documented trimming cooldown
+yet
+([Subtensor API Errors: TrimmingWouldExceedMaxImmunePercentage](https://docs.learnbittensor.org/subtensor-api/errors#trimmingwouldexceedmaximmunepercentage),
+[Subtensor Standard Errors: InvalidValue](https://docs.learnbittensor.org/errors/subtensor#invalidvalue),
+[Chain Rate Limits: UID trimming rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#uid-trimming-rate-limit)).
+
+The practical meaning is narrow: the trim reached the map-reset step and could not finish clearing
+the subnet's UID map.
+
+## Distinction from Trimming Would Exceed Max Immune Percentage
+
+`UidMapCouldNotBeCleared` and `TrimmingWouldExceedMaxImmunePercentage` both appear on UID trimming
+calls, but at different stages. `TrimmingWouldExceedMaxImmunePercentage` is the immune-share
+rejection on the requested target count before deregistrations proceed. `UidMapCouldNotBeCleared` is
+the later failure while resetting the hotkey-to-UID map during survivor compression
+([Subtensor API Errors: TrimmingWouldExceedMaxImmunePercentage](https://docs.learnbittensor.org/subtensor-api/errors#trimmingwouldexceedmaximmunepercentage)).
+
+- **UidMapCouldNotBeCleared** — the subnet UID map could not be cleared during compression.
+- **TrimmingWouldExceedMaxImmunePercentage** — immune neurons would exceed the allowed share at the
+  target count.
+
+## Distinction from Invalid Value
+
+`UidMapCouldNotBeCleared` and `InvalidValue` both block UID trims, but they reject different
+problems. `InvalidValue` means the submitted target UID count is outside the subnet's allowed
+minimum or maximum bounds. `UidMapCouldNotBeCleared` means earlier bounds and immune checks passed,
+but the map-reset step during compression failed
+([Subtensor Standard Errors: InvalidValue](https://docs.learnbittensor.org/errors/subtensor#invalidvalue)).
+
+- **UidMapCouldNotBeCleared** — the hotkey-to-UID map could not be cleared on the trim path.
+- **InvalidValue** — the submitted target UID count is out of allowed bounds.
+
+## Distinction from Hotkey Set Tx Rate Limit Exceeded
+
+`UidMapCouldNotBeCleared` and `HotKeySetTxRateLimitExceeded` both stop a subnet-owner trim, but at
+different checks. `HotKeySetTxRateLimitExceeded` is the timing rejection when another trim was
+attempted before the documented trimming cooldown cleared. `UidMapCouldNotBeCleared` is a later
+storage-reset failure after trim execution has begun
+([Chain Rate Limits: UID trimming rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#uid-trimming-rate-limit),
+[Subtensor Standard Errors: HotKeySetTxRateLimitExceeded](https://docs.learnbittensor.org/errors/subtensor#hotkeysettxratelimitexceeded)).
+
+- **UidMapCouldNotBeCleared** — the subnet UID map could not be cleared during compression.
+- **HotKeySetTxRateLimitExceeded** — the trim was attempted too soon after the last trim.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the map-reset failure it represents. It does
+not predict whether a particular trim on netuid 1 will succeed on retry or which live storage state
+caused the clear step to fail; those depend on chain state at observation time
+([UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: UidMapCouldNotBeCleared](https://docs.learnbittensor.org/subtensor-api/errors#uidmapcouldnotbecleared)
+- [UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming)
+- [Subtensor API Errors: TrimmingWouldExceedMaxImmunePercentage](https://docs.learnbittensor.org/subtensor-api/errors#trimmingwouldexceedmaximmunepercentage)
+- [Chain Rate Limits: UID trimming rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits#uid-trimming-rate-limit)
