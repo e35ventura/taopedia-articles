@@ -1,0 +1,113 @@
+---
+title: "Minimum Contribution Too Low"
+summary:
+  "How the MinimumContributionTooLow error blocks crowdloan minimum-contribution settings when the
+  submitted minimum falls below the runtime absolute minimum contribution floor."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Minimum Contribution Too Low
+infoboxCaption:
+  Error raised when a crowdloan minimum contribution is below the runtime absolute floor.
+infoboxRows:
+  - label: Error
+    value: MinimumContributionTooLow
+  - label: Trigger
+    value: submitted minimum < AbsoluteMinimumContribution
+  - label: Checked in
+    value: create and update_min_contribution extrinsics
+  - label: Check type
+    value: Minimum-contribution comparison against runtime absolute floor
+---
+
+# Minimum Contribution Too Low
+
+`MinimumContributionTooLow` is a crowdloan pallet error raised when a minimum contribution setting
+falls below the runtime absolute minimum contribution floor. The pallet defines it as "The minimum
+contribution is too low"
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+## What It Means
+
+Each [crowdloan](https://docs.learnbittensor.org/subnets/crowdloans) sets a minimum contribution
+that contributors must meet. The runtime also defines an absolute minimum contribution floor that no
+crowdloan minimum may sit below. On `create` and `update_min_contribution`, the pallet compares the
+submitted minimum against `AbsoluteMinimumContribution` and returns `MinimumContributionTooLow` when
+the value is too small
+([Crowdloans: Runtime parameters (defaults)](https://docs.learnbittensor.org/subnets/crowdloans#runtime-parameters-defaults),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+This is a runtime-floor rejection on the minimum-contribution parameter itself, not proof that an
+individual `contribute` amount is too small, that the creator deposit is too low, or that the new
+minimum would exceed an already stored maximum contribution.
+
+## Why It Appears
+
+This error appears when a creator submits a minimum contribution below the runtime absolute floor.
+On `create`, that happens while opening a new campaign. On `update_min_contribution`, it happens
+while raising or lowering the stored minimum on a non-finalized crowdloan after creator-origin
+checks pass
+([Crowdloans: Can the campaign parameters be updated mid‑flight?](https://docs.learnbittensor.org/subnets/crowdloans#can-the-campaign-parameters-be-updated-midflight),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+When debugging, compare against other rejections on the same call. On `create`, `DepositTooLow`
+means the initial deposit is below the runtime minimum deposit and `CapTooLow` means the funding cap
+is not greater than the deposit. On `update_min_contribution`, `MinimumContributionTooHigh` means
+the new minimum would exceed an already stored maximum contribution when one is configured
+([Deposit Too Low](https://docs.learnbittensor.org/errors/subtensor#deposittoolow),
+[Minimum Contribution Too High](https://docs.learnbittensor.org/errors/subtensor#minimumcontributiontoohigh),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+The practical meaning is narrow: raise the submitted minimum to at least the runtime absolute floor
+before retrying `create` or `update_min_contribution`.
+
+## Distinction from Contribution Too Low
+
+`MinimumContributionTooLow` and `ContributionTooLow` both involve contribution minimums, but on
+different extrinsics and checks. `MinimumContributionTooLow` rejects a crowdloan's minimum
+contribution setting because it is below the runtime absolute floor. `ContributionTooLow` rejects an
+individual `contribute` amount because it is below the crowdloan's already stored minimum
+contribution
+([Contribution Too Low](https://docs.learnbittensor.org/errors/subtensor#contributiontoolow),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+- **MinimumContributionTooLow** — the crowdloan minimum setting is below the runtime absolute floor.
+- **ContributionTooLow** — the submitted contribution is below the crowdloan's stored minimum.
+
+## Distinction from Minimum Contribution Too High
+
+`MinimumContributionTooLow` and `MinimumContributionTooHigh` both appear on
+`update_min_contribution`, but at different checks. `MinimumContributionTooLow` means the submitted
+minimum is below the runtime absolute floor. `MinimumContributionTooHigh` means the submitted
+minimum would exceed an already stored maximum contribution
+([Minimum Contribution Too High](https://docs.learnbittensor.org/errors/subtensor#minimumcontributiontoohigh),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+- **MinimumContributionTooLow** — the minimum is below the runtime absolute floor.
+- **MinimumContributionTooHigh** — the minimum is above the stored maximum contribution.
+
+## Distinction from Deposit Too Low
+
+`MinimumContributionTooLow` and `DepositTooLow` both compare submitted amounts against runtime
+floors on `create`, but for different parameters. `DepositTooLow` applies to the creator's initial
+deposit. `MinimumContributionTooLow` applies to the crowdloan's minimum contribution setting
+([Deposit Too Low](https://docs.learnbittensor.org/errors/subtensor#deposittoolow),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+- **MinimumContributionTooLow** — the minimum contribution is below the runtime absolute floor.
+- **DepositTooLow** — the creator deposit is below the runtime minimum deposit.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the absolute-minimum comparison on `create` and
+`update_min_contribution`. It does not report the live `AbsoluteMinimumContribution` value on any
+network; that is runtime configuration readers can query separately
+([Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Crowdloans: Runtime parameters (defaults)](https://docs.learnbittensor.org/subnets/crowdloans#runtime-parameters-defaults)
+- [Crowdloans: Can the campaign parameters be updated mid‑flight?](https://docs.learnbittensor.org/subnets/crowdloans#can-the-campaign-parameters-be-updated-midflight)
+- [Contribution Too Low](https://docs.learnbittensor.org/errors/subtensor#contributiontoolow)
+- [Minimum Contribution Too High](https://docs.learnbittensor.org/errors/subtensor#minimumcontributiontoohigh)
+- [Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)
