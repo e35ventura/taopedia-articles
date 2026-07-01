@@ -1,0 +1,111 @@
+---
+title: "Not Permitted On Root Subnet"
+summary:
+  "How the NotPermittedOnRootSubnet error blocks selected admin-utils hyperparameter setters when
+  the submitted netuid targets the Root Subnet."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Not Permitted On Root Subnet
+infoboxCaption: Error raised when an admin-utils setter is called with the Root Subnet netuid.
+infoboxRows:
+  - label: Error
+    value: NotPermittedOnRootSubnet
+  - label: Trigger
+    value: netuid.is_root() on selected admin-utils setters
+  - label: Checked in
+    value:
+      sudo_set_burn_half_life, sudo_set_burn_increase_mult, sudo_set_owner_cut_enabled,
+      sudo_set_owner_cut_auto_lock_enabled, sudo_set_subnet_emission_enabled
+  - label: Check type
+    value: Root-netuid guard on admin-utils hyperparameter setters
+---
+
+# Not Permitted On Root Subnet
+
+`NotPermittedOnRootSubnet` is an admin-utils pallet error raised when a hyperparameter setter is
+called with the Root Subnet netuid. The pallet defines it as "Operation is not permitted on the root
+network"
+([Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+## What It Means
+
+Several admin-utils hyperparameter setters accept a `netuid` and update subnet-specific
+configuration. Before writing storage, those setters reject calls whose submitted `netuid` is the
+Root Subnet and return `NotPermittedOnRootSubnet`
+([Root Subnet / Subnet Zero](https://docs.learnbittensor.org/resources/glossary#root-subnetsubnet-zero),
+[Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+In the current source, that guard appears on `sudo_set_burn_half_life`,
+`sudo_set_burn_increase_mult`, `sudo_set_owner_cut_enabled`, `sudo_set_owner_cut_auto_lock_enabled`,
+and `sudo_set_subnet_emission_enabled`
+([Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+This is a root-netuid rejection on admin-utils setter paths, not proof that the submitted netuid
+does not exist, that the submitted value is out of bounds, or that an ordinary registration call
+targeted the Root Subnet.
+
+## Why It Appears
+
+This error appears when a client submits one of those admin-utils setters with the Root Subnet
+netuid. That can happen when a UI reuses the root netuid from a chain query, when automation copies
+a root-context call into a subnet hyperparameter path, or when the wrong netuid is attached to a
+burn or owner-cut update
+([Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+When debugging, compare against other rejections on the same call. `SubnetDoesNotExist` means the
+submitted netuid does not correspond to an existing subnet record. `InvalidValue` on burn setters
+means the submitted parameter failed its value-range check after the root-netuid guard passes
+([Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+The practical meaning is narrow: retry the setter against an ordinary mining subnet netuid, not the
+Root Subnet.
+
+## Distinction from Registration Not Permitted On Root Subnet
+
+`NotPermittedOnRootSubnet` and `RegistrationNotPermittedOnRootSubnet` both block Root Subnet
+targets, but on different pallets and extrinsics. `NotPermittedOnRootSubnet` is raised by selected
+admin-utils hyperparameter setters. `RegistrationNotPermittedOnRootSubnet` is raised by
+registration-style subtensor calls such as `register`, `register_limit`, and `set_children`
+([Registration Not Permitted On Root Subnet](https://docs.learnbittensor.org/errors/subtensor#registrationnotpermittedonrootsubnet),
+[Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+- **NotPermittedOnRootSubnet** — an admin-utils setter targeted the Root Subnet netuid.
+- **RegistrationNotPermittedOnRootSubnet** — a registration-style call targeted the Root Subnet.
+
+## Distinction from Subnet Does Not Exist
+
+`NotPermittedOnRootSubnet` and `SubnetDoesNotExist` both appear on several of the same admin-utils
+setters, but at different checks. `SubnetDoesNotExist` means the submitted netuid has no subnet
+record. `NotPermittedOnRootSubnet` means the netuid is the Root Subnet, which does exist but is not
+permitted for these setter paths
+([Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+- **NotPermittedOnRootSubnet** — the submitted netuid is the Root Subnet.
+- **SubnetDoesNotExist** — the submitted netuid has no subnet record.
+
+## Distinction from Invalid Value
+
+`NotPermittedOnRootSubnet` and `InvalidValue` both block admin-utils setter updates, but at
+different checks on burn-related paths. `NotPermittedOnRootSubnet` means the submitted netuid is the
+Root Subnet. `InvalidValue` means the netuid passed the root guard but the submitted parameter value
+failed its allowed range
+([Invalid Value](https://docs.learnbittensor.org/errors/subtensor#invalidvalue),
+[Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+- **NotPermittedOnRootSubnet** — the submitted netuid is the Root Subnet.
+- **InvalidValue** — the submitted parameter value is out of range.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the root-netuid guard on the listed admin-utils
+setters. It does not report which netuid a particular call used on any network; that is call input
+readers can inspect separately
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks),
+[Root Subnet / Subnet Zero](https://docs.learnbittensor.org/resources/glossary#root-subnetsubnet-zero)).
+
+## Further Reading
+
+- [Root Subnet / Subnet Zero](https://docs.learnbittensor.org/resources/glossary#root-subnetsubnet-zero)
+- [Registration Not Permitted On Root Subnet](https://docs.learnbittensor.org/errors/subtensor#registrationnotpermittedonrootsubnet)
+- [Invalid Value](https://docs.learnbittensor.org/errors/subtensor#invalidvalue)
+- [Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)
