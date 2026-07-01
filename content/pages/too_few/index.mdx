@@ -1,0 +1,86 @@
+---
+title: "Too Few"
+summary:
+  "How the TooFew error blocks a preimage bulk-upgrade request when the submission listed no hashes
+  to upgrade."
+category: "Core Concepts"
+tags: ["Transactions", "Errors"]
+infoboxTitle: Too Few
+infoboxCaption: Error raised when a preimage upgrade request lists no hashes.
+infoboxRows:
+  - label: Error
+    value: TooFew
+  - label: Pallet
+    value: preimage
+  - label: Trigger
+    value: Preimage upgrade request submitted with an empty list of hashes
+  - label: Check type
+    value: Non-empty-hash-list guard on the bulk-upgrade path
+---
+
+# Too Few
+
+`TooFew` is a preimage pallet error raised when a bulk-upgrade request lists no preimage hashes to
+upgrade. The API errors reference summarizes it as "Too few hashes were requested to be upgraded
+(i.e. zero)."
+([Subtensor API Errors: TooFew](https://docs.learnbittensor.org/subtensor-api/errors#toofew)).
+
+## What It Means
+
+Subtensor uses the preimage pallet to track the bytes behind a runtime call before that call becomes
+dispatchable. Some operations accept a list of preimage hashes in a single request. `TooFew` means
+the submitted request contained an empty list, so the runtime rejects the request before any
+preimage is processed
+([Subtensor API Errors: TooFew](https://docs.learnbittensor.org/subtensor-api/errors#toofew)).
+
+This is the non-empty-list guard on the bulk-upgrade path. It does not, by itself, mean a supplied
+preimage hash had no on-chain entry, that the request exceeded the bulk size limit, or that an
+outstanding request was blocking removal.
+
+## Why It Appears
+
+This error appears when the runtime receives a bulk-upgrade request that contains zero preimage
+hashes. The preimage pallet source confirms the guard: the runtime checks that the submitted hash
+list is non-empty before it processes any hash and rejects the request with `Error::<T>::TooFew`
+when the list is empty
+([opentensor/polkadot-sdk: substrate/frame/preimage/src/lib.rs#L249](https://github.com/opentensor/polkadot-sdk/blob/7cc54bf2d50ae3921d718736dfeb0de9468539c7/substrate/frame/preimage/src/lib.rs#L249)).
+
+The practical meaning is narrow: include at least one preimage hash in the request, or use a
+non-bulk preimage operation instead.
+
+## Distinction from Too Many
+
+`TooFew` and `TooMany` both block bulk-upgrade requests, but on opposite ends of the size check.
+`TooFew` is the lower-bound guard that rejects an empty list. `TooMany` is the upper-bound guard
+that rejects a list longer than the bulk-upgrade size limit
+([Subtensor API Errors: TooFew](https://docs.learnbittensor.org/subtensor-api/errors#toofew),
+[Subtensor API Errors: TooMany](https://docs.learnbittensor.org/subtensor-api/errors#toomany)).
+
+- **TooFew** — the submitted list is empty.
+- **TooMany** — the submitted list exceeds the bulk-upgrade size limit.
+
+## Distinction from Too Big
+
+`TooFew` and `TooBig` are both preimage pallet errors but they fire at different checks. `TooFew` is
+the non-empty-list guard on the bulk-upgrade path. `TooBig` is the size-of-preimage guard that
+rejects a single preimage whose stored bytes exceed the configured preimage limit
+([Subtensor API Errors: TooFew](https://docs.learnbittensor.org/subtensor-api/errors#toofew),
+[Subtensor API Errors: TooBig](https://docs.learnbittensor.org/subtensor-api/errors#toobig)).
+
+- **TooFew** — the request listed no preimage hashes.
+- **TooBig** — a single preimage in the request is too large to store on-chain.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the non-empty-list guard it represents on the
+preimage bulk-upgrade path. It does not report the configured bulk-upgrade size limit on a network
+or enumerate which preimage hashes are valid bulk-upgrade candidates
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks),
+[Subtensor API Errors: TooFew](https://docs.learnbittensor.org/subtensor-api/errors#toofew)).
+
+## Further Reading
+
+- [Subtensor API Errors: TooFew](https://docs.learnbittensor.org/subtensor-api/errors#toofew)
+- [Subtensor API Errors: TooMany](https://docs.learnbittensor.org/subtensor-api/errors#toomany)
+- [Subtensor API Errors: TooBig](https://docs.learnbittensor.org/subtensor-api/errors#toobig)
+- [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)
