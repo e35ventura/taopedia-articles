@@ -1,0 +1,82 @@
+---
+title: "Invalid Chain ID"
+summary:
+  "How the InvalidChainId error blocks an EVM transaction when the submitted chain ID does not match
+  the network the runtime expects."
+category: "Wallets"
+tags: ["Wallets", "Errors", "EVM"]
+infoboxTitle: Invalid Chain ID
+infoboxCaption: Error raised when an EVM transaction chain ID fails validation.
+infoboxRows:
+  - label: Error
+    value: InvalidChainId
+  - label: Pallet
+    value: evm
+  - label: Trigger
+    value: Submitted chain ID does not match the expected network identifier
+  - label: Check type
+    value: EVM chain ID validation
+---
+
+# Invalid Chain ID
+
+`InvalidChainId` is an EVM pallet error raised when the submitted chain ID is not valid for the
+network. The API errors reference summarizes it as "The chain id is invalid"
+([Subtensor API Errors: InvalidChainId](https://docs.learnbittensor.org/subtensor-api/errors#invalidchainid)).
+
+## What It Means
+
+Bittensor's EVM layer presents a chain ID so Ethereum-style wallets and tooling can recognize which
+network a transaction targets. `InvalidChainId` means the chain ID field on the submitted
+transaction does not pass the runtime's validation check, so the EVM path rejects the call before
+execution proceeds ([Bittensor EVM Smart Contracts](https://docs.learnbittensor.org/evm-tutorials),
+[Subnet Hyperparameters: EvmChainId](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#evmchainid),
+[Subtensor API Errors: InvalidChainId](https://docs.learnbittensor.org/subtensor-api/errors#invalidchainid)).
+
+This is a chain-ID validation rejection. It does not, by itself, mean the account nonce was wrong,
+that the gas limit or gas price was out of range, or that the account lacked balance to pay the fee.
+
+## Why It Appears
+
+This error appears when a wallet, script, or integration submits an EVM transaction whose chain ID
+does not match the network being used. The practical meaning is narrow: configure the transaction
+for the intended Bittensor EVM network before resubmitting the same call
+([Subtensor API Errors: InvalidChainId](https://docs.learnbittensor.org/subtensor-api/errors#invalidchainid),
+[Token Bridging](https://docs.learnbittensor.org/evm-tutorials/bridge-vtao)).
+
+## Distinction from Invalid Nonce
+
+`InvalidChainId` and `InvalidNonce` both block EVM transaction submission, but they reject different
+fields. `InvalidChainId` means the submitted chain ID is invalid for the network. `InvalidNonce`
+means the account nonce field failed validation
+([Subtensor API Errors: InvalidNonce](https://docs.learnbittensor.org/subtensor-api/errors#invalidnonce),
+[Subtensor API Errors: InvalidChainId](https://docs.learnbittensor.org/subtensor-api/errors#invalidchainid)).
+
+- **InvalidChainId** — the submitted chain ID is invalid.
+- **InvalidNonce** — the submitted account nonce is invalid.
+
+## Distinction from Gas Limit Too High
+
+`InvalidChainId` and `GasLimitTooHigh` both stop an EVM call before execution, but at different
+checks. `InvalidChainId` is rejected during chain ID validation. `GasLimitTooHigh` means the
+submitted gas limit exceeds the runtime maximum
+([Subtensor API Errors: GasLimitTooHigh](https://docs.learnbittensor.org/subtensor-api/errors#gaslimittoohigh),
+[Subtensor API Errors: InvalidChainId](https://docs.learnbittensor.org/subtensor-api/errors#invalidchainid)).
+
+- **InvalidChainId** — the submitted chain ID failed validation.
+- **GasLimitTooHigh** — the submitted gas limit exceeds the allowed maximum.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the chain ID check it represents on EVM paths.
+It does not report the live chain ID configured on a particular network or walk through wallet
+network-selection steps; those depend on runtime settings and tooling at observation time
+([Subnet Hyperparameters: EvmChainId](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#evmchainid),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: InvalidChainId](https://docs.learnbittensor.org/subtensor-api/errors#invalidchainid)
+- [Subtensor API Errors: InvalidNonce](https://docs.learnbittensor.org/subtensor-api/errors#invalidnonce)
+- [Subnet Hyperparameters: EvmChainId](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#evmchainid)
+- [Bittensor EVM Smart Contracts](https://docs.learnbittensor.org/evm-tutorials)
