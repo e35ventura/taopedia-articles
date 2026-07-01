@@ -1,0 +1,133 @@
+---
+title: "Underflow"
+summary:
+  "How the Underflow error blocks crowdloan extrinsics when a checked subtraction on balances,
+  contributor counts, or block numbers would underflow."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Underflow
+infoboxCaption: Error raised when crowdloan arithmetic subtraction would underflow.
+infoboxRows:
+  - label: Error
+    value: Underflow
+  - label: Trigger
+    value: checked_sub returns None on crowdloan balance or count math
+  - label: Checked in
+    value: contribute, withdraw, refund, create, update_end
+  - label: Check type
+    value: Checked subtraction guard in the crowdloan pallet
+---
+
+# Underflow
+
+`Underflow` is a crowdloan pallet error raised when a `checked_sub` call would underflow. The pallet
+defines it as "An underflow occurred"
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+## What It Means
+
+Several [crowdloan](https://docs.learnbittensor.org/subnets/crowdloans) extrinsics use `checked_sub`
+on balances, contributor counts, or block numbers. When the subtrahend is larger than the value
+being reduced, the subtraction returns `None` and the extrinsic returns `Underflow` instead of
+continuing
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+On `contribute`, the runtime may return `Underflow` when computing cap headroom
+(`cap.checked_sub(raised)`) or per-contributor headroom against an optional max contribution
+(`max_contribution.checked_sub(current_contribution)`). On `withdraw`, it may return `Underflow`
+when decrementing `contributors_count` for a non-creator withdrawal. On `refund`, it may return
+`Underflow` when subtracting the refund batch size from `contributors_count`. On `create` and
+`update_end`, `ensure_valid_end` may return `Underflow` when computing `end.checked_sub(now)` for
+the block-duration checks
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+This is an arithmetic guard on crowdloan state updates, not proof that a crowdloan id is invalid,
+that the contribution period has ended, or that a caller lacks a contribution record.
+
+## Why It Appears
+
+`Underflow` appears on whichever extrinsic performed the failing `checked_sub`. On `contribute`,
+that can be the cap headroom step or the optional max-contribution headroom step after earlier gates
+on the same call have passed. On `withdraw`, it can appear when decrementing the contributor count
+for a non-creator caller. On `refund`, it can appear after the creator-only refund loop updates
+`contributors_count`. On `create` and `update_end`, it can appear inside `ensure_valid_end` while
+validating the submitted end block
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+When debugging `contribute`, compare against other rejections on the same call. `CapRaised` means
+total raised is already at or above the cap. `MaxContributionReached` means the contributor is
+already at the per-account maximum. `ContributionTooLow` means the requested amount is below the
+campaign minimum. `Overflow` on the same extrinsic means a `checked_add` on raised totals or
+contributor counts would overflow instead
+([Cap Raised](https://docs.learnbittensor.org/errors/subtensor#capraised),
+[Max Contribution Reached](https://docs.learnbittensor.org/errors/subtensor#maxcontributionreached),
+[Contribution Too Low](https://docs.learnbittensor.org/errors/subtensor#contributiontoolow),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+When debugging `create` or `update_end`, `CannotEndInPast` on `ensure_valid_end` means the submitted
+end block is not strictly after the current block. `BlockDurationTooShort` and
+`BlockDurationTooLong` mean the computed duration is outside runtime bounds
+([Cannot End In Past](https://docs.learnbittensor.org/errors/subtensor#cannotendinpast),
+[Block Duration Too Short](https://docs.learnbittensor.org/errors/subtensor#blockdurationtooshort),
+[Block Duration Too Long](https://docs.learnbittensor.org/errors/subtensor#blockdurationtoolong),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+## Distinction from Overflow on contribute
+
+`Underflow` and `Overflow` both appear on `contribute`, but on different arithmetic directions.
+`Underflow` is returned by failing `checked_sub` steps when computing headroom before accepting a
+contribution. `Overflow` is returned by failing `checked_add` steps when updating raised totals,
+per-contributor totals, or contributor counts
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+- **Underflow** — a `checked_sub` step would underflow.
+- **Overflow** — a `checked_add` step would overflow.
+
+## Distinction from Cap Raised on contribute
+
+`Underflow` and `CapRaised` both involve the funding cap on `contribute`, but at different checks.
+`CapRaised` is returned when `crowdloan.raised` is already at or above `crowdloan.cap` before
+headroom math runs. `Underflow` is returned later only if `cap.checked_sub(raised)` fails
+([Cap Raised](https://docs.learnbittensor.org/errors/subtensor#capraised),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+- **CapRaised** — total raised already meets or exceeds the cap.
+- **Underflow** — cap headroom subtraction would underflow.
+
+## Distinction from Max Contribution Reached on contribute
+
+`Underflow` and `MaxContributionReached` both involve optional per-contributor maximums on
+`contribute`, but at different checks. `MaxContributionReached` is returned when the contributor's
+stored total is already at or above the configured maximum. `Underflow` on the max-contribution path
+is returned only if `max_contribution.checked_sub(current_contribution)` fails after that gate
+([Max Contribution Reached](https://docs.learnbittensor.org/errors/subtensor#maxcontributionreached),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+- **MaxContributionReached** — the contributor is already at the per-account maximum.
+- **Underflow** — max-contribution headroom subtraction would underflow.
+
+## Distinction from Cannot End In Past on create and update_end
+
+`Underflow` and `CannotEndInPast` both come from `ensure_valid_end` on `create` and `update_end`,
+but at different checks. `CannotEndInPast` is returned when the current block is not strictly before
+the submitted end block. `Underflow` is returned only if `end.checked_sub(now)` fails after that
+comparison ([Cannot End In Past](https://docs.learnbittensor.org/errors/subtensor#cannotendinpast),
+[Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+- **CannotEndInPast** — the end block is not after the current block.
+- **Underflow** — end-block subtraction for duration math would underflow.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the `checked_sub` guards that raise it in the
+crowdloan pallet. It does not report live raised totals, contributor counts, or end blocks for any
+campaign; those are crowdloan state readers can query separately
+([Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans)
+- [Cap Raised](https://docs.learnbittensor.org/errors/subtensor#capraised)
+- [Cannot End In Past](https://docs.learnbittensor.org/errors/subtensor#cannotendinpast)
+- [Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)
