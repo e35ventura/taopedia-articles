@@ -1,0 +1,116 @@
+---
+title: "Max Allowed UIDs Less Than Current UIDs"
+summary:
+  "How the MaxAllowedUIdsLessThanCurrentUIds error blocks sudo_set_max_allowed_uids when the
+  submitted max-UID cap falls below the subnet's current filled UID count."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Max Allowed UIDs Less Than Current UIDs
+infoboxCaption:
+  Error raised when the proposed max-UID cap is below the subnet's current filled UID count.
+infoboxRows:
+  - label: Error
+    value: MaxAllowedUIdsLessThanCurrentUIds
+  - label: Trigger
+    value: max_allowed_uids < get_subnetwork_n(netuid)
+  - label: Checked in
+    value: sudo_set_max_allowed_uids extrinsic
+  - label: Check type
+    value: Max-allowed-UID comparison against current filled slots
+---
+
+# Max Allowed UIDs Less Than Current UIDs
+
+`MaxAllowedUIdsLessThanCurrentUIds` is an admin-utils pallet error raised by
+`sudo_set_max_allowed_uids`
+([Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+## What It Means
+
+Each subnet stores a maximum allowed UID count and tracks how many UID slots are currently filled.
+The `sudo_set_max_allowed_uids` extrinsic compares the submitted max-UID value against
+`get_subnetwork_n`, which returns the number of filled slots on the network, and returns
+`MaxAllowedUIdsLessThanCurrentUIds` when the proposed maximum is lower than that current count
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs),
+[Subtensor source: uids.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/uids.rs)).
+
+The check requires the submitted maximum to be greater than or equal to the current filled UID count
+for that netuid. A proposed max-UID value strictly below that count is rejected before the new
+maximum is written
+([Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+This is a current-state rejection on the max-UID setter, not proof that the submitted netuid has no
+subnet record or that the proposed maximum is below the stored minimum allowed UIDs.
+
+## Why It Appears
+
+This error appears when `sudo_set_max_allowed_uids` is called with a max-UID value below the
+subnet's current filled UID count. That can happen when a client lowers the maximum while neurons
+are already registered above the proposed ceiling, or when the current filled count is misread from
+chain state
+([Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+When debugging, compare against other rejections on the same call. `SubnetDoesNotExist` means the
+submitted netuid has no subnet record. `MaxAllowedUidsLessThanMinAllowedUids` means the proposed
+maximum is below the stored minimum allowed UIDs. `MaxAllowedUidsGreaterThanDefaultMaxAllowedUids`
+means the proposed maximum exceeds the runtime default max-UID ceiling
+([Subnet Does Not Exist](https://docs.learnbittensor.org/errors/subtensor#subnetdoesnotexist),
+[Max Allowed UIDs Less Than Min Allowed UIDs](https://docs.learnbittensor.org/errors/subtensor#maxalloweduidslessthanminalloweduids),
+[Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+The practical meaning is narrow: raise the proposed max-UID value to at least the current filled UID
+count before retrying `sudo_set_max_allowed_uids`.
+
+## Distinction from Subnet Does Not Exist
+
+`MaxAllowedUIdsLessThanCurrentUIds` and `SubnetDoesNotExist` both appear on
+`sudo_set_max_allowed_uids`, but at different checks. `SubnetDoesNotExist` means the submitted
+netuid has no subnet record. `MaxAllowedUIdsLessThanCurrentUIds` means the netuid exists but the
+proposed maximum is below the current filled UID count
+([Subnet Does Not Exist](https://docs.learnbittensor.org/errors/subtensor#subnetdoesnotexist),
+[Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+- **MaxAllowedUIdsLessThanCurrentUIds** — proposed max UIDs are below the current filled UID count.
+- **SubnetDoesNotExist** — the submitted netuid has no subnet record.
+
+## Distinction from Max Allowed UIDs Less Than Min Allowed UIDs
+
+`MaxAllowedUIdsLessThanCurrentUIds` and `MaxAllowedUidsLessThanMinAllowedUids` both appear on
+`sudo_set_max_allowed_uids`, but at different checks. `MaxAllowedUidsLessThanMinAllowedUids` means
+the proposed maximum is below the stored minimum allowed UIDs. `MaxAllowedUIdsLessThanCurrentUIds`
+means the proposed maximum is below the subnet's current filled UID count
+([Max Allowed UIDs Less Than Min Allowed UIDs](https://docs.learnbittensor.org/errors/subtensor#maxalloweduidslessthanminalloweduids),
+[Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+- **MaxAllowedUIdsLessThanCurrentUIds** — proposed max UIDs are below the current filled UID count.
+- **MaxAllowedUidsLessThanMinAllowedUids** — proposed max UIDs are below the stored minimum.
+
+## Distinction from Max Validators Larger Than Max UIDs
+
+`MaxAllowedUIdsLessThanCurrentUIds` and `MaxValidatorsLargerThanMaxUIds` both involve UID limits,
+but on different setters and comparisons. `MaxAllowedUIdsLessThanCurrentUIds` is raised by
+`sudo_set_max_allowed_uids` when the proposed maximum is below the current filled UID count.
+`MaxValidatorsLargerThanMaxUIds` is raised by `sudo_set_max_allowed_validators` when the validator
+cap exceeds the stored max-UID ceiling
+([Max Validators Larger Than Max UIDs](https://docs.learnbittensor.org/errors/subtensor#maxvalidatorslargerthanmaxuids),
+[Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+- **MaxAllowedUIdsLessThanCurrentUIds** — proposed max UIDs are below the current filled UID count.
+- **MaxValidatorsLargerThanMaxUIds** — validator cap exceeds max allowed UIDs on the validator
+  setter.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the current-filled-slot comparison on
+`sudo_set_max_allowed_uids`. It does not report live max-UID or filled-slot counts for any netuid on
+any network; those are chain state readers can query separately
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+- [Max Allowed UIDs Less Than Min Allowed UIDs](https://docs.learnbittensor.org/errors/subtensor#maxalloweduidslessthanminalloweduids)
+- [Subnet Does Not Exist](https://docs.learnbittensor.org/errors/subtensor#subnetdoesnotexist)
+- [Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)
