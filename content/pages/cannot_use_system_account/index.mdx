@@ -1,0 +1,120 @@
+---
+title: "Cannot Use System Account"
+summary:
+  "How the CannotUseSystemAccount error blocks subnet creation, hotkey pairing, and hotkey swap
+  calls that name a reserved subnet system account instead of an ordinary hotkey."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Cannot Use System Account
+infoboxCaption: Error raised when a reserved subnet account is used as a hotkey.
+infoboxRows:
+  - label: Error
+    value: CannotUseSystemAccount
+  - label: Trigger
+    value: Submitted hotkey matches a reserved subnet system account
+  - label: Checked in
+    value: Subnet creation and hotkey pairing paths
+  - label: Related concept
+    value: Subnet system accounts
+---
+
+# Cannot Use System Account
+
+`CannotUseSystemAccount` means a call tried to use a reserved subnet system account where the chain
+expects an ordinary participant hotkey. The Subtensor API errors reference lists the label under the
+subtensor module errors
+([Subtensor API Errors: CannotUseSystemAccount](https://docs.learnbittensor.org/subtensor-api/errors#cannotusesystemaccount),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#cannotusesystemaccount)).
+
+## What It Means
+
+Subnet creation and hotkey management bind participant identity to user-controlled hotkeys. The
+chain also derives reserved subnet-linked accounts for protocol bookkeeping on each netuid
+([Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet)).
+
+`CannotUseSystemAccount` is the rejection when a submitted hotkey address matches one of those
+reserved subnet system accounts. The runtime checks the address before pairing a coldkey with a
+hotkey, before opening a new subnet with that hotkey, or before swapping to such an address on
+hotkey-swap paths
+([Subtensor source: subnet.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/subnet.rs),
+[Subtensor source: helpers.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/helpers.rs)).
+
+This is an account-type rejection, not proof that the signing coldkey lacks balance, that the
+mechanism index is invalid, or that the hotkey is already registered on a mining subnet.
+
+## Why It Appears
+
+This error appears when a wallet, script, or subnet-creation call supplies a hotkey address that
+maps to a reserved subnet system account rather than a normal user hotkey. That can happen when an
+address is copied from chain-derived subnet account tooling, when automation reuses a protocol
+account identifier, or when a hotkey swap targets an address the chain treats as subnet-internal
+([Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet)).
+
+When debugging, compare against other early hotkey rejections on the same call.
+`NonAssociatedColdKey` means the hotkey already belongs to a different coldkey.
+`HotKeyAccountNotExists` means the hotkey account is absent on paths that require an existing
+registration. `MechanismDoesNotExist` on subnet creation means the submitted mechanism index is not
+supported
+([Non Associated Cold Key](https://docs.learnbittensor.org/errors/subtensor#nonassociatedcoldkey),
+[Subtensor Standard Errors: HotKeyAccountNotExists](https://docs.learnbittensor.org/errors/subtensor#hotkeyaccountnotexists),
+[Subtensor Standard Errors: MechanismDoesNotExist](https://docs.learnbittensor.org/errors/subtensor#mechanismdoesnotexist)).
+
+The practical meaning is narrow: supply an ordinary user hotkey, not a reserved subnet system
+account.
+
+## Distinction from Non Associated Cold Key
+
+`CannotUseSystemAccount` and `NonAssociatedColdKey` both block hotkey use early in subnet-creation
+and pairing paths, but they reject different problems. `NonAssociatedColdKey` means the hotkey is
+already owned by another coldkey. `CannotUseSystemAccount` means the submitted address is a reserved
+subnet system account that cannot be used as a participant hotkey
+([Subtensor source: subnet.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/subnet.rs)).
+
+- **CannotUseSystemAccount** — the address is a reserved subnet system account.
+- **NonAssociatedColdKey** — the hotkey belongs to a different coldkey.
+
+## Distinction from Hotkey Account Not Exists
+
+`CannotUseSystemAccount` and `HotKeyAccountNotExists` both involve hotkey validity, but at different
+stages. `HotKeyAccountNotExists` means the hotkey account is missing from chain state on paths that
+require a registered or paired hotkey. `CannotUseSystemAccount` means the address is recognized as a
+reserved subnet system account and is disallowed before ordinary pairing proceeds
+([Subtensor Standard Errors: HotKeyAccountNotExists](https://docs.learnbittensor.org/errors/subtensor#hotkeyaccountnotexists)).
+
+- **CannotUseSystemAccount** — the address is a reserved subnet system account.
+- **HotKeyAccountNotExists** — the hotkey account does not exist.
+
+## Distinction from Mechanism Does Not Exist
+
+`CannotUseSystemAccount` and `MechanismDoesNotExist` both appear on subnet-creation calls, but they
+test different inputs. `MechanismDoesNotExist` means the submitted mechanism index is not supported
+on the registration path. `CannotUseSystemAccount` means the first-neuron hotkey names a reserved
+subnet system account
+([Subtensor Standard Errors: MechanismDoesNotExist](https://docs.learnbittensor.org/errors/subtensor#mechanismdoesnotexist)).
+
+- **CannotUseSystemAccount** — the hotkey is a reserved subnet system account.
+- **MechanismDoesNotExist** — the mechanism index is not supported.
+
+## Distinction from Cannot Afford Lock Cost
+
+`CannotUseSystemAccount` and `CannotAffordLockCost` both appear on subnet-creation paths, but at
+different stages. `CannotAffordLockCost` means the signing coldkey cannot fund the current subnet
+lock cost. `CannotUseSystemAccount` is an earlier hotkey-type check before lock payment is attempted
+([Cannot Afford Lock Cost](https://docs.learnbittensor.org/errors/subtensor#cannotaffordlockcost)).
+
+- **CannotUseSystemAccount** — the submitted hotkey is a reserved system account.
+- **CannotAffordLockCost** — the coldkey cannot pay the subnet lock cost.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the reserved-account check it represents. It
+does not map a particular address to a live netuid or prove whether an address is currently reserved
+on a network; that depends on chain account derivation rules at observation time
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: CannotUseSystemAccount](https://docs.learnbittensor.org/subtensor-api/errors#cannotusesystemaccount)
+- [Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet)
+- [Subtensor source: subnet.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/subnet.rs)
+- [Subtensor Standard Errors: NonAssociatedColdKey](https://docs.learnbittensor.org/errors/subtensor#nonassociatedcoldkey)
