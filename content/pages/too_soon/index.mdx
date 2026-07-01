@@ -1,0 +1,91 @@
+---
+title: "Too Soon"
+summary:
+  "How the TooSoon error blocks a GRANDPA forced authority-set change when it arrives before the
+  next-forced window has opened."
+category: "Consensus"
+tags: ["Consensus", "Errors"]
+infoboxTitle: Too Soon
+infoboxCaption:
+  Error raised when a GRANDPA forced change request arrives before the next-forced window opens.
+infoboxRows:
+  - label: Error
+    value: TooSoon
+  - label: Pallet
+    value: grandpa
+  - label: Trigger
+    value: Forced authority-set change submitted before the next-forced window opens
+  - label: Check type
+    value: Next-forced-window guard on the forced-change path
+---
+
+# Too Soon
+
+`TooSoon` is a grandpa pallet error raised when a GRANDPA forced authority-set change request
+arrives before the next-forced window has opened. The API errors reference summarizes it as "Cannot
+signal forced change so soon after last."
+([Subtensor API Errors: TooSoon](https://docs.learnbittensor.org/subtensor-api/errors#toosoon)).
+
+## What It Means
+
+GRANDPA is the block finality gadget on Subtensor. A forced authority-set change is a recovery
+mechanism that bypasses the normal session-based rotation. Because forced changes can disrupt
+finality, the runtime limits how soon one can be submitted after a previous forced change. `TooSoon`
+means a forced change request arrived before that cooldown window had elapsed, so the runtime
+rejects the request
+([Subtensor API Errors: TooSoon](https://docs.learnbittensor.org/subtensor-api/errors#toosoon)).
+
+This is the next-forced-window guard on the forced-change path. It does not, by itself, mean another
+authority-set change was already pending, that the authority set was in a paused state, or that the
+forced change proof was structurally invalid.
+
+## Why It Appears
+
+This error appears when a forced authority-set change request arrives and the chain's next-forced
+marker is set to a block later than the current one. The pinned grandpa-pallet source describes the
+guard: when a forced change is requested, the runtime checks the stored next-forced value against
+the current block and returns `Error::<T>::TooSoon` when the next-forced marker is still in the
+future
+([opentensor/polkadot-sdk: substrate/frame/grandpa/src/lib.rs#L521](https://github.com/opentensor/polkadot-sdk/blob/7cc54bf2d50ae3921d718736dfeb0de9468539c7/substrate/frame/grandpa/src/lib.rs#L521)).
+
+The practical meaning is narrow: the forced-change cooldown has not elapsed. A forced change can
+only be submitted after the next-forced window opens.
+
+## Distinction from Change Pending
+
+`TooSoon` and `ChangePending` are both grandpa-pallet errors that block an authority-set change
+request, but they fire at different checks. `TooSoon` is the next-forced-window guard that fires
+when a forced change arrives before the cooldown elapses. `ChangePending` is the
+no-existing-change-pending guard that fires when an authority-set change request arrives while
+another change is already pending
+([Subtensor API Errors: TooSoon](https://docs.learnbittensor.org/subtensor-api/errors#toosoon),
+[Subtensor API Errors: ChangePending](https://docs.learnbittensor.org/subtensor-api/errors#changepending)).
+
+- **TooSoon** — the forced-change cooldown has not elapsed.
+- **ChangePending** — another authority-set change is already pending.
+
+## Distinction from Pause Failed
+
+`TooSoon` and `PauseFailed` are both grandpa-pallet errors that block an authority-set operation,
+but they fire at different checks and on different paths. `TooSoon` is the next-forced-window guard
+on the forced-change path. `PauseFailed` is the live-state guard on the pause path
+([Subtensor API Errors: TooSoon](https://docs.learnbittensor.org/subtensor-api/errors#toosoon),
+[Subtensor API Errors: PauseFailed](https://docs.learnbittensor.org/subtensor-api/errors#pausefailed)).
+
+- **TooSoon** — a forced change arrived before the next-forced window opens.
+- **PauseFailed** — a pause request arrived while the authority set is not live.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the next-forced-window guard it represents on
+the GRANDPA forced-change path. It does not report when the next-forced window opens on a network,
+list the extrinsic that submits the forced change, or describe the session framework that schedules
+authority-set transitions
+([Subtensor API Errors: TooSoon](https://docs.learnbittensor.org/subtensor-api/errors#toosoon)).
+
+## Further Reading
+
+- [Subtensor API Errors: TooSoon](https://docs.learnbittensor.org/subtensor-api/errors#toosoon)
+- [Subtensor API Errors: ChangePending](https://docs.learnbittensor.org/subtensor-api/errors#changepending)
+- [Subtensor API Errors: PauseFailed](https://docs.learnbittensor.org/subtensor-api/errors#pausefailed)
+- [opentensor/polkadot-sdk: frame/grandpa/src/lib.rs#L521](https://github.com/opentensor/polkadot-sdk/blob/7cc54bf2d50ae3921d718736dfeb0de9468539c7/substrate/frame/grandpa/src/lib.rs#L521)
