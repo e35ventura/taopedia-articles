@@ -1,0 +1,89 @@
+---
+title: "Nominator Min Required Stake"
+summary:
+  "How NominatorMinRequiredStake is a single global factor that scales DefaultMinStake into the
+  minimum stake a nominator must hold before a delegation is cleared on Bittensor."
+category: "Staking"
+tags: ["Staking", "Tokenomics"]
+infoboxTitle: Nominator Min Required Stake
+infoboxCaption: Global factor that scales DefaultMinStake into the nominator minimum stake.
+infoboxRows:
+  - label: Storage
+    value: NominatorMinRequiredStake
+  - label: Scope
+    value: Global (single network-wide value)
+  - label: Stored value
+    value: Factor of DefaultMinStake (per-million)
+  - label: Set by
+    value: Root
+  - label: Setter
+    value: sudo_set_nominator_min_required_stake
+---
+
+# Nominator Min Required Stake
+
+Nominator min required stake is a single global value, stored on chain as
+`NominatorMinRequiredStake`, that determines the smallest stake a nominator may hold on a hotkey
+before the runtime clears the nomination. The stored value is not a stake amount itself: it is a
+factor, in per-million format, that scales `DefaultMinStake` into the effective minimum. One value
+applies network-wide, not per subnet
+([Subtensor source: pallets/subtensor/src/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/lib.rs)).
+
+## How the Minimum Is Computed
+
+The runtime derives the minimum in `get_nominator_min_required_stake` by multiplying
+`DefaultMinStake` by the stored factor and dividing by `1_000_000`. So the stored
+`NominatorMinRequiredStake` is a multiplier and the returned value is the actual minimum stake
+amount. The source gives the example that a `DefaultMinStake` of `0.001` TAO with a factor of
+`100_000_000` yields a minimum nomination stake of `0.1` TAO
+([Subtensor source: utils/misc.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/misc.rs)).
+
+## What It Controls
+
+A nominator is a coldkey that stakes to a hotkey it does not own, delegating to that hotkey. When a
+nominator's stake on a hotkey is greater than zero but less than the computed minimum, the runtime
+treats it as a small nomination and removes it with a forced unstake that deletes the staking
+account, applying no fees
+([Subtensor source: staking/helpers.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/helpers.rs)).
+
+Because a nominator's live stake is held in a subnet's alpha, the runtime converts the computed
+minimum into alpha using that subnet's current price before comparing, so the same derived floor is
+applied to each subnet's alpha stake at its own price
+([Subtensor source: staking/helpers.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/helpers.rs)).
+
+## Setter and Default
+
+The factor is changed only by the root origin through the `sudo_set_nominator_min_required_stake`
+extrinsic. When the new factor is higher than the previous one, the same call immediately sweeps
+existing nominations that now fall below the raised minimum by running the small-nomination cleanup
+([Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+The stored factor defaults to zero, which makes the computed minimum zero, so no floor applies until
+it is set to a positive value
+([Subtensor source: pallets/subtensor/src/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/lib.rs)).
+
+## Distinction from Stake Threshold
+
+Both are global root-set stake minimums, but they gate different things. Nominator min required
+stake scales into the floor below which a nominator's delegation to a hotkey is cleared. Stake
+threshold is the minimum stake weight a neuron needs before it can be considered for a validator
+permit during the epoch
+([Subtensor source: pallets/subtensor/src/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/lib.rs)).
+
+- **Nominator min required stake** — a factor scaling `DefaultMinStake` into the small-delegation
+  floor.
+- **Stake threshold** — the stake weight needed to be eligible for a validator permit.
+
+## Reader Boundary
+
+This page defines the global `NominatorMinRequiredStake` factor, how it scales into the minimum, and
+the small-nomination clearing it drives. It does not document the full staking and delegation flow
+or the exact conversion arithmetic between TAO and a subnet's alpha
+([Subtensor source: staking/helpers.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/helpers.rs)).
+
+## Further Reading
+
+- [Subtensor source: pallets/subtensor/src/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/lib.rs)
+- [Subtensor source: utils/misc.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/utils/misc.rs)
+- [Subtensor source: staking/helpers.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/helpers.rs)
+- [Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)
