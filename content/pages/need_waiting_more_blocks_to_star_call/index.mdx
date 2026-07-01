@@ -1,0 +1,130 @@
+---
+title: "Need Waiting More Blocks To Star Call"
+summary:
+  "How the NeedWaitingMoreBlocksToStarCall error blocks a subnet owner's start call when the chain's
+  registration-to-activation delay has not yet elapsed."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Need Waiting More Blocks To Star Call
+infoboxCaption: Error raised when a start call arrives before the post-registration wait clears.
+infoboxRows:
+  - label: Error
+    value: NeedWaitingMoreBlocksToStarCall
+  - label: Trigger
+    value: Start call submitted before the registration delay clears
+  - label: Checked in
+    value: start call
+  - label: Example netuid
+    value: netuid 1
+---
+
+# Need Waiting More Blocks To Star Call
+
+`NeedWaitingMoreBlocksToStarCall` means a subnet owner tried to activate a subnet on netuid 1 or
+another named netuid before the chain's post-registration wait had elapsed. The Subtensor API errors
+reference summarizes it as "need wait for more blocks to accept the start call extrinsic"
+([Subtensor API Errors: NeedWaitingMoreBlocksToStarCall](https://docs.learnbittensor.org/subtensor-api/errors#needwaitingmoreblockstostarcall),
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#needwaitingmoreblockstostarcall)).
+
+## What It Means
+
+Subnet registration and the start call are separate milestones. Registration establishes the subnet
+on chain; the start call switches on the first emission period and enables subtoken trading for that
+netuid ([Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet),
+[Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)).
+
+The chain enforces a configurable delay between registration and the first accepted start call. That
+delay is exposed as the `initialStartCallDelay` constant in the Subtensor constants reference
+([Subtensor Constants: initialStartCallDelay](https://docs.learnbittensor.org/subtensor-api/constants#initialstartcalldelay),
+[Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet)).
+
+`NeedWaitingMoreBlocksToStarCall` means the subnet owner submitted the start call before the current
+block had reached registration block plus that delay. The rejection is a timing gate on activation,
+not proof that the subnet is missing or that emissions have already begun.
+
+## Why It Appears
+
+This error appears when a subnet owner dispatches the start call too soon after registering the
+subnet. That can happen when automation retries activation immediately after registration, when an
+operator assumes the start call is always available at registration time, or when a client uses a
+stale registration block height
+([Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet),
+[Subtensor Constants: initialStartCallDelay](https://docs.learnbittensor.org/subtensor-api/constants#initialstartcalldelay)).
+
+On netuid 1, readers can compare the live `initialStartCallDelay` value from the constants reference
+with the subnet's registration block before retrying activation
+([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+When debugging, compare against other start-call rejections on the same netuid.
+`FirstEmissionBlockNumberAlreadySet` means emissions were already activated on that subnet.
+`SubnetNotExists` means the targeted netuid is not present. `BadOrigin` and `NotSubnetOwner` mean
+the signer lacks subnet-owner permission
+([Subtensor API Errors: FirstEmissionBlockNumberAlreadySet](https://docs.learnbittensor.org/subtensor-api/errors#firstemissionblocknumberalreadyset),
+[Subtensor Standard Errors: SubnetNotExists](https://docs.learnbittensor.org/errors/subtensor#subnetnotexists),
+[Subtensor Standard Errors: BadOrigin](https://docs.learnbittensor.org/errors/subtensor#badorigin),
+[Subtensor Standard Errors: NotSubnetOwner](https://docs.learnbittensor.org/errors/subtensor#notsubnetowner)).
+
+The practical meaning is narrow: wait until the registration delay clears, then resubmit the start
+call.
+
+## Distinction from First Emission Block Number Already Set
+
+`NeedWaitingMoreBlocksToStarCall` and `FirstEmissionBlockNumberAlreadySet` both appear on the start
+call path, but at different stages. `NeedWaitingMoreBlocksToStarCall` means the post-registration
+delay has not elapsed yet. `FirstEmissionBlockNumberAlreadySet` means the subnet has already
+recorded its first emission block and does not accept another activation
+([Subtensor API Errors: FirstEmissionBlockNumberAlreadySet](https://docs.learnbittensor.org/subtensor-api/errors#firstemissionblocknumberalreadyset)).
+
+- **NeedWaitingMoreBlocksToStarCall** — the registration delay has not cleared.
+- **FirstEmissionBlockNumberAlreadySet** — emissions were already activated on the netuid.
+
+## Distinction from Subnet Not Exists
+
+`NeedWaitingMoreBlocksToStarCall` and `SubnetNotExists` both block subnet-owner activation calls,
+but for different reasons. `SubnetNotExists` means the named netuid is not present on chain.
+`NeedWaitingMoreBlocksToStarCall` means the subnet exists but the start call arrived before the
+registration delay ended
+([Subtensor Standard Errors: SubnetNotExists](https://docs.learnbittensor.org/errors/subtensor#subnetnotexists)).
+
+- **NeedWaitingMoreBlocksToStarCall** — the registration delay has not cleared.
+- **SubnetNotExists** — the targeted netuid is not present.
+
+## Distinction from Not Subnet Owner
+
+`NeedWaitingMoreBlocksToStarCall` and `NotSubnetOwner` both can appear when a start call fails, but
+at different checks. `NotSubnetOwner` means the signing account is not the subnet owner on the
+targeted netuid. `NeedWaitingMoreBlocksToStarCall` means the owner signed the call but the
+registration delay had not elapsed
+([Subtensor Standard Errors: NotSubnetOwner](https://docs.learnbittensor.org/errors/subtensor#notsubnetowner)).
+
+- **NeedWaitingMoreBlocksToStarCall** — the registration delay has not cleared.
+- **NotSubnetOwner** — the signer is not the subnet owner.
+
+## Distinction from Subtoken Disabled
+
+`NeedWaitingMoreBlocksToStarCall` and `SubtokenDisabled` both relate to subnet activation state, but
+on different calls. `NeedWaitingMoreBlocksToStarCall` blocks an early start call before the
+registration delay clears. `SubtokenDisabled` blocks pool-backed staking actions on a subnet whose
+subtoken trading toggle is still off
+([Subtensor Standard Errors: SubtokenDisabled](https://docs.learnbittensor.org/errors/subtensor#subtokendisabled)).
+
+- **NeedWaitingMoreBlocksToStarCall** — the start call arrived too soon after registration.
+- **SubtokenDisabled** — subtoken trading is disabled on the subnet.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the registration-to-activation delay gate it
+represents. It does not report the live `initialStartCallDelay` value, a subnet's registration
+block, or whether emissions have started on any network; those are chain constants and subnet state
+readers can query separately
+([Subtensor Constants: initialStartCallDelay](https://docs.learnbittensor.org/subtensor-api/constants#initialstartcalldelay),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: NeedWaitingMoreBlocksToStarCall](https://docs.learnbittensor.org/subtensor-api/errors#needwaitingmoreblockstostarcall)
+- [Create a Subnet](https://docs.learnbittensor.org/subnets/create-a-subnet)
+- [Subtensor Constants: initialStartCallDelay](https://docs.learnbittensor.org/subtensor-api/constants#initialstartcalldelay)
+- [Subtensor API Errors: FirstEmissionBlockNumberAlreadySet](https://docs.learnbittensor.org/subtensor-api/errors#firstemissionblocknumberalreadyset)
