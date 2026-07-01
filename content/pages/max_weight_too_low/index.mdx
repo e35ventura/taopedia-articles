@@ -1,0 +1,65 @@
+---
+title: "Max Weight Too Low"
+summary:
+  "How the MaxWeightTooLow error blocks a multisig execution when the caller-supplied maximum weight
+  budget is lower than the actual dispatch weight of the call being executed, causing the pallet to
+  abort rather than run the call over its stated budget."
+category: "Wallets"
+tags: ["Wallets", "Errors", "Security"]
+infoboxTitle: Max Weight Too Low
+infoboxCaption:
+  Error raised when the provided max_weight budget is less than the call's actual dispatch weight at
+  the point of multisig execution.
+infoboxRows:
+  - label: Error
+    value: MaxWeightTooLow
+  - label: Pallet
+    value: multisig
+  - label: Trigger
+    value: Call's actual dispatch weight exceeds the max_weight parameter at execution time
+  - label: Check type
+    value: Weight budget check immediately before executing the approved call
+---
+
+# Max Weight Too Low
+
+`MaxWeightTooLow` is a multisig pallet error raised when the approval threshold of a multisig
+operation has been reached and the call is about to execute, but the actual dispatch weight of the
+call exceeds the `max_weight` budget provided by the final approving signatory. The API errors
+reference describes it as "The maximum weight information provided was too low"
+([Subtensor API Errors: MaxWeightTooLow](https://docs.learnbittensor.org/subtensor-api/errors#maxweighttoolow)).
+
+## What It Means
+
+When the last required signatory submits their approval via `as_multi`, the multisig pallet
+transitions from collecting approvals to executing the approved call. Before running the call, the
+pallet checks that the call's actual dispatch weight does not exceed the `max_weight` parameter
+supplied in that final `as_multi` submission. This check gives callers a way to cap the block weight
+they are willing to consume: if the call would use more weight than anticipated, the execution is
+blocked rather than proceeding over budget
+([Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)).
+
+`MaxWeightTooLow` fires when that check fails — when the approved call's dispatch weight is larger
+than the `max_weight` value the caller provided. The call is not executed and the multisig record is
+left in place
+([Subtensor API Errors: MaxWeightTooLow](https://docs.learnbittensor.org/subtensor-api/errors#maxweighttoolow),
+[Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)).
+
+## Why It Appears
+
+This error appears when the `max_weight` value supplied in the final approval is smaller than the
+weight that the call actually requires to dispatch. The practical meaning is that the caller
+underestimated the weight of the call and the pallet refuses to run it beyond the stated limit
+([Subtensor API Errors: MaxWeightTooLow](https://docs.learnbittensor.org/subtensor-api/errors#maxweighttoolow)).
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the weight budget check that raises it. It does
+not describe how dispatch weight is computed for specific call types or how block weight limits are
+configured on the network ([Multisig Wallets](https://docs.learnbittensor.org/keys/multisig),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: MaxWeightTooLow](https://docs.learnbittensor.org/subtensor-api/errors#maxweighttoolow)
+- [Multisig Wallets](https://docs.learnbittensor.org/keys/multisig)
