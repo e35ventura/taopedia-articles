@@ -1,0 +1,64 @@
+---
+title: "Space Limit Exceeded"
+summary:
+  "How the SpaceLimitExceeded error blocks a set_commitment call when the caller has already used
+  their per-epoch data allowance for commitment submissions."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Space Limit Exceeded
+infoboxCaption: Error raised when a caller's per-epoch commitment space allowance is exhausted.
+infoboxRows:
+  - label: Error
+    value: SpaceLimitExceeded
+  - label: Trigger
+    value: used_space + required_space exceeds MaxSpace for the current epoch
+  - label: Checked in
+    value: set_commitment extrinsic
+  - label: Check type
+    value: Per-epoch cumulative space rate limit
+---
+
+# Space Limit Exceeded
+
+`SpaceLimitExceeded` is a commitments pallet error raised by the `set_commitment` extrinsic when a
+caller has consumed their per-epoch data allowance for commitment submissions. The pallet defines it
+as "Space Limit Exceeded for the current interval"
+([Subtensor source: commitments/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/commitments/src/lib.rs)).
+
+## What It Means
+
+Each call to `set_commitment` computes a `required_space` value from the total data size of the
+submitted fields, with a minimum floor of 100 space units per call regardless of field content. The
+pallet tracks how much space the caller has already used in the current epoch. If adding the new
+`required_space` to the existing total would exceed `MaxSpace`, the call fails with
+`SpaceLimitExceeded`
+([Subtensor source: commitments/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/commitments/src/lib.rs)).
+
+The space counter resets at the start of each epoch, so the same caller can submit again once the
+epoch advances. The limit applies per caller per subnet, tracked independently for each
+`(netuid, account)` pair
+([Subtensor source: commitments/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/commitments/src/lib.rs)).
+
+## Distinction from Account Not Allowed Commit
+
+`SpaceLimitExceeded` and `AccountNotAllowedCommit` both block `set_commitment`, but at different
+guards. `AccountNotAllowedCommit` fires at the first eligibility check, before any space accounting
+occurs, because the caller is not permitted to commit at all. `SpaceLimitExceeded` fires after
+eligibility passes, when the caller is permitted but has exhausted their space allowance for the
+current epoch
+([Account Not Allowed Commit](https://docs.learnbittensor.org/errors/subtensor#accountnotallowedcommit),
+[Subtensor source: commitments/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/commitments/src/lib.rs)).
+
+- **AccountNotAllowedCommit** — the account is not eligible to commit.
+- **SpaceLimitExceeded** — the account is eligible but its per-epoch space is exhausted.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the per-epoch space check that raises it. It
+does not report a caller's current used space, the epoch length, or the configured maximum space
+value on any specific network; those are chain state values readers can query separately
+([Subtensor source: commitments/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/commitments/src/lib.rs)).
+
+## Further Reading
+
+- [Subtensor source: commitments/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/commitments/src/lib.rs)
