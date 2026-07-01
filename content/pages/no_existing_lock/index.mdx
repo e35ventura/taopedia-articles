@@ -1,0 +1,113 @@
+---
+title: "No Existing Lock"
+summary:
+  "How the NoExistingLock error blocks a move-lock call when the signing coldkey has no conviction
+  lock on the submitted subnet to reassign."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: No Existing Lock
+infoboxCaption: Error raised when no lock exists to move on the subnet.
+infoboxRows:
+  - label: Error
+    value: NoExistingLock
+  - label: Trigger
+    value: Coldkey has no lock on the submitted netuid
+  - label: Checked in
+    value: Move-lock path
+  - label: Related concept
+    value: Conviction and locked stake
+---
+
+# No Existing Lock
+
+`NoExistingLock` means a move-lock call arrived when the signing coldkey had no conviction lock on
+the submitted subnet to reassign. The runtime looks up the coldkey's lock state on that netuid and
+returns this error when none is present
+([Subtensor source: lock.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/lock.rs),
+[Conviction and locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking)).
+
+## What It Means
+
+Conviction locks bind part of a coldkey's subnet alpha to a hotkey and a commitment signal
+([Conviction and locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking)).
+
+A move-lock call reassigns an existing lock on one subnet from its current hotkey to a destination
+hotkey. The locked alpha mass on that netuid is conserved across the move. `NoExistingLock` means
+the coldkey had no lock on the submitted subnet for the runtime to move
+([Conviction and locked stake: Moving a lock](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking#moving-a-lock),
+[Subtensor source: lock.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/lock.rs)).
+
+This is a missing-lock rejection on the move-lock path, not proof that the coldkey lacks staked
+alpha on the subnet or that the destination hotkey is invalid.
+
+## Why It Appears
+
+This error appears when a coldkey signs a move-lock call for a netuid where it has not created a
+conviction lock. That can happen when automation targets the wrong subnet, when a lock was already
+moved or fully unlocked, or when the client still assumes a lock exists after chain state changed
+([Conviction and locked stake: Moving a lock](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking#moving-a-lock),
+[Subtensor source: lock.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/lock.rs)).
+
+When debugging, compare against other lock-path rejections on related calls. `LockHotkeyMismatch`
+means a lock-stake top-up or locked transfer used the wrong hotkey for an existing lock.
+`HotKeyAccountNotExists` means the destination hotkey account is absent. `InsufficientStakeForLock`
+means a lock-stake request named more alpha than the coldkey holds on the subnet
+([Subtensor source: lock.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/lock.rs)).
+
+The practical meaning is narrow: no conviction lock exists on the subnet for this coldkey to move.
+
+## Distinction from Lock Hotkey Mismatch
+
+`NoExistingLock` and `LockHotkeyMismatch` both involve conviction locks, but at different stages.
+`NoExistingLock` means there is no lock on the subnet to move at all. `LockHotkeyMismatch` means a
+lock exists but the submitted hotkey does not match the one it is bound to
+([Subtensor source: lock.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/lock.rs)).
+
+- **NoExistingLock** — no lock exists on the subnet for this coldkey.
+- **LockHotkeyMismatch** — the submitted hotkey does not match the existing lock.
+
+## Distinction from Insufficient Stake For Lock
+
+`NoExistingLock` and `InsufficientStakeForLock` both appear on conviction-lock paths, but on
+different operations. `InsufficientStakeForLock` is raised when a lock-stake call tries to create or
+increase a lock without enough total alpha on the subnet. `NoExistingLock` is raised when a
+move-lock call finds no existing lock to reassign
+([Subtensor source: lock.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/lock.rs)).
+
+- **NoExistingLock** — no lock exists to move on the subnet.
+- **InsufficientStakeForLock** — total subnet alpha is below the lock-stake request.
+
+## Distinction from Active Lock Exists
+
+`NoExistingLock` and `ActiveLockExists` are opposite lock-presence failures on different paths.
+`NoExistingLock` means a move-lock call found no lock to move. `ActiveLockExists` means a coldkey
+swap or similar path found an active lock that must be cleared first
+([Subtensor source: lock.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/lock.rs)).
+
+- **NoExistingLock** — no lock exists on the subnet for the move-lock call.
+- **ActiveLockExists** — an active lock blocks the requested operation.
+
+## Distinction from Hotkey Account Not Exists
+
+`NoExistingLock` and `HotKeyAccountNotExists` can both appear on move-lock calls, but they test
+different preconditions. `HotKeyAccountNotExists` means the destination hotkey account is absent
+from chain state. `NoExistingLock` means the source coldkey has no lock on the subnet to move even
+if the destination hotkey is valid
+([Subtensor Standard Errors: HotKeyAccountNotExists](https://docs.learnbittensor.org/errors/subtensor#hotkeyaccountnotexists),
+[Subtensor source: lock.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/lock.rs)).
+
+- **NoExistingLock** — no source lock exists on the subnet.
+- **HotKeyAccountNotExists** — the destination hotkey account does not exist.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the missing-lock check on the move-lock path.
+It does not report whether a particular coldkey currently holds a conviction lock on any live
+subnet; that depends on chain state at observation time
+([Conviction and locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking)).
+
+## Further Reading
+
+- [Conviction and locked stake: Moving a lock](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking#moving-a-lock)
+- [Subtensor source: lock.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/lock.rs)
+- [Subtensor Standard Errors: HotKeyAccountNotExists](https://docs.learnbittensor.org/errors/subtensor#hotkeyaccountnotexists)
