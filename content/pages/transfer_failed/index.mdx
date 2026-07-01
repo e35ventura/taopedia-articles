@@ -1,0 +1,90 @@
+---
+title: "Transfer Failed"
+summary:
+  "How the TransferFailed error signals that a token transfer initiated by a contract call or
+  instantiation failed at the currency layer."
+category: "Smart Contracts"
+tags: ["Smart Contracts", "Errors", "EVM"]
+infoboxTitle: Transfer Failed
+infoboxCaption: Error raised when a contract-initiated token transfer fails at the currency layer.
+infoboxRows:
+  - label: Error
+    value: TransferFailed
+  - label: Pallet
+    value: contracts
+  - label: Trigger
+    value: Token transfer initiated by a contract call or instantiation fails
+  - label: Check type
+    value: Currency transfer result mapped to a contracts pallet error
+---
+
+# Transfer Failed
+
+`TransferFailed` is a contracts pallet error raised when a token transfer that a contract call or
+instantiation set up is rejected at the currency layer. The API errors reference summarizes it as
+"Performing the requested transfer failed. Probably because there isn't enough free balance in the
+sender's account."
+([Subtensor API Errors: TransferFailed](https://docs.learnbittensor.org/subtensor-api/errors#transferfailed)).
+
+## What It Means
+
+Bittensor's EVM layer runs Ethereum-compatible smart contracts on Subtensor. When a contract call or
+instantiation carries value, that value has to move between accounts at the currency layer before
+the contract code runs
+([Bittensor EVM Smart Contracts](https://docs.learnbittensor.org/evm-tutorials)). `TransferFailed`
+means that underlying move was rejected, so the contract does not execute against the new state.
+([Subtensor API Errors: TransferFailed](https://docs.learnbittensor.org/subtensor-api/errors#transferfailed)).
+
+This is a currency-layer rejection surfaced through the contracts pallet. It does not, by itself,
+mean the contract code trapped or that the supplied bytecode was too large to instantiate.
+
+## Why It Appears
+
+This error appears when a contract call or instantiation carries a non-zero value but the move
+between accounts cannot be completed. The contracts pallet source describes the helper that produces
+this error as a thin wrapper around the currency-layer transfer: if that underlying call returns an
+error, the helper maps it to `Error::<T>::TransferFailed`
+([polkadot-sdk: substrate/frame/contracts/src/exec.rs:1184](https://github.com/paritytech/polkadot-sdk/blob/master/substrate/frame/contracts/src/exec.rs#L1184)).
+The summary on the API errors page identifies the most common underlying cause as insufficient free
+balance in the sender's account
+([Subtensor API Errors: TransferFailed](https://docs.learnbittensor.org/subtensor-api/errors#transferfailed)).
+
+## Distinction from Out Of Gas
+
+`TransferFailed` and `OutOfGas` both cause a contract call to halt before finishing, but they fail
+at different stages. `OutOfGas` is summarized as "The executed contract exhausted its gas limit."
+`TransferFailed` is summarized as "Performing the requested transfer failed. Probably because there
+isn't enough free balance in the sender's account."
+([Subtensor API Errors: OutOfGas](https://docs.learnbittensor.org/subtensor-api/errors#outofgas),
+[Subtensor API Errors: TransferFailed](https://docs.learnbittensor.org/subtensor-api/errors#transferfailed)).
+
+- **OutOfGas** — execution ran out of gas before finishing.
+- **TransferFailed** — the value transfer step before or during the call was rejected.
+
+## Distinction from Code Too Large
+
+`TransferFailed` and `CodeTooLarge` are both contracts pallet errors but they block different paths.
+`CodeTooLarge` is summarized as "The code supplied to `instantiate_with_code` exceeds the limit
+specified in the current schedule." `TransferFailed` is summarized as "Performing the requested
+transfer failed. Probably because there isn't enough free balance in the sender's account."
+([Subtensor API Errors: CodeTooLarge](https://docs.learnbittensor.org/subtensor-api/errors#codetoolarge),
+[Subtensor API Errors: TransferFailed](https://docs.learnbittensor.org/subtensor-api/errors#transferfailed)).
+
+- **CodeTooLarge** — supplied instantiate code exceeds the current schedule limit.
+- **TransferFailed** — the value transfer step before or during the call was rejected.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the currency-layer rejection it represents for
+contract-initiated transfers. It does not diagnose which specific currency-layer rule (free balance,
+frozen status, hold, or other restriction) caused the rejection; that is determined by the balances
+pallet at the moment of the call.
+([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks),
+[Subtensor API Errors: TransferFailed](https://docs.learnbittensor.org/subtensor-api/errors#transferfailed)).
+
+## Further Reading
+
+- [Subtensor API Errors: TransferFailed](https://docs.learnbittensor.org/subtensor-api/errors#transferfailed)
+- [Subtensor API Errors: OutOfGas](https://docs.learnbittensor.org/subtensor-api/errors#outofgas)
+- [Subtensor API Errors: CodeTooLarge](https://docs.learnbittensor.org/subtensor-api/errors#codetoolarge)
+- [Bittensor EVM Smart Contracts](https://docs.learnbittensor.org/evm-tutorials)
