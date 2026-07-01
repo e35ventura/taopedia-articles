@@ -1,0 +1,120 @@
+---
+title: "Lock Hotkey Mismatch"
+summary:
+  "How the LockHotkeyMismatch error blocks a conviction lock or locked stake transfer when the
+  submitted hotkey does not match the hotkey already bound to the coldkey's lock on that subnet."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Lock Hotkey Mismatch
+infoboxCaption: Error raised when a lock is tied to a different hotkey.
+infoboxRows:
+  - label: Error
+    value: LockHotkeyMismatch
+  - label: Trigger
+    value: Submitted hotkey differs from the lock's bound hotkey
+  - label: Checked in
+    value: Lock-stake and locked transfer paths
+  - label: Related concept
+    value: Conviction and locked stake
+---
+
+# Lock Hotkey Mismatch
+
+`LockHotkeyMismatch` means a conviction-lock call used a hotkey that does not match the hotkey
+already tied to the coldkey's lock on that subnet. The runtime compares the submitted hotkey against
+the one stored with the existing lock and returns this error when they differ
+([Subtensor source: lock.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/lock.rs),
+[Conviction and locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking)).
+
+## What It Means
+
+Conviction locks bind part of a coldkey's subnet alpha to a specific hotkey and a commitment signal
+([Conviction and locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking)).
+
+On the lock-stake path, a coldkey may create a new lock or add alpha to an existing one. When a lock
+already exists on the subnet, the call must target the same hotkey that lock is bound to.
+`LockHotkeyMismatch` means a different hotkey was submitted
+([Subtensor source: lock.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/lock.rs)).
+
+The same hotkey-binding rule applies when locked alpha moves between coldkeys on the same subnet. If
+the destination coldkey already has a lock, the transfer can carry locked mass only when that lock
+points at the same hotkey as the source
+([Conviction and locked stake: Transferring locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking#transferring-locked-stake),
+[Subtensor source: lock.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/lock.rs)).
+
+## Why It Appears
+
+This error appears when a lock-stake call tops up or continues a lock on the wrong hotkey, or when a
+stake transfer would move locked alpha to a destination coldkey whose existing lock is bound to
+another hotkey
+([Conviction and locked stake: Transferring locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking#transferring-locked-stake),
+[Subtensor source: lock.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/lock.rs)).
+
+When debugging, compare against other lock-related rejections on the same call.
+`InsufficientStakeForLock` means total staked alpha on the subnet is below the lock amount.
+`AccountRejectsLockedAlpha` means the destination coldkey has not opted in to receive incoming
+locked alpha. `StakeUnavailable` means the source coldkey cannot free enough unlocked alpha for the
+request
+([Subtensor source: lock.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/lock.rs)).
+
+The practical meaning is narrow: the hotkey named in the call does not match the lock's bound
+hotkey.
+
+## Distinction from Insufficient Stake For Lock
+
+`LockHotkeyMismatch` and `InsufficientStakeForLock` are both raised on the lock-stake path, but they
+test different conditions. `InsufficientStakeForLock` means the coldkey does not hold enough total
+alpha on the subnet to cover the lock request. `LockHotkeyMismatch` means the hotkey binding is
+wrong even if balance might otherwise be sufficient
+([Subtensor source: lock.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/lock.rs)).
+
+- **LockHotkeyMismatch** — the submitted hotkey does not match the existing lock.
+- **InsufficientStakeForLock** — total subnet alpha is below the lock request.
+
+## Distinction from Account Rejects Locked Alpha
+
+`LockHotkeyMismatch` and `AccountRejectsLockedAlpha` both block same-subnet transfers that carry
+lock state, but at different checks. `AccountRejectsLockedAlpha` means the destination coldkey
+rejects incoming locked alpha. `LockHotkeyMismatch` means the destination already has a lock tied to
+a different hotkey than the source
+([Conviction and locked stake: Transferring locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking#transferring-locked-stake),
+[Subtensor source: lock.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/lock.rs)).
+
+- **AccountRejectsLockedAlpha** — the destination rejects incoming locked alpha.
+- **LockHotkeyMismatch** — the destination lock points at a different hotkey.
+
+## Distinction from Hotkey Account Not Exists
+
+`LockHotkeyMismatch` and `HotKeyAccountNotExists` both involve hotkey validity on lock paths, but at
+different stages. `HotKeyAccountNotExists` means the named hotkey account is absent from chain
+state. `LockHotkeyMismatch` means the hotkey exists but is not the one already bound to the
+coldkey's lock on the subnet
+([Subtensor Standard Errors: HotKeyAccountNotExists](https://docs.learnbittensor.org/errors/subtensor#hotkeyaccountnotexists),
+[Subtensor source: lock.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/lock.rs)).
+
+- **HotKeyAccountNotExists** — the hotkey account does not exist.
+- **LockHotkeyMismatch** — the hotkey does not match the existing lock binding.
+
+## Distinction from Stake Unavailable
+
+`LockHotkeyMismatch` and `StakeUnavailable` both appear around locked stake moves, but they name
+different problems. `StakeUnavailable` means the source coldkey cannot supply enough unlocked alpha
+for the request. `LockHotkeyMismatch` means locked mass cannot follow the transfer because the
+destination lock is bound to another hotkey
+([Subtensor source: lock.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/lock.rs)).
+
+- **StakeUnavailable** — the source lacks enough unlocked alpha for the request.
+- **LockHotkeyMismatch** — the destination lock is tied to a different hotkey.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the hotkey-binding check on conviction-lock
+paths. It does not report which hotkey a coldkey's live lock is bound to on any subnet; that depends
+on chain state at observation time
+([Conviction and locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking)).
+
+## Further Reading
+
+- [Conviction and locked stake](https://docs.learnbittensor.org/staking-and-delegation/conviction-staking)
+- [Subtensor source: lock.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/lock.rs)
+- [Subtensor Standard Errors: HotKeyAccountNotExists](https://docs.learnbittensor.org/errors/subtensor#hotkeyaccountnotexists)
