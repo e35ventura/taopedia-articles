@@ -1,0 +1,115 @@
+---
+title: "Price Condition Not Met"
+summary:
+  "How the PriceConditionNotMet error blocks limit-order execution when the current market price
+  does not satisfy the order type's limit-price rule."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Price Condition Not Met
+infoboxCaption: Error raised when market price fails the order's limit condition.
+infoboxRows:
+  - label: Error
+    value: PriceConditionNotMet
+  - label: Trigger
+    value: Scaled market price fails the order-type limit comparison
+  - label: Checked in
+    value: is_order_valid, called by execute_orders and execute_batched_orders
+  - label: Check type
+    value: Limit-price comparison by order type
+---
+
+# Price Condition Not Met
+
+`PriceConditionNotMet` is a documented limit-orders error raised when a signed limit order cannot be
+executed at the current market price. The Subtensor API error reference describes it as "The current
+market price does not satisfy the order's limit price"
+([Subtensor API Errors: PriceConditionNotMet](https://docs.learnbittensor.org/subtensor-api/errors#priceconditionnotmet)).
+
+## What It Means
+
+Limit orders carry a limit price and an order type that defines when execution is allowed. The
+`is_order_valid` helper — used by both `execute_orders` and `execute_batched_orders` — scales the
+current market price to the same fixed-point scale as the order's limit price field, then compares
+the two values according to the order type. `PriceConditionNotMet` means that comparison failed
+([Subnet Liquidity Pools](https://docs.learnbittensor.org/subnets/understanding-subnets#liquidity-pools),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+For `TakeProfit` orders, execution requires the scaled market price to be greater than or equal to
+the limit price. For `StopLoss` and `LimitBuy` orders, execution requires the scaled market price to
+be less than or equal to the limit price
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+The check runs after signature, processed-state, and expiry validation, and before relayer and
+partial-fill checks on the same path
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+This is a market-price rejection on the execution path, not proof that the signature is invalid,
+that the order expired, or that the order was already fulfilled or cancelled.
+
+## Why It Appears
+
+This error appears when a relayer submits an otherwise valid order while the live market price has
+not yet reached the order's trigger level. A take-profit order returns `PriceConditionNotMet` when
+price is still below the limit. A stop-loss or limit-buy order returns it when price is still above
+the limit
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+When debugging, compare against earlier rejections on the same validation path. `InvalidSignature`
+means the Sr25519 signature did not verify. `OrderExpired` means the current timestamp is past the
+order's expiry field
+([Invalid Signature](https://docs.learnbittensor.org/errors/subtensor#invalidsignature),
+[Order Expired](https://docs.learnbittensor.org/errors/subtensor#orderexpired),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+Later rejections on the same path include `RelayerMissMatch` when the executing relayer is not on
+the order's allowed relayer list, and the partial-fill errors when a partial execution payload does
+not meet the order's partial-fill rules
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+## Distinction from Order Expired
+
+`PriceConditionNotMet` and `OrderExpired` are both raised by `is_order_valid`, but at different
+checks. `OrderExpired` compares the current timestamp against the order's expiry field before price
+validation runs. `PriceConditionNotMet` means the order is still within its time window but the
+scaled market price does not satisfy the order-type limit rule
+([Order Expired](https://docs.learnbittensor.org/errors/subtensor#orderexpired),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+- **OrderExpired** — the order's expiry timestamp has passed.
+- **PriceConditionNotMet** — the market price does not satisfy the limit condition.
+
+## Distinction from Invalid Signature
+
+`PriceConditionNotMet` and `InvalidSignature` are both execution rejections on `is_order_valid`, but
+at different stages. `InvalidSignature` is returned during signature verification before expiry and
+price checks. `PriceConditionNotMet` is returned only after those earlier gates pass
+([Invalid Signature](https://docs.learnbittensor.org/errors/subtensor#invalidsignature),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+- **InvalidSignature** — the signature does not verify.
+- **PriceConditionNotMet** — the market price does not satisfy the limit condition.
+
+## Distinction between TakeProfit and StopLoss or LimitBuy
+
+`PriceConditionNotMet` uses the same error label for all order types, but the runtime applies
+different comparisons. `TakeProfit` requires the scaled market price to be at or above the limit
+price. `StopLoss` and `LimitBuy` require the scaled market price to be at or below the limit price
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+- **TakeProfit** — price is below the take-profit limit.
+- **StopLoss** or **LimitBuy** — price is above the stop or buy limit.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the limit-price comparison that raises it. It
+does not report live market prices or order limit values on any network; those are order and market
+state readers can query separately
+([Subnet Liquidity Pools](https://docs.learnbittensor.org/subnets/understanding-subnets#liquidity-pools),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: PriceConditionNotMet](https://docs.learnbittensor.org/subtensor-api/errors#priceconditionnotmet)
+- [Order Expired](https://docs.learnbittensor.org/errors/subtensor#orderexpired)
+- [Invalid Signature](https://docs.learnbittensor.org/errors/subtensor#invalidsignature)
+- [Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)
