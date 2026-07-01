@@ -1,0 +1,122 @@
+---
+title: "Transfer Disallowed"
+summary:
+  "How the TransferDisallowed error blocks a stake-transfer call when the origin or destination
+  subnet has disabled coldkey-to-coldkey stake transfers through its transfer toggle."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Transfer Disallowed
+infoboxCaption: Error raised when stake transfers are disabled on a subnet.
+infoboxRows:
+  - label: Error
+    value: TransferDisallowed
+  - label: Trigger
+    value: Transfer toggle is off for the origin or destination subnet
+  - label: Checked in
+    value: transfer_stake and related move paths
+  - label: Related hyperparameter
+    value: ToggleTransfer
+---
+
+# Transfer Disallowed
+
+`TransferDisallowed` means a stake-transfer call tried to move delegated alpha between coldkeys on a
+subnet whose transfer toggle is off. The standard-errors reference describes it as "Transfers are
+disallowed on this subnet"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#transferdisallowed),
+[Subtensor API Errors: TransferDisallowed](https://docs.learnbittensor.org/subtensor-api/errors#transferdisallowed)).
+
+## What It Means
+
+Transferring stake changes which coldkey owns a staked position without unstaking and restaking
+([Transferring Stake](https://docs.learnbittensor.org/staking-and-delegation/delegation)).
+
+Each subnet exposes a transfer toggle through the `ToggleTransfer` hyperparameter. When that setting
+is false, coldkey-to-coldkey stake transfers are blocked on that netuid
+([Subnet Hyperparameters: ToggleTransfer](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#toggletransfer)).
+
+`TransferDisallowed` is the policy rejection when a transfer call names a subnet with transfers
+disabled. On within-subnet transfers, the runtime checks the origin netuid. On cross-subnet
+transfers, it checks both the origin and destination netuids before the move proceeds
+([Subtensor source: stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs),
+[Subtensor source: move_stake.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/move_stake.rs)).
+
+This is a subnet policy gate, not proof that the signing coldkey lacks permission for the hotkey or
+that the requested alpha amount exceeds the staked balance.
+
+## Why It Appears
+
+This error appears when a coldkey signs a stake-transfer call while the transfer toggle is off on
+the involved subnet. That can happen after a subnet owner disables transfers, when automation
+targets the wrong netuid, or when a cross-subnet transfer includes a destination subnet that has
+transfers turned off
+([Subnet Hyperparameters: ToggleTransfer](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#toggletransfer),
+[Transferring Stake](https://docs.learnbittensor.org/staking-and-delegation/delegation)).
+
+When debugging, compare against other stake-move rejections on related calls. `SubtokenDisabled`
+means subtoken trading is turned off on the subnet. `AccountRejectsLockedAlpha` means the
+destination coldkey has not opted in to receive incoming locked alpha. `NonAssociatedColdKey` means
+the signing coldkey does not own the hotkey named in the call
+([Subtensor Standard Errors: SubtokenDisabled](https://docs.learnbittensor.org/errors/subtensor#subtokendisabled),
+[Subtensor Standard Errors: NonAssociatedColdKey](https://docs.learnbittensor.org/errors/subtensor#nonassociatedcoldkey)).
+
+The practical meaning is narrow: stake transfers are disabled on at least one subnet named in the
+call.
+
+## Distinction from Subtoken Disabled
+
+`TransferDisallowed` and `SubtokenDisabled` both block stake-management calls, but they test
+different subnet switches. `SubtokenDisabled` means `SubtokenEnabled` is false and pool-backed
+subtoken trading is unavailable on the subnet. `TransferDisallowed` means the transfer toggle is off
+and coldkey-to-coldkey stake transfers are blocked even when other stake actions may still be open
+([Subtensor Standard Errors: SubtokenDisabled](https://docs.learnbittensor.org/errors/subtensor#subtokendisabled)).
+
+- **TransferDisallowed** — the transfer toggle blocks coldkey stake transfers.
+- **SubtokenDisabled** — subtoken trading is disabled on the subnet.
+
+## Distinction from Account Rejects Locked Alpha
+
+`TransferDisallowed` and `AccountRejectsLockedAlpha` both stop stake moves, but at different layers.
+`TransferDisallowed` is the subnet-wide transfer toggle. `AccountRejectsLockedAlpha` means the
+destination coldkey rejects incoming locked alpha on an otherwise permitted transfer path
+([Subtensor Standard Errors: AccountRejectsLockedAlpha](https://docs.learnbittensor.org/errors/subtensor#accountrejectslockedalpha)).
+
+- **TransferDisallowed** — stake transfers are disabled on the subnet.
+- **AccountRejectsLockedAlpha** — the destination coldkey rejects incoming locked alpha.
+
+## Distinction from Non Associated Cold Key
+
+`TransferDisallowed` and `NonAssociatedColdKey` both block stake-transfer calls, but at different
+stages. `NonAssociatedColdKey` means the signing coldkey is not paired with the hotkey named in the
+call. `TransferDisallowed` means the subnet policy forbids transfers even when coldkey-hotkey
+pairing would otherwise pass
+([Subtensor Standard Errors: NonAssociatedColdKey](https://docs.learnbittensor.org/errors/subtensor#nonassociatedcoldkey)).
+
+- **TransferDisallowed** — the subnet transfer toggle is off.
+- **NonAssociatedColdKey** — the coldkey does not own the named hotkey.
+
+## Distinction from Not Enough Stake To Withdraw
+
+`TransferDisallowed` and `NotEnoughStakeToWithdraw` both appear on stake-move paths, but they reject
+different problems. `NotEnoughStakeToWithdraw` means the hotkey-coldkey pair does not hold enough
+staked alpha for the requested amount. `TransferDisallowed` means the subnet does not allow the
+transfer operation at all
+([Subtensor Standard Errors: NotEnoughStakeToWithdraw](https://docs.learnbittensor.org/errors/subtensor#notenoughstaketowithdraw)).
+
+- **TransferDisallowed** — stake transfers are disabled on the subnet.
+- **NotEnoughStakeToWithdraw** — the pair lacks enough staked alpha for the request.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the transfer-toggle check it represents. It
+does not report whether transfers are currently enabled on any particular netuid; that setting is
+subnet chain state readers can query for the selected netuid
+([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor Standard Errors: TransferDisallowed](https://docs.learnbittensor.org/errors/subtensor#transferdisallowed)
+- [Subnet Hyperparameters: ToggleTransfer](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#toggletransfer)
+- [Transferring Stake](https://docs.learnbittensor.org/staking-and-delegation/delegation)
+- [Subtensor source: stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)
