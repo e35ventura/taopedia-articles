@@ -1,0 +1,82 @@
+---
+title: "Invalid Nonce"
+summary:
+  "How the InvalidNonce error blocks an EVM transaction when the submitted account nonce does not
+  match what the runtime expects for that address."
+category: "Wallets"
+tags: ["Wallets", "Errors", "EVM"]
+infoboxTitle: Invalid Nonce
+infoboxCaption: Error raised when an EVM transaction nonce fails validation.
+infoboxRows:
+  - label: Error
+    value: InvalidNonce
+  - label: Pallet
+    value: evm
+  - label: Trigger
+    value: Submitted nonce does not match the expected account nonce
+  - label: Check type
+    value: EVM transaction nonce validation
+---
+
+# Invalid Nonce
+
+`InvalidNonce` is an EVM pallet error raised when the submitted nonce is not valid for the account.
+The API errors reference summarizes it as "Nonce is invalid"
+([Subtensor API Errors: InvalidNonce](https://docs.learnbittensor.org/subtensor-api/errors#invalidnonce)).
+
+## What It Means
+
+Bittensor's EVM layer executes Ethereum-compatible transactions on Subtensor and tracks a
+per-address nonce so each submission can be ordered and replay-protected. `InvalidNonce` means the
+nonce field on the submitted transaction does not pass the runtime's nonce check, so the EVM path
+rejects the call before execution proceeds
+([Bittensor EVM Smart Contracts](https://docs.learnbittensor.org/evm-tutorials),
+[Subtensor API Errors: InvalidNonce](https://docs.learnbittensor.org/subtensor-api/errors#invalidnonce)).
+
+This is a nonce-validation rejection. It does not, by itself, mean the chain ID was wrong, that the
+gas limit or gas price was out of range, or that the account lacked balance to pay the fee.
+
+## Why It Appears
+
+This error appears when a wallet, script, or integration submits an EVM transaction whose nonce does
+not match what the runtime expects for that address at submission time. The practical meaning is
+narrow: resubmit with the correct nonce for the address before retrying the same action
+([Subtensor API Errors: InvalidNonce](https://docs.learnbittensor.org/subtensor-api/errors#invalidnonce),
+[Token Bridging](https://docs.learnbittensor.org/evm-tutorials/bridge-vtao)).
+
+## Distinction from Invalid Chain ID
+
+`InvalidNonce` and `InvalidChainId` both block EVM transaction submission, but they reject different
+fields. `InvalidChainId` means the submitted chain ID is invalid for the network. `InvalidNonce`
+means the account nonce field failed validation
+([Subtensor API Errors: InvalidChainId](https://docs.learnbittensor.org/subtensor-api/errors#invalidchainid),
+[Subtensor API Errors: InvalidNonce](https://docs.learnbittensor.org/subtensor-api/errors#invalidnonce)).
+
+- **InvalidNonce** — the submitted account nonce is invalid.
+- **InvalidChainId** — the submitted chain ID is invalid.
+
+## Distinction from Balance Low
+
+`InvalidNonce` and `BalanceLow` both stop an EVM call before it completes, but at different checks.
+`InvalidNonce` is rejected during nonce validation. `BalanceLow` means fee withdrawal failed because
+the mapped account balance was too low
+([Subtensor API Errors: BalanceLow](https://docs.learnbittensor.org/subtensor-api/errors#balancelow),
+[Subtensor API Errors: InvalidNonce](https://docs.learnbittensor.org/subtensor-api/errors#invalidnonce)).
+
+- **InvalidNonce** — the submitted nonce failed validation.
+- **BalanceLow** — the account cannot fund the required fee withdrawal.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the nonce check it represents on EVM paths. It
+does not report the live nonce for any EVM address or replay a full transaction-debugging workflow;
+those depend on chain state and tooling at observation time
+([Bittensor EVM Smart Contracts](https://docs.learnbittensor.org/evm-tutorials),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: InvalidNonce](https://docs.learnbittensor.org/subtensor-api/errors#invalidnonce)
+- [Subtensor API Errors: InvalidChainId](https://docs.learnbittensor.org/subtensor-api/errors#invalidchainid)
+- [Subtensor API Errors: BalanceLow](https://docs.learnbittensor.org/subtensor-api/errors#balancelow)
+- [Bittensor EVM Smart Contracts](https://docs.learnbittensor.org/evm-tutorials)
