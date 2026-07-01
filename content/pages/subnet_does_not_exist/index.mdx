@@ -1,0 +1,112 @@
+---
+title: "Subnet Does Not Exist"
+summary:
+  "How the SubnetDoesNotExist error blocks admin-utils hyperparameter setters when the submitted
+  netuid does not correspond to a subnet present in chain state."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Subnet Does Not Exist
+infoboxCaption: Error raised when an admin-utils setter targets a netuid with no subnet record.
+infoboxRows:
+  - label: Error
+    value: SubnetDoesNotExist
+  - label: Trigger
+    value: if_subnet_exist(netuid) returns false on admin-utils setters
+  - label: Checked in
+    value: admin-utils hyperparameter setters
+  - label: Example path
+    value: sudo_set_min_difficulty
+---
+
+# Subnet Does Not Exist
+
+`SubnetDoesNotExist` is an admin-utils pallet error raised when a hyperparameter setter is called
+with a netuid that has no subnet record on chain. The pallet defines it as "The subnet does not
+exist, check the netuid parameter"
+([Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+## What It Means
+
+Many admin-utils hyperparameter setters accept a `netuid` and update subnet-specific configuration.
+Before writing storage, those setters call `if_subnet_exist`, which checks the `NetworksAdded` map,
+and return `SubnetDoesNotExist` when that lookup fails
+([Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets),
+[Glossary: netuid](https://docs.learnbittensor.org/resources/glossary#netuid),
+[Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+One documented example is `sudo_set_min_difficulty`, which checks subnet existence before updating
+minimum difficulty storage for the submitted netuid
+([Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+This is an early netuid existence rejection on admin-utils setter paths, not proof that the caller
+lacks authorization, that the submitted value is out of bounds, or that the submitted netuid is the
+Root Subnet on paths that forbid root updates.
+
+## Why It Appears
+
+This error appears when a client submits an admin-utils setter with a netuid that is absent from
+`NetworksAdded`. That can happen when the netuid is mistyped, copied from another network, or refers
+to a subnet that was never registered or is no longer present in chain state
+([Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+When debugging, compare against other rejections on the same call. `NotPermittedOnRootSubnet` means
+the submitted netuid is the Root Subnet on setter paths that disallow root updates. `InvalidValue`
+and `ValueNotInBounds` mean the netuid passed existence checks but the submitted parameter failed a
+later validation rule
+([Not Permitted On Root Subnet](https://docs.learnbittensor.org/errors/subtensor#notpermittedonrootsubnet),
+[Invalid Value](https://docs.learnbittensor.org/errors/subtensor#invalidvalue),
+[Value Not In Bounds](https://docs.learnbittensor.org/errors/subtensor#valuenotinbounds),
+[Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+The practical meaning is narrow: confirm the netuid exists on the target network before retrying the
+setter.
+
+## Distinction from Subnet Not Exists
+
+`SubnetDoesNotExist` and `SubnetNotExists` both signal a missing subnet target, but on different
+pallets. `SubnetDoesNotExist` is raised by admin-utils hyperparameter setters when `if_subnet_exist`
+fails. `SubnetNotExists` is the subtensor pallet error raised on registration, staking, weight, and
+other subnet-scoped subtensor paths when the same existence lookup fails
+([Subnet Not Exists](https://docs.learnbittensor.org/errors/subtensor#subnetnotexists),
+[Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+- **SubnetDoesNotExist** — an admin-utils setter targeted a netuid with no subnet record.
+- **SubnetNotExists** — a subtensor extrinsic targeted a netuid with no subnet record.
+
+## Distinction from Not Permitted On Root Subnet
+
+`SubnetDoesNotExist` and `NotPermittedOnRootSubnet` both appear on several admin-utils setters, but
+at different checks. `SubnetDoesNotExist` means the submitted netuid has no subnet record.
+`NotPermittedOnRootSubnet` means the netuid is the Root Subnet, which exists but is not permitted
+for those setter paths
+([Not Permitted On Root Subnet](https://docs.learnbittensor.org/errors/subtensor#notpermittedonrootsubnet),
+[Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+- **SubnetDoesNotExist** — the submitted netuid has no subnet record.
+- **NotPermittedOnRootSubnet** — the submitted netuid is the Root Subnet.
+
+## Distinction from Root Network Does Not Exist
+
+`SubnetDoesNotExist` and `RootNetworkDoesNotExist` both involve missing subnet state, but on
+different checks and scopes. `SubnetDoesNotExist` means the submitted netuid failed the general
+`if_subnet_exist` lookup on an admin-utils setter. `RootNetworkDoesNotExist` is the separate
+subtensor error for root-network account lookups that fail on root-specific paths
+([Root Network Does Not Exist](https://docs.learnbittensor.org/errors/subtensor#rootnetworkdoesnotexist),
+[Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)).
+
+- **SubnetDoesNotExist** — the submitted netuid has no subnet record on an admin-utils setter.
+- **RootNetworkDoesNotExist** — a root-network account lookup failed on a root-specific path.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the `if_subnet_exist` guard on admin-utils
+setters. It does not report which netuids exist on any network; that is chain state readers can
+query separately ([Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks),
+[Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)).
+
+## Further Reading
+
+- [Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)
+- [Subnet Not Exists](https://docs.learnbittensor.org/errors/subtensor#subnetnotexists)
+- [Not Permitted On Root Subnet](https://docs.learnbittensor.org/errors/subtensor#notpermittedonrootsubnet)
+- [Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)
