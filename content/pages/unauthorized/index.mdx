@@ -1,0 +1,99 @@
+---
+title: "Unauthorized"
+summary:
+  "How the Unauthorized error blocks cancel_order when the signing account is not the limit order's
+  designated signer."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Unauthorized
+infoboxCaption: Error raised when a non-signer attempts to cancel a limit order.
+infoboxRows:
+  - label: Error
+    value: Unauthorized
+  - label: Trigger
+    value: Signed origin does not match the order signer field
+  - label: Checked in
+    value: cancel_order extrinsic
+  - label: Check type
+    value: Signer identity comparison
+---
+
+# Unauthorized
+
+`Unauthorized` is a documented limit-orders error raised when a limit-order cancellation is
+submitted by an account other than the order's signer. The Subtensor API error reference describes
+it as "Caller is not the order signer (required for cancellation)"
+([Subtensor API Errors: Unauthorized](https://docs.learnbittensor.org/subtensor-api/errors#unauthorized)).
+
+## What It Means
+
+Limit orders name a signer account that alone may cancel them. The `cancel_order` extrinsic compares
+the transaction origin against the signer field stored in the submitted order payload and returns
+`Unauthorized` when they do not match
+([Subnet Liquidity Pools](https://docs.learnbittensor.org/subnets/understanding-subnets#liquidity-pools),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+The check runs before the runtime derives the order ID or writes a cancelled status to storage. A
+failed signer match stops the call before any cancellation record is created
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+This is a caller-identity rejection on the cancellation path, not proof that the order was already
+fulfilled or that execution would fail a signature or price check.
+
+## Why It Appears
+
+This error appears when `cancel_order` is signed by an account that is not the order's designated
+signer. That can happen when automation uses the wrong wallet, when a relayer account submits a
+cancellation on behalf of someone else, or when the order payload's signer field does not match the
+key that signed the extrinsic
+([Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+When debugging, compare against the next rejection on the same call. `OrderAlreadyProcessed` means
+the derived order ID already has a stored status entry, so the order cannot be cancelled again
+through this path
+([Order Already Processed](https://docs.learnbittensor.org/errors/subtensor#orderalreadyprocessed),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+On the execution path, `OrderCancelled` is the separate error raised by `is_order_valid` when a
+relayer tries to fulfill an order that was already marked cancelled in storage
+([Order Cancelled](https://docs.learnbittensor.org/errors/subtensor#ordercancelled),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+## Distinction from Order Already Processed on cancel_order
+
+`Unauthorized` and `OrderAlreadyProcessed` both appear on `cancel_order`, but at different checks.
+`Unauthorized` means the signing account is not the order's designated signer.
+`OrderAlreadyProcessed` means the derived order ID already has a stored status, so the cancellation
+cannot be recorded
+([Order Already Processed](https://docs.learnbittensor.org/errors/subtensor#orderalreadyprocessed),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+- **Unauthorized** — the caller is not the order signer.
+- **OrderAlreadyProcessed** — the order ID already has final stored status.
+
+## Distinction from Order Cancelled on execution
+
+`Unauthorized` and `OrderCancelled` both involve cancellation, but on different extrinsics.
+`Unauthorized` is returned by `cancel_order` when the wrong account attempts to register a
+cancellation. `OrderCancelled` is returned by `is_order_valid` during execution when the order was
+already marked cancelled in storage
+([Order Cancelled](https://docs.learnbittensor.org/errors/subtensor#ordercancelled),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+- **Unauthorized** — a non-signer attempted to cancel the order.
+- **OrderCancelled** — execution was attempted on an already cancelled order.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the signer comparison on `cancel_order`. It
+does not describe how limit orders are signed, executed, or batched; those workflows are documented
+separately
+([Subnet Liquidity Pools](https://docs.learnbittensor.org/subnets/understanding-subnets#liquidity-pools),
+[Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)).
+
+## Further Reading
+
+- [Subtensor API Errors: Unauthorized](https://docs.learnbittensor.org/subtensor-api/errors#unauthorized)
+- [Order Already Processed](https://docs.learnbittensor.org/errors/subtensor#orderalreadyprocessed)
+- [Order Cancelled](https://docs.learnbittensor.org/errors/subtensor#ordercancelled)
+- [Subtensor source: limit-orders/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/limit-orders/src/lib.rs)
