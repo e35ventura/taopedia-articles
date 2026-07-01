@@ -1,0 +1,116 @@
+---
+title: "Subnet Not Exists"
+summary:
+  "How the SubnetNotExists error blocks subnet-scoped extrinsics when the submitted netuid does not
+  correspond to a subnet present in chain state."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Subnet Not Exists
+infoboxCaption: Error raised when the targeted netuid has no subnet record.
+infoboxRows:
+  - label: Error
+    value: SubnetNotExists
+  - label: Trigger
+    value: Submitted netuid has no subnet on chain
+  - label: Checked in
+    value: Early netuid validation on subnet-scoped paths
+  - label: Related concept
+    value: netuid
+---
+
+# Subnet Not Exists
+
+`SubnetNotExists` means a subnet-scoped call named a netuid that has no subnet record on chain. The
+standard-errors reference describes it as "Trying to perform action on non-existent subnet"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#subnetnotexists)).
+
+A netuid is the numeric identifier for a Bittensor subnet. Valid extrinsics assume that identifier
+points at live subnet state before registration, staking, weight, or admin rules run
+([Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets),
+[Glossary: netuid](https://docs.learnbittensor.org/resources/glossary#netuid)).
+
+## What It Means
+
+Many subnet-scoped extrinsics open with a subnet existence check. `SubnetNotExists` means that
+lookup failed, so the chain rejected the call before later gates such as registration policy,
+balance checks, or weight validation
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#subnetnotexists)).
+
+This is an early netuid guard. The failure means the targeted subnet is absent from chain state, not
+that the caller lacks permission or that a different subnet rule blocked the action.
+
+## Why It Appears
+
+This error appears when a wallet or automation submits a netuid that has never been registered, has
+been removed, or was mistyped. Copied extrinsics, stale client defaults, or off-by-one netuid values
+can hit this failure before any deeper validation runs
+([Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)).
+
+On Finney, live subnets such as netuid 1 appear in explorers like
+[TaoStats](https://taostats.io/subnets/1). A subnet-scoped call that names an unregistered netuid
+such as 99999 fails at the existence check before registration policy, balance checks, or weight
+validation run.
+
+When debugging Root Subnet calls, compare against root-specific existence errors first.
+`RootNetworkDoesNotExist` means Root Subnet infrastructure was missing on a root-only path.
+`RegistrationNotPermittedOnRootSubnet` means the Root Subnet exists but an ordinary registration
+call targeted it
+([Root Network Does Not Exist](https://docs.learnbittensor.org/errors/subtensor#rootnetworkdoesnotexist),
+[Registration Not Permitted On Root Subnet](https://docs.learnbittensor.org/errors/subtensor#registrationnotpermittedonrootsubnet)).
+
+When debugging registration calls on ordinary subnets, rule out later gates on the same extrinsic
+first. `SubNetRegistrationDisabled` means the subnet exists but registration is turned off.
+`HotKeyAlreadyRegisteredInSubNet` means the hotkey already holds a UID on that subnet
+([Subtensor Standard Errors: SubNetRegistrationDisabled](https://docs.learnbittensor.org/errors/subtensor#subnetregistrationdisabled),
+[Subtensor Standard Errors: HotKeyAlreadyRegisteredInSubNet](https://docs.learnbittensor.org/errors/subtensor#hotkeyalreadyregisteredinsubnet)).
+
+The practical meaning is narrow: the submitted netuid does not name a subnet on chain.
+
+## Distinction from Root Network Does Not Exist
+
+`SubnetNotExists` and `RootNetworkDoesNotExist` both signal missing subnet state, but on different
+paths. `SubnetNotExists` is the ordinary rejection when a non-root netuid lookup fails.
+`RootNetworkDoesNotExist` is the Root Subnet existence check on `root_register` and root-claim
+settlement paths
+([Root Network Does Not Exist](https://docs.learnbittensor.org/errors/subtensor#rootnetworkdoesnotexist)).
+
+- **SubnetNotExists** — the targeted ordinary subnet does not exist.
+- **RootNetworkDoesNotExist** — Root Subnet state or account lookup failed.
+
+## Distinction from Mechanism Does Not Exist
+
+`SubnetNotExists` and `MechanismDoesNotExist` both involve invalid subnet targeting, but they reject
+different problems. `SubnetNotExists` means the base subnet is absent from chain state.
+`MechanismDoesNotExist` means the subnet may exist, but the submitted mechanism index is not
+configured on that subnet
+([Mechanism Does Not Exist](https://docs.learnbittensor.org/errors/subtensor#mechanismdoesnotexist)).
+
+- **SubnetNotExists** — the targeted subnet does not exist.
+- **MechanismDoesNotExist** — the subnet or mechanism index is invalid for mechanism-scoped calls.
+
+## Distinction from Subnet Registration Disabled
+
+`SubnetNotExists` and `SubNetRegistrationDisabled` both block registration calls, but at different
+stages. `SubnetNotExists` means the netuid has no subnet record. `SubNetRegistrationDisabled` means
+the subnet exists but its registration gate is turned off
+([Subnet Registration Disabled](https://docs.learnbittensor.org/errors/subtensor#subnetregistrationdisabled)).
+
+- **SubnetNotExists** — the targeted subnet does not exist.
+- **SubNetRegistrationDisabled** — registration is disabled on an existing subnet.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the subnet existence gate it represents. It
+does not describe how subnets are created, deregistered, or how to query which netuids are live on a
+network; those are documented separately
+([Glossary: Burn Cost](https://docs.learnbittensor.org/resources/glossary#burn-cost),
+[Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)).
+
+## Further Reading
+
+- [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#subnetnotexists)
+- [Understanding Subnets](https://docs.learnbittensor.org/subnets/understanding-subnets)
+- [Subnet 1 on TaoStats](https://taostats.io/subnets/1)
+- [Root Network Does Not Exist](https://docs.learnbittensor.org/errors/subtensor#rootnetworkdoesnotexist)
+- [Mechanism Does Not Exist](https://docs.learnbittensor.org/errors/subtensor#mechanismdoesnotexist)
+- [Subnet Registration Disabled](https://docs.learnbittensor.org/errors/subtensor#subnetregistrationdisabled)
