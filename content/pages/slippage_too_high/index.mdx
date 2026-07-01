@@ -11,86 +11,96 @@ infoboxRows:
   - label: Error
     value: SlippageTooHigh
   - label: Trigger
-    value: Submitted amount exceeds max_amount with allow_partial disabled
+    value: Stake amount exceeds caller slippage cap with partial execution disabled
   - label: Checked in
-    value: validate_add_stake and validate_remove_stake
+    value: add_stake and remove_stake extrinsics
   - label: Related concept
     value: Slippage protection on subnet pool swaps
 ---
 
 # Slippage Too High
 
-`SlippageTooHigh` is a documented Subtensor standard error raised on staking paths when a submitted
-amount would exceed the caller's slippage ceiling and the extrinsic does not allow partial
-execution. The standard-errors reference describes it as "Slippage is too high"
+`SlippageTooHigh` means the submitted stake or unstake amount exceeds the slippage ceiling the
+caller supplied, and the extrinsic does not allow partial execution. The standard-errors reference
+describes it as "Slippage is too high"
 ([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#slippagetoohigh)).
+
+Add-stake and remove-stake calls can include a maximum-amount cap and a partial-execution flag so
+wallets bound how much TAO or alpha a subnet pool conversion may consume
+([Understanding Slippage](https://docs.learnbittensor.org/learn/slippage),
+[Managing Your Stakes](https://docs.learnbittensor.org/staking-and-delegation/managing-stake-sdk)).
 
 ## What It Means
 
-Add-stake and remove-stake extrinsics accept a `max_amount` cap and an `allow_partial` flag so
-callers can bound how much TAO or alpha the pool conversion may consume. In `stake_utils.rs`,
-`validate_add_stake` and `validate_remove_stake` compare the submitted amount against that cap when
-`allow_partial` is false and return `SlippageTooHigh` when the amount is larger than `max_amount`
+Slippage protection lets a caller set the worst amount it is willing to accept from a pool swap.
+When partial execution is disabled, naming an amount above that cap raises `SlippageTooHigh` instead
+of filling only part of the request
 ([Understanding Slippage](https://docs.learnbittensor.org/learn/slippage),
-[Subtensor source: stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)).
+[Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#slippagetoohigh)).
 
-On add-stake paths, this check runs after the minimum-stake floor passes and before the coldkey
-balance and pool-simulation steps. When `allow_partial` is true instead, the runtime caps the stake
-amount to `max_amount` rather than returning this error
-([Subtensor source: stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)).
-
-On remove-stake paths, this check runs after zero-amount and minimum-remainder validation against
-the pool simulation, and only when `allow_partial` is false
-([Subtensor source: stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)).
+For debugging, treat this as a caller-side slippage limit failure, not as proof that the amount is
+below the minimum stake increment, that the coldkey lacks free balance to fund an add-stake call, or
+that the subnet pool cannot support the swap
+([Subtensor Standard Errors: AmountTooLow](https://docs.learnbittensor.org/errors/subtensor#amounttoolow),
+[Subtensor Standard Errors: NotEnoughBalanceToStake](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake),
+[Subtensor Standard Errors: InsufficientLiquidity](https://docs.learnbittensor.org/errors/subtensor#insufficientliquidity)).
 
 ## Why It Appears
 
 This error appears when a wallet or integration names a stake or unstake amount above the slippage
 ceiling it supplied, with partial execution turned off. That commonly happens when live pool pricing
-moves between quote time and submission, when `max_amount` is set too tightly for the intended trade
-size, or when automation reuses a stale cap
+moves between quote time and submission, when the cap is set too tightly for the intended trade
+size, or when automation reuses a stale limit
 ([Understanding Slippage](https://docs.learnbittensor.org/learn/slippage),
-[Managing Your Stakes](https://docs.learnbittensor.org/staking-and-delegation/managing-stake-sdk),
-[Subtensor source: stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)).
+[Managing Your Stakes](https://docs.learnbittensor.org/staking-and-delegation/managing-stake-sdk)).
 
-For a reader, the practical meaning is narrow: the named amount exceeds the caller's own slippage
-limit. The problem is not that the amount is below the minimum stake increment, that free balance
-cannot fund the call, or that the subnet pool cannot simulate the swap
-([Amount Too Low](https://docs.learnbittensor.org/errors/subtensor#amounttoolow),
-[Subtensor Standard Errors: NotEnoughBalanceToStake](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake),
-[Subtensor Standard Errors: InsufficientLiquidity](https://docs.learnbittensor.org/errors/subtensor#insufficientliquidity)).
+When partial execution is enabled, the runtime can cap the filled amount to the supplied limit
+rather than returning this error
+([Understanding Slippage](https://docs.learnbittensor.org/learn/slippage)).
+
+The practical meaning is narrow: the named amount exceeds the caller's own slippage limit.
 
 ## Distinction from Amount Too Low
 
 `SlippageTooHigh` and `AmountTooLow` both appear during staking validation, but they guard different
-limits. `AmountTooLow` rejects amounts below `DefaultMinStake` rules, including zero unstake amounts
-and partial unstakes that would leave a remainder below the floor. `SlippageTooHigh` rejects amounts
-above the caller-supplied `max_amount` when partial execution is disabled
-([Amount Too Low](https://docs.learnbittensor.org/errors/subtensor#amounttoolow),
-[Subtensor source: stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)).
+limits. `AmountTooLow` rejects amounts below the chain's minimum staking increment.
+`SlippageTooHigh` rejects amounts above the caller-supplied slippage cap when partial execution is
+disabled
+([Subtensor Standard Errors: AmountTooLow](https://docs.learnbittensor.org/errors/subtensor#amounttoolow),
+[Subtensor Standard Errors: SlippageTooHigh](https://docs.learnbittensor.org/errors/subtensor#slippagetoohigh)).
 
 - **AmountTooLow** — the stake amount is below the minimum allowed increment.
 - **SlippageTooHigh** — the stake amount exceeds the caller's slippage cap.
 
 ## Distinction from Insufficient Liquidity
 
-`SlippageTooHigh` and `InsufficientLiquidity` both relate to subnet pool conversions, but at
-different stages. `SlippageTooHigh` is the caller's ceiling check on the submitted amount before the
-runtime proceeds with balance and pool execution steps on add-stake, or before lock checks on
-remove-stake. `InsufficientLiquidity` means the pool could not simulate or complete the swap needed
-for the action
-([Insufficient Liquidity](https://docs.learnbittensor.org/errors/subtensor#insufficientliquidity),
-[Subtensor source: stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)).
+`SlippageTooHigh` and `InsufficientLiquidity` both relate to subnet pool conversions, but they
+reject different conditions. `SlippageTooHigh` means the caller's own slippage ceiling was exceeded.
+`InsufficientLiquidity` means the pool could not simulate or complete the swap needed for the action
+([Subtensor Standard Errors: InsufficientLiquidity](https://docs.learnbittensor.org/errors/subtensor#insufficientliquidity),
+[Subtensor Standard Errors: SlippageTooHigh](https://docs.learnbittensor.org/errors/subtensor#slippagetoohigh)).
 
 - **SlippageTooHigh** — the named amount exceeds the caller's slippage cap.
 - **InsufficientLiquidity** — the pool could not support the swap.
 
+## Distinction from Not Enough Balance To Stake
+
+`SlippageTooHigh` and `NotEnoughBalanceToStake` both can appear on add-stake calls, but they compare
+different conditions. `NotEnoughBalanceToStake` means the signing coldkey does not have enough free
+TAO to fund the requested amount. `SlippageTooHigh` means the named amount exceeds the caller's
+slippage cap with partial execution disabled
+([Subtensor Standard Errors: NotEnoughBalanceToStake](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake),
+[Subtensor Standard Errors: SlippageTooHigh](https://docs.learnbittensor.org/errors/subtensor#slippagetoohigh)).
+
+- **NotEnoughBalanceToStake** — not enough free TAO to add stake.
+- **SlippageTooHigh** — the named amount exceeds the caller's slippage cap.
+
 ## Reader Boundary
 
-This page defines the meaning of the error label and the `max_amount` checks in `validate_add_stake`
-and `validate_remove_stake`. It does not describe every move-stake or order-swap path that can raise
-other slippage-related rejections, or how to size `max_amount` against live reserve levels; those
-are documented separately ([Understanding Slippage](https://docs.learnbittensor.org/learn/slippage),
+This page defines the meaning of the error label and the caller slippage-cap condition that raises
+it. It does not describe how to size slippage limits against live pool reserves, or every staking
+path that can return other swap-related rejections; those are separate topics
+([Understanding Slippage](https://docs.learnbittensor.org/learn/slippage),
 [Managing Your Stakes](https://docs.learnbittensor.org/staking-and-delegation/managing-stake-sdk)).
 
 ## Further Reading
@@ -98,6 +108,6 @@ are documented separately ([Understanding Slippage](https://docs.learnbittensor.
 - [Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#slippagetoohigh)
 - [Understanding Slippage](https://docs.learnbittensor.org/learn/slippage)
 - [Managing Your Stakes](https://docs.learnbittensor.org/staking-and-delegation/managing-stake-sdk)
-- [Amount Too Low](https://docs.learnbittensor.org/errors/subtensor#amounttoolow)
-- [Insufficient Liquidity](https://docs.learnbittensor.org/errors/subtensor#insufficientliquidity)
-- [Subtensor source: stake_utils.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/staking/stake_utils.rs)
+- [Subtensor Standard Errors: AmountTooLow](https://docs.learnbittensor.org/errors/subtensor#amounttoolow)
+- [Subtensor Standard Errors: InsufficientLiquidity](https://docs.learnbittensor.org/errors/subtensor#insufficientliquidity)
+- [Subtensor Standard Errors: NotEnoughBalanceToStake](https://docs.learnbittensor.org/errors/subtensor#notenoughbalancetostake)
