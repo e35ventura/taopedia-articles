@@ -1,0 +1,56 @@
+---
+title: "Account Not Allowed Commit"
+summary:
+  "How the AccountNotAllowedCommit error blocks a set_commitment call when the account is not
+  eligible to make commitments to the chain."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Account Not Allowed Commit
+infoboxCaption: Error raised when an account is not eligible to commit to the chain.
+infoboxRows:
+  - label: Error
+    value: AccountNotAllowedCommit
+  - label: Trigger
+    value: CanCommit::can_commit returns false for the caller
+  - label: Checked in
+    value: set_commitment extrinsic
+  - label: Check type
+    value: Commit eligibility guard
+---
+
+# Account Not Allowed Commit
+
+`AccountNotAllowedCommit` is a commitments pallet error raised by the `set_commitment` extrinsic
+when the calling account is not eligible to commit. The pallet defines it as "Account is not allowed
+to make commitments to the chain"
+([Subtensor source: commitments/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/commitments/src/lib.rs)).
+
+## What It Means
+
+`set_commitment` is the extrinsic used to write a commitment — structured metadata — to the chain
+for a given subnet. Before accepting the commitment, it runs a `can_commit` eligibility check as its
+first guard. `AccountNotAllowedCommit` fires when that check returns false, blocking the submission
+before any further validation or state changes occur
+([Subtensor source: commitments/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/commitments/src/lib.rs)).
+
+## Distinction from Space Limit Exceeded
+
+`AccountNotAllowedCommit` and `SpaceLimitExceeded` both block `set_commitment`, but at different
+checks. `AccountNotAllowedCommit` fires at the first guard, before the commitment content is
+inspected, because the caller is not eligible to commit at all. `SpaceLimitExceeded` fires later,
+after eligibility passes, when the caller has already committed enough data in the current epoch to
+exhaust their per-epoch space allowance
+([Subtensor source: commitments/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/commitments/src/lib.rs)).
+
+- **AccountNotAllowedCommit** — the account is not eligible to commit.
+- **SpaceLimitExceeded** — the account is eligible but has consumed its per-epoch space allowance.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the eligibility check that raises it. It does
+not describe how commitment fields are structured or the rest of the commitment submission flow
+([Subtensor source: commitments/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/commitments/src/lib.rs)).
+
+## Further Reading
+
+- [Subtensor source: commitments/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/commitments/src/lib.rs)
