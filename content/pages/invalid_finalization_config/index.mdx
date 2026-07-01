@@ -1,0 +1,57 @@
+---
+title: "Invalid Finalization Config"
+summary:
+  "How the InvalidFinalizationConfig error signals that a crowdloan's finalization target is invalid
+  because exactly one of a call or a target address must be specified, not both and not neither."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Invalid Finalization Config
+infoboxCaption: Error raised when a crowdloan specifies both or neither of its finalization options.
+infoboxRows:
+  - label: Error
+    value: InvalidFinalizationConfig
+  - label: Trigger
+    value: call and target_address are both set, or neither is set
+  - label: Checked in
+    value: create and finalize extrinsics
+  - label: Check type
+    value: Exclusive-or presence check
+---
+
+# Invalid Finalization Config
+
+`InvalidFinalizationConfig` is a documented Subtensor standard error raised by crowdloan operations.
+The Subtensor API error reference describes it as "Exactly one of call or target address must be
+provided" ([Subtensor API: Errors](https://docs.learnbittensor.org/subtensor-api/errors)).
+
+## What It Means
+
+When a [crowdloan](https://docs.learnbittensor.org/subnets/crowdloans) is created, the creator
+specifies what happens to the raised funds when the crowdloan is finalized: either a call to
+dispatch, or a target address to transfer the funds to. Exactly one of these must be provided — not
+both, and not neither. `InvalidFinalizationConfig` fires when that exclusive-or condition is not met
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+The `create` extrinsic checks this condition during creation. The `finalize` extrinsic also raises
+the same error as a defensive guard if it encounters an invalid combination at finalization time
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+## Why It Appears
+
+A crowdloan creation call that supplies both a call and a target address at the same time, or
+supplies neither, fails this check. The condition ensures the crowdloan has an unambiguous
+finalization destination before it is accepted
+([Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)).
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the exclusive-or check that raises it. It does
+not describe how call or target-address finalization works, or the rest of the crowdloan creation
+flow; those are documented separately
+([Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans)).
+
+## Further Reading
+
+- [Subtensor API: Errors](https://docs.learnbittensor.org/subtensor-api/errors)
+- [Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans)
+- [Subtensor source: crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/crowdloan/src/lib.rs)
