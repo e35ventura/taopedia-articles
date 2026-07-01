@@ -1,0 +1,130 @@
+---
+title: "Invalid Value"
+summary:
+  "How the InvalidValue error blocks a parameter update when the submitted value falls outside the
+  allowed range for that specific setter on chain."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: Invalid Value
+infoboxCaption: Error raised when a submitted parameter is out of range.
+infoboxRows:
+  - label: Error
+    value: InvalidValue
+  - label: Trigger
+    value: Submitted value outside the setter's allowed range
+  - label: Error type
+    value: Generic out-of-range parameter rejection
+  - label: Related reference
+    value: Subtensor standard errors
+---
+
+# Invalid Value
+
+`InvalidValue` is a documented Subtensor standard error used when a parameter update names a value
+outside the range that setter accepts. The standard-errors reference describes it as a "Generic
+error for out-of-range parameter value"
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#invalidvalue),
+[Subtensor API Errors: InvalidValue](https://docs.learnbittensor.org/subtensor-api/errors#invalidvalue)).
+
+## What It Means
+
+Many subnet and admin extrinsics validate numeric inputs before writing storage. When a submitted
+value fails that bounds check and no more specific error label applies, the runtime returns
+`InvalidValue`
+([Subtensor Standard Errors](https://docs.learnbittensor.org/errors/subtensor#invalidvalue)).
+
+The rejection is about the proposed number itself, not proof that a subnet is missing, that a
+mechanism index is unrecognized, or that a separate composition rule such as an immune-share ceiling
+has been violated. Those cases can carry their own dedicated error labels on the same broader call
+family.
+
+Documented examples include mechanism configuration and UID-capacity updates. A mechanism count must
+be greater than zero and stay within the subnet's configured mechanism limits
+([Subnet Hyperparameters: MechanismCount](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#mechanismcount),
+[Multiple Incentive Mechanisms Within Subnets](https://docs.learnbittensor.org/subnets/understanding-multiple-mech-subnets),
+[Subtensor source: mechanism.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/mechanism.rs)).
+A UID trim or max-UID update must stay inside the subnet's documented minimum and maximum UID bounds
+([UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming),
+[Subtensor source: uids.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/uids.rs)).
+
+Because `InvalidValue` is generic, readers should identify which extrinsic failed before treating
+every occurrence as the same numeric rule.
+
+## Why It Appears
+
+This error appears when a wallet, script, or governance call submits a parameter outside the allowed
+range for that setter. That can happen when automation reuses a stale bound from another network,
+when a client sends zero where the setter requires a positive count, or when a trim target names a
+UID maximum below the subnet minimum or above its current ceiling
+([UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming),
+[Subnet Hyperparameters: MechanismCount](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#mechanismcount)).
+
+When debugging, compare against more specific rejections on the same call. `MechanismDoesNotExist`
+means the subnet or mechanism index is not recognized. `TooManyUIDsPerMechanism` means the product
+of max allowed UIDs and mechanism count would exceed the network-wide UID ceiling.
+`TrimmingWouldExceedMaxImmunePercentage` means a trim target would leave too large an immune share,
+not merely an out-of-range count
+([Subtensor Standard Errors: MechanismDoesNotExist](https://docs.learnbittensor.org/errors/subtensor#mechanismdoesnotexist),
+[Subtensor Standard Errors: TooManyUIDsPerMechanism](https://docs.learnbittensor.org/errors/subtensor#toomanyuidspermechanism),
+[Subtensor API Errors: TrimmingWouldExceedMaxImmunePercentage](https://docs.learnbittensor.org/subtensor-api/errors#trimmingwouldexceedmaximmunepercentage)).
+
+The practical meaning is narrow: submit a value inside the documented range for that setter, or read
+the live parameter bounds before retrying.
+
+## Distinction from Mechanism Does Not Exist
+
+`InvalidValue` and `MechanismDoesNotExist` both can appear on mechanism-aware calls, but they reject
+different problems. `MechanismDoesNotExist` means the base subnet is absent or the named mechanism
+index is not configured. `InvalidValue` means the submitted mechanism count or related numeric input
+is outside the allowed range for the setter
+([Subtensor Standard Errors: MechanismDoesNotExist](https://docs.learnbittensor.org/errors/subtensor#mechanismdoesnotexist)).
+
+- **InvalidValue** — the submitted number is out of range.
+- **MechanismDoesNotExist** — the subnet or mechanism index is not recognized.
+
+## Distinction from Too Many Uids Per Mechanism
+
+`InvalidValue` and `TooManyUIDsPerMechanism` both involve numeric limits on subnet capacity, but at
+different checks. `TooManyUIDsPerMechanism` is the dedicated rejection when max allowed UIDs times
+mechanism count would exceed the network-wide ceiling. `InvalidValue` is the generic bounds check on
+the submitted value itself, such as a count below the subnet minimum or above its current maximum
+([Subtensor Standard Errors: TooManyUIDsPerMechanism](https://docs.learnbittensor.org/errors/subtensor#toomanyuidspermechanism)).
+
+- **InvalidValue** — the submitted value is outside the setter's allowed range.
+- **TooManyUIDsPerMechanism** — max UIDs times mechanism count would exceed the network ceiling.
+
+## Distinction from Invalid Num Root Claim
+
+`InvalidValue` and `InvalidNumRootClaim` both signal out-of-range configuration input, but
+`InvalidNumRootClaim` is the specific label on the global root-claim count path. `InvalidValue` is
+the generic fallback used when other parameter setters reject a value that does not fit their bounds
+([Subtensor API Errors: InvalidNumRootClaim](https://docs.learnbittensor.org/subtensor-api/errors#invalidnumrootclaim)).
+
+- **InvalidValue** — generic out-of-range parameter on the failing setter.
+- **InvalidNumRootClaim** — the proposed global root-claim count is too high.
+
+## Distinction from Trimming Would Exceed Max Immune Percentage
+
+`InvalidValue` and `TrimmingWouldExceedMaxImmunePercentage` both can appear on UID trimming calls,
+but they test different inputs. `InvalidValue` means the submitted target UID count is outside the
+allowed minimum or maximum bounds. `TrimmingWouldExceedMaxImmunePercentage` means the immune-neuron
+share at the target would meet or exceed the documented ceiling
+([Subtensor API Errors: TrimmingWouldExceedMaxImmunePercentage](https://docs.learnbittensor.org/subtensor-api/errors#trimmingwouldexceedmaximmunepercentage)).
+
+- **InvalidValue** — the target count is outside allowed UID bounds.
+- **TrimmingWouldExceedMaxImmunePercentage** — the immune share at the target is too high.
+
+## Reader Boundary
+
+This page defines the meaning of the generic `InvalidValue` label and the bounds-check role it
+plays. It does not report the live allowed range for every setter on every network; those limits are
+chain parameters and subnet state readers should query separately
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor Standard Errors: InvalidValue](https://docs.learnbittensor.org/errors/subtensor#invalidvalue)
+- [Subnet Hyperparameters: MechanismCount](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#mechanismcount)
+- [UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming)
+- [Subtensor API Errors: InvalidNumRootClaim](https://docs.learnbittensor.org/subtensor-api/errors#invalidnumrootclaim)
