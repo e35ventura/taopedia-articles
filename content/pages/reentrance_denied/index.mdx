@@ -1,0 +1,77 @@
+---
+title: "Reentrance Denied"
+summary:
+  "How the ReentranceDenied error blocks a contract call when the target contract is flagged as
+  non-reentrant or when a runtime callback tries to re-enter the contracts pallet."
+category: "Smart Contracts"
+tags: ["Smart Contracts", "Errors"]
+infoboxTitle: Reentrance Denied
+infoboxCaption:
+  Error raised when a call tries to invoke a non-reentrant contract or re-enter the contracts
+  pallet.
+infoboxRows:
+  - label: Error
+    value: ReentranceDenied
+  - label: Pallet
+    value: contracts
+  - label: Trigger
+    value: Call targets a non-reentrant contract or re-enters the contracts pallet from the runtime
+  - label: Check type
+    value: Re-entrancy guard on contract invocation
+---
+
+# Reentrance Denied
+
+`ReentranceDenied` is a contracts pallet error raised when a call tries to invoke a contract that is
+flagged as non-reentrant, or when a call from a contract into the runtime tries to call back into
+the contracts pallet. The API errors reference describes it as "A call tried to invoke a contract
+that is flagged as non-reentrant. The only other cause is that a call from a contract into the
+runtime tried to call back into `pallet-contracts`."
+([Subtensor API Errors: ReentranceDenied](https://docs.learnbittensor.org/subtensor-api/errors#reentrancedenied)).
+
+## What It Means
+
+The contracts pallet enforces re-entrancy guards on contract invocations. `ReentranceDenied` fires
+in two cases: a call attempts to invoke a contract that is explicitly flagged as non-reentrant, or a
+call from a contract back into the runtime then tries to re-enter the contracts pallet
+([Subtensor API Errors: ReentranceDenied](https://docs.learnbittensor.org/subtensor-api/errors#reentrancedenied)).
+
+This is a re-entrancy guard rejection. It does not mean the contract trapped during execution, that
+the contract ran out of gas, or that the contract terminated itself.
+
+## Why It Appears
+
+This error appears when a contracts operation hits the re-entrancy guard — either because the target
+contract declares itself non-reentrant or because a round-trip through the runtime would re-enter
+the contracts pallet
+([Subtensor API Errors: ReentranceDenied](https://docs.learnbittensor.org/subtensor-api/errors#reentrancedenied)).
+
+## Distinction from Terminated While Reentrant
+
+`ReentranceDenied` and `TerminatedWhileReentrant` both involve re-entrant call scenarios in the
+contracts pallet, but they block different operations. `TerminatedWhileReentrant` fires when a
+contract tries to terminate itself while it is still active in the current call chain.
+`ReentranceDenied` fires when a call tries to invoke a contract that is flagged as non-reentrant
+([Subtensor API Errors: TerminatedWhileReentrant](https://docs.learnbittensor.org/subtensor-api/errors#terminatedwhilereentrant),
+[Subtensor API Errors: ReentranceDenied](https://docs.learnbittensor.org/subtensor-api/errors#reentrancedenied)).
+
+- **ReentranceDenied** — invocation is blocked by a re-entrancy guard.
+- **TerminatedWhileReentrant** — termination is blocked while the contract is still on the call
+  stack.
+
+## Distinction from Contract Trapped
+
+`ReentranceDenied` and `ContractTrapped` both stop a contracts call from succeeding, but for
+different reasons. `ContractTrapped` means the contract trapped during execution. `ReentranceDenied`
+means the call was blocked before or during dispatch by a re-entrancy guard
+([Subtensor API Errors: ContractTrapped](https://docs.learnbittensor.org/subtensor-api/errors#contracttrapped),
+[Subtensor API Errors: ReentranceDenied](https://docs.learnbittensor.org/subtensor-api/errors#reentrancedenied)).
+
+- **ReentranceDenied** — re-entrancy guard rejects the call.
+- **ContractTrapped** — contract traps during execution.
+
+## Further Reading
+
+- [Subtensor API Errors: ReentranceDenied](https://docs.learnbittensor.org/subtensor-api/errors#reentrancedenied)
+- [Subtensor API Errors: TerminatedWhileReentrant](https://docs.learnbittensor.org/subtensor-api/errors#terminatedwhilereentrant)
+- [Subtensor API Errors: ContractTrapped](https://docs.learnbittensor.org/subtensor-api/errors#contracttrapped)
