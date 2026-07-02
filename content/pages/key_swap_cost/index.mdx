@@ -1,0 +1,79 @@
+---
+title: "Key Swap Cost"
+summary:
+  "How the keySwapCost runtime constant sets the rao-denominated charge for all-subnets hotkey swaps
+  and first coldkey swap announcements, recycled from the paying coldkey."
+category: "Wallets"
+tags: ["Wallets", "Security"]
+infoboxTitle: Key Swap Cost
+infoboxCaption: Runtime constant charged for key swap operations and recycled.
+infoboxRows:
+  - label: Constant
+    value: keySwapCost
+  - label: Pallet
+    value: subtensor
+  - label: Value
+    value: "100,000,000 rao (0.1 TAO)"
+  - label: Charged on
+    value: All-subnets hotkey swaps and first coldkey swap announcements
+---
+
+# Key Swap Cost
+
+Key swap cost is a subtensor runtime constant, exposed as `api.consts.subtensorModule.keySwapCost`
+with the value 100000000 and the summary "Cost of swapping a hotkey."
+([Subtensor API Constants: keySwapCost](https://docs.learnbittensor.org/subtensor-api/constants#keyswapcost-u64)).
+The raw value is denominated in rao: the runtime sets the constant to 100,000,000 rao, which the
+source annotates as 0.1 TAO
+([runtime/src/lib.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/runtime/src/lib.rs#L1023)).
+
+## What It Means
+
+The constant is the charge for swapping a key across the whole network. When the `swapHotkey`
+extrinsic is called without a target subnet, the all-subnets swap path reads this cost, requires the
+calling coldkey to hold enough balance to cover it, and otherwise fails with
+`NotEnoughBalanceToPaySwapHotKey`
+([swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/subtensor/src/swap/swap_hotkey.rs#L181-L196),
+[Subtensor API Errors: NotEnoughBalanceToPaySwapHotKey](https://docs.learnbittensor.org/subtensor-api/errors#notenoughbalancetopayswaphotkey)).
+
+The same constant is charged when a coldkey announces a coldkey swap with `announceColdkeySwap`.
+Only the first announcement is charged; a later re-announcement by the same coldkey does not pay the
+cost again. A first announcement that cannot cover the cost fails with
+`NotEnoughBalanceToPaySwapColdKey`
+([dispatches.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/subtensor/src/macros/dispatches.rs#L2270-L2278),
+[Subtensor API Errors: NotEnoughBalanceToPaySwapColdKey](https://docs.learnbittensor.org/subtensor-api/errors#notenoughbalancetopayswapcoldkey)).
+
+On both paths the charged amount is recycled rather than paid to a recipient account: the pallet's
+recycle helper removes the amount from the paying coldkey and reduces the pallet's total issuance
+([tao.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/subtensor/src/coinbase/tao.rs#L188-L206),
+[swap_coldkey.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/subtensor/src/swap/swap_coldkey.rs#L53-L58)).
+
+The root-only `swapColdkey` call does not read this constant; it takes an explicit cost argument
+supplied by the root origin and charges it only when that argument is non-zero
+([dispatches.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/subtensor/src/macros/dispatches.rs#L1074-L1086)).
+
+## Distinction from Key Swap On Subnet Cost
+
+`keySwapOnSubnetCost` is a separate constant for the per-subnet swap path. When `swapHotkey` targets
+a single subnet, the pallet charges that constant instead, set in the runtime to 1,000,000 rao,
+annotated as 0.001 TAO
+([Subtensor API Constants: keySwapOnSubnetCost](https://docs.learnbittensor.org/subtensor-api/constants#keyswaponsubnetcost-u64),
+[runtime/src/lib.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/runtime/src/lib.rs#L1035),
+[swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/subtensor/src/swap/swap_hotkey.rs#L390-L403)).
+
+- **keySwapCost** — 100,000,000 rao (0.1 TAO); all-subnets hotkey swaps and first coldkey swap
+  announcements.
+- **keySwapOnSubnetCost** — 1,000,000 rao (0.001 TAO); hotkey swaps targeting a single subnet.
+
+## Reader Boundary
+
+This page defines the constant, its value, and the operations that charge it. It does not report an
+account's current balance or cover the separate cooldown limits that also gate key swap operations
+([Subtensor API Constants: keySwapCost](https://docs.learnbittensor.org/subtensor-api/constants#keyswapcost-u64)).
+
+## Further Reading
+
+- [Subtensor API Constants: keySwapCost](https://docs.learnbittensor.org/subtensor-api/constants#keyswapcost-u64)
+- [Subtensor API Constants: keySwapOnSubnetCost](https://docs.learnbittensor.org/subtensor-api/constants#keyswaponsubnetcost-u64)
+- [Subtensor runtime: SubtensorInitialKeySwapCost](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/runtime/src/lib.rs#L1023)
+- [Subtensor pallet: hotkey swap charge](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/subtensor/src/swap/swap_hotkey.rs#L181-L196)
