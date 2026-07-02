@@ -11,7 +11,7 @@ infoboxRows:
   - label: Parameter
     value: HotkeySwapOnSubnetInterval
   - label: Interval
-    value: "~36,000 blocks (~5 days)"
+    value: "7,200 blocks (~1 day)"
   - label: Applies to
     value: Hotkey swaps per subnet
   - label: Example
@@ -21,9 +21,11 @@ infoboxRows:
 # Hotkey Swap On Subnet Interval
 
 Hotkey swap on subnet interval is the per-subnet rate limit a hotkey swap must satisfy, named in the
-documentation as `HotkeySwapOnSubnetInterval`. The rate-limits reference lists it as the per-subnet
-portion of the hotkey swap rate limit, at roughly 36,000 blocks or about five days
-([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+documentation as HotkeySwapOnSubnetInterval. The chain's constants metadata lists it under the
+subtensorModule pallet with the value 7200 blocks, and the runtime defines it as one day of
+12-second blocks
+([Subtensor API Constants: hotkeySwapOnSubnetInterval](https://docs.learnbittensor.org/subtensor-api/constants#hotkeyswaponsubnetinterval-u64),
+[runtime/src/lib.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/runtime/src/lib.rs#L1036)).
 
 ## What It Controls
 
@@ -41,24 +43,24 @@ interval cooldown
 
 ## When It Matters
 
-The common misconception is that clearing the fast network-wide
-[tx rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits), which lifts after about a
-block, is enough to swap again. On a subnet it is not: this per-subnet interval still blocks a
-repeat swap for roughly five days
-([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
+The common misconception is that clearing the shorter network-wide
+[tx rate limit](https://docs.learnbittensor.org/learn/chain-rate-limits) is enough to swap again. On
+a subnet it is not: this per-subnet interval still blocks a repeat swap until a full day of blocks
+has passed
+([runtime/src/lib.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/runtime/src/lib.rs#L1036)).
 
 Concretely, an operator who swaps a validator's hotkey on netuid 1, then realizes the new hotkey is
-also wrong, cannot immediately swap it again on netuid 1. The network-wide limit clears within a
-block, but netuid 1's swap interval must elapse first, so the corrected swap waits out the roughly
-five-day window. That waiting cost is the point: it makes rapid hotkey rotation on a subnet
-expensive enough to discourage churning hotkeys to game participation
+also wrong, cannot immediately swap it again on netuid 1. The network-wide limit clears sooner, but
+netuid 1's swap interval must elapse first, so the corrected swap waits out the day-long window.
+That waiting cost is the point: it makes rapid hotkey rotation on a subnet expensive enough to
+discourage churning hotkeys to game participation
 ([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits)).
 
 ## Documented Nature
 
 The [Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits) reference describes
-`HotkeySwapOnSubnetInterval` as a global interval constant rather than a per-subnet owner setting,
-and notes it is not queryable from chain state the way mutable hyperparameters are. The same fixed
+HotkeySwapOnSubnetInterval as a global interval constant rather than a per-subnet owner setting, and
+notes it is not queryable from chain state the way mutable hyperparameters are. The same fixed
 interval governs the per-subnet swap cooldown across subnets, evaluated against whichever netuid a
 swap touches ([Rate Limits](https://docs.learnbittensor.org/learn/chain-rate-limits),
 [Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
