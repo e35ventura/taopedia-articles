@@ -1,0 +1,87 @@
+---
+title: "Input Forwarded"
+summary:
+  "How the InputForwarded error stops a contracts operation when the contract's input was already
+  forwarded and is no longer available."
+category: "Smart Contracts"
+tags: ["Smart Contracts", "Errors"]
+infoboxTitle: Input Forwarded
+infoboxCaption:
+  Error raised when a contract tries to use its call input after that input was already forwarded.
+infoboxRows:
+  - label: Error
+    value: InputForwarded
+  - label: Pallet
+    value: contracts
+  - label: Trigger
+    value: Contract input requested after it was already forwarded to another call
+  - label: Check type
+    value: Input-availability guard on the contract call path
+---
+
+# Input Forwarded
+
+`InputForwarded` is a contracts pallet error raised when a contract tries to use its call input
+after that input has already been forwarded. The API errors reference summarizes it as "seal_call
+forwarded this contracts input. It therefore is no longer available"
+([Subtensor API Errors: InputForwarded](https://docs.learnbittensor.org/subtensor-api/errors#inputforwarded)).
+
+## What It Means
+
+A contract's input is the data its caller passed in. The contracts API lets a contract hand that
+input on unchanged when it calls another contract. Forwarding consumes the input. `InputForwarded`
+means a later operation asked for the input again, but the input was no longer available
+([Subtensor API Errors: InputForwarded](https://docs.learnbittensor.org/subtensor-api/errors#inputforwarded)).
+
+This is an input-availability failure on the contract call path. It does not, by itself, mean the
+input failed to decode, that the supplied call flags were invalid, or that the called contract is
+missing.
+
+## Why It Appears
+
+This error appears in two situations that the upstream contracts pallet source confirms. A
+cross-contract call that asks to clone or forward the caller's input fails when that input has
+already been taken
+([opentensor/polkadot-sdk: substrate/frame/contracts/src/wasm/runtime.rs#L995-L1004](https://github.com/opentensor/polkadot-sdk/blob/8e64bb2e4d7554a813fe5a99805c9898123c1366/substrate/frame/contracts/src/wasm/runtime.rs#L995-L1004)).
+A contract that reads its own input after forwarding it is rejected the same way
+([opentensor/polkadot-sdk: substrate/frame/contracts/src/wasm/runtime.rs#L1646-L1660](https://github.com/opentensor/polkadot-sdk/blob/8e64bb2e4d7554a813fe5a99805c9898123c1366/substrate/frame/contracts/src/wasm/runtime.rs#L1646-L1660)).
+
+The practical meaning is narrow: the contract's input was forwarded once, so it cannot be used again
+in the same execution.
+
+## Distinction from Decoding Failed
+
+`InputForwarded` and `DecodingFailed` both concern contract input, but they fail at different
+conditions. `InputForwarded` means the input is no longer available because it was already
+forwarded. `DecodingFailed` means input was available but failed to decode as the expected type
+([Subtensor API Errors: InputForwarded](https://docs.learnbittensor.org/subtensor-api/errors#inputforwarded),
+[Subtensor API Errors: DecodingFailed](https://docs.learnbittensor.org/subtensor-api/errors#decodingfailed)).
+
+- **InputForwarded** — the input was consumed and is no longer available.
+- **DecodingFailed** — the input was present but could not be decoded.
+
+## Distinction from Invalid Call Flags
+
+`InputForwarded` and `InvalidCallFlags` can both stop a cross-contract call, but they check
+different things. `InvalidCallFlags` rejects the call because the supplied flag combination itself
+is not accepted. `InputForwarded` accepts the flags but rejects the call because the input those
+flags refer to has already been consumed
+([Subtensor API Errors: InputForwarded](https://docs.learnbittensor.org/subtensor-api/errors#inputforwarded),
+[Subtensor API Errors: InvalidCallFlags](https://docs.learnbittensor.org/subtensor-api/errors#invalidcallflags)).
+
+- **InputForwarded** — the referenced input is no longer available.
+- **InvalidCallFlags** — the flag combination is rejected outright.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the input-availability guard it represents on
+the contracts call path. It does not describe how a specific contract language exposes input
+forwarding or enumerate the call flags that trigger input reuse
+([Subtensor API Errors: InputForwarded](https://docs.learnbittensor.org/subtensor-api/errors#inputforwarded)).
+
+## Further Reading
+
+- [Subtensor API Errors: InputForwarded](https://docs.learnbittensor.org/subtensor-api/errors#inputforwarded)
+- [Subtensor API Errors: DecodingFailed](https://docs.learnbittensor.org/subtensor-api/errors#decodingfailed)
+- [Subtensor API Errors: InvalidCallFlags](https://docs.learnbittensor.org/subtensor-api/errors#invalidcallflags)
+- [Subtensor API Errors reference](https://docs.learnbittensor.org/subtensor-api/errors)
