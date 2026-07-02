@@ -1,0 +1,52 @@
+---
+title: "Minimum Reserve"
+summary:
+  "How the minimumReserve runtime constant sets a single network-wide floor that a subnet pool's
+  output-side reserve must clear before a swap can proceed."
+category: "Tokenomics"
+tags: ["Tokenomics", "Subnets"]
+infoboxTitle: Minimum Reserve
+infoboxCaption: Runtime constant flooring the swap pallet's reserve check.
+infoboxRows:
+  - label: Constant
+    value: minimumReserve
+  - label: Pallet
+    value: swap
+  - label: Value
+    value: "1,000,000"
+  - label: Falling below it raises
+    value: ReservesTooLow
+---
+
+# Minimum Reserve
+
+Minimum reserve is a swap pallet runtime constant, listed in the chain's constants metadata as
+minimumReserve, with the value 1000000 and the summary "Minimum reserve for tao and alpha"
+([Subtensor API Constants: minimumReserve](https://docs.learnbittensor.org/subtensor-api/constants#minimumreserve-u64)).
+The runtime sets this floor directly
+([runtime/src/lib.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/runtime/src/lib.rs#L1134)).
+
+## What It Means
+
+This floor is a single network-wide value, not a per-subnet setting. Every subnet's swap pool is
+checked against the same constant. Before a swap proceeds, the pallet source checks that the
+output-side reserve for that trade direction is at least this floor, and rejects the call with
+ReservesTooLow when the reserve is too thin
+([swap/impls.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/swap/src/pallet/impls.rs#L211-L215),
+[Subtensor API Errors: ReservesTooLow](https://docs.learnbittensor.org/subtensor-api/errors#reservestoolow)).
+
+This is the same floor the reserves_too_low error page describes only as "the runtime minimum"
+without stating the value.
+
+## Reader Boundary
+
+This page defines the constant, its value, and the check that enforces it. It does not report any
+subnet's current reserve levels; that is separate, live pool state
+([Subtensor API Constants: minimumReserve](https://docs.learnbittensor.org/subtensor-api/constants#minimumreserve-u64)).
+
+## Further Reading
+
+- [Subtensor API Constants: minimumReserve](https://docs.learnbittensor.org/subtensor-api/constants#minimumreserve-u64)
+- [Subtensor API Errors: ReservesTooLow](https://docs.learnbittensor.org/subtensor-api/errors#reservestoolow)
+- [Subtensor runtime: SwapMinimumReserve](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/runtime/src/lib.rs#L1134)
+- [Subtensor pallet: swap_inner reserve check](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/swap/src/pallet/impls.rs#L211-L215)
