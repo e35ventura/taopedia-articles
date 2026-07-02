@@ -1,0 +1,88 @@
+---
+title: "Entered"
+summary:
+  "How the Entered error blocks a safe-mode operation that requires safe-mode to be off when
+  safe-mode is currently entered."
+category: "Core Concepts"
+tags: ["Transactions", "Errors"]
+infoboxTitle: Entered
+infoboxCaption:
+  Error raised when a safe-mode operation requires safe-mode to be off but safe-mode is currently
+  entered.
+infoboxRows:
+  - label: Error
+    value: Entered
+  - label: Pallet
+    value: safeMode
+  - label: Trigger
+    value: Safe-mode operation submitted while safe-mode is currently entered
+  - label: Check type
+    value: Not-entered guard on operations that require safe-mode to be off
+---
+
+# Entered
+
+`Entered` is a safeMode pallet error raised when an operation that requires safe-mode to be off
+arrives while safe-mode is currently entered. The API errors reference summarizes it as "The
+safe-mode is (already or still) entered."
+([Subtensor API Errors: Entered](https://docs.learnbittensor.org/subtensor-api/errors#entered)).
+
+## What It Means
+
+Subtensor includes a safe-mode pallet that can enter a restricted state where certain operations are
+blocked. Some operations, such as entering safe-mode again or releasing a deposit, require safe-mode
+to be off. `Entered` means such an operation arrived while safe-mode is currently entered, so the
+runtime rejects the request
+([Subtensor API Errors: Entered](https://docs.learnbittensor.org/subtensor-api/errors#entered)).
+
+This is the not-entered guard on operations that require safe-mode to be off. It does not, by
+itself, mean the deposit did not exist, that the release delay had not elapsed, or that the
+operation was not configured.
+
+## Why It Appears
+
+This error appears when a safe-mode operation reaches a code path that checks `Self::is_entered()`
+and safe-mode is currently active. The pinned safe-mode pallet source describes the guard: the
+runtime checks that safe-mode is not entered before allowing the operation to proceed and returns
+`Error::<T>::Entered` when safe-mode is active
+([opentensor/polkadot-sdk: substrate/frame/safe-mode/src/lib.rs#L472](https://github.com/opentensor/polkadot-sdk/blob/7cc54bf2d50ae3921d718736dfeb0de9468539c7/substrate/frame/safe-mode/src/lib.rs#L472)).
+
+The practical meaning is narrow: safe-mode must be exited before the operation can succeed.
+
+## Distinction from Not Configured
+
+`Entered` and `NotConfigured` are both safeMode-pallet errors that block an operation, but they fire
+at different checks. `Entered` is the not-entered guard that fires when safe-mode is currently
+active. `NotConfigured` is the configuration guard that fires when the required release-delay
+parameter is not set
+([Subtensor API Errors: Entered](https://docs.learnbittensor.org/subtensor-api/errors#entered),
+[Subtensor API Errors: NotConfigured](https://docs.learnbittensor.org/subtensor-api/errors#notconfigured)).
+
+- **Entered** — safe-mode is currently entered.
+- **NotConfigured** — the required release-delay parameter is not set.
+
+## Distinction from No Deposit
+
+`Entered` and `NoDeposit` are both safeMode-pallet errors that block a deposit release, but they
+fire at different checks. `Entered` is the not-entered guard that fires after the deposit record is
+found. `NoDeposit` is the has-deposit-record guard that fires when no deposit record exists for the
+requested account and block
+([Subtensor API Errors: Entered](https://docs.learnbittensor.org/subtensor-api/errors#entered),
+[Subtensor API Errors: NoDeposit](https://docs.learnbittensor.org/subtensor-api/errors#nodeposit)).
+
+- **Entered** — safe-mode is currently entered, blocking the release.
+- **NoDeposit** — there is no deposit record to release.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the not-entered guard it represents on the
+safe-mode pallet. It does not report whether safe-mode is currently entered, list the operations
+that check this guard, or describe how to exit safe-mode
+([Subtensor API Errors: Entered](https://docs.learnbittensor.org/subtensor-api/errors#entered)).
+
+## Further Reading
+
+- [Subtensor API Errors: Entered](https://docs.learnbittensor.org/subtensor-api/errors#entered)
+- [Subtensor API Errors: NotConfigured](https://docs.learnbittensor.org/subtensor-api/errors#notconfigured)
+- [Subtensor API Errors: NoDeposit](https://docs.learnbittensor.org/subtensor-api/errors#nodeposit)
+- [opentensor/polkadot-sdk: frame/safe-mode/src/lib.rs#L472](https://github.com/opentensor/polkadot-sdk/blob/7cc54bf2d50ae3921d718736dfeb0de9468539c7/substrate/frame/safe-mode/src/lib.rs#L472)
