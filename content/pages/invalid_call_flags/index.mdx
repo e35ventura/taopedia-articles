@@ -1,0 +1,90 @@
+---
+title: "Invalid Call Flags"
+summary:
+  "How the InvalidCallFlags error rejects a cross-contract call when the supplied call flags are not
+  an accepted combination."
+category: "Smart Contracts"
+tags: ["Smart Contracts", "Errors"]
+infoboxTitle: Invalid Call Flags
+infoboxCaption:
+  Error raised when a contracts call supplies an unrecognized or disallowed combination of call
+  flags.
+infoboxRows:
+  - label: Error
+    value: InvalidCallFlags
+  - label: Pallet
+    value: contracts
+  - label: Trigger
+    value: Cross-contract call or delegate call submitted with an unaccepted flag combination
+  - label: Check type
+    value: Call-flag validity guard on the contract call path
+---
+
+# Invalid Call Flags
+
+`InvalidCallFlags` is a contracts pallet error raised when a cross-contract call supplies a flag
+combination that the runtime does not accept. The API errors reference summarizes it as "Invalid
+combination of flags supplied to `seal_call` or `seal_delegate_call`"
+([Subtensor API Errors: InvalidCallFlags](https://docs.learnbittensor.org/subtensor-api/errors#invalidcallflags)).
+
+## What It Means
+
+When one contract calls another contract, the calling side passes a set of call flags that adjust
+how the call behaves. `InvalidCallFlags` means the runtime could not accept the supplied flags.
+Either the flag bits did not decode to a known flag set, or the combination is not allowed for that
+kind of call
+([Subtensor API Errors: InvalidCallFlags](https://docs.learnbittensor.org/subtensor-api/errors#invalidcallflags)).
+
+This is a flag-validity failure on the contract call path. It does not, by itself, mean the called
+contract is missing, that the call was denied for re-entering a contract, or that a state change was
+attempted in read-only mode.
+
+## Why It Appears
+
+This error appears when a contract-to-contract call or a delegate call submits call flags that the
+runtime rejects. The upstream contracts pallet source confirms the guard: the call and delegate-call
+entry points reject flag bits that do not decode to a known flag set
+([opentensor/polkadot-sdk: substrate/frame/contracts/src/wasm/runtime.rs#L1414-L1497](https://github.com/opentensor/polkadot-sdk/blob/8e64bb2e4d7554a813fe5a99805c9898123c1366/substrate/frame/contracts/src/wasm/runtime.rs#L1414-L1497)),
+and a delegate call is also rejected when its flags include the reentry or read-only options, which
+are not allowed on the delegate-call path
+([opentensor/polkadot-sdk: substrate/frame/contracts/src/wasm/runtime.rs#L1036-L1041](https://github.com/opentensor/polkadot-sdk/blob/8e64bb2e4d7554a813fe5a99805c9898123c1366/substrate/frame/contracts/src/wasm/runtime.rs#L1036-L1041)).
+
+The practical meaning is narrow: the flags supplied for this call are not an accepted combination.
+
+## Distinction from Reentrance Denied
+
+`InvalidCallFlags` and `ReentranceDenied` both stop a cross-contract call, but they fail at
+different conditions. `InvalidCallFlags` rejects the call because the supplied flag combination
+itself is not acceptable. `ReentranceDenied` rejects a call that tries to invoke a contract flagged
+as non-reentrant
+([Subtensor API Errors: InvalidCallFlags](https://docs.learnbittensor.org/subtensor-api/errors#invalidcallflags),
+[Subtensor API Errors: ReentranceDenied](https://docs.learnbittensor.org/subtensor-api/errors#reentrancedenied)).
+
+- **InvalidCallFlags** — the supplied flag combination is not accepted.
+- **ReentranceDenied** — the call attempted a disallowed re-entry.
+
+## Distinction from State Change Denied
+
+`InvalidCallFlags` and `StateChangeDenied` both reject contracts operations, but they check at
+different stages. `InvalidCallFlags` fails when the flags are checked as the call is set up.
+`StateChangeDenied` fails later, when a contract already running in read-only mode attempts a
+state-modifying API
+([Subtensor API Errors: InvalidCallFlags](https://docs.learnbittensor.org/subtensor-api/errors#invalidcallflags),
+[Subtensor API Errors: StateChangeDenied](https://docs.learnbittensor.org/subtensor-api/errors#statechangedenied)).
+
+- **InvalidCallFlags** — the flag combination is rejected before the call runs.
+- **StateChangeDenied** — a state-changing API is rejected during read-only execution.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the call-flag validity guard it represents on
+the contracts call path. It does not enumerate every flag the contracts API accepts or describe how
+a specific contract language exposes those flags
+([Subtensor API Errors: InvalidCallFlags](https://docs.learnbittensor.org/subtensor-api/errors#invalidcallflags)).
+
+## Further Reading
+
+- [Subtensor API Errors: InvalidCallFlags](https://docs.learnbittensor.org/subtensor-api/errors#invalidcallflags)
+- [Subtensor API Errors: ReentranceDenied](https://docs.learnbittensor.org/subtensor-api/errors#reentrancedenied)
+- [Subtensor API Errors: StateChangeDenied](https://docs.learnbittensor.org/subtensor-api/errors#statechangedenied)
+- [Subtensor API Errors reference](https://docs.learnbittensor.org/subtensor-api/errors)
