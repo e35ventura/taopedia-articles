@@ -1,0 +1,79 @@
+---
+title: "Max Delegate Dependencies"
+summary:
+  "How the maxDelegateDependencies runtime constant caps how many delegate dependencies a contract
+  may lock, a count limit in the contracts pallet enforced by a dedicated error."
+category: "Smart Contracts"
+tags: ["Smart Contracts"]
+infoboxTitle: Max Delegate Dependencies
+infoboxCaption: Runtime constant capping a contract's locked delegate dependencies.
+infoboxRows:
+  - label: Constant
+    value: maxDelegateDependencies
+  - label: Pallet
+    value: contracts
+  - label: Value
+    value: "32"
+  - label: Used in
+    value: Maximum locked delegate dependencies per contract
+---
+
+# Max Delegate Dependencies
+
+Max delegate dependencies is a contracts pallet runtime constant, listed in the chain's constants
+metadata as maxDelegateDependencies, with the value 32 and the summary "The maximum number of
+delegate_dependencies a contract can lock"
+([Subtensor API Constants: maxDelegateDependencies](https://docs.learnbittensor.org/subtensor-api/constants#maxdelegatedependencies-u32)).
+It caps how many delegate dependencies a single contract may lock at one time.
+
+## What It Means
+
+A contract can lock a dependency on another unit of deployed code that it relies on, so that code
+stays available to it. Max delegate dependencies sets the ceiling on how many such dependencies one
+contract may lock: at most 32
+([Subtensor API Constants: maxDelegateDependencies](https://docs.learnbittensor.org/subtensor-api/constants#maxdelegatedependencies-u32)).
+The limit is a count of dependencies, not a size in bytes, and it applies to each contract on its
+own rather than as a shared total across contracts.
+
+## Enforced by a Dedicated Error
+
+Unlike a soft guideline, this cap is enforced. When a contract tries to lock a dependency beyond the
+allowed number, the contracts pallet rejects the attempt with the MaxDelegateDependenciesReached
+error
+([Subtensor API Errors: MaxDelegateDependenciesReached](https://docs.learnbittensor.org/subtensor-api/errors#maxdelegatedependenciesreached)).
+The error is the signal that a contract has reached the 32-dependency ceiling and cannot lock
+another until one is removed. Because the cap is backed by this error, it is a strict limit rather
+than an advisory figure that is merely expected to hold.
+
+## Distinction from Max Code Len
+
+Max delegate dependencies and max code len are both contracts pallet limits, but they measure
+different quantities. Max delegate dependencies is a count of locked dependencies, capped at 32,
+while max code len is a byte-length limit on a contract's code, capped at 131072 bytes
+([Subtensor API Constants: maxCodeLen](https://docs.learnbittensor.org/subtensor-api/constants#maxcodelen-u32)).
+One counts dependencies; the other measures code size. They bound separate aspects of a contract.
+
+## Distinction from Max Storage Key Len
+
+The same contrast holds against max storage key len, which caps the length of a storage key at 128
+bytes
+([Subtensor API Constants: maxStorageKeyLen](https://docs.learnbittensor.org/subtensor-api/constants#maxstoragekeylen-u32)).
+Max delegate dependencies counts a per-contract list, while max storage key len measures the size of
+an individual key in bytes. The contracts pallet sets several such limits, each bounding a different
+part of a contract.
+
+## Reader Boundary
+
+Max delegate dependencies is a single network-wide constant applied uniformly to every contract, and
+it reflects the current runtime configuration rather than a fixed protocol rule; the value could
+change in a future runtime upgrade. It caps the count of locked delegate dependencies and does not
+describe what those dependencies are or how a contract uses them
+([Subtensor API Constants: maxDelegateDependencies](https://docs.learnbittensor.org/subtensor-api/constants#maxdelegatedependencies-u32)).
+
+## Further Reading
+
+- [Subtensor API Constants: maxDelegateDependencies](https://docs.learnbittensor.org/subtensor-api/constants#maxdelegatedependencies-u32)
+- [Subtensor API Errors: MaxDelegateDependenciesReached](https://docs.learnbittensor.org/subtensor-api/errors#maxdelegatedependenciesreached)
+- [Subtensor API Constants: maxCodeLen](https://docs.learnbittensor.org/subtensor-api/constants#maxcodelen-u32)
+- [Subtensor API Constants: maxStorageKeyLen](https://docs.learnbittensor.org/subtensor-api/constants#maxstoragekeylen-u32)
+- [Subtensor API Constants: maxTransientStorageSize](https://docs.learnbittensor.org/subtensor-api/constants#maxtransientstoragesize-u32)
