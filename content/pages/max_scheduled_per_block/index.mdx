@@ -1,0 +1,87 @@
+---
+title: "Max Scheduled Per Block"
+summary:
+  "How the maxScheduledPerBlock runtime constant caps how many scheduled calls the scheduler runs
+  from its queue in a single block."
+category: "Protocol"
+tags: ["Protocol"]
+infoboxTitle: Max Scheduled Per Block
+infoboxCaption: Runtime constant capping scheduled calls run per block.
+infoboxRows:
+  - label: Constant
+    value: maxScheduledPerBlock
+  - label: Pallet
+    value: scheduler
+  - label: Value
+    value: "50"
+  - label: Used in
+    value: Scheduled calls run from the queue per block
+---
+
+# Max Scheduled Per Block
+
+Max scheduled per block is a scheduler pallet runtime constant, listed in the chain's constants
+metadata as maxScheduledPerBlock, with the value 50 and the summary "The maximum number of scheduled
+calls in the queue for a single block"
+([Subtensor API Constants: maxScheduledPerBlock](https://docs.learnbittensor.org/subtensor-api/constants#maxscheduledperblock-u32)).
+It caps how many scheduled calls the scheduler handles for one block.
+
+## What It Means
+
+The scheduler pallet lets a call be queued to run at a future block rather than immediately. Max
+scheduled per block sets the ceiling on how many such calls are associated with a single block: no
+more than 50
+([Subtensor API Constants: maxScheduledPerBlock](https://docs.learnbittensor.org/subtensor-api/constants#maxscheduledperblock-u32)).
+The cap applies to the number of scheduled calls tied to one block, not to how many calls may be
+scheduled across all future blocks over time. Different future blocks each carry their own separate
+allowance of up to fifty, measured independently of one another.
+
+## What Scheduling Is
+
+Scheduling defers a call so it runs at a chosen later block instead of when it is submitted. This is
+how the chain arranges for actions to take effect on a future block rather than at once. Max
+scheduled per block is the value that keeps the set of calls attached to any single future block
+within a fixed size, so a block's scheduled workload has a known ceiling
+([Subtensor API Constants: maxScheduledPerBlock](https://docs.learnbittensor.org/subtensor-api/constants#maxscheduledperblock-u32)).
+
+## Distinction from Batched Calls Limit
+
+Max scheduled per block and the batch limit both count calls, but for different mechanisms. Max
+scheduled per block caps how many deferred calls a single block runs from the scheduler queue, while
+the batched calls limit, valued at 10922, caps how many calls one utility batch extrinsic carries
+when it is submitted and run together
+([Subtensor API Constants: batchedCallsLimit](https://docs.learnbittensor.org/subtensor-api/constants#batchedcallslimit-u32)).
+Scheduling defers calls to future blocks under this per-block ceiling; batching groups calls into
+one immediate extrinsic. One is about timing across blocks; the other is about size within a single
+submission.
+
+## Why the Per-Block Cap Exists
+
+Fixing how many scheduled calls a single block runs means each block carries a bounded amount of
+deferred work rather than an open-ended queue arriving all at once. With the ceiling at 50, the most
+scheduled calls any one block runs from the queue is known in advance
+([Subtensor API Constants: maxScheduledPerBlock](https://docs.learnbittensor.org/subtensor-api/constants#maxscheduledperblock-u32)).
+When more calls target the same block than the ceiling allows, the excess does not all run in that
+block, so the per-block workload stays within the fixed limit.
+
+## A Scheduler-Only Limit
+
+This limit belongs to the scheduler alone. It governs how many queued, deferred calls a block runs
+from the scheduler and has no bearing on calls submitted directly in the ordinary way, which are not
+drawn from the scheduler queue at all
+([Subtensor API Constants: maxScheduledPerBlock](https://docs.learnbittensor.org/subtensor-api/constants#maxscheduledperblock-u32)).
+A block can therefore process ordinary transactions beyond this number while still running at most
+fifty scheduled calls from the queue.
+
+## Reader Boundary
+
+Max scheduled per block is a single network-wide constant, not a per-subnet value, and it reflects
+the current runtime configuration rather than a fixed protocol rule; the value could change in a
+future runtime upgrade. It caps how many scheduled calls a block runs and does not describe what
+those calls do or when a particular call is scheduled
+([Subtensor API Constants: maxScheduledPerBlock](https://docs.learnbittensor.org/subtensor-api/constants#maxscheduledperblock-u32)).
+
+## Further Reading
+
+- [Subtensor API Constants: maxScheduledPerBlock](https://docs.learnbittensor.org/subtensor-api/constants#maxscheduledperblock-u32)
+- [Subtensor API Constants: batchedCallsLimit](https://docs.learnbittensor.org/subtensor-api/constants#batchedcallslimit-u32)
