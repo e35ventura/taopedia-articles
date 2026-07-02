@@ -1,0 +1,86 @@
+---
+title: "Key Swap On Subnet Cost"
+summary:
+  "How the keySwapOnSubnetCost runtime constant names the fixed TAO fee charged for a hotkey swap on
+  one specific subnet."
+category: "Wallets"
+tags: ["Wallets", "Security"]
+infoboxTitle: Key Swap On Subnet Cost
+infoboxCaption: Fixed fee charged for a hotkey swap on a specific subnet.
+infoboxRows:
+  - label: Constant
+    value: keySwapOnSubnetCost
+  - label: Pallet
+    value: subtensor
+  - label: Value
+    value: "1,000,000 RAO (0.001 TAO)"
+  - label: Used by
+    value: Per-subnet hotkey swap path
+---
+
+# Key Swap On Subnet Cost
+
+Key swap on subnet cost is a subtensor runtime constant listed in the chain constants metadata as
+`keySwapOnSubnetCost`. The constants reference gives its value as 1,000,000 RAO, which is 0.001 TAO,
+and summarizes it as the cost of swapping a hotkey in a subnet
+([Subtensor API Constants: keySwapOnSubnetCost](https://docs.learnbittensor.org/subtensor-api/constants#keyswaponsubnetcost-u64)).
+
+The current runtime defines the same constant as `SubtensorInitialKeySwapOnSubnetCost`, and the
+subtensor pallet wires it into `KeySwapOnSubnetCost`
+([runtime/src/lib.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/runtime/src/lib.rs#L1035-L1115)).
+
+## What It Means
+
+This constant is the fixed fee used on the per-subnet hotkey swap path. In the current
+implementation, the subnet-specific swap flow reads `T::KeySwapOnSubnetCost::get()` before it checks
+whether the coldkey can pay the fee for that subnet swap
+([swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/subtensor/src/swap/swap_hotkey.rs#L390-L395)).
+
+For a reader, the narrow meaning is simple: a hotkey swap that targets one specific subnet carries a
+documented fixed TAO fee in addition to the other swap rules that may apply
+([Subtensor API Constants: keySwapOnSubnetCost](https://docs.learnbittensor.org/subtensor-api/constants#keyswaponsubnetcost-u64)).
+
+## Distinction from Key Swap Cost
+
+`keySwapOnSubnetCost` and `keySwapCost` are related but distinct constants. The constants reference
+describes `keySwapCost` as the cost of swapping a hotkey, while `keySwapOnSubnetCost` is the cost of
+swapping a hotkey in a subnet
+([Subtensor API Constants: keySwapCost](https://docs.learnbittensor.org/subtensor-api/constants#keyswapcost-u64),
+[Subtensor API Constants: keySwapOnSubnetCost](https://docs.learnbittensor.org/subtensor-api/constants#keyswaponsubnetcost-u64)).
+
+The current subtensor pallet reflects that split. The all-subnets swap path reads
+`Self::get_key_swap_cost()`, while the subnet-specific swap path reads
+`T::KeySwapOnSubnetCost::get()`
+([swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/subtensor/src/swap/swap_hotkey.rs#L181-L185),
+[swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/subtensor/src/swap/swap_hotkey.rs#L390-L395)).
+
+- **keySwapCost** — fixed fee used on the broader hotkey swap path.
+- **keySwapOnSubnetCost** — fixed fee used when the swap targets one subnet.
+
+## Distinction from Hotkey Swap On Subnet Interval
+
+Key swap on subnet cost and hotkey swap on subnet interval both affect subnet-specific hotkey swaps,
+but they govern different things. `keySwapOnSubnetCost` is the fixed fee.
+`HotkeySwapOnSubnetInterval` is the waiting period between subnet-targeted hotkey swaps
+([Subtensor API Constants: keySwapOnSubnetCost](https://docs.learnbittensor.org/subtensor-api/constants#keyswaponsubnetcost-u64),
+[Subtensor API Constants: hotkeySwapOnSubnetInterval](https://docs.learnbittensor.org/subtensor-api/constants#hotkeyswaponsubnetinterval-u64),
+[[Hotkey Swap On Subnet Interval]]).
+
+- **keySwapOnSubnetCost** — the fee charged for the subnet-targeted swap.
+- **HotkeySwapOnSubnetInterval** — the cooldown before another subnet-targeted swap is allowed.
+
+## Reader Boundary
+
+This page defines the constant, its documented value, and the subnet-specific swap path that reads
+it. It does not report the live balance of a coldkey or whether a particular swap will pass all
+other hotkey-swap checks
+([Subtensor API Constants: keySwapOnSubnetCost](https://docs.learnbittensor.org/subtensor-api/constants#keyswaponsubnetcost-u64),
+[swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/subtensor/src/swap/swap_hotkey.rs#L390-L395)).
+
+## Further Reading
+
+- [Subtensor API Constants: keySwapOnSubnetCost](https://docs.learnbittensor.org/subtensor-api/constants#keyswaponsubnetcost-u64)
+- [Subtensor API Constants: keySwapCost](https://docs.learnbittensor.org/subtensor-api/constants#keyswapcost-u64)
+- [Subtensor API Constants: hotkeySwapOnSubnetInterval](https://docs.learnbittensor.org/subtensor-api/constants#hotkeyswaponsubnetinterval-u64)
+- [Subtensor source: swap_hotkey.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/subtensor/src/swap/swap_hotkey.rs#L181-L185)
+- [Subtensor source: subnet swap cost](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/subtensor/src/swap/swap_hotkey.rs#L390-L395)
