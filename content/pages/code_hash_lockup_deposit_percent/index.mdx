@@ -1,0 +1,70 @@
+---
+title: "Code Hash Lockup Deposit Percent"
+summary:
+  "How the codeHashLockupDepositPercent contracts constant sets the percentage of code deposit held
+  when a contract uses a code hash."
+category: "Smart Contracts"
+tags: ["Smart Contracts"]
+infoboxTitle: Code Hash Lockup Deposit Percent
+infoboxCaption: Percentage-based lockup for contracts code-hash use.
+infoboxRows:
+  - label: Constant
+    value: codeHashLockupDepositPercent
+  - label: Pallet
+    value: contracts
+  - label: Runtime setting
+    value: "30%"
+  - label: Metadata value
+    value: "300000000"
+---
+
+# Code Hash Lockup Deposit Percent
+
+Code hash lockup deposit percent is a contracts pallet runtime constant, listed in the Subtensor
+constants reference as codeHashLockupDepositPercent. The constants metadata shows value 300000000
+and describes it as the percentage of the storage deposit held for using a code hash
+([Subtensor API Constants: codeHashLockupDepositPercent](https://docs.learnbittensor.org/subtensor-api/constants#codehashlockupdepositpercent-perbill)).
+The Subtensor runtime sets the same contracts constant to 30 percent and wires it into the contracts
+pallet configuration
+([runtime/src/lib.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/runtime/src/lib.rs#L1543-L1590)).
+
+## What It Means
+
+When contract instantiation keeps code from being deleted, the contracts pallet adds a fraction of
+the original code storage deposit to the contract's base deposit. The source line that calculates
+that amount uses the code hash lockup deposit percent against the stored code deposit
+([storage.rs](https://github.com/opentensor/polkadot-sdk/blob/8e64bb2e4d7554a813fe5a99805c9898123c1366/substrate/frame/contracts/src/storage.rs#L243-L248)).
+
+The same percentage is also used when a contract locks a delegate dependency. The source first reads
+the code information for the supplied code hash, then calculates a deposit from the code deposit
+using the configured percentage
+([exec.rs](https://github.com/opentensor/polkadot-sdk/blob/8e64bb2e4d7554a813fe5a99805c9898123c1366/substrate/frame/contracts/src/exec.rs#L1658-L1661)).
+
+## Distinction from Deposit Per Byte
+
+Code hash lockup deposit percent and deposit per byte both affect contracts deposits, but they
+measure different things. Code hash lockup deposit percent is a percentage applied to an existing
+code deposit when a code hash is kept in use. Deposit per byte is a storage-pricing constant for
+each byte of storage
+([Subtensor API Constants: codeHashLockupDepositPercent](https://docs.learnbittensor.org/subtensor-api/constants#codehashlockupdepositpercent-perbill),
+[Subtensor API Constants: depositPerByte](https://docs.learnbittensor.org/subtensor-api/constants#depositperbyte-u64)).
+
+- **Code hash lockup deposit percent** - percentage of code deposit held for code-hash use.
+- **Deposit per byte** - per-byte price used to calculate storage deposit changes.
+
+## Reader Boundary
+
+This page defines the current percentage constant and the two contracts paths shown by the cited
+source ranges. It does not estimate the deposit for a specific contract, list which code hashes are
+currently locked, or replace the per-byte and per-item storage deposit constants
+([Subtensor API Constants: codeHashLockupDepositPercent](https://docs.learnbittensor.org/subtensor-api/constants#codehashlockupdepositpercent-perbill),
+[Subtensor API Constants: depositPerByte](https://docs.learnbittensor.org/subtensor-api/constants#depositperbyte-u64),
+[Subtensor API Constants: depositPerItem](https://docs.learnbittensor.org/subtensor-api/constants#depositperitem-u64)).
+
+## Further Reading
+
+- [Subtensor API Constants: codeHashLockupDepositPercent](https://docs.learnbittensor.org/subtensor-api/constants#codehashlockupdepositpercent-perbill)
+- [Subtensor API Constants: depositPerByte](https://docs.learnbittensor.org/subtensor-api/constants#depositperbyte-u64)
+- [Subtensor API Constants: depositPerItem](https://docs.learnbittensor.org/subtensor-api/constants#depositperitem-u64)
+- [Subtensor runtime contracts configuration](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/runtime/src/lib.rs#L1543-L1590)
+- [Polkadot SDK contracts code-hash deposit calculation](https://github.com/opentensor/polkadot-sdk/blob/8e64bb2e4d7554a813fe5a99805c9898123c1366/substrate/frame/contracts/src/storage.rs#L243-L248)
