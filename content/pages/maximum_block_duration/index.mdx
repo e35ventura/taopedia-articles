@@ -1,0 +1,65 @@
+---
+title: "Maximum Block Duration"
+summary:
+  "How the maximumBlockDuration runtime constant caps a crowdloan campaign at 60 days, checked
+  against the minimum bound in the same validation step."
+category: "Subnets"
+tags: ["Subnets", "Tokenomics"]
+infoboxTitle: Maximum Block Duration
+infoboxCaption: Runtime constant capping crowdloan campaign length.
+infoboxRows:
+  - label: Constant
+    value: maximumBlockDuration
+  - label: Pallet
+    value: crowdloan
+  - label: Value
+    value: "432,000 blocks (60 days)"
+  - label: Exceeding it raises
+    value: BlockDurationTooLong
+---
+
+# Maximum Block Duration
+
+Maximum block duration is a crowdloan pallet runtime constant, listed in the chain's constants
+metadata as maximumBlockDuration, with the value 432000 and the summary "The maximum block duration
+for a crowdloan"
+([Subtensor API Constants: maximumBlockDuration](https://docs.learnbittensor.org/subtensor-api/constants#maximumblockduration-u32)).
+On production chains this is 60 days of campaign length
+([Crowdloans: Runtime parameters (defaults)](https://docs.learnbittensor.org/subnets/crowdloans#runtime-parameters-defaults)).
+
+## What It Means
+
+Creating or extending a crowdloan routes the supplied end block through a shared validation helper.
+That helper computes the duration from the current block to the end block and compares it against
+this constant, rejecting the call with BlockDurationTooLong when the duration is longer
+([crowdloan/lib.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/crowdloan/src/lib.rs#L976-L987),
+[Subtensor API: Errors](https://docs.learnbittensor.org/subtensor-api/errors)).
+
+Crowdloans are not scoped to a specific subnet in the way subnet hyperparameters are, so this
+ceiling is a single network-wide value rather than something that varies by subnet.
+
+## Distinction from Minimum Block Duration
+
+The same validation helper also enforces a floor. maximumBlockDuration is paired with a separate
+constant, minimumBlockDuration, set to 50400 blocks, or 7 days on production chains. The two bounds
+together define the allowed campaign-length window: a crowdloan's duration must fall between 7 days
+and 60 days
+([Subtensor API Constants: minimumBlockDuration](https://docs.learnbittensor.org/subtensor-api/constants#minimumblockduration-u32),
+[Crowdloans: Runtime parameters (defaults)](https://docs.learnbittensor.org/subnets/crowdloans#runtime-parameters-defaults)).
+
+- **maximumBlockDuration** — 432,000 blocks (60 days); exceeding it raises BlockDurationTooLong.
+- **minimumBlockDuration** — 50,400 blocks (7 days); falling short of it raises
+  BlockDurationTooShort.
+
+## Reader Boundary
+
+This page defines both duration bounds and the value each raises. It does not cover the rest of the
+crowdloan creation flow, such as the contribution floor or refund batching
+([Crowdloans: Runtime parameters (defaults)](https://docs.learnbittensor.org/subnets/crowdloans#runtime-parameters-defaults)).
+
+## Further Reading
+
+- [Subtensor API Constants: maximumBlockDuration](https://docs.learnbittensor.org/subtensor-api/constants#maximumblockduration-u32)
+- [Subtensor API Constants: minimumBlockDuration](https://docs.learnbittensor.org/subtensor-api/constants#minimumblockduration-u32)
+- [Crowdloans: Runtime parameters (defaults)](https://docs.learnbittensor.org/subnets/crowdloans#runtime-parameters-defaults)
+- [Subtensor source: crowdloan pallet duration check](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/crowdloan/src/lib.rs#L976-L987)
