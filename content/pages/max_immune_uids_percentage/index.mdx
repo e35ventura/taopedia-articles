@@ -1,0 +1,80 @@
+---
+title: "Max Immune Uids Percentage"
+summary:
+  "How the maxImmuneUidsPercentage runtime constant caps the share of a subnet's UIDs that may be
+  immune at once, bounding how much of a subnet UID trimming can protect from removal."
+category: "Subnets"
+tags: ["Subnets"]
+infoboxTitle: Max Immune Uids Percentage
+infoboxCaption: Runtime constant capping the immune share of a subnet's UIDs.
+infoboxRows:
+  - label: Constant
+    value: maxImmuneUidsPercentage
+  - label: Pallet
+    value: subtensorModule
+  - label: Value
+    value: "80%"
+  - label: Used in
+    value: Immune-share ceiling during UID trimming
+---
+
+# Max Immune Uids Percentage
+
+Max immune uids percentage is a subtensorModule runtime constant, listed in the chain's constants
+metadata as maxImmuneUidsPercentage, with the value 80 and the summary "Maximum percentage of immune
+UIDs"
+([Subtensor API Constants: maxImmuneUidsPercentage](https://docs.learnbittensor.org/subtensor-api/constants#maximmuneuidspercentage-percent)).
+It caps the fraction of a subnet's UIDs that may be immune at any one time.
+
+## What It Means
+
+An immune UID is a neuron slot that is protected from removal while its protection applies. Max
+immune uids percentage sets the ceiling on how much of a subnet can hold that protected status at
+once: no more than 80% of a subnet's UIDs may be immune. The UID trimming guide documents the same
+80% maximum for immune UIDs ([UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming)).
+Because the cap is 80%, at least one fifth of a subnet's UIDs remain non-immune and therefore
+eligible for removal. On a subnet such as netuid 1, at most 80% of UIDs may be immune at the same
+time.
+
+## Relation to UID Trimming
+
+UID trimming reduces a subnet's live UID count by removing the lowest emitters and compacting the
+survivors, and it skips immune UIDs while doing so
+([UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming)). Max immune uids percentage
+bounds that protection: a trim cannot leave more than 80% of the subnet immune. When an operation
+would push the immune share past the cap, the runtime raises the
+`TrimmingWouldExceedMaxImmunePercentage` error
+([Subtensor API Errors: TrimmingWouldExceedMaxImmunePercentage](https://docs.learnbittensor.org/subtensor-api/errors#trimmingwouldexceedmaximmunepercentage)).
+
+## Distinction from Immunity Period
+
+Immunity period and max immune uids percentage protect neurons along different axes. Immunity period
+is a per-subnet hyperparameter measured in blocks that determines how long a newly registered neuron
+stays immune
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)). Max
+immune uids percentage does not measure time; it caps how many UIDs may carry immune status at once,
+expressed as a share of the subnet. One is a duration, the other is a population ceiling.
+
+## Distinction from Immune Owner Uids Limit
+
+Immune owner uids limit and max immune uids percentage are also distinct caps. Immune owner uids
+limit is a per-subnet hyperparameter that caps how many neurons an owner may mark as owner-immune
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)). Max
+immune uids percentage is a network-wide constant that caps the total immune share of a subnet
+regardless of why each UID is immune. One counts owner-marked neurons; the other bounds the overall
+immune fraction.
+
+## Reader Boundary
+
+Max immune uids percentage is a single network-wide constant, not a per-subnet hyperparameter, and
+it reflects the current runtime configuration rather than a fixed protocol rule; the value could
+change in a future runtime upgrade. It does not describe which specific UIDs are immune or how
+pruning scores are computed
+([Subtensor API Constants: maxImmuneUidsPercentage](https://docs.learnbittensor.org/subtensor-api/constants#maximmuneuidspercentage-percent)).
+
+## Further Reading
+
+- [Subtensor API Constants: maxImmuneUidsPercentage](https://docs.learnbittensor.org/subtensor-api/constants#maximmuneuidspercentage-percent)
+- [Subtensor API Errors: TrimmingWouldExceedMaxImmunePercentage](https://docs.learnbittensor.org/subtensor-api/errors#trimmingwouldexceedmaximmunepercentage)
+- [UID Trimming](https://docs.learnbittensor.org/subnets/uid-trimming)
+- [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
