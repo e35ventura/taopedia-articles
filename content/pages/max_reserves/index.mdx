@@ -1,0 +1,62 @@
+---
+title: "Max Reserves"
+summary:
+  "How the maxReserves runtime constant sets the limit of 50 named reserves an account can hold
+  before further reserve attempts fail."
+category: "Wallets"
+tags: ["Wallets", "Security"]
+infoboxTitle: Max Reserves
+infoboxCaption: Runtime constant limiting named reserves per account.
+infoboxRows:
+  - label: Constant
+    value: maxReserves
+  - label: Pallet
+    value: balances
+  - label: Value
+    value: "50"
+  - label: Exceeding it raises
+    value: TooManyReserves
+---
+
+# Max Reserves
+
+Max reserves is a balances pallet runtime constant, listed in the chain's constants metadata as
+maxReserves, with the value 50 and the summary "The maximum number of named reserves that can exist
+on an account"
+([Subtensor API Constants: maxReserves](https://docs.learnbittensor.org/subtensor-api/constants#maxreserves-u32)).
+The runtime sets this bound directly: it configures the balances pallet's reserve limit to 50
+([runtime/src/lib.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/runtime/src/lib.rs#L480)).
+
+## What It Means
+
+Each account can hold up to 50 named reserves at the same time. The official errors reference ties
+the limit directly to the error a reader would actually hit: it defines the TooManyReserves error as
+firing when the number of named reserves on an account exceeds this constant
+([Subtensor API Errors: TooManyReserves](https://docs.learnbittensor.org/subtensor-api/errors#toomanyreserves)).
+
+The value applies uniformly across accounts; it is not a per-subnet or configurable-per-account
+setting.
+
+## Distinction from Max Locks
+
+A separate constant, maxLocks, also caps a per-account tracking list at 50, but it counts a
+different kind of entry. maxLocks bounds the number of balance locks an account can carry, while
+maxReserves bounds the number of named reserves
+([Subtensor API Constants: maxLocks](https://docs.learnbittensor.org/subtensor-api/constants#maxlocks-u32),
+[Subtensor API Constants: maxReserves](https://docs.learnbittensor.org/subtensor-api/constants#maxreserves-u32)).
+
+- **maxReserves** — 50; caps named reserves; exceeding it raises TooManyReserves.
+- **maxLocks** — 50; caps balance locks on an account.
+
+## Reader Boundary
+
+This page defines the constant and its value. It does not report how many named reserves any
+specific account currently holds; that is live chain state
+([Subtensor API Constants: maxReserves](https://docs.learnbittensor.org/subtensor-api/constants#maxreserves-u32)).
+
+## Further Reading
+
+- [Subtensor API Constants: maxReserves](https://docs.learnbittensor.org/subtensor-api/constants#maxreserves-u32)
+- [Subtensor API Constants: maxLocks](https://docs.learnbittensor.org/subtensor-api/constants#maxlocks-u32)
+- [Subtensor API Errors: TooManyReserves](https://docs.learnbittensor.org/subtensor-api/errors#toomanyreserves)
+- [Subtensor runtime: balances pallet config](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/runtime/src/lib.rs#L480)
