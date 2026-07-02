@@ -1,0 +1,88 @@
+---
+title: "Exited"
+summary:
+  "How the Exited error blocks a safe-mode operation that requires safe-mode to be on when safe-mode
+  is currently exited."
+category: "Core Concepts"
+tags: ["Transactions", "Errors"]
+infoboxTitle: Exited
+infoboxCaption:
+  Error raised when a safe-mode operation requires safe-mode to be on but safe-mode is currently
+  exited.
+infoboxRows:
+  - label: Error
+    value: Exited
+  - label: Pallet
+    value: safeMode
+  - label: Trigger
+    value: Safe-mode operation submitted while safe-mode is currently exited
+  - label: Check type
+    value: Not-exited guard on operations that require safe-mode to be on
+---
+
+# Exited
+
+`Exited` is a safeMode pallet error raised when an operation that requires safe-mode to be on
+arrives while safe-mode is currently exited. The API errors reference summarizes it as "The
+safe-mode is (already or still) exited."
+([Subtensor API Errors: Exited](https://docs.learnbittensor.org/subtensor-api/errors#exited)).
+
+## What It Means
+
+Subtensor includes a safe-mode pallet that can enter a restricted state where certain operations are
+blocked. Some operations, such as extending safe-mode or resuming from a pause, require safe-mode to
+be on. `Exited` means such an operation arrived while safe-mode is currently off, so the runtime
+rejects the request
+([Subtensor API Errors: Exited](https://docs.learnbittensor.org/subtensor-api/errors#exited)).
+
+This is the not-exited guard on operations that require safe-mode to be on. It does not, by itself,
+mean the deposit did not exist, that the release delay had not elapsed, or that the operation was
+not configured.
+
+## Why It Appears
+
+This error appears when a safe-mode operation reaches a code path that checks `Self::is_entered()`
+and safe-mode is currently off. The pinned safe-mode pallet source describes the guard: the runtime
+checks that safe-mode is entered before allowing the operation to proceed and returns
+`Error::<T>::Exited` when safe-mode is not active
+([opentensor/polkadot-sdk: substrate/frame/safe-mode/src/lib.rs#L491](https://github.com/opentensor/polkadot-sdk/blob/7cc54bf2d50ae3921d718736dfeb0de9468539c7/substrate/frame/safe-mode/src/lib.rs#L491)).
+
+The practical meaning is narrow: safe-mode must be entered before the operation can succeed.
+
+## Distinction from Entered
+
+`Exited` and `Entered` are both safeMode-pallet errors on the safe-mode lifecycle path, but they
+fire in opposite directions. `Exited` is the not-exited guard that fires when an operation requires
+safe-mode to be on but safe-mode is off. `Entered` is the not-entered guard that fires when an
+operation requires safe-mode to be off but safe-mode is on
+([Subtensor API Errors: Exited](https://docs.learnbittensor.org/subtensor-api/errors#exited),
+[Subtensor API Errors: Entered](https://docs.learnbittensor.org/subtensor-api/errors#entered)).
+
+- **Exited** — safe-mode is currently off when the operation requires it to be on.
+- **Entered** — safe-mode is currently on when the operation requires it to be off.
+
+## Distinction from Not Configured
+
+`Exited` and `NotConfigured` are both safeMode-pallet errors that block an operation, but they fire
+at different checks. `Exited` is the safe-mode-state guard that fires when safe-mode is off.
+`NotConfigured` is the configuration guard that fires when the required release-delay parameter is
+not set
+([Subtensor API Errors: Exited](https://docs.learnbittensor.org/subtensor-api/errors#exited),
+[Subtensor API Errors: NotConfigured](https://docs.learnbittensor.org/subtensor-api/errors#notconfigured)).
+
+- **Exited** — safe-mode is currently off.
+- **NotConfigured** — the required release-delay parameter is not set.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the not-exited guard it represents on the
+safe-mode pallet. It does not report whether safe-mode is currently entered, list the operations
+that check this guard, or describe how to enter safe-mode
+([Subtensor API Errors: Exited](https://docs.learnbittensor.org/subtensor-api/errors#exited)).
+
+## Further Reading
+
+- [Subtensor API Errors: Exited](https://docs.learnbittensor.org/subtensor-api/errors#exited)
+- [Subtensor API Errors: Entered](https://docs.learnbittensor.org/subtensor-api/errors#entered)
+- [Subtensor API Errors: NotConfigured](https://docs.learnbittensor.org/subtensor-api/errors#notconfigured)
+- [opentensor/polkadot-sdk: frame/safe-mode/src/lib.rs#L491](https://github.com/opentensor/polkadot-sdk/blob/7cc54bf2d50ae3921d718736dfeb0de9468539c7/substrate/frame/safe-mode/src/lib.rs#L491)
