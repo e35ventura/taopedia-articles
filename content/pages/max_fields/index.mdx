@@ -1,0 +1,74 @@
+---
+title: "Max Fields"
+summary:
+  "How the maxFields runtime constant caps a commitment submission at 3 additional fields, the
+  ceiling behind TooManyFieldsInCommitmentInfo."
+category: "Subnets"
+tags: ["Subnets"]
+infoboxTitle: Max Fields
+infoboxCaption:
+  Runtime constant limiting the number of additional fields in a commitment submission.
+infoboxRows:
+  - label: Constant
+    value: maxFields
+  - label: Pallet
+    value: commitments
+  - label: Value
+    value: "3"
+  - label: Exceeding it raises
+    value: TooManyFieldsInCommitmentInfo
+---
+
+# Max Fields
+
+Max fields is a commitments pallet runtime constant, listed in chain constants metadata as
+`maxFields`, with value `3` and the summary "The maximum number of additional fields that can be
+added to a commitment"
+([Subtensor API Constants: maxFields](https://docs.learnbittensor.org/subtensor-api/constants#maxfields-u32)).
+The runtime sets this through `MaxCommitFieldsInner: u32 = 3` and wires it into the commitments
+config as `type MaxFields = MaxCommitFields`
+([runtime/src/lib.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/runtime/src/lib.rs#L883-L893),
+[runtime/src/lib.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/runtime/src/lib.rs#L941-L943)).
+
+## What It Means
+
+A `set_commitment` submission may carry at most `3` additional fields. The commitments pallet types
+the submitted payload as `CommitmentInfo<T::MaxFields>`, counts `info.fields.len()`, and rejects the
+call with `TooManyFieldsInCommitmentInfo` when that count is greater than `T::MaxFields::get()`
+([commitments/src/lib.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/commitments/src/lib.rs#L217-L231),
+[Subtensor API Errors: TooManyFieldsInCommitmentInfo](https://docs.learnbittensor.org/subtensor-api/errors#toomanyfieldsincommitmentinfo)).
+
+This is a field-count ceiling, not the pallet's separate per-epoch space check. After the field
+count guard passes, the pallet still computes `required_space` from the submitted field data and can
+reject the same call with `SpaceLimitExceeded` if the caller has exhausted the current epoch's
+allowance
+([commitments/src/lib.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/commitments/src/lib.rs#L234-L250),
+[Subtensor API Errors: SpaceLimitExceeded](https://docs.learnbittensor.org/subtensor-api/errors#spacelimitexceeded)).
+
+## Distinction from Space Limit Exceeded
+
+`maxFields` and `SpaceLimitExceeded` both constrain commitment submissions, but they measure
+different things. `maxFields` is the raw additional-field count ceiling of `3`. `SpaceLimitExceeded`
+is the later size-accounting check that compares accumulated `used_space` and new `required_space`
+for the current epoch
+([Subtensor API Constants: maxFields](https://docs.learnbittensor.org/subtensor-api/constants#maxfields-u32),
+[commitments/src/lib.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/commitments/src/lib.rs#L236-L250),
+[Subtensor API Errors: SpaceLimitExceeded](https://docs.learnbittensor.org/subtensor-api/errors#spacelimitexceeded)).
+
+- **maxFields** - count limit on additional commitment fields.
+- **SpaceLimitExceeded** - per-epoch space-usage limit for commitment data.
+
+## Reader Boundary
+
+This page defines the constant, its current value, and the count check it controls on
+`set_commitment`. It does not describe what each commitment field means or report a caller's current
+space usage for any subnet
+([Subtensor API Constants: maxFields](https://docs.learnbittensor.org/subtensor-api/constants#maxfields-u32),
+[commitments/src/lib.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/commitments/src/lib.rs#L217-L250)).
+
+## Further Reading
+
+- [Subtensor API Constants: maxFields](https://docs.learnbittensor.org/subtensor-api/constants#maxfields-u32)
+- [Subtensor API Errors: TooManyFieldsInCommitmentInfo](https://docs.learnbittensor.org/subtensor-api/errors#toomanyfieldsincommitmentinfo)
+- [Subtensor API Errors: SpaceLimitExceeded](https://docs.learnbittensor.org/subtensor-api/errors#spacelimitexceeded)
+- [Subtensor commitments source](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/commitments/src/lib.rs#L217-L250)
