@@ -1,0 +1,88 @@
+---
+title: "Require Sudo"
+summary:
+  "How the RequireSudo error blocks a sudo pallet call when the sender is not the configured Sudo
+  account."
+category: "Core Concepts"
+tags: ["Transactions", "Errors"]
+infoboxTitle: Require Sudo
+infoboxCaption:
+  Error raised when a sudo pallet call arrives from an account other than the configured Sudo
+  account.
+infoboxRows:
+  - label: Error
+    value: RequireSudo
+  - label: Pallet
+    value: sudo
+  - label: Trigger
+    value: Sudo pallet call submitted from an account other than the configured Sudo account
+  - label: Check type
+    value: Sudo-account-identity guard on the sudo pallet call path
+---
+
+# Require Sudo
+
+`RequireSudo` is a sudo pallet error raised when a sudo pallet call arrives from an account other
+than the configured Sudo account. The API errors reference summarizes it as "Sender must be the Sudo
+account."
+([Subtensor API Errors: RequireSudo](https://docs.learnbittensor.org/subtensor-api/errors#requiresudo)).
+
+## What It Means
+
+Subtensor includes a sudo pallet that allows a single privileged account (the Sudo account) to
+execute root-level calls on behalf of the chain. `RequireSudo` means a sudo pallet call reached the
+runtime from an account that does not match the configured Sudo key, so the runtime rejects the call
+before it is dispatched
+([Subtensor API Errors: RequireSudo](https://docs.learnbittensor.org/subtensor-api/errors#requiresudo)).
+
+This is the Sudo-account-identity guard on the sudo pallet call path. It does not, by itself, mean
+the inner call was structurally invalid, that the runtime filter blocked the inner call, or that the
+Sudo key was unset.
+
+## Why It Appears
+
+This error appears when a sudo pallet call reaches the runtime and the sender does not match the
+configured Sudo key. The pinned sudo-pallet source describes the guard: the runtime checks that the
+sender matches the stored Sudo key and returns `Error::<T>::RequireSudo` when they do not match
+([opentensor/polkadot-sdk: substrate/frame/sudo/src/lib.rs#L360](https://github.com/opentensor/polkadot-sdk/blob/7cc54bf2d50ae3921d718736dfeb0de9468539c7/substrate/frame/sudo/src/lib.rs#L360)).
+
+The practical meaning is narrow: only the configured Sudo account can submit sudo pallet calls. A
+request from any other account is rejected.
+
+## Distinction from Unauthorized
+
+`RequireSudo` and `Unauthorized` are both pallet errors that block a call based on the caller's
+identity, but they fire in different contexts. `RequireSudo` is the Sudo-account-identity guard on
+the sudo pallet call path. `Unauthorized` is the hash-mismatch guard on the runtime upgrade
+authorization path
+([Subtensor API Errors: RequireSudo](https://docs.learnbittensor.org/subtensor-api/errors#requiresudo),
+[Subtensor API Errors: Unauthorized](https://docs.learnbittensor.org/subtensor-api/errors#unauthorized)).
+
+- **RequireSudo** — the sender is not the configured Sudo account.
+- **Unauthorized** — the submitted code does not match the authorized upgrade hash.
+
+## Distinction from Not Owner
+
+`RequireSudo` and `NotOwner` are both pallet errors that block an operation based on the caller's
+identity, but they fire on different pallets and paths. `RequireSudo` is the Sudo-account-identity
+guard on the sudo pallet call path. `NotOwner` is the creator-identity guard on the multisig cancel
+and deposit-update paths
+([Subtensor API Errors: RequireSudo](https://docs.learnbittensor.org/subtensor-api/errors#requiresudo),
+[Subtensor API Errors: NotOwner](https://docs.learnbittensor.org/subtensor-api/errors#notowner)).
+
+- **RequireSudo** — the sender is not the configured Sudo account.
+- **NotOwner** — the sender is not the account that created the multisig operation.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the Sudo-account-identity guard it represents
+on the sudo pallet call path. It does not report which account is currently configured as the Sudo
+key, list the sudo pallet extrinsics, or describe the governance process that changes the Sudo key
+([Subtensor API Errors: RequireSudo](https://docs.learnbittensor.org/subtensor-api/errors#requiresudo)).
+
+## Further Reading
+
+- [Subtensor API Errors: RequireSudo](https://docs.learnbittensor.org/subtensor-api/errors#requiresudo)
+- [Subtensor API Errors: Unauthorized](https://docs.learnbittensor.org/subtensor-api/errors#unauthorized)
+- [Subtensor API Errors: NotOwner](https://docs.learnbittensor.org/subtensor-api/errors#notowner)
+- [opentensor/polkadot-sdk: frame/sudo/src/lib.rs#L360](https://github.com/opentensor/polkadot-sdk/blob/7cc54bf2d50ae3921d718736dfeb0de9468539c7/substrate/frame/sudo/src/lib.rs#L360)
