@@ -1,0 +1,66 @@
+---
+title: "Max Code Len"
+summary:
+  "How the maxCodeLen runtime constant sets the limit of 131072 bytes on contract code length, the
+  bound behind the CodeTooLarge error."
+category: "Smart Contracts"
+tags: ["Smart Contracts"]
+infoboxTitle: Max Code Len
+infoboxCaption: Runtime constant limiting contract code length in bytes.
+infoboxRows:
+  - label: Constant
+    value: maxCodeLen
+  - label: Pallet
+    value: contracts
+  - label: Value
+    value: "131072"
+  - label: Exceeding it raises
+    value: CodeTooLarge
+---
+
+# Max Code Len
+
+Max code len is a contracts pallet runtime constant, listed in the chain's constants metadata as
+maxCodeLen, with the value 131072 and a summary that begins "The maximum length of a contract code
+in bytes"
+([Subtensor API Constants: maxCodeLen](https://docs.learnbittensor.org/subtensor-api/constants#maxcodelen-u32)).
+The runtime sets this bound directly: it configures the contracts pallet's code-length limit to 128
+kibibytes, which is 131072 bytes
+([runtime/src/lib.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/runtime/src/lib.rs#L1580)).
+
+## What It Means
+
+Contract code submitted to the chain can be at most 131072 bytes long. The official errors reference
+documents the error a reader would actually hit: it defines CodeTooLarge as firing when the code
+supplied to instantiate_with_code exceeds the current limit
+([Subtensor API Errors: CodeTooLarge](https://docs.learnbittensor.org/subtensor-api/errors#codetoolarge)).
+The upstream contracts pallet source confirms the bound: when supplied code is prepared for storage,
+code longer than the configured maximum fails the length check and is rejected with CodeTooLarge
+([opentensor/polkadot-sdk: substrate/frame/contracts/src/wasm/prepare.rs#L370-L380](https://github.com/opentensor/polkadot-sdk/blob/8e64bb2e4d7554a813fe5a99805c9898123c1366/substrate/frame/contracts/src/wasm/prepare.rs#L370-L380)).
+
+The value applies uniformly across accounts and contracts; it is not a per-subnet or
+configurable-per-account setting.
+
+## Distinction from Max Storage Key Len
+
+A separate constant, maxStorageKeyLen, also bounds a byte length in the contracts pallet, but it is
+not the same kind of limit. maxCodeLen caps the length of a contract's code, at 131072 bytes.
+maxStorageKeyLen caps the length of a storage key, at 128 bytes
+([Subtensor API Constants: maxCodeLen](https://docs.learnbittensor.org/subtensor-api/constants#maxcodelen-u32),
+[Subtensor API Constants: maxStorageKeyLen](https://docs.learnbittensor.org/subtensor-api/constants#maxstoragekeylen-u32)).
+
+- **maxCodeLen**: 131072; bounds contract code length in bytes.
+- **maxStorageKeyLen**: 128; bounds storage key length in bytes.
+
+## Reader Boundary
+
+This page defines the constant and its value. It does not report the code size of any specific
+deployed contract; that is live chain state
+([Subtensor API Constants: maxCodeLen](https://docs.learnbittensor.org/subtensor-api/constants#maxcodelen-u32)).
+
+## Further Reading
+
+- [Subtensor API Constants: maxCodeLen](https://docs.learnbittensor.org/subtensor-api/constants#maxcodelen-u32)
+- [Subtensor API Constants: maxStorageKeyLen](https://docs.learnbittensor.org/subtensor-api/constants#maxstoragekeylen-u32)
+- [Subtensor API Errors: CodeTooLarge](https://docs.learnbittensor.org/subtensor-api/errors#codetoolarge)
+- [Subtensor runtime: contracts pallet config](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/runtime/src/lib.rs#L1580)
