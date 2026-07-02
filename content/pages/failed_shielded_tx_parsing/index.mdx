@@ -1,0 +1,105 @@
+---
+title: "Failed Shielded Tx Parsing"
+summary:
+  "How the FailedShieldedTxParsing error blocks a MEV Shield encrypted submission when the
+  ciphertext cannot be parsed into the expected shielded-transaction format."
+category: "Safety"
+tags: ["Safety", "Errors"]
+infoboxTitle: Failed Shielded Tx Parsing
+infoboxCaption: Error raised when a shielded transaction ciphertext fails format parsing.
+infoboxRows:
+  - label: Error
+    value: FailedShieldedTxParsing
+  - label: Trigger
+    value: Encrypted submission cannot be parsed as a shielded transaction
+  - label: Checked in
+    value: submit_encrypted on the MEV Shield path
+  - label: Check type
+    value: Shielded-transaction ciphertext parse guard
+---
+
+# Failed Shielded Tx Parsing
+
+`FailedShieldedTxParsing` is a documented Subtensor custom error raised when a MEV Shield encrypted
+submission cannot be parsed into the expected shielded-transaction format. The custom-errors
+reference describes it as "The shielded transaction could not be parsed. The ciphertext is malformed
+or does not match the expected shielded-transaction format"
+([Subtensor Custom Errors](https://docs.learnbittensor.org/errors/custom)).
+
+## What It Means
+
+[MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield) lets coldkey-signed transactions
+encrypt sensitive call data before they enter the mempool. Clients submit those payloads through the
+MEV Shield encrypted-submission path. `FailedShieldedTxParsing` means the runtime could not parse
+the submitted ciphertext into a shielded transaction, so the submission is rejected before it can
+enter the pending queue ([MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield),
+[Using MEV Shield with the Bittensor SDK](https://docs.learnbittensor.org/sdk/mev-protection),
+[Subtensor Custom Errors](https://docs.learnbittensor.org/errors/custom)).
+
+This is a ciphertext-format rejection on the encrypted-submission path. It does not, by itself, mean
+the announced ML-KEM encapsulation key has an invalid length, that the pending encrypted-extrinsic
+queue is full, or that the public key hash embedded in the ciphertext is wrong.
+
+## Why It Appears
+
+This error appears when a signed `submit_encrypted` call carries ciphertext that does not parse as a
+shielded transaction. That can happen when client software truncates or corrupts the payload, when
+the wrong encryption format is used, or when a non-shielded blob is submitted to the encrypted path
+([Subtensor Custom Errors](https://docs.learnbittensor.org/errors/custom),
+[Using MEV Shield with the Bittensor SDK](https://docs.learnbittensor.org/sdk/mev-protection)).
+
+The pinned shield transaction-extension source describes the guard: for signed `submit_encrypted`
+calls, the runtime parses the ciphertext and returns `FailedShieldedTxParsing` when parsing fails
+([Subtensor source: shield/extension.rs](https://github.com/opentensor/subtensor/blob/main/pallets/shield/src/extension.rs)).
+
+## Distinction from Invalid Shielded Tx Pub Key Hash
+
+`FailedShieldedTxParsing` and `InvalidShieldedTxPubKeyHash` both block MEV Shield encrypted
+submissions, but at different checks. `FailedShieldedTxParsing` means the ciphertext could not be
+parsed into the expected shielded-transaction format. `InvalidShieldedTxPubKeyHash` means the public
+key hash supplied with the shielded transaction is invalid
+([Subtensor Custom Errors](https://docs.learnbittensor.org/errors/custom)).
+
+- **FailedShieldedTxParsing** — the ciphertext is malformed or not in the expected format.
+- **InvalidShieldedTxPubKeyHash** — parsing succeeded but the public key hash is invalid.
+
+## Distinction from Too Many Pending Extrinsics
+
+`FailedShieldedTxParsing` and `TooManyPendingExtrinsics` both belong to the MEV Shield workflow, but
+on different checks. `FailedShieldedTxParsing` is the parse guard on encrypted submission.
+`TooManyPendingExtrinsics` is the queue-capacity guard when the pending encrypted-extrinsic store is
+full
+([Too Many Pending Extrinsics](https://docs.learnbittensor.org/subtensor-api/errors#toomanypendingextrinsics),
+[Subtensor Custom Errors](https://docs.learnbittensor.org/errors/custom)).
+
+- **FailedShieldedTxParsing** — the ciphertext failed format parsing.
+- **TooManyPendingExtrinsics** — the pending encrypted-extrinsic queue is at capacity.
+
+## Distinction from Bad Enc Key Len
+
+`FailedShieldedTxParsing` and `BadEncKeyLen` both involve MEV Shield cryptography, but on different
+extrinsics. `FailedShieldedTxParsing` is returned when an encrypted submission cannot be parsed.
+`BadEncKeyLen` is returned when a block author's announced ML-KEM encapsulation key fails length
+validation on the key-announcement inherent
+([Bad Enc Key Len](https://docs.learnbittensor.org/subtensor-api/errors#badenckeylen),
+[Subtensor Custom Errors](https://docs.learnbittensor.org/errors/custom)).
+
+- **FailedShieldedTxParsing** — encrypted-submission ciphertext failed parsing.
+- **BadEncKeyLen** — announced encapsulation key has an invalid length.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the ciphertext parse guard it represents on the
+MEV Shield encrypted-submission path. It does not diagnose which byte field failed parsing for a
+specific submission or report the current pending-queue depth on a network
+([Subtensor Custom Errors](https://docs.learnbittensor.org/errors/custom),
+[MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield)).
+
+## Further Reading
+
+- [Subtensor Custom Errors](https://docs.learnbittensor.org/errors/custom)
+- [MEV Shield](https://docs.learnbittensor.org/concepts/mev-shield)
+- [Using MEV Shield with the Bittensor SDK](https://docs.learnbittensor.org/sdk/mev-protection)
+- [Subtensor API Errors: TooManyPendingExtrinsics](https://docs.learnbittensor.org/subtensor-api/errors#toomanypendingextrinsics)
+- [Subtensor API Errors: BadEncKeyLen](https://docs.learnbittensor.org/subtensor-api/errors#badenckeylen)
+- [Subtensor source: shield/extension.rs](https://github.com/opentensor/subtensor/blob/main/pallets/shield/src/extension.rs)
