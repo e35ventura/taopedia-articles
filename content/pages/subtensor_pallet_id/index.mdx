@@ -1,0 +1,66 @@
+---
+title: "Subtensor Pallet Id"
+summary:
+  "How the subtensorPalletId runtime constant is the base identifier the subtensor pallet uses to
+  derive every subnet's own on-chain account."
+category: "Subnets"
+tags: ["Subnets", "Tokenomics"]
+infoboxTitle: Subtensor Pallet Id
+infoboxCaption: Base identifier the pallet uses to derive per-subnet accounts.
+infoboxRows:
+  - label: Constant
+    value: subtensorPalletId
+  - label: Pallet
+    value: subtensor
+  - label: Value
+    value: "0x73756274656e7372 (the bytes of subtensr)"
+  - label: Used by
+    value: Per-subnet account derivation
+---
+
+# Subtensor Pallet Id
+
+Subtensor pallet id is a subtensor runtime constant, listed in the chain's constants metadata under
+the subtensorModule pallet as subtensorPalletId, with the value 0x73756274656e7372 and the summary
+"Pallet account ID"
+([Subtensor API Constants: subtensorPalletId](https://docs.learnbittensor.org/subtensor-api/constants#subtensorpalletid-u88)).
+The runtime defines it as the eight-byte pallet identifier written as subtensr
+([runtime/src/lib.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/runtime/src/lib.rs#L1040)).
+
+## What It Means
+
+The pallet does not use this identifier to derive a single fixed address the way a burn account
+works. Instead, it is the base identifier that a sub-account function combines with a subnet's own
+identifier to derive that subnet's dedicated on-chain account, giving every subnet a distinct
+address rather than sharing one
+([subnet.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/subtensor/src/subnets/subnet.rs#L470-L475)).
+
+The same source file also uses this identifier the other way: given an arbitrary account, the pallet
+can check whether that account decodes back to this pallet identifier, and if so recover which
+subnet it belongs to
+([subnet.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/subtensor/src/subnets/subnet.rs#L478-L484)).
+
+## Distinction from Burn Account Id
+
+Both constants are subtensor pallet identifiers used with the same account-derivation mechanism, but
+they serve different purposes. `burnAccountId` derives one fixed address that TAO is burned to.
+`subtensorPalletId` derives a distinct address for every subnet rather than a single address
+([Burn Account Id](https://docs.learnbittensor.org/subtensor-api/constants#burnaccountid-u88),
+[Subtensor API Constants: subtensorPalletId](https://docs.learnbittensor.org/subtensor-api/constants#subtensorpalletid-u88)).
+
+- **burnAccountId** — derives one fixed burn address.
+- **subtensorPalletId** — derives a separate account per subnet.
+
+## Reader Boundary
+
+This page defines the constant and the two source functions that use it to derive and recognize
+subnet accounts. It does not list any subnet's resulting address or cover what a subnet account is
+used for once derived
+([Subtensor API Constants: subtensorPalletId](https://docs.learnbittensor.org/subtensor-api/constants#subtensorpalletid-u88)).
+
+## Further Reading
+
+- [Subtensor API Constants: subtensorPalletId](https://docs.learnbittensor.org/subtensor-api/constants#subtensorpalletid-u88)
+- [Subtensor API Constants: burnAccountId](https://docs.learnbittensor.org/subtensor-api/constants#burnaccountid-u88)
+- [Subtensor runtime: SubtensorPalletId](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/runtime/src/lib.rs#L1040)
+- [Subtensor pallet: subnet account derivation](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/subtensor/src/subnets/subnet.rs#L470-L484)
