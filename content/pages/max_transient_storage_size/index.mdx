@@ -1,0 +1,72 @@
+---
+title: "Max Transient Storage Size"
+summary:
+  "How the maxTransientStorageSize contracts constant caps transient storage at 1048576 bytes for a
+  contracts call."
+category: "Smart Contracts"
+tags: ["Smart Contracts"]
+infoboxTitle: Max Transient Storage Size
+infoboxCaption: Runtime limit for contracts transient storage capacity.
+infoboxRows:
+  - label: Constant
+    value: maxTransientStorageSize
+  - label: Pallet
+    value: contracts
+  - label: Value
+    value: "1048576"
+  - label: Exceeding it raises
+    value: OutOfTransientStorage
+---
+
+# Max Transient Storage Size
+
+Max transient storage size is a contracts pallet runtime constant, listed in the Subtensor constants
+reference as maxTransientStorageSize. Its current value is 1048576, and the reference defines it as
+the maximum size of transient storage in bytes, including keys, values, and previous entries used
+for storage rollback
+([Subtensor API Constants: maxTransientStorageSize](https://docs.learnbittensor.org/subtensor-api/constants#maxtransientstoragesize-u32)).
+The Subtensor runtime wires this limit into the contracts pallet configuration as the transient
+storage size bound
+([runtime/src/lib.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/runtime/src/lib.rs#L1583-L1597)).
+
+## What It Means
+
+Contracts execution creates a transient storage area for the current call, and the execution stack
+initializes that storage using the configured max transient storage size
+([exec.rs](https://github.com/opentensor/polkadot-sdk/blob/8e64bb2e4d7554a813fe5a99805c9898123c1366/substrate/frame/contracts/src/exec.rs#L827-L833)).
+The contracts pallet also uses this same limit in its integrity checks when budgeting runtime
+memory, which confirms that the bound is part of the pallet's memory-safety configuration
+([lib.rs](https://github.com/opentensor/polkadot-sdk/blob/8e64bb2e4d7554a813fe5a99805c9898123c1366/substrate/frame/contracts/src/lib.rs#L612-L655)).
+
+If a contracts operation tries to add more data than transient storage can hold, the reader-facing
+error is OutOfTransientStorage
+([Subtensor API Errors: OutOfTransientStorage](https://docs.learnbittensor.org/subtensor-api/errors#outoftransientstorage)).
+
+## Distinction from Out Of Transient Storage
+
+Max transient storage size and OutOfTransientStorage describe different sides of the same limit. Max
+transient storage size is the configured numeric ceiling. OutOfTransientStorage is the error a
+reader sees when a contracts operation goes past that ceiling
+([Subtensor API Constants: maxTransientStorageSize](https://docs.learnbittensor.org/subtensor-api/constants#maxtransientstoragesize-u32),
+[Subtensor API Errors: OutOfTransientStorage](https://docs.learnbittensor.org/subtensor-api/errors#outoftransientstorage)).
+
+- **Max transient storage size** - configured byte ceiling for transient storage in a contracts
+  call.
+- **OutOfTransientStorage** - error raised when that transient storage cannot accept more data.
+
+## Reader Boundary
+
+This page defines the current transient storage capacity limit for the contracts pallet. It does not
+measure transient storage used by a specific contract call, describe the storage deposit charged for
+persistent storage, or replace the separate storage-deposit limits used elsewhere in contracts
+([Subtensor API Constants: maxTransientStorageSize](https://docs.learnbittensor.org/subtensor-api/constants#maxtransientstoragesize-u32),
+[Subtensor API Constants: defaultDepositLimit](https://docs.learnbittensor.org/subtensor-api/constants#defaultdepositlimit-u64),
+[Subtensor API Errors: StorageDepositLimitExhausted](https://docs.learnbittensor.org/subtensor-api/errors#storagedepositlimitexhausted)).
+
+## Further Reading
+
+- [Subtensor API Constants: maxTransientStorageSize](https://docs.learnbittensor.org/subtensor-api/constants#maxtransientstoragesize-u32)
+- [Subtensor API Errors: OutOfTransientStorage](https://docs.learnbittensor.org/subtensor-api/errors#outoftransientstorage)
+- [Subtensor API Constants: defaultDepositLimit](https://docs.learnbittensor.org/subtensor-api/constants#defaultdepositlimit-u64)
+- [Subtensor runtime contracts configuration](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/runtime/src/lib.rs#L1583-L1597)
+- [Polkadot SDK contracts execution setup](https://github.com/opentensor/polkadot-sdk/blob/8e64bb2e4d7554a813fe5a99805c9898123c1366/substrate/frame/contracts/src/exec.rs#L827-L833)
