@@ -1,0 +1,88 @@
+---
+title: "POW Registration Disabled"
+summary:
+  "How the POWRegistrationDisabled error blocks any attempt to toggle POW-based registration, since
+  POW registration has been deprecated."
+category: "Subnets"
+tags: ["Subnets", "Errors"]
+infoboxTitle: POW Registration Disabled
+infoboxCaption:
+  Error raised when any call attempts to toggle POW-based registration, which has been deprecated.
+infoboxRows:
+  - label: Error
+    value: POWRegistrationDisabled
+  - label: Pallet
+    value: adminUtils
+  - label: Trigger
+    value: Call to the POW-registration toggle extrinsic, which has been deprecated
+  - label: Check type
+    value: Unconditional rejection of the deprecated POW-registration toggle
+---
+
+# POW Registration Disabled
+
+`POWRegistrationDisabled` is an adminUtils pallet error raised when any call attempts to toggle
+POW-based registration. The API errors reference summarizes it as "POW Registration has been
+deprecated."
+([Subtensor API Errors: POWRegistrationDisabled](https://docs.learnbittensor.org/subtensor-api/errors#powregistrationdisabled)).
+
+## What It Means
+
+Subtensor previously supported proof-of-work (POW) as a registration mechanism for subnets. That
+mechanism has been deprecated and the extrinsic that toggled it has been reduced to an unconditional
+rejection. `POWRegistrationDisabled` means the toggle extrinsic was called, and the runtime returns
+the error immediately without reading the parameters or modifying any state
+([Subtensor API Errors: POWRegistrationDisabled](https://docs.learnbittensor.org/subtensor-api/errors#powregistrationdisabled)).
+
+This is an unconditional rejection of a deprecated extrinsic. It does not, by itself, mean the
+subnet did not exist, that the caller lacked root permission, or that a hyperparameter value was out
+of bounds.
+
+## Why It Appears
+
+This error appears whenever the POW-registration toggle extrinsic is called. The Subtensor source
+confirms the guard: the extrinsic body consists of a single statement that returns
+`Error::<T>::POWRegistrationDisabled` without checking any parameters
+([opentensor/subtensor: pallets/admin-utils/src/lib.rs#L686](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs#L686)).
+
+The practical meaning is narrow: POW registration is permanently deprecated. Any call to the toggle
+extrinsic is rejected regardless of the submitted parameters.
+
+## Distinction from Deprecated
+
+`POWRegistrationDisabled` and `Deprecated` are both adminUtils-pallet errors that reject a call, but
+they cover different situations. `POWRegistrationDisabled` is the specific rejection for the
+POW-registration toggle extrinsic. `Deprecated` is the generic rejection that fires for any other
+deprecated call in the pallet
+([Subtensor API Errors: POWRegistrationDisabled](https://docs.learnbittensor.org/subtensor-api/errors#powregistrationdisabled),
+[Subtensor API Errors: Deprecated](https://docs.learnbittensor.org/subtensor-api/errors#deprecated)).
+
+- **POWRegistrationDisabled** — the POW-registration toggle is permanently disabled.
+- **Deprecated** — a generic deprecated call was attempted.
+
+## Distinction from Not Permitted On Root Subnet
+
+`POWRegistrationDisabled` and `NotPermittedOnRootSubnet` are both adminUtils-pallet errors that
+block an operation, but they fire at different checks. `POWRegistrationDisabled` is the
+unconditional rejection of the deprecated POW-registration toggle. `NotPermittedOnRootSubnet` is the
+root-subnet guard that fires when an operation is attempted on the root network
+([Subtensor API Errors: POWRegistrationDisabled](https://docs.learnbittensor.org/subtensor-api/errors#powregistrationdisabled),
+[Subtensor API Errors: NotPermittedOnRootSubnet](https://docs.learnbittensor.org/subtensor-api/errors#notpermittedonrootsubnet)).
+
+- **POWRegistrationDisabled** — the POW-registration toggle is permanently disabled.
+- **NotPermittedOnRootSubnet** — the operation is not allowed on the root subnet.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the unconditional rejection it represents for
+the deprecated POW-registration toggle. It does not describe the historical POW-registration
+mechanism, list the extrinsic's parameter types, or document the migration path from POW to the
+current registration model
+([Subtensor API Errors: POWRegistrationDisabled](https://docs.learnbittensor.org/subtensor-api/errors#powregistrationdisabled)).
+
+## Further Reading
+
+- [Subtensor API Errors: POWRegistrationDisabled](https://docs.learnbittensor.org/subtensor-api/errors#powregistrationdisabled)
+- [Subtensor API Errors: Deprecated](https://docs.learnbittensor.org/subtensor-api/errors#deprecated)
+- [Subtensor API Errors: NotPermittedOnRootSubnet](https://docs.learnbittensor.org/subtensor-api/errors#notpermittedonrootsubnet)
+- [opentensor/subtensor: pallets/admin-utils/src/lib.rs#L686](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs#L686)
