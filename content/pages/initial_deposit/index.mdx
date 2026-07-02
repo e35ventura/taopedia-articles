@@ -1,0 +1,59 @@
+---
+title: "Initial Deposit"
+summary:
+  "How the initialDeposit and fieldDeposit runtime constants are both set to zero, so Bittensor
+  identity commitments reserve no deposit, separate from any transaction fee."
+category: "Subnets"
+tags: ["Subnets"]
+infoboxTitle: Initial Deposit
+infoboxCaption: Runtime constant for the base commitment deposit, currently zero.
+infoboxRows:
+  - label: Constant
+    value: initialDeposit
+  - label: Pallet
+    value: commitments
+  - label: Value
+    value: "0 (no deposit reserved)"
+  - label: Used in
+    value: set_commitment deposit calculation
+---
+
+# Initial Deposit
+
+Initial deposit is a commitments pallet runtime constant, listed in the chain's constants metadata
+as initialDeposit, with the value 0 and the summary "The amount held on deposit for a registered
+identity"
+([Subtensor API Constants: initialDeposit](https://docs.learnbittensor.org/subtensor-api/constants#initialdeposit-u64)).
+The runtime sets this to zero directly, with the source itself annotating the value as Free
+([runtime/src/lib.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/runtime/src/lib.rs#L884)).
+
+## What It Means
+
+The set_commitment call computes a submission's total deposit from two constants: this base amount,
+plus fieldDeposit charged for each additional field beyond the base. The runtime sets fieldDeposit
+to zero as well, with the same Free annotation
+([runtime/src/lib.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/runtime/src/lib.rs#L885)).
+Because both constants are zero, the computed deposit for any commitment is zero regardless of how
+many fields it carries: no deposit is reserved from the caller's account for calling set_commitment
+([commitments/lib.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/commitments/src/lib.rs#L286-L288),
+[Subtensor API Constants: fieldDeposit](https://docs.learnbittensor.org/subtensor-api/constants#fielddeposit-u64)).
+
+This is a deposit-free path, not a fee-free one: it does not waive the normal transaction fee that
+applies to submitting any extrinsic.
+
+This is a single network-wide setting, not a per-subnet value. It reflects the current runtime
+configuration, not a fixed protocol rule; the constants could be changed in a future runtime
+upgrade.
+
+## Reader Boundary
+
+This page defines both deposit constants and their current zero value. It does not cover the
+separate field-count or per-epoch space limits that also constrain a commitment submission
+([Subtensor API Constants: initialDeposit](https://docs.learnbittensor.org/subtensor-api/constants#initialdeposit-u64)).
+
+## Further Reading
+
+- [Subtensor API Constants: initialDeposit](https://docs.learnbittensor.org/subtensor-api/constants#initialdeposit-u64)
+- [Subtensor API Constants: fieldDeposit](https://docs.learnbittensor.org/subtensor-api/constants#fielddeposit-u64)
+- [Subtensor runtime: commitment deposit constants](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/runtime/src/lib.rs#L884-L885)
+- [Subtensor pallet: set_commitment deposit calculation](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/commitments/src/lib.rs#L286-L288)
