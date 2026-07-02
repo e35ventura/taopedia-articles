@@ -1,0 +1,71 @@
+---
+title: "Unsafe Unstable Interface"
+summary:
+  "How the unsafeUnstableInterface contracts constant keeps unstable contracts interfaces disabled
+  on Subtensor."
+category: "Smart Contracts"
+tags: ["Smart Contracts"]
+infoboxTitle: Unsafe Unstable Interface
+infoboxCaption: Runtime switch for unstable contracts interfaces.
+infoboxRows:
+  - label: Constant
+    value: unsafeUnstableInterface
+  - label: Pallet
+    value: contracts
+  - label: Value
+    value: "false"
+  - label: Applies to
+    value: Contracts unstable interface availability
+---
+
+# Unsafe Unstable Interface
+
+Unsafe unstable interface is a contracts pallet runtime constant, listed in the Subtensor constants
+reference as unsafeUnstableInterface. Its current value is false, and the reference describes it as
+the switch that makes contract-callable functions marked unstable available
+([Subtensor API Constants: unsafeUnstableInterface](https://docs.learnbittensor.org/subtensor-api/constants#unsafeunstableinterface-bool)).
+The Subtensor runtime wires the same contracts constant as false in the contracts pallet
+configuration
+([runtime/src/lib.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/runtime/src/lib.rs#L1580-L1583)).
+
+## What It Means
+
+The contracts pallet defines unsafe unstable interface as a boolean configuration constant. Its
+source documentation says unstable contract-callable functions are unavailable for upload unless
+this setting is true, and warns not to set it true on production chains
+([lib.rs](https://github.com/opentensor/polkadot-sdk/blob/8e64bb2e4d7554a813fe5a99805c9898123c1366/substrate/frame/contracts/src/lib.rs#L403-L413)).
+
+During contracts execution setup, the pallet reads this setting and passes either the yes or no
+unstable-interface mode into the contracts environment
+([wasm/mod.rs](https://github.com/opentensor/polkadot-sdk/blob/8e64bb2e4d7554a813fe5a99805c9898123c1366/substrate/frame/contracts/src/wasm/mod.rs#L222-L228)).
+On Subtensor, the configured value is false, so the runtime-selected mode is the disabled branch for
+that setting
+([runtime/src/lib.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/runtime/src/lib.rs#L1580-L1583),
+[wasm/mod.rs](https://github.com/opentensor/polkadot-sdk/blob/8e64bb2e4d7554a813fe5a99805c9898123c1366/substrate/frame/contracts/src/wasm/mod.rs#L225-L228)).
+
+## Distinction from Max Debug Buffer Len
+
+Unsafe unstable interface is a feature-availability switch for unstable contracts interfaces. Max
+debug buffer len is a byte limit for contracts debug output. They appear in the same contracts
+constants group, but one is a boolean switch and the other is a numeric buffer-size limit
+([Subtensor API Constants: unsafeUnstableInterface](https://docs.learnbittensor.org/subtensor-api/constants#unsafeunstableinterface-bool),
+[Subtensor API Constants: maxDebugBufferLen](https://docs.learnbittensor.org/subtensor-api/constants#maxdebugbufferlen-u32)).
+
+- **Unsafe unstable interface** - false; controls availability of unstable contracts interfaces.
+- **Max debug buffer len** - 2097152; caps the contracts debug buffer in bytes.
+
+## Reader Boundary
+
+This page defines the current unsafe unstable interface constant for Subtensor contracts. It does
+not list every unstable host function, claim that a specific contract tried to use one, or describe
+a per-contract runtime result
+([Subtensor API Constants: unsafeUnstableInterface](https://docs.learnbittensor.org/subtensor-api/constants#unsafeunstableinterface-bool),
+[Polkadot SDK contracts configuration](https://github.com/opentensor/polkadot-sdk/blob/8e64bb2e4d7554a813fe5a99805c9898123c1366/substrate/frame/contracts/src/lib.rs#L403-L413)).
+
+## Further Reading
+
+- [Subtensor API Constants: unsafeUnstableInterface](https://docs.learnbittensor.org/subtensor-api/constants#unsafeunstableinterface-bool)
+- [Subtensor API Constants: maxDebugBufferLen](https://docs.learnbittensor.org/subtensor-api/constants#maxdebugbufferlen-u32)
+- [Subtensor runtime contracts configuration](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/runtime/src/lib.rs#L1580-L1583)
+- [Polkadot SDK contracts unsafe unstable interface configuration](https://github.com/opentensor/polkadot-sdk/blob/8e64bb2e4d7554a813fe5a99805c9898123c1366/substrate/frame/contracts/src/lib.rs#L403-L413)
+- [Polkadot SDK contracts environment mode selection](https://github.com/opentensor/polkadot-sdk/blob/8e64bb2e4d7554a813fe5a99805c9898123c1366/substrate/frame/contracts/src/wasm/mod.rs#L222-L228)
