@@ -1,0 +1,62 @@
+---
+title: "Max Orders Per Batch"
+summary:
+  "How the maxOrdersPerBatch runtime constant caps the number of signed limit orders that a single
+  batch execution call can carry, sized from block weight divided by per-order weight."
+category: "Staking"
+tags: ["Staking", "Subnets"]
+infoboxTitle: Max Orders Per Batch
+infoboxCaption: Runtime constant capping orders per limit-order batch execution call.
+infoboxRows:
+  - label: Constant
+    value: maxOrdersPerBatch
+  - label: Pallet
+    value: limitOrders
+  - label: Value
+    value: "100 orders"
+  - label: Applies to
+    value: Both batch execution calls for signed limit orders
+---
+
+# Max Orders Per Batch
+
+Max orders per batch is a limit-orders runtime constant, listed in the chain's constants metadata
+under the limitOrders pallet as `maxOrdersPerBatch`, with the value 100 and the summary "Maximum
+number of orders in a single execute_orders call. Should equal floor(max_block_weight /
+per_order_weight)"
+([Subtensor API Constants: maxOrdersPerBatch](https://docs.learnbittensor.org/subtensor-api/constants#maxordersperbatch-u32)).
+The runtime sets the constant to 100
+([runtime/src/lib.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/runtime/src/lib.rs#L1484)).
+
+## What It Means
+
+In Bittensor's limit-orders system, holders sign subnet token orders off chain and a relayer submits
+those signed orders on chain for execution
+([limit-orders README](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/limit-orders/README.md)).
+The constant caps how many signed orders one submission can carry. Both batch execution entry
+points, the direct execution call and the per-subnet batched execution call, take their order list
+as a length-bounded vector whose capacity is set by this constant
+([limit-orders lib.rs: execute_orders](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/limit-orders/src/lib.rs#L419-L423),
+[limit-orders lib.rs: execute_batched_orders](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/limit-orders/src/lib.rs#L469-L473)).
+The pallet documents the constant as the maximum number of orders accepted in a single call on
+either execution path
+([limit-orders README: config](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/limit-orders/README.md#config)).
+
+The configuration comment states the sizing rule: the cap should equal the floor of the maximum
+block weight divided by the weight of executing one order, which ties the batch ceiling to how much
+order-execution weight fits in one block
+([limit-orders lib.rs: MaxOrdersPerBatch](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/limit-orders/src/lib.rs#L219-L222)).
+
+## Reader Boundary
+
+This page defines the constant, its value, and the batch execution calls whose order lists it
+bounds. It does not cover the validation rules each order must pass during execution, and it does
+not cover the separate switch that can disable limit-order execution entirely
+([Subtensor API Errors: LimitOrdersDisabled](https://docs.learnbittensor.org/subtensor-api/errors#limitordersdisabled)).
+
+## Further Reading
+
+- [Subtensor API Constants: maxOrdersPerBatch](https://docs.learnbittensor.org/subtensor-api/constants#maxordersperbatch-u32)
+- [Subtensor limit-orders pallet README](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/limit-orders/README.md)
+- [Subtensor limit-orders pallet: MaxOrdersPerBatch declaration](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/limit-orders/src/lib.rs#L219-L222)
+- [Subtensor runtime: LimitOrdersMaxOrdersPerBatch value](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/runtime/src/lib.rs#L1484)
