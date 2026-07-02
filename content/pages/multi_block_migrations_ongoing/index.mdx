@@ -1,0 +1,92 @@
+---
+title: "Multi Block Migrations Ongoing"
+summary:
+  "How the MultiBlockMigrationsOngoing error blocks a runtime upgrade when a multi-block migration
+  is still in progress."
+category: "Core Concepts"
+tags: ["Transactions", "Errors"]
+infoboxTitle: Multi Block Migrations Ongoing
+infoboxCaption:
+  Error raised when a runtime upgrade is blocked because a multi-block migration is still in
+  progress.
+infoboxRows:
+  - label: Error
+    value: MultiBlockMigrationsOngoing
+  - label: Pallet
+    value: system
+  - label: Trigger
+    value: Runtime upgrade attempted while a multi-block migration is still in progress
+  - label: Check type
+    value: No-ongoing-migration guard at the start of runtime upgrade validation
+---
+
+# Multi Block Migrations Ongoing
+
+`MultiBlockMigrationsOngoing` is a system pallet error raised when a runtime upgrade is blocked
+because a multi-block migration is still in progress. The API errors reference summarizes it as "A
+multi-block migration is ongoing and prevents the current code from being replaced."
+([Subtensor API Errors: MultiBlockMigrationsOngoing](https://docs.learnbittensor.org/subtensor-api/errors#multiblockmigrationsongoing)).
+
+## What It Means
+
+Subtensor runs a Substrate-style runtime that can be upgraded on-chain. Some upgrades trigger
+multi-block migrations that spread state changes across multiple blocks rather than applying them in
+a single transaction. `MultiBlockMigrationsOngoing` means the runtime upgrade validation path
+checked for in-progress migrations and found one, so the upgrade is rejected until all migrations
+complete
+([Subtensor API Errors: MultiBlockMigrationsOngoing](https://docs.learnbittensor.org/subtensor-api/errors#multiblockmigrationsongoing)).
+
+This is the no-ongoing-migration guard at the start of runtime upgrade validation. It does not, by
+itself, mean the embedded version metadata could not be decoded, that the `spec_name` did not match,
+or that the `spec_version` did not increase.
+
+## Why It Appears
+
+This error appears when a runtime upgrade reaches the `can_set_code` helper and the multi-block
+migrator reports an ongoing migration. The pinned frame-system source describes the guard as the
+first check the helper performs: before any version validation, it asks the migrator whether any
+migration is in progress, and if so, returns the migration-ongoing result that the calling path maps
+to `Error::<T>::MultiBlockMigrationsOngoing`
+([opentensor/polkadot-sdk: substrate/frame/system/src/lib.rs#L896](https://github.com/opentensor/polkadot-sdk/blob/7cc54bf2d50ae3921d718736dfeb0de9468539c7/substrate/frame/system/src/lib.rs#L896)).
+
+The practical meaning is narrow: wait for the current multi-block migration to complete before
+retrying the runtime upgrade.
+
+## Distinction from Failed To Extract Runtime Version
+
+`MultiBlockMigrationsOngoing` and `FailedToExtractRuntimeVersion` both surface as failures from
+`can_set_code`, but they fire at different stages. `MultiBlockMigrationsOngoing` is the
+no-ongoing-migration guard that runs before any version validation. `FailedToExtractRuntimeVersion`
+is the embedded-version-metadata decode check that runs after the migration guard passes
+([Subtensor API Errors: MultiBlockMigrationsOngoing](https://docs.learnbittensor.org/subtensor-api/errors#multiblockmigrationsongoing),
+[Subtensor API Errors: FailedToExtractRuntimeVersion](https://docs.learnbittensor.org/subtensor-api/errors#failedtoextractruntimeversion)).
+
+- **MultiBlockMigrationsOngoing** — a multi-block migration is still in progress.
+- **FailedToExtractRuntimeVersion** — the embedded version metadata could not be decoded.
+
+## Distinction from Nothing Authorized
+
+`MultiBlockMigrationsOngoing` and `NothingAuthorized` are both system-pallet runtime-upgrade errors,
+but they fire at different checks. `MultiBlockMigrationsOngoing` is the no-ongoing-migration guard
+inside `can_set_code`. `NothingAuthorized` is the has-authorized-upgrade guard inside
+`validate_code_is_authorized`, which runs before `can_set_code` is reached
+([Subtensor API Errors: MultiBlockMigrationsOngoing](https://docs.learnbittensor.org/subtensor-api/errors#multiblockmigrationsongoing),
+[Subtensor API Errors: NothingAuthorized](https://docs.learnbittensor.org/subtensor-api/errors#nothingauthorized)).
+
+- **MultiBlockMigrationsOngoing** — a multi-block migration is still in progress.
+- **NothingAuthorized** — no upgrade has been authorized yet.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the no-ongoing-migration guard it represents at
+the start of runtime upgrade validation. It does not report which migrations are currently in
+progress, list the migration framework's configuration, or describe how long a typical migration
+takes
+([Subtensor API Errors: MultiBlockMigrationsOngoing](https://docs.learnbittensor.org/subtensor-api/errors#multiblockmigrationsongoing)).
+
+## Further Reading
+
+- [Subtensor API Errors: MultiBlockMigrationsOngoing](https://docs.learnbittensor.org/subtensor-api/errors#multiblockmigrationsongoing)
+- [Subtensor API Errors: FailedToExtractRuntimeVersion](https://docs.learnbittensor.org/subtensor-api/errors#failedtoextractruntimeversion)
+- [Subtensor API Errors: NothingAuthorized](https://docs.learnbittensor.org/subtensor-api/errors#nothingauthorized)
+- [opentensor/polkadot-sdk: frame/system/src/lib.rs#L896](https://github.com/opentensor/polkadot-sdk/blob/7cc54bf2d50ae3921d718736dfeb0de9468539c7/substrate/frame/system/src/lib.rs#L896)
