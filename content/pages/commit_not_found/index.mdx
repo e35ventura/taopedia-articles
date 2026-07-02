@@ -1,0 +1,107 @@
+---
+title: "Commit Not Found"
+summary:
+  "How the CommitNotFound custom error blocks a commit-reveal weight reveal at transaction
+  validation when no matching stored commit exists for that hotkey and subnet."
+category: "Validation"
+tags: ["Validation", "Errors"]
+infoboxTitle: Commit Not Found
+infoboxCaption: Custom error raised when a reveal has no matching stored commit.
+infoboxRows:
+  - label: Error
+    value: CommitNotFound
+  - label: Trigger
+    value: Reveal references a commit that is not stored for the signer on that netuid
+  - label: Checked in
+    value: reveal and batch_reveal weight paths during transaction validation
+  - label: Check type
+    value: Commit-reveal prerequisite guard
+---
+
+# Commit Not Found
+
+`CommitNotFound` is a documented Subtensor custom error raised when a commit-reveal weight reveal
+cannot find the stored commit it needs. The custom-errors reference describes it as "The referenced
+validator commit does not exist"
+([Subtensor Custom Errors](https://docs.learnbittensor.org/errors/custom)).
+
+## What It Means
+
+[Commit-reveal](https://docs.learnbittensor.org/concepts/commit-reveal) weight submission happens in
+two steps: a commitment first, then a later reveal that must pair with a pending commit stored for
+the same hotkey and subnet. CommitNotFound means the reveal step could not find such a stored
+commit, so the submission is rejected as a custom transaction-validity error
+([Subtensor Custom Errors](https://docs.learnbittensor.org/errors/custom),
+[Commit-Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)).
+
+This is a missing-commit rejection on the reveal path. It does not, by itself, mean commit-reveal is
+disabled on the subnet, that the reveal arrived before its eligible epoch, or that a matching commit
+expired after being stored.
+
+## Why It Appears
+
+CommitNotFound appears when a reveal or batch-reveal weight extrinsic is checked during transaction
+validation and the chain cannot find a matching stored commit for the signing hotkey and target
+netuid. That can happen when no commit extrinsic succeeded for that pair, when the reveal references
+the wrong commitment hash, or when an earlier commit was already consumed or pruned before the
+reveal was submitted ([Subtensor Custom Errors](https://docs.learnbittensor.org/errors/custom),
+[No Weights Commit Found](https://docs.learnbittensor.org/errors/subtensor#noweightscommitfound)).
+
+The weight-transaction extension performs this prerequisite check before dispatch. When the stored
+commit lookup fails, the pallet raises NoWeightsCommitFound, which the runtime maps to the
+CommitNotFound custom transaction error during validation
+([Subtensor source: guards/check_weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/guards/check_weights.rs),
+[Subtensor source: extensions/subtensor.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/extensions/subtensor.rs)).
+
+## Distinction from No Weights Commit Found
+
+CommitNotFound and NoWeightsCommitFound describe the same missing-commit condition, but under
+different error labels. CommitNotFound is the custom transaction-validity code returned when the
+weight extension rejects a reveal during validation. NoWeightsCommitFound is the standard pallet
+error label on the same reveal lookup inside dispatch
+([Subtensor Custom Errors](https://docs.learnbittensor.org/errors/custom),
+[No Weights Commit Found](https://docs.learnbittensor.org/errors/subtensor#noweightscommitfound)).
+
+- **CommitNotFound** - custom validity rejection before the reveal is accepted into a block.
+- **NoWeightsCommitFound** - standard pallet error label when the reveal dispatch path fails the
+  same lookup.
+
+## Distinction from Reveal Too Early
+
+CommitNotFound and RevealTooEarly both block commit-reveal reveals, but at different checks.
+CommitNotFound means no matching stored commit exists for the reveal. RevealTooEarly means a
+matching commit exists, but the current epoch is not its eligible reveal epoch
+([Reveal Too Early](https://docs.learnbittensor.org/errors/subtensor#revealtooearly),
+[Subtensor Custom Errors](https://docs.learnbittensor.org/errors/custom)).
+
+- **CommitNotFound** - there is no matching stored commit to reveal.
+- **RevealTooEarly** - the commit exists, but its reveal epoch has not arrived.
+
+## Distinction from Expired Weight Commit
+
+CommitNotFound and ExpiredWeightCommit are both reveal-side failures, but they reject different
+commit-queue states. ExpiredWeightCommit means a matching commit existed but had already moved into
+the expired set. CommitNotFound means the reveal cannot find a matching active stored commit at all
+([Subtensor Standard Errors: ExpiredWeightCommit](https://docs.learnbittensor.org/errors/subtensor#expiredweightcommit),
+[Subtensor Custom Errors](https://docs.learnbittensor.org/errors/custom)).
+
+- **ExpiredWeightCommit** - a matching commit existed, but it had already expired.
+- **CommitNotFound** - no matching active stored commit is available for the reveal.
+
+## Reader Boundary
+
+This page defines the meaning of the custom error label and the missing-commit guard it represents
+on commit-reveal reveal paths. It does not describe how reveal epochs are computed, how expired
+commits are pruned, or the full commit-reveal lifecycle for a subnet
+([Commit-Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
+[Subtensor Custom Errors](https://docs.learnbittensor.org/errors/custom)).
+
+## Further Reading
+
+- [Subtensor Custom Errors](https://docs.learnbittensor.org/errors/custom)
+- [No Weights Commit Found](https://docs.learnbittensor.org/errors/subtensor#noweightscommitfound)
+- [Reveal Too Early](https://docs.learnbittensor.org/errors/subtensor#revealtooearly)
+- [Subtensor Standard Errors: ExpiredWeightCommit](https://docs.learnbittensor.org/errors/subtensor#expiredweightcommit)
+- [Commit-Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)
+- [Subtensor source: guards/check_weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/guards/check_weights.rs)
+- [Subtensor source: extensions/subtensor.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/extensions/subtensor.rs)
