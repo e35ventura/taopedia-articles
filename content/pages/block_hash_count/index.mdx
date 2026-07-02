@@ -1,0 +1,83 @@
+---
+title: "Block Hash Count"
+summary:
+  "How the blockHashCount runtime constant sets how many recent block-number-to-block-hash mappings
+  the chain keeps, forming a rolling window of recent block hashes."
+category: "Protocol"
+tags: ["Protocol"]
+infoboxTitle: Block Hash Count
+infoboxCaption: Runtime constant for how many recent block hashes are retained.
+infoboxRows:
+  - label: Constant
+    value: blockHashCount
+  - label: Pallet
+    value: system
+  - label: Value
+    value: "2400"
+  - label: Used in
+    value: Size of the retained recent block-hash window
+---
+
+# Block Hash Count
+
+Block hash count is a system pallet runtime constant, listed in the chain's constants metadata as
+blockHashCount, with the value 2400 and the summary "Maximum number of block number to block hash
+mappings to keep"
+([Subtensor API Constants: blockHashCount](https://docs.learnbittensor.org/subtensor-api/constants#blockhashcount-u32)).
+It sets how many recent block-number-to-block-hash mappings the chain retains.
+
+## What It Means
+
+The chain records, for recent blocks, a mapping from a block number to that block's hash. Block hash
+count caps how many of those mappings are kept at once: up to 2400
+([Subtensor API Constants: blockHashCount](https://docs.learnbittensor.org/subtensor-api/constants#blockhashcount-u32)).
+The value is a count of retained mappings, not a rate or a fee, and it applies to the whole chain
+rather than to any single subnet.
+
+## A Rolling Window of Recent Blocks
+
+The retained mappings form a rolling window that moves forward as the chain grows. Each new block
+adds its own mapping, and once the number of stored mappings would exceed 2400, the oldest one drops
+off
+([Subtensor API Constants: blockHashCount](https://docs.learnbittensor.org/subtensor-api/constants#blockhashcount-u32)).
+In steady state the chain therefore holds the mappings for roughly the most recent 2400 blocks, with
+the window sliding forward one block at a time.
+
+## The Window in Wall-Clock Time
+
+Because the window is counted in blocks, its length in calendar time depends on block speed. The
+chain's slotDuration constant is 12000 milliseconds, or twelve seconds per block
+([Subtensor API Constants: slotDuration](https://docs.learnbittensor.org/subtensor-api/constants#slotduration-u64)).
+At that rate a window of 2400 blocks spans about eight hours, so the retained block-hash mappings
+reach back roughly eight hours from the current block.
+
+## What Falls Outside the Window
+
+A block older than the window is no longer covered by a retained mapping. Once a block's mapping has
+dropped off, it is not part of the recent set the chain keeps, so only blocks inside the current
+2400 window have a retained number-to-hash mapping
+([Subtensor API Constants: blockHashCount](https://docs.learnbittensor.org/subtensor-api/constants#blockhashcount-u32)).
+The constant fixes how far back that retained window reaches.
+
+## Distinction from Slot Duration
+
+Block hash count and slot duration both relate to blocks but measure different things. Block hash
+count is a count of how many recent block-hash mappings the chain keeps, while slot duration, valued
+at 12000 milliseconds, is how long each block takes to produce
+([Subtensor API Constants: slotDuration](https://docs.learnbittensor.org/subtensor-api/constants#slotduration-u64)).
+One sets the depth of the retained window in blocks; the other sets the pace at which blocks, and
+therefore the window, advance. Together they determine how much wall-clock time the retained window
+covers.
+
+## Reader Boundary
+
+Block hash count is a single network-wide constant, not a per-subnet value, and it reflects the
+current runtime configuration rather than a fixed protocol rule; the value could change in a future
+runtime upgrade. It sets how many recent block-hash mappings are kept and does not describe what
+those mappings are used for
+([Subtensor API Constants: blockHashCount](https://docs.learnbittensor.org/subtensor-api/constants#blockhashcount-u32)).
+
+## Further Reading
+
+- [Subtensor API Constants: blockHashCount](https://docs.learnbittensor.org/subtensor-api/constants#blockhashcount-u32)
+- [Subtensor API Constants: slotDuration](https://docs.learnbittensor.org/subtensor-api/constants#slotduration-u64)
