@@ -1,0 +1,90 @@
+---
+title: "Pre Log Exists"
+summary:
+  "How the PreLogExists error blocks an Ethereum transact submission when the current block already
+  carries a Frontier pre-log that imports an Ethereum block."
+category: "Wallets"
+tags: ["Wallets", "Errors", "EVM"]
+infoboxTitle: Pre Log Exists
+infoboxCaption:
+  Error raised when a pre-log is present and the Ethereum transact path is therefore not allowed.
+infoboxRows:
+  - label: Error
+    value: PreLogExists
+  - label: Pallet
+    value: ethereum
+  - label: Trigger
+    value: Block digest already contains a Frontier pre-log importing an Ethereum block
+  - label: Check type
+    value: Pre-log guard on the Ethereum transact path
+---
+
+# Pre Log Exists
+
+`PreLogExists` is an ethereum pallet error raised when a pre-log is present and the Ethereum
+transact path is therefore not allowed. The API errors reference summarizes it as "Pre-log is
+present, therefore transact is not allowed"
+([Subtensor API Errors: PreLogExists](https://docs.learnbittensor.org/subtensor-api/errors#prelogexists)).
+
+## What It Means
+
+Bittensor's EVM layer can import an Ethereum block through a Frontier pre-log recorded in the
+current block digest. When that pre-log is present, the runtime treats the block as already carrying
+imported Ethereum execution and does not allow the separate Ethereum transact dispatch path for the
+same block. `PreLogExists` names that guard
+([Bittensor EVM Smart Contracts](https://docs.learnbittensor.org/evm-tutorials),
+[Subtensor API Errors: PreLogExists](https://docs.learnbittensor.org/subtensor-api/errors#prelogexists)).
+
+This is a block-state guard on the Ethereum transact path. It does not, by itself, mean the
+submitted transaction had an invalid signature, that the sender address had deployed code, or that
+the sender's mapped balance was too low to pay a fee.
+
+## Why It Appears
+
+This error appears when an Ethereum transact submission reaches the ethereum pallet while the
+current block digest already contains a Frontier pre-log. The pinned Frontier ethereum pallet source
+describes the condition: if the digest contains an existing Ethereum block encoded as a pre-log, the
+runtime executes that imported block first and disables the transact dispatch function for the same
+block
+([polkadot-evm/frontier: frame/ethereum/src/lib.rs#L270](https://github.com/polkadot-evm/frontier/blob/master/frame/ethereum/src/lib.rs#L270),
+[Subtensor API Errors: PreLogExists](https://docs.learnbittensor.org/subtensor-api/errors#prelogexists)).
+
+## Distinction from Transaction Must Come From EOA
+
+`PreLogExists` and `TransactionMustComeFromEOA` both relate to Ethereum transaction submission, but
+they fire at different checks. `PreLogExists` is the pre-log guard that blocks transact when the
+block already imports an Ethereum block through a Frontier pre-log. `TransactionMustComeFromEOA` is
+the EIP-3607 sender-code check that rejects a transaction when the sender address has deployed code
+([Subtensor API Errors: PreLogExists](https://docs.learnbittensor.org/subtensor-api/errors#prelogexists),
+[Subtensor API Errors: TransactionMustComeFromEOA](https://docs.learnbittensor.org/subtensor-api/errors#transactionmustcomefromeoa)).
+
+- **PreLogExists** — the block already carries a Frontier pre-log, so transact is not allowed.
+- **TransactionMustComeFromEOA** — the sender address has deployed code (EIP-3607).
+
+## Distinction from Balance Low
+
+`PreLogExists` and `BalanceLow` both stop an EVM-related submission, but on different pallets and
+checks. `PreLogExists` is the ethereum pallet pre-log guard that blocks transact before that path
+proceeds. `BalanceLow` is the evm pallet label for a fee withdrawal that fails because the mapped
+account balance is too low
+([Subtensor API Errors: PreLogExists](https://docs.learnbittensor.org/subtensor-api/errors#prelogexists),
+[Subtensor API Errors: BalanceLow](https://docs.learnbittensor.org/subtensor-api/errors#balancelow)).
+
+- **PreLogExists** — a Frontier pre-log is already present in the block digest.
+- **BalanceLow** — the mapped account cannot fund the required EVM fee withdrawal.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the pre-log guard it represents on the Ethereum
+transact path. It does not report whether a live block currently carries a Frontier pre-log, list
+which networks use pre-log block import, or describe how to submit transactions on blocks without
+that digest state
+([Subtensor API Errors: PreLogExists](https://docs.learnbittensor.org/subtensor-api/errors#prelogexists),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: PreLogExists](https://docs.learnbittensor.org/subtensor-api/errors#prelogexists)
+- [Subtensor API Errors: TransactionMustComeFromEOA](https://docs.learnbittensor.org/subtensor-api/errors#transactionmustcomefromeoa)
+- [Subtensor API Errors: BalanceLow](https://docs.learnbittensor.org/subtensor-api/errors#balancelow)
+- [Bittensor EVM Smart Contracts](https://docs.learnbittensor.org/evm-tutorials)
