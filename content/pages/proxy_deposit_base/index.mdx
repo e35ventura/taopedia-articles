@@ -1,0 +1,78 @@
+---
+title: "Proxy Deposit Base"
+summary:
+  "How the proxyDepositBase runtime constant sets the fixed base reserve used when proxy storage is
+  created."
+category: "Wallets"
+tags: ["Wallets", "Security"]
+infoboxTitle: Proxy Deposit Base
+infoboxCaption: Fixed base reserve for proxy storage.
+infoboxRows:
+  - label: Constant
+    value: proxyDepositBase
+  - label: Pallet
+    value: proxy
+  - label: Value
+    value: "60000000 rao"
+  - label: Applies to
+    value: Base reserve for proxy storage
+---
+
+# Proxy Deposit Base
+
+Proxy deposit base is a proxy pallet runtime constant, listed in the Subtensor constants reference
+as proxyDepositBase. Its current value is 60000000 rao, and the reference describes it as the base
+amount of currency reserved when creating a proxy
+([Subtensor API Constants: proxyDepositBase](https://docs.learnbittensor.org/subtensor-api/constants#proxydepositbase-u64)).
+The Subtensor runtime wires the same constant into the proxy pallet configuration
+([runtime/src/lib.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/runtime/src/lib.rs#L573-L584)).
+
+## What It Means
+
+Proxy wallets let one account act on behalf of another account under a selected proxy type
+([Proxy Accounts](https://docs.learnbittensor.org/keys/proxies)). Proxy deposit base is the fixed
+base reserve component for proxy storage. The proxy pallet documentation defines it as the base
+amount held for an additional storage item, separate from the amount that scales with the number of
+proxies
+([proxy/src/lib.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/proxy/src/lib.rs#L151-L163)).
+
+In the proxy pallet's deposit calculation, a nonzero proxy count uses proxy deposit base plus proxy
+deposit factor multiplied by the number of proxies
+([proxy/src/lib.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/proxy/src/lib.rs#L1026-L1032)).
+That makes proxy deposit base the fixed part of the proxy reserve formula, not a per-proxy amount.
+
+## Distinction from Proxy Deposit Factor
+
+Proxy deposit base and proxy deposit factor are both reserve components for proxies, but they scale
+differently. Proxy deposit base is the fixed base amount, valued at 60000000 rao. Proxy deposit
+factor is the per-proxy amount, valued at 33000000 rao
+([Subtensor API Constants: proxyDepositBase](https://docs.learnbittensor.org/subtensor-api/constants#proxydepositbase-u64),
+[Subtensor API Constants: proxyDepositFactor](https://docs.learnbittensor.org/subtensor-api/constants#proxydepositfactor-u64)).
+
+- **Proxy deposit base** - fixed base reserve component.
+- **Proxy deposit factor** - reserve component added for each proxy.
+
+## Distinction from Announcement Deposits
+
+Proxy deposit base belongs to registered proxy storage. Delayed proxy announcements use a separate
+pair of constants: announcement deposit base and announcement deposit factor
+([Subtensor API Constants: announcementDepositBase](https://docs.learnbittensor.org/subtensor-api/constants#announcementdepositbase-u64),
+[Subtensor API Constants: announcementDepositFactor](https://docs.learnbittensor.org/subtensor-api/constants#announcementdepositfactor-u64)).
+Those announcement constants apply to pending delayed proxy calls, not to the fixed base reserve for
+the registered proxy list.
+
+## Reader Boundary
+
+This page defines the current proxy deposit base constant and its place in the proxy reserve
+formula. It does not calculate the exact reserve for a specific account, list current proxies on
+chain, or claim that every proxy operation uses the same reserve path
+([Subtensor API Constants: proxyDepositBase](https://docs.learnbittensor.org/subtensor-api/constants#proxydepositbase-u64),
+[Proxy Accounts](https://docs.learnbittensor.org/keys/proxies)).
+
+## Further Reading
+
+- [Subtensor API Constants: proxyDepositBase](https://docs.learnbittensor.org/subtensor-api/constants#proxydepositbase-u64)
+- [Subtensor API Constants: proxyDepositFactor](https://docs.learnbittensor.org/subtensor-api/constants#proxydepositfactor-u64)
+- [Subtensor API Constants: announcementDepositBase](https://docs.learnbittensor.org/subtensor-api/constants#announcementdepositbase-u64)
+- [Subtensor runtime proxy configuration](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/runtime/src/lib.rs#L573-L584)
+- [Proxy Accounts](https://docs.learnbittensor.org/keys/proxies)
