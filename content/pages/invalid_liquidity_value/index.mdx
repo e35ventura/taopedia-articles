@@ -1,0 +1,113 @@
+---
+title: "Invalid Liquidity Value"
+summary:
+  "How the InvalidLiquidityValue error blocks a swap-related call when the submitted liquidity
+  parameter is malformed or too small for the requested operation."
+category: "Staking"
+tags: ["Staking", "Errors"]
+infoboxTitle: Invalid Liquidity Value
+infoboxCaption: Error raised when a liquidity parameter is invalid for the swap operation.
+infoboxRows:
+  - label: Error
+    value: InvalidLiquidityValue
+  - label: Pallet
+    value: swap
+  - label: Trigger
+    value: Liquidity parameter is invalid or too small
+  - label: Related concept
+    value: Swap sizing and pool operations
+---
+
+# Invalid Liquidity Value
+
+`InvalidLiquidityValue` means a swap-related call submitted a liquidity parameter the runtime does
+not accept for the requested operation. The API errors reference summarizes it as "Provided
+liquidity parameter is invalid (likely too small)"
+([Subtensor API Errors: InvalidLiquidityValue](https://docs.learnbittensor.org/subtensor-api/errors#invalidliquidityvalue)).
+
+In plain terms, this is a bad-input rejection on a liquidity value. It is about the shape or size of
+the value being submitted, not a statement that the whole pool is empty or that the caller lacks
+funds
+([Subtensor API Errors: InvalidLiquidityValue](https://docs.learnbittensor.org/subtensor-api/errors#invalidliquidityvalue),
+[Understanding Slippage](https://docs.learnbittensor.org/learn/slippage)).
+
+## What It Means
+
+Swap and liquidity operations depend on numeric inputs that must be large enough and internally
+valid for the pool math to use them. `InvalidLiquidityValue` means the submitted liquidity value did
+not meet that basic validity check
+([Subtensor API Errors: InvalidLiquidityValue](https://docs.learnbittensor.org/subtensor-api/errors#invalidliquidityvalue)).
+
+For a reader, the narrow meaning is simple: the liquidity parameter itself is the problem. The error
+does not, by itself, mean the subnet pool lacked enough reserves for the trade, that the input
+amount was below the swap minimum, or that slippage protection rejected an otherwise valid request
+([Subtensor API Errors: InvalidLiquidityValue](https://docs.learnbittensor.org/subtensor-api/errors#invalidliquidityvalue),
+[Subtensor API Errors: InsufficientLiquidity](https://docs.learnbittensor.org/subtensor-api/errors#insufficientliquidity),
+[Subtensor API Errors: InsufficientInputAmount](https://docs.learnbittensor.org/subtensor-api/errors#insufficientinputamount)).
+
+## Why It Appears
+
+This error appears when a wallet, SDK flow, or integration constructs a swap-related request with a
+liquidity value that is too small or otherwise invalid for the operation being attempted
+([Subtensor API Errors: InvalidLiquidityValue](https://docs.learnbittensor.org/subtensor-api/errors#invalidliquidityvalue)).
+
+That can happen when tooling rounds a value down too aggressively, when a caller reuses a stale
+quote as though it were a valid liquidity input, or when an integration submits a parameter that
+does not represent a usable pool amount
+([Understanding Slippage](https://docs.learnbittensor.org/learn/slippage),
+[Managing Your Stakes](https://docs.learnbittensor.org/staking-and-delegation/managing-stake-sdk)).
+
+The practical meaning is narrow: the submitted liquidity value needs to be corrected before the
+operation can proceed.
+
+## Distinction from Insufficient Liquidity
+
+`InvalidLiquidityValue` and `InsufficientLiquidity` both appear around pool operations, but they
+describe different failures. `InvalidLiquidityValue` means the submitted liquidity parameter is
+invalid. `InsufficientLiquidity` means the pool cannot support the requested operation with the
+available reserves
+([Subtensor API Errors: InvalidLiquidityValue](https://docs.learnbittensor.org/subtensor-api/errors#invalidliquidityvalue),
+[Subtensor API Errors: InsufficientLiquidity](https://docs.learnbittensor.org/subtensor-api/errors#insufficientliquidity)).
+
+- **InvalidLiquidityValue** — the named liquidity parameter is invalid.
+- **InsufficientLiquidity** — the pool does not have enough usable liquidity for the operation.
+
+## Distinction from Insufficient Input Amount
+
+`InvalidLiquidityValue` and `InsufficientInputAmount` both reject small or unusable numeric inputs,
+but on different values. `InvalidLiquidityValue` is about the liquidity parameter.
+`InsufficientInputAmount` is about the amount being supplied into the swap itself
+([Subtensor API Errors: InvalidLiquidityValue](https://docs.learnbittensor.org/subtensor-api/errors#invalidliquidityvalue),
+[Subtensor API Errors: InsufficientInputAmount](https://docs.learnbittensor.org/subtensor-api/errors#insufficientinputamount)).
+
+- **InvalidLiquidityValue** — the liquidity parameter is invalid or too small.
+- **InsufficientInputAmount** — the input amount supplied to the swap is too small.
+
+## Distinction from Slippage Too High
+
+`InvalidLiquidityValue` and `SlippageTooHigh` can both block a swap-related action, but they fail at
+different stages. `InvalidLiquidityValue` means the liquidity value itself is not acceptable.
+`SlippageTooHigh` means the caller's own slippage ceiling rejected the trade sizing
+([Subtensor API Errors: InvalidLiquidityValue](https://docs.learnbittensor.org/subtensor-api/errors#invalidliquidityvalue),
+[Understanding Slippage](https://docs.learnbittensor.org/learn/slippage),
+[Subtensor Standard Errors: SlippageTooHigh](https://docs.learnbittensor.org/errors/subtensor#slippagetoohigh)).
+
+- **InvalidLiquidityValue** — the liquidity parameter is invalid before a valid trade can be sized.
+- **SlippageTooHigh** — the trade exceeds the caller's slippage limit.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the basic invalid-parameter condition it
+represents. It does not document every swap or liquidity extrinsic that can emit the label, or the
+live pool state for a specific subnet
+([Subtensor API Errors: InvalidLiquidityValue](https://docs.learnbittensor.org/subtensor-api/errors#invalidliquidityvalue),
+[Understanding Slippage](https://docs.learnbittensor.org/learn/slippage)).
+
+## Further Reading
+
+- [Subtensor API Errors: InvalidLiquidityValue](https://docs.learnbittensor.org/subtensor-api/errors#invalidliquidityvalue)
+- [Understanding Slippage](https://docs.learnbittensor.org/learn/slippage)
+- [Managing Your Stakes](https://docs.learnbittensor.org/staking-and-delegation/managing-stake-sdk)
+- [Subtensor API Errors: InsufficientLiquidity](https://docs.learnbittensor.org/subtensor-api/errors#insufficientliquidity)
+- [Subtensor API Errors: InsufficientInputAmount](https://docs.learnbittensor.org/subtensor-api/errors#insufficientinputamount)
+- [Subtensor Standard Errors: SlippageTooHigh](https://docs.learnbittensor.org/errors/subtensor#slippagetoohigh)
