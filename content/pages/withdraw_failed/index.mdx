@@ -1,0 +1,70 @@
+---
+title: "Withdraw Failed"
+summary:
+  "How the WithdrawFailed error blocks an EVM transaction when the fee withdrawal step fails during
+  processing."
+category: "Wallets"
+tags: ["Wallets", "Errors", "EVM"]
+infoboxTitle: Withdraw Failed
+infoboxCaption: Error raised when the fee withdrawal step fails during EVM transaction processing.
+infoboxRows:
+  - label: Error
+    value: WithdrawFailed
+  - label: Pallet
+    value: evm
+  - label: Trigger
+    value: Fee withdrawal fails during EVM transaction processing
+  - label: Check type
+    value: Fee withdrawal on the EVM transaction path
+---
+
+# Withdraw Failed
+
+`WithdrawFailed` is an EVM pallet error raised when the fee withdrawal step fails during transaction
+processing. The API docs describe it as "Withdraw fee failed"
+([Subtensor API Errors: WithdrawFailed](https://docs.learnbittensor.org/subtensor-api/errors#withdrawfailed)).
+
+## What It Means
+
+Before an EVM transaction on Subtensor executes, the runtime withdraws the fee from the originating
+account. `WithdrawFailed` is raised when that withdrawal step itself fails. This is a fee-withdrawal
+failure, not a fee-computation overflow and not a balance-check rejection
+([Subtensor API Errors: WithdrawFailed](https://docs.learnbittensor.org/subtensor-api/errors#withdrawfailed),
+[Bittensor EVM Smart Contracts](https://docs.learnbittensor.org/evm-tutorials)).
+
+## Distinction from Balance Low
+
+`WithdrawFailed` and `BalanceLow` both block EVM fee handling, but at different points. `BalanceLow`
+fires when the mapped account does not have enough balance to cover the fee. `WithdrawFailed` fires
+when the withdrawal operation itself fails
+([Subtensor API Errors: BalanceLow](https://docs.learnbittensor.org/subtensor-api/errors#balancelow),
+[Subtensor API Errors: WithdrawFailed](https://docs.learnbittensor.org/subtensor-api/errors#withdrawfailed)).
+
+- **BalanceLow** — the account balance is insufficient to cover the fee.
+- **WithdrawFailed** — the fee withdrawal operation failed.
+
+## Distinction from Fee Overflow
+
+`WithdrawFailed` and `FeeOverflow` both block the EVM fee path, but at different steps.
+`FeeOverflow` fires when the fee calculation overflows before any withdrawal is attempted.
+`WithdrawFailed` fires at the withdrawal step itself
+([Subtensor API Errors: FeeOverflow](https://docs.learnbittensor.org/subtensor-api/errors#feeoverflow),
+[Subtensor API Errors: WithdrawFailed](https://docs.learnbittensor.org/subtensor-api/errors#withdrawfailed)).
+
+- **FeeOverflow** — the fee calculation overflowed; no withdrawal was attempted.
+- **WithdrawFailed** — the fee amount was computed but the withdrawal step failed.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the fee-withdrawal failure it represents on EVM
+transaction paths. It does not report the live balance of any EVM address or describe the internal
+withdrawal mechanism; those depend on chain state and the EVM runtime configuration
+([Bittensor EVM Smart Contracts](https://docs.learnbittensor.org/evm-tutorials),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: WithdrawFailed](https://docs.learnbittensor.org/subtensor-api/errors#withdrawfailed)
+- [Subtensor API Errors: BalanceLow](https://docs.learnbittensor.org/subtensor-api/errors#balancelow)
+- [Subtensor API Errors: FeeOverflow](https://docs.learnbittensor.org/subtensor-api/errors#feeoverflow)
+- [Bittensor EVM Smart Contracts](https://docs.learnbittensor.org/evm-tutorials)
