@@ -1,0 +1,71 @@
+---
+title: "Max Debug Buffer Len"
+summary:
+  "How the maxDebugBufferLen contracts constant caps the contracts debug buffer at 2097152 bytes."
+category: "Smart Contracts"
+tags: ["Smart Contracts"]
+infoboxTitle: Max Debug Buffer Len
+infoboxCaption: Runtime limit for the contracts debug buffer.
+infoboxRows:
+  - label: Constant
+    value: maxDebugBufferLen
+  - label: Pallet
+    value: contracts
+  - label: Value
+    value: "2097152"
+  - label: Applies to
+    value: Contracts debug buffer size
+---
+
+# Max Debug Buffer Len
+
+Max debug buffer len is a contracts pallet runtime constant, listed in the Subtensor constants
+reference as maxDebugBufferLen. Its current value is 2097152, and the reference defines it as the
+maximum length of the debug buffer in bytes
+([Subtensor API Constants: maxDebugBufferLen](https://docs.learnbittensor.org/subtensor-api/constants#maxdebugbufferlen-u32)).
+The Subtensor runtime wires this value into the contracts pallet configuration as the debug buffer
+length limit
+([runtime/src/lib.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/runtime/src/lib.rs#L1583-L1597)).
+
+## What It Means
+
+The contracts pallet defines its debug buffer as a bounded byte vector whose bound comes from the
+configured max debug buffer len
+([lib.rs](https://github.com/opentensor/polkadot-sdk/blob/8e64bb2e4d7554a813fe5a99805c9898123c1366/substrate/frame/contracts/src/lib.rs#L160-L165),
+[lib.rs](https://github.com/opentensor/polkadot-sdk/blob/8e64bb2e4d7554a813fe5a99805c9898123c1366/substrate/frame/contracts/src/lib.rs#L415-L417)).
+When a contracts debug message is processed, the runtime clamps the requested message length to that
+bound before reading and appending it, and the append path stops accepting more bytes once the
+buffer is exhausted
+([wasm/runtime.rs](https://github.com/opentensor/polkadot-sdk/blob/8e64bb2e4d7554a813fe5a99805c9898123c1366/substrate/frame/contracts/src/wasm/runtime.rs#L2302-L2313),
+[exec.rs](https://github.com/opentensor/polkadot-sdk/blob/8e64bb2e4d7554a813fe5a99805c9898123c1366/substrate/frame/contracts/src/exec.rs#L1533-L1541)).
+
+This makes max debug buffer len a debugging-output limit, not a storage-deposit or contract-code
+limit.
+
+## Distinction from Max Transient Storage Size
+
+Max debug buffer len and max transient storage size are both byte limits in the contracts pallet,
+but they govern different resources. Max debug buffer len caps debug output collected during
+contracts execution. Max transient storage size caps the temporary transient storage used during a
+contracts call
+([Subtensor API Constants: maxDebugBufferLen](https://docs.learnbittensor.org/subtensor-api/constants#maxdebugbufferlen-u32),
+[Subtensor API Constants: maxTransientStorageSize](https://docs.learnbittensor.org/subtensor-api/constants#maxtransientstoragesize-u32)).
+
+- **Max debug buffer len** - byte ceiling for the contracts debug buffer.
+- **Max transient storage size** - byte ceiling for transient storage during a contracts call.
+
+## Reader Boundary
+
+This page defines the current debug buffer size limit for the contracts pallet. It does not claim
+that debug logging is enabled for every call path, report the debug output produced by a specific
+contract call, or measure transient or persistent storage use
+([Subtensor API Constants: maxDebugBufferLen](https://docs.learnbittensor.org/subtensor-api/constants#maxdebugbufferlen-u32),
+[Subtensor API Constants: maxTransientStorageSize](https://docs.learnbittensor.org/subtensor-api/constants#maxtransientstoragesize-u32)).
+
+## Further Reading
+
+- [Subtensor API Constants: maxDebugBufferLen](https://docs.learnbittensor.org/subtensor-api/constants#maxdebugbufferlen-u32)
+- [Subtensor API Constants: maxTransientStorageSize](https://docs.learnbittensor.org/subtensor-api/constants#maxtransientstoragesize-u32)
+- [Subtensor runtime contracts configuration](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/runtime/src/lib.rs#L1583-L1597)
+- [Polkadot SDK contracts debug buffer type](https://github.com/opentensor/polkadot-sdk/blob/8e64bb2e4d7554a813fe5a99805c9898123c1366/substrate/frame/contracts/src/lib.rs#L160-L165)
+- [Polkadot SDK debug message handling](https://github.com/opentensor/polkadot-sdk/blob/8e64bb2e4d7554a813fe5a99805c9898123c1366/substrate/frame/contracts/src/wasm/runtime.rs#L2302-L2313)
