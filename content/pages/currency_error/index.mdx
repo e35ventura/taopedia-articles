@@ -1,0 +1,89 @@
+---
+title: "Currency Error"
+summary:
+  "How the CurrencyError error blocks a safe-mode deposit operation when the underlying currency
+  layer rejects the transfer."
+category: "Core Concepts"
+tags: ["Transactions", "Errors"]
+infoboxTitle: Currency Error
+infoboxCaption:
+  Error raised when a safe-mode deposit operation fails at the underlying currency layer.
+infoboxRows:
+  - label: Error
+    value: CurrencyError
+  - label: Pallet
+    value: safeMode
+  - label: Trigger
+    value: Safe-mode deposit operation fails at the currency layer
+  - label: Check type
+    value: Currency-layer result mapped to a safeMode pallet error
+---
+
+# Currency Error
+
+`CurrencyError` is a safeMode pallet error raised when a safe-mode deposit operation fails at the
+underlying currency layer. The API errors reference summarizes it as "An error from the underlying
+`Currency`."
+([Subtensor API Errors: CurrencyError](https://docs.learnbittensor.org/subtensor-api/errors#currencyerror)).
+
+## What It Means
+
+Subtensor's safe-mode pallet manages deposits that accounts reserve when entering or extending
+safe-mode. The pallet delegates the actual balance operations (holding, releasing, or burning
+reserved funds) to the chain's currency layer. `CurrencyError` means one of those delegated
+operations returned an error, so the safe-mode deposit operation is rejected
+([Subtensor API Errors: CurrencyError](https://docs.learnbittensor.org/subtensor-api/errors#currencyerror)).
+
+This is the currency-layer failure surfaced through the safe-mode pallet. It does not, by itself,
+mean no deposit record existed, that safe-mode was in the wrong state, or that the release delay had
+not elapsed.
+
+## Why It Appears
+
+This error appears when a safe-mode deposit operation delegates a balance transfer to the currency
+layer and the currency layer rejects it. The pinned safe-mode pallet source describes the guard:
+several deposit-related helpers call the currency layer and map any rejection to
+`Error::<T>::CurrencyError`
+([opentensor/polkadot-sdk: substrate/frame/safe-mode/src/lib.rs#L537](https://github.com/opentensor/polkadot-sdk/blob/7cc54bf2d50ae3921d718736dfeb0de9468539c7/substrate/frame/safe-mode/src/lib.rs#L537)).
+
+The practical meaning is narrow: the currency layer rejected the balance operation underlying the
+safe-mode deposit. The safe-mode pallet itself did not reject the request — the currency layer did.
+
+## Distinction from No Deposit
+
+`CurrencyError` and `NoDeposit` are both safeMode-pallet errors that block a deposit operation, but
+they fire at different checks. `CurrencyError` is the currency-layer failure that fires after the
+deposit record is found. `NoDeposit` is the has-deposit-record guard that fires when no deposit
+record exists for the requested account and block
+([Subtensor API Errors: CurrencyError](https://docs.learnbittensor.org/subtensor-api/errors#currencyerror),
+[Subtensor API Errors: NoDeposit](https://docs.learnbittensor.org/subtensor-api/errors#nodeposit)).
+
+- **CurrencyError** — a deposit record exists but the currency layer rejected the balance operation.
+- **NoDeposit** — there is no deposit record to operate on.
+
+## Distinction from Entered
+
+`CurrencyError` and `Entered` are both safeMode-pallet errors that block a deposit operation, but
+they fire at different checks. `CurrencyError` is the currency-layer failure that surfaces when the
+balance transfer fails. `Entered` is the not-entered guard that fires when safe-mode is currently
+active and the operation requires it to be off
+([Subtensor API Errors: CurrencyError](https://docs.learnbittensor.org/subtensor-api/errors#currencyerror),
+[Subtensor API Errors: Entered](https://docs.learnbittensor.org/subtensor-api/errors#entered)).
+
+- **CurrencyError** — the currency layer rejected the balance operation.
+- **Entered** — safe-mode is currently on, blocking the operation.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the currency-layer failure it represents on the
+safe-mode deposit path. It does not diagnose which specific currency-layer rule caused the
+rejection, report the account's current balance, or list the safe-mode deposit operations that
+delegate to the currency layer
+([Subtensor API Errors: CurrencyError](https://docs.learnbittensor.org/subtensor-api/errors#currencyerror)).
+
+## Further Reading
+
+- [Subtensor API Errors: CurrencyError](https://docs.learnbittensor.org/subtensor-api/errors#currencyerror)
+- [Subtensor API Errors: NoDeposit](https://docs.learnbittensor.org/subtensor-api/errors#nodeposit)
+- [Subtensor API Errors: Entered](https://docs.learnbittensor.org/subtensor-api/errors#entered)
+- [opentensor/polkadot-sdk: frame/safe-mode/src/lib.rs#L537](https://github.com/opentensor/polkadot-sdk/blob/7cc54bf2d50ae3921d718736dfeb0de9468539c7/substrate/frame/safe-mode/src/lib.rs#L537)
