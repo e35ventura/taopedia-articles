@@ -1,0 +1,110 @@
+---
+title: "Uid Not Found"
+summary:
+  "How the UidNotFound custom error blocks associate_evm_key at transaction validation when the
+  signing hotkey does not hold a UID on the named subnet."
+category: "Wallets"
+tags: ["Wallets", "Errors"]
+infoboxTitle: Uid Not Found
+infoboxCaption: Custom error raised when a hotkey lacks a subnet UID during EVM key association.
+infoboxRows:
+  - label: Error
+    value: UidNotFound
+  - label: Trigger
+    value: Signing hotkey has no UID on the submitted netuid
+  - label: Checked in
+    value: associate_evm_key during transaction validation
+  - label: Check type
+    value: Per-subnet UID membership guard
+---
+
+# Uid Not Found
+
+`UidNotFound` is a documented Subtensor custom error raised when a call names a hotkey that does not
+hold a UID on the submitted subnet. The custom-errors reference describes it as "The specified
+netuid does not exist or the provided hotkey does not own this subnet"
+([Subtensor Custom Errors](https://docs.learnbittensor.org/errors/custom)).
+
+## What It Means
+
+The `associate_evm_key` extrinsic links an EVM address to a Bittensor hotkey on a named subnet
+([Token Bridging](https://docs.learnbittensor.org/evm-tutorials/bridge-vtao),
+[Subtensor Extrinsics](https://docs.learnbittensor.org/navigating-subtensor/subtensor-extrinsics)).
+
+`UidNotFound` means the signing hotkey failed the subnet membership lookup for that netuid before
+the association path could continue. The chain treats the hotkey as not registered on the subnet, so
+the call is rejected as a custom transaction-validity error rather than proceeding to later
+association checks ([Subtensor Custom Errors](https://docs.learnbittensor.org/errors/custom),
+[Hotkey Not Registered In Subnet](https://docs.learnbittensor.org/errors/subtensor#hotkeynotregisteredinsubnet)).
+
+This is a subnet UID membership rejection on the EVM association path. It does not, by itself, mean
+the association rate limit was exceeded, that signature recovery failed, or that the hotkey account
+is absent from chain state.
+
+## Why It Appears
+
+`UidNotFound` appears when `associate_evm_key` is validated and the runtime cannot resolve a UID for
+the signing hotkey on the submitted netuid. That can happen when the hotkey never registered on that
+subnet, when automation targets the wrong netuid, or when a hotkey lost its slot through pruning but
+clients still use an outdated mapping
+([Subtensor Custom Errors](https://docs.learnbittensor.org/errors/custom),
+[Subtensor source: guards/check_evm_key_association.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/guards/check_evm_key_association.rs)).
+
+The pinned EVM-key association guard performs this membership lookup before rate-limit and dispatch
+checks. When the lookup fails, the pallet raises `HotKeyNotRegisteredInSubNet`, which the runtime
+maps to the `UidNotFound` custom transaction error during validation
+([Subtensor source: guards/check_evm_key_association.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/guards/check_evm_key_association.rs),
+[Subtensor source: extensions/subtensor.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/extensions/subtensor.rs)).
+
+## Distinction from Hotkey Not Registered In Subnet
+
+`UidNotFound` and `HotKeyNotRegisteredInSubNet` describe the same membership failure, but under
+different error labels. `UidNotFound` is the custom transaction-validity code returned when
+`associate_evm_key` is rejected during validation. `HotKeyNotRegisteredInSubNet` is the standard
+pallet error label used on other subnet-scoped extrinsics such as weight submission
+([Subtensor Custom Errors](https://docs.learnbittensor.org/errors/custom),
+[Hotkey Not Registered In Subnet](https://docs.learnbittensor.org/errors/subtensor#hotkeynotregisteredinsubnet)).
+
+- **UidNotFound** — custom validity rejection on the EVM association path.
+- **HotKeyNotRegisteredInSubNet** — standard pallet error on other subnet-scoped calls.
+
+## Distinction from EVM Key Associate Rate Limit Exceeded
+
+`UidNotFound` and `EvmKeyAssociateRateLimitExceeded` both block `associate_evm_key`, but at
+different stages. `UidNotFound` is the membership check that runs when the hotkey has no UID on the
+named subnet. `EvmKeyAssociateRateLimitExceeded` is the later pacing rejection when association
+attempts arrive too frequently after membership has already passed
+([EVM Key Associate Rate Limit Exceeded](https://docs.learnbittensor.org/subtensor-api/errors#evmkeyassociateratelimitexceeded),
+[Subtensor Custom Errors](https://docs.learnbittensor.org/errors/custom)).
+
+- **UidNotFound** — the hotkey is not registered on the subnet.
+- **EvmKeyAssociateRateLimitExceeded** — the hotkey is registered, but the call arrived too soon.
+
+## Distinction from Hotkey Account Not Exists
+
+`UidNotFound` and `HotKeyAccountNotExists` both involve hotkey validity, but at different scopes.
+`UidNotFound` means the hotkey account is present but has no UID on the named subnet.
+`HotKeyAccountNotExists` means the hotkey account itself is absent from chain state
+([Subtensor Standard Errors: HotKeyAccountNotExists](https://docs.learnbittensor.org/errors/subtensor#hotkeyaccountnotexists),
+[Subtensor Custom Errors](https://docs.learnbittensor.org/errors/custom)).
+
+- **UidNotFound** — the hotkey exists but is not registered on the subnet.
+- **HotKeyAccountNotExists** — the hotkey account does not exist.
+
+## Reader Boundary
+
+This page defines the meaning of the custom error label and the subnet UID membership guard it
+represents on the `associate_evm_key` validation path. It does not describe how to register a
+neuron, how EVM signatures are verified, or the live association rate limit for a subnet
+([Token Bridging](https://docs.learnbittensor.org/evm-tutorials/bridge-vtao),
+[Subtensor Extrinsics](https://docs.learnbittensor.org/navigating-subtensor/subtensor-extrinsics)).
+
+## Further Reading
+
+- [Subtensor Custom Errors](https://docs.learnbittensor.org/errors/custom)
+- [Hotkey Not Registered In Subnet](https://docs.learnbittensor.org/errors/subtensor#hotkeynotregisteredinsubnet)
+- [Subtensor API Errors: EvmKeyAssociateRateLimitExceeded](https://docs.learnbittensor.org/subtensor-api/errors#evmkeyassociateratelimitexceeded)
+- [Subtensor Standard Errors: HotKeyAccountNotExists](https://docs.learnbittensor.org/errors/subtensor#hotkeyaccountnotexists)
+- [Token Bridging](https://docs.learnbittensor.org/evm-tutorials/bridge-vtao)
+- [Subtensor source: guards/check_evm_key_association.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/guards/check_evm_key_association.rs)
+- [Subtensor source: extensions/subtensor.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/extensions/subtensor.rs)
