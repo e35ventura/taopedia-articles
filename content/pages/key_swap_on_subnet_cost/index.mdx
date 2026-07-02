@@ -1,0 +1,80 @@
+---
+title: "Key Swap On Subnet Cost"
+summary:
+  "How the keySwapOnSubnetCost runtime constant sets the rao charge for swapping a hotkey within a
+  single subnet, a far smaller cost than the network-wide hotkey swap."
+category: "Subnets"
+tags: ["Subnets"]
+infoboxTitle: Key Swap On Subnet Cost
+infoboxCaption: Runtime constant for the cost of a single-subnet hotkey swap.
+infoboxRows:
+  - label: Constant
+    value: keySwapOnSubnetCost
+  - label: Pallet
+    value: subtensorModule
+  - label: Value
+    value: "1000000 rao (0.001 TAO)"
+  - label: Used in
+    value: Cost of swapping a hotkey on a single subnet
+---
+
+# Key Swap On Subnet Cost
+
+Key swap on subnet cost is a subtensorModule runtime constant, listed in the chain's constants
+metadata as keySwapOnSubnetCost, with the value 1000000 and the summary "Cost of swapping a hotkey
+in a subnet"
+([Subtensor API Constants: keySwapOnSubnetCost](https://docs.learnbittensor.org/subtensor-api/constants#keyswaponsubnetcost-u64)).
+The value is denominated in rao, the base unit where one TAO is 1,000,000,000 rao, so 1,000,000 rao
+is 0.001 TAO.
+
+## What It Means
+
+The constant is the charge for swapping a hotkey on a single subnet rather than across the whole
+network. When a coldkey swaps its hotkey on one targeted subnet, the subnet swap path reads this
+cost and requires the coldkey to hold enough balance to cover it. For example, a coldkey swapping
+its hotkey on a subnet such as netuid 1 pays this per-subnet cost rather than the network-wide swap
+cost
+([Subtensor API Constants: keySwapOnSubnetCost](https://docs.learnbittensor.org/subtensor-api/constants#keyswaponsubnetcost-u64)).
+
+## Distinction from Key Swap Cost
+
+Key swap on subnet cost and key swap cost cover two different swap paths. Key swap cost, valued at
+100000000 rao, or 0.1 TAO, is the charge summarized as "Cost of swapping a hotkey" and applies to
+the network-wide swap that is not targeted at a single subnet
+([Subtensor API Constants: keySwapCost](https://docs.learnbittensor.org/subtensor-api/constants#keyswapcost-u64)).
+Key swap on subnet cost, valued at 1000000 rao, or 0.001 TAO, applies when the swap targets a single
+subnet
+([Subtensor API Constants: keySwapOnSubnetCost](https://docs.learnbittensor.org/subtensor-api/constants#keyswaponsubnetcost-u64)).
+The per-subnet swap is therefore priced at one hundredth of the network-wide swap.
+
+## Relation to the Subnet Swap Interval
+
+The per-subnet hotkey swap is bounded by more than just this cost. The hotkeySwapOnSubnetInterval
+constant, valued at 7200 blocks, sets the block spacing that governs a coldkey swapping a hotkey in
+a specific subnet
+([Subtensor API Constants: hotkeySwapOnSubnetInterval](https://docs.learnbittensor.org/subtensor-api/constants#hotkeyswaponsubnetinterval-u64)).
+Key swap on subnet cost is the balance the caller must pay, while the interval is the timing
+constraint on how often the swap may be repeated. The two are separate requirements on the same
+per-subnet swap path.
+
+## Denomination in Rao
+
+The constant is stored as a plain integer in rao, the base unit of the token, where one TAO equals
+1,000,000,000 rao. The raw value 1000000 rao therefore expresses 0.001 TAO
+([Subtensor API Constants: keySwapOnSubnetCost](https://docs.learnbittensor.org/subtensor-api/constants#keyswaponsubnetcost-u64)).
+Costs are held in rao so the runtime can compare balances with exact integer math rather than
+fractional TAO amounts, which is why the constant reads as 1000000 rather than 0.001.
+
+## Reader Boundary
+
+Key swap on subnet cost is a single network-wide constant expressed in rao, not a per-subnet value,
+and it reflects the current runtime configuration rather than a fixed protocol rule; the value could
+change in a future runtime upgrade. It names the price of a single-subnet hotkey swap and does not
+by itself describe the mechanics of the swap or its timing
+([Subtensor API Constants: keySwapOnSubnetCost](https://docs.learnbittensor.org/subtensor-api/constants#keyswaponsubnetcost-u64)).
+
+## Further Reading
+
+- [Subtensor API Constants: keySwapOnSubnetCost](https://docs.learnbittensor.org/subtensor-api/constants#keyswaponsubnetcost-u64)
+- [Subtensor API Constants: keySwapCost](https://docs.learnbittensor.org/subtensor-api/constants#keyswapcost-u64)
+- [Subtensor API Constants: hotkeySwapOnSubnetInterval](https://docs.learnbittensor.org/subtensor-api/constants#hotkeyswaponsubnetinterval-u64)
