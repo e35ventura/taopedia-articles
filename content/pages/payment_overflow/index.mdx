@@ -1,0 +1,75 @@
+---
+title: "Payment Overflow"
+summary:
+  "How the PaymentOverflow error blocks an EVM transaction when the total payment calculation
+  overflows during processing."
+category: "Wallets"
+tags: ["Wallets", "Errors", "EVM"]
+infoboxTitle: Payment Overflow
+infoboxCaption:
+  Error raised when the total payment calculation overflows during EVM transaction processing.
+infoboxRows:
+  - label: Error
+    value: PaymentOverflow
+  - label: Pallet
+    value: evm
+  - label: Trigger
+    value: Total payment overflows during EVM transaction processing
+  - label: Check type
+    value: Arithmetic overflow on the EVM payment computation path
+---
+
+# Payment Overflow
+
+`PaymentOverflow` is an EVM pallet error raised when the total payment calculation overflows during
+transaction processing. The API docs describe it as "Calculating total payment overflowed"
+([Subtensor API Errors: PaymentOverflow](https://docs.learnbittensor.org/subtensor-api/errors#paymentoverflow)).
+
+## What It Means
+
+EVM transactions on Subtensor carry a fee covering execution cost and a value amount. The runtime
+computes the total payment that must be covered before proceeding. When that total overflows the
+arithmetic range, the transaction is rejected with `PaymentOverflow` before any balance is checked
+or funds are moved. This is an arithmetic overflow on the payment-computation path, not a balance
+check and not a fee-conversion check
+([Subtensor API Errors: PaymentOverflow](https://docs.learnbittensor.org/subtensor-api/errors#paymentoverflow),
+[Bittensor EVM Smart Contracts](https://docs.learnbittensor.org/evm-tutorials)).
+
+## Distinction from Fee Overflow
+
+`PaymentOverflow` and `FeeOverflow` are both EVM arithmetic overflow errors but they fire on
+different computations. `FeeOverflow` fires when the fee amount alone overflows during its
+conversion step. `PaymentOverflow` fires when the total payment — encompassing the fee and the value
+to transfer — overflows
+([Subtensor API Errors: FeeOverflow](https://docs.learnbittensor.org/subtensor-api/errors#feeoverflow),
+[Subtensor API Errors: PaymentOverflow](https://docs.learnbittensor.org/subtensor-api/errors#paymentoverflow)).
+
+- **FeeOverflow** — the fee amount overflowed during conversion.
+- **PaymentOverflow** — the total payment overflowed during computation.
+
+## Distinction from Balance Low
+
+`PaymentOverflow` and `BalanceLow` both block EVM fee handling, but at different checks.
+`PaymentOverflow` fires when the payment total overflows before the balance is ever examined.
+`BalanceLow` fires when the payment total was computed without overflow but the mapped account
+cannot fund it
+([Subtensor API Errors: BalanceLow](https://docs.learnbittensor.org/subtensor-api/errors#balancelow),
+[Subtensor API Errors: PaymentOverflow](https://docs.learnbittensor.org/subtensor-api/errors#paymentoverflow)).
+
+- **PaymentOverflow** — the total payment overflowed; balance was never checked.
+- **BalanceLow** — the total payment is valid but the account cannot cover it.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the arithmetic overflow it represents on the
+EVM payment-computation path. It does not report the live balance of any EVM address or compute a
+safe transaction amount; those depend on chain state and call parameters at submission time
+([Bittensor EVM Smart Contracts](https://docs.learnbittensor.org/evm-tutorials),
+[Bittensor Networks](https://docs.learnbittensor.org/concepts/bittensor-networks)).
+
+## Further Reading
+
+- [Subtensor API Errors: PaymentOverflow](https://docs.learnbittensor.org/subtensor-api/errors#paymentoverflow)
+- [Subtensor API Errors: FeeOverflow](https://docs.learnbittensor.org/subtensor-api/errors#feeoverflow)
+- [Subtensor API Errors: BalanceLow](https://docs.learnbittensor.org/subtensor-api/errors#balancelow)
+- [Bittensor EVM Smart Contracts](https://docs.learnbittensor.org/evm-tutorials)
