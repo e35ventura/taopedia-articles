@@ -1,0 +1,74 @@
+---
+title: "Deposit Per Byte"
+summary:
+  "How the depositPerByte contracts constant prices each added byte of contract storage at 30
+  balance units."
+category: "Smart Contracts"
+tags: ["Smart Contracts"]
+infoboxTitle: Deposit Per Byte
+infoboxCaption: Per-byte storage-deposit pricing for contracts storage.
+infoboxRows:
+  - label: Constant
+    value: depositPerByte
+  - label: Pallet
+    value: contracts
+  - label: Value
+    value: "30"
+  - label: Measures
+    value: Each byte of contract storage
+---
+
+# Deposit Per Byte
+
+Deposit per byte is a contracts pallet runtime constant, listed in the Subtensor constants reference
+as depositPerByte. Its current value is 30, and the reference defines it as the amount of balance a
+caller has to pay for each byte of storage
+([Subtensor API Constants: depositPerByte](https://docs.learnbittensor.org/subtensor-api/constants#depositperbyte-u64)).
+The Subtensor runtime sets the contracts per-byte deposit constant with ContractDepositPerByte and
+wires it into the contracts pallet configuration
+([runtime/src/lib.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/runtime/src/lib.rs#L1543-L1573)).
+
+## What It Means
+
+Contracts storage deposits are calculated from two storage-pricing constants. Deposit per byte
+prices the bytes added by a storage change, while deposit per item prices the number of storage
+items added by that same change
+([Subtensor API Constants: depositPerByte](https://docs.learnbittensor.org/subtensor-api/constants#depositperbyte-u64),
+[Subtensor API Constants: depositPerItem](https://docs.learnbittensor.org/subtensor-api/constants#depositperitem-u64)).
+The contracts storage meter reads both constants, calculates the bytes added and items added, and
+adds the two deposit components together for the storage diff
+([storage/meter.rs](https://github.com/opentensor/polkadot-sdk/blob/8e64bb2e4d7554a813fe5a99805c9898123c1366/substrate/frame/contracts/src/storage/meter.rs#L150-L220)).
+
+This makes deposit per byte a storage-size price, not a count of storage entries. A storage change
+with more bytes can require a larger byte component even when the number of storage items is the
+same
+([storage/meter.rs](https://github.com/opentensor/polkadot-sdk/blob/8e64bb2e4d7554a813fe5a99805c9898123c1366/substrate/frame/contracts/src/storage/meter.rs#L160-L166),
+[Subtensor API Constants: depositPerItem](https://docs.learnbittensor.org/subtensor-api/constants#depositperitem-u64)).
+
+## Distinction from Default Deposit Limit
+
+Deposit per byte and default deposit limit both relate to contracts storage deposits, but they
+answer different questions. Deposit per byte is a pricing input for each byte of storage. Default
+deposit limit is the fallback ceiling used when a caller does not provide a storage deposit limit
+([Subtensor API Constants: depositPerByte](https://docs.learnbittensor.org/subtensor-api/constants#depositperbyte-u64),
+[Subtensor API Constants: defaultDepositLimit](https://docs.learnbittensor.org/subtensor-api/constants#defaultdepositlimit-u64)).
+
+- **Deposit per byte** - per-byte price used to calculate storage deposit changes.
+- **Default deposit limit** - fallback maximum storage deposit allowed for an operation.
+
+## Reader Boundary
+
+This page defines the current per-byte storage deposit constant for contracts. It does not estimate
+the total storage deposit for a specific contract, replace the per-item storage deposit constant, or
+state whether a caller has enough balance for an operation
+([Subtensor API Constants: depositPerByte](https://docs.learnbittensor.org/subtensor-api/constants#depositperbyte-u64),
+[Subtensor API Constants: depositPerItem](https://docs.learnbittensor.org/subtensor-api/constants#depositperitem-u64),
+[Subtensor API Errors: StorageDepositNotEnoughFunds](https://docs.learnbittensor.org/subtensor-api/errors#storagedepositnotenoughfunds)).
+
+## Further Reading
+
+- [Subtensor API Constants: depositPerByte](https://docs.learnbittensor.org/subtensor-api/constants#depositperbyte-u64)
+- [Subtensor API Constants: depositPerItem](https://docs.learnbittensor.org/subtensor-api/constants#depositperitem-u64)
+- [Subtensor API Constants: defaultDepositLimit](https://docs.learnbittensor.org/subtensor-api/constants#defaultdepositlimit-u64)
+- [Subtensor API Errors: StorageDepositNotEnoughFunds](https://docs.learnbittensor.org/subtensor-api/errors#storagedepositnotenoughfunds)
+- [Subtensor runtime contracts configuration](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/runtime/src/lib.rs#L1543-L1594)
