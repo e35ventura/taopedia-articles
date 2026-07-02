@@ -1,0 +1,78 @@
+---
+title: "Refund Contributors Limit"
+summary:
+  "How the refundContributorsLimit runtime constant caps how many crowdloan contributors can be
+  refunded in one refund operation."
+category: "Subnets"
+tags: ["Subnets"]
+infoboxTitle: Refund Contributors Limit
+infoboxCaption: Runtime constant for crowdloan refund batching.
+infoboxRows:
+  - label: Constant
+    value: refundContributorsLimit
+  - label: Pallet
+    value: crowdloan
+  - label: Value
+    value: "50"
+  - label: Used in
+    value: Maximum contributors refunded per operation
+---
+
+# Refund Contributors Limit
+
+Refund contributors limit is a crowdloan pallet runtime constant, listed in the chain's constants
+metadata as refundContributorsLimit, with the value 50. The constants reference defines it as the
+maximum number of contributors that can be refunded in a single refund
+([Subtensor API Constants: refundContributorsLimit](https://docs.learnbittensor.org/subtensor-api/constants#refundcontributorslimit-u32)).
+The Subtensor runtime wires the same value into the crowdloan pallet configuration
+([runtime/src/lib.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/runtime/src/lib.rs#L1463-L1478)).
+
+## What It Means
+
+A crowdloan pools TAO from contributors toward a shared funding goal
+([Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans)). Refund contributors limit is the
+per-operation batch size for returning contributor funds when a crowdloan refund is processed: one
+refund operation can refund at most 50 contributors
+([Subtensor API Constants: refundContributorsLimit](https://docs.learnbittensor.org/subtensor-api/constants#refundcontributorslimit-u32)).
+
+In the crowdloan pallet, the refund path iterates over contributors and stops once the refund count
+reaches the configured refund contributors limit
+([lib.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/crowdloan/src/lib.rs#L702-L721)).
+That makes the constant a batching limit for one refund operation, not a cap on how many accounts
+can ever contribute to a crowdloan.
+
+## Distinction from Max Contributors
+
+Refund contributors limit and max contributors both count contributors, but they apply at different
+points in a crowdloan's lifecycle. Refund contributors limit, valued at 50, caps one refund batch.
+Max contributors, valued at 500, caps how many distinct accounts may contribute to one crowdloan
+([Subtensor API Constants: refundContributorsLimit](https://docs.learnbittensor.org/subtensor-api/constants#refundcontributorslimit-u32),
+[Subtensor API Constants: maxContributors](https://docs.learnbittensor.org/subtensor-api/constants#maxcontributors-u32)).
+
+- **Refund contributors limit** - 50 contributors per refund operation.
+- **Max contributors** - 500 contributors per crowdloan.
+
+## Why Refunds Are Batched
+
+Batching refunds keeps a single refund operation bounded even when a crowdloan has many
+contributors. With the current value of 50, a crowdloan with more than 50 contributors may require
+more than one refund operation to finish returning contributor funds
+([Subtensor API Constants: refundContributorsLimit](https://docs.learnbittensor.org/subtensor-api/constants#refundcontributorslimit-u32),
+[lib.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/crowdloan/src/lib.rs#L706-L721)).
+
+## Reader Boundary
+
+Refund contributors limit is a single network-wide runtime constant, not a per-subnet value. It
+defines the maximum contributor count for one refund operation and does not describe the amount each
+contributor receives, the crowdloan's target, or whether a specific live crowdloan is ready to
+refund
+([Subtensor API Constants: refundContributorsLimit](https://docs.learnbittensor.org/subtensor-api/constants#refundcontributorslimit-u32),
+[Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans)).
+
+## Further Reading
+
+- [Subtensor API Constants: refundContributorsLimit](https://docs.learnbittensor.org/subtensor-api/constants#refundcontributorslimit-u32)
+- [Subtensor API Constants: maxContributors](https://docs.learnbittensor.org/subtensor-api/constants#maxcontributors-u32)
+- [Subtensor runtime crowdloan configuration](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/runtime/src/lib.rs#L1463-L1478)
+- [Subtensor crowdloan refund path](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/crowdloan/src/lib.rs#L702-L721)
+- [Crowdloans](https://docs.learnbittensor.org/subnets/crowdloans)
