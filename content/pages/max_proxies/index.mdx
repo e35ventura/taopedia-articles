@@ -1,0 +1,78 @@
+---
+title: "Max Proxies"
+summary:
+  "How the maxProxies runtime constant caps the number of proxy delegates a single account may keep
+  registered at one time."
+category: "Wallets"
+tags: ["Wallets"]
+infoboxTitle: Max Proxies
+infoboxCaption: Runtime constant capping proxy delegates per account.
+infoboxRows:
+  - label: Constant
+    value: maxProxies
+  - label: Pallet
+    value: proxy
+  - label: Value
+    value: "20"
+  - label: Used in
+    value: Cap on proxy delegates per account
+---
+
+# Max Proxies
+
+Max proxies is a proxy pallet runtime constant, listed in the chain's constants metadata as
+maxProxies, with the value 20 and the summary "The maximum amount of proxies allowed for a single
+account"
+([Subtensor API Constants: maxProxies](https://docs.learnbittensor.org/subtensor-api/constants#maxproxies-u32)).
+It sets the largest number of proxy delegates one account may have registered at the same time.
+
+## What It Means
+
+A proxy is a separate account that an owner authorizes to act on the owner's behalf for a defined
+class of calls, without the proxy holding the owner's keys. Max proxies caps how many such delegates
+a single account can keep at once: no more than twenty
+([Subtensor API Constants: maxProxies](https://docs.learnbittensor.org/subtensor-api/constants#maxproxies-u32)).
+An account that already holds twenty proxies removes one before it can add another.
+
+The cap is counted per account rather than as a network total. Each account is measured against the
+same limit on its own, so one account reaching the cap has no bearing on how many proxies another
+account may keep.
+
+## Why an Account Uses Proxies
+
+Proxies let an owner keep a primary account's key in cold storage while a delegate account carries
+out a defined set of routine actions on its behalf. Because every added proxy widens the set of
+accounts able to act for the owner, a fixed ceiling on how many can exist keeps that delegated
+authority bounded. Max proxies is the value that fixes how far one account may spread its delegated
+authority across separate delegate accounts.
+
+## Distinction from Max Pending
+
+Max proxies and max pending limit different parts of the proxy system. Max proxies caps the number
+of standing proxy delegates an account may hold, while max pending, valued at seventy-five, caps how
+many time-delayed proxy announcements may be waiting at once
+([Subtensor API Constants: maxPending](https://docs.learnbittensor.org/subtensor-api/constants#maxpending-u32)).
+One bounds the roster of delegates; the other bounds the queue of announced calls that have not yet
+been executed. An account can sit at one limit while remaining far from the other.
+
+## The Limit Counts Delegates, Not Their Scope
+
+Each proxy is registered for a particular class of calls it is permitted to make on the owner's
+behalf. Max proxies does not distinguish between those classes: it caps the total number of proxy
+delegates an account holds, whether any given delegate is scoped to a broad or a narrow set of calls
+([Subtensor API Constants: maxProxies](https://docs.learnbittensor.org/subtensor-api/constants#maxproxies-u32)).
+Reaching the limit is therefore a matter of how many delegate accounts exist, not of what any one of
+them is allowed to do.
+
+## Reader Boundary
+
+Max proxies is a single network-wide constant, not a per-subnet value, and it reflects the current
+runtime configuration rather than a fixed protocol rule; the value could change in a future runtime
+upgrade. It caps the count of proxies per account and does not by itself describe which call types a
+proxy may make or how a time-delayed proxy behaves
+([Subtensor API Constants: maxProxies](https://docs.learnbittensor.org/subtensor-api/constants#maxproxies-u32)).
+
+## Further Reading
+
+- [Subtensor API Constants: maxProxies](https://docs.learnbittensor.org/subtensor-api/constants#maxproxies-u32)
+- [Subtensor API Constants: maxPending](https://docs.learnbittensor.org/subtensor-api/constants#maxpending-u32)
