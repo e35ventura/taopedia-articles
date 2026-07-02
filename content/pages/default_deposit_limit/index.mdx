@@ -1,0 +1,73 @@
+---
+title: "Default Deposit Limit"
+summary:
+  "How the defaultDepositLimit contracts constant sets the fallback storage-deposit ceiling when a
+  caller does not provide one."
+category: "Smart Contracts"
+tags: ["Smart Contracts"]
+infoboxTitle: Default Deposit Limit
+infoboxCaption: Fallback storage-deposit limit for contracts calls.
+infoboxRows:
+  - label: Constant
+    value: defaultDepositLimit
+  - label: Pallet
+    value: contracts
+  - label: Value
+    value: "31,534,080"
+  - label: Applies when
+    value: Caller omits a storage deposit limit
+---
+
+# Default Deposit Limit
+
+Default deposit limit is a contracts pallet runtime constant, listed in the Subtensor constants
+reference as defaultDepositLimit. Its current value is 31,534,080, and the reference defines it as
+the fallback value used to limit the storage deposit when the caller does not set one
+([Subtensor API Constants: defaultDepositLimit](https://docs.learnbittensor.org/subtensor-api/constants#defaultdepositlimit-u64)).
+The Subtensor runtime sets this value through ContractDefaultDepositLimit and wires it into the
+contracts pallet configuration as the default deposit limit
+([runtime/src/lib.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/runtime/src/lib.rs#L1543-L1573)).
+
+## What It Means
+
+Contracts operations can be given a storage deposit limit so storage growth does not reserve more
+balance than the caller allows. When that operation does not provide a limit, the contracts storage
+meter falls back to the configured default deposit limit, capped by the signed origin's available
+reducible balance after required leftover balance and the minimum balance are considered
+([storage/meter.rs](https://github.com/opentensor/polkadot-sdk/blob/8e64bb2e4d7554a813fe5a99805c9898123c1366/substrate/frame/contracts/src/storage/meter.rs#L373-L383),
+[storage/meter.rs](https://github.com/opentensor/polkadot-sdk/blob/8e64bb2e4d7554a813fe5a99805c9898123c1366/substrate/frame/contracts/src/storage/meter.rs#L519-L536)).
+
+If the total storage deposit charged by the operation is greater than the applicable limit, the
+contracts pallet raises StorageDepositLimitExhausted. The API error reference describes that error
+as the case where more storage was created than allowed by the storage deposit limit
+([storage/meter.rs](https://github.com/opentensor/polkadot-sdk/blob/8e64bb2e4d7554a813fe5a99805c9898123c1366/substrate/frame/contracts/src/storage/meter.rs#L483-L503),
+[Subtensor API Errors: StorageDepositLimitExhausted](https://docs.learnbittensor.org/subtensor-api/errors#storagedepositlimitexhausted)).
+
+## Distinction from Storage Deposit Limit Exhausted
+
+Default deposit limit and StorageDepositLimitExhausted name different parts of the same storage
+deposit check. Default deposit limit is the fallback numeric ceiling. StorageDepositLimitExhausted
+is the error raised when storage growth exceeds the limit that applies to that operation
+([Subtensor API Constants: defaultDepositLimit](https://docs.learnbittensor.org/subtensor-api/constants#defaultdepositlimit-u64),
+[Subtensor API Errors: StorageDepositLimitExhausted](https://docs.learnbittensor.org/subtensor-api/errors#storagedepositlimitexhausted)).
+
+- **Default deposit limit** - fallback ceiling when the caller omits a storage deposit limit.
+- **StorageDepositLimitExhausted** - error when storage growth exceeds the applicable limit.
+
+## Reader Boundary
+
+This page defines the current fallback storage-deposit limit for contracts calls. It does not
+estimate the storage deposit for a specific contract, guarantee that the caller has enough balance,
+or replace the separate per-byte and per-item storage deposit constants
+([Subtensor API Constants: defaultDepositLimit](https://docs.learnbittensor.org/subtensor-api/constants#defaultdepositlimit-u64),
+[Subtensor API Constants: depositPerByte](https://docs.learnbittensor.org/subtensor-api/constants#depositperbyte-u64),
+[Subtensor API Constants: depositPerItem](https://docs.learnbittensor.org/subtensor-api/constants#depositperitem-u64),
+[Subtensor API Errors: StorageDepositNotEnoughFunds](https://docs.learnbittensor.org/subtensor-api/errors#storagedepositnotenoughfunds)).
+
+## Further Reading
+
+- [Subtensor API Constants: defaultDepositLimit](https://docs.learnbittensor.org/subtensor-api/constants#defaultdepositlimit-u64)
+- [Subtensor API Constants: depositPerByte](https://docs.learnbittensor.org/subtensor-api/constants#depositperbyte-u64)
+- [Subtensor API Constants: depositPerItem](https://docs.learnbittensor.org/subtensor-api/constants#depositperitem-u64)
+- [Subtensor API Errors: StorageDepositLimitExhausted](https://docs.learnbittensor.org/subtensor-api/errors#storagedepositlimitexhausted)
+- [Subtensor runtime contracts configuration](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/runtime/src/lib.rs#L1543-L1594)
