@@ -1,0 +1,85 @@
+---
+title: "Min Tempo"
+summary:
+  "How the minTempo runtime constant sets the lower bound of the tempo a subnet owner may configure,
+  pairing with maxTempo to define the owner-settable epoch-cadence band."
+category: "Subnets"
+tags: ["Subnets"]
+infoboxTitle: Min Tempo
+infoboxCaption: Runtime constant for the lower bound of an owner-set tempo.
+infoboxRows:
+  - label: Constant
+    value: minTempo
+  - label: Pallet
+    value: subtensorModule
+  - label: Value
+    value: "360 blocks"
+  - label: Used in
+    value: Lower bound of the owner-set tempo band
+---
+
+# Min Tempo
+
+Min tempo is a subtensorModule runtime constant, listed in the chain's constants metadata as
+minTempo, with the value 360 and the summary "Lower bound for owner-set tempo"
+([Subtensor API Constants: minTempo](https://docs.learnbittensor.org/subtensor-api/constants#mintempo-u16)).
+It defines the smallest tempo a subnet owner is allowed to configure for a subnet.
+
+## What It Means
+
+Tempo is the number of blocks between Yuma Consensus epoch transitions for a subnet
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)). Min
+tempo does not set that value; it is the floor an owner may set it to. The constant works together
+with maxTempo, whose value is 50400 and whose summary is "Upper bound for owner-set tempo"
+([Subtensor API Constants: maxTempo](https://docs.learnbittensor.org/subtensor-api/constants#maxtempo-u16)).
+Together the two constants bound the owner-settable tempo to the range 360 through 50400 blocks.
+
+## Owner Setting Versus Root Setting
+
+The bound applies to the owner path. When a subnet owner changes tempo, the value must be at least
+minTempo; a root-level tempo change is not held to this floor and may set a smaller value
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)). For
+example, a subnet owner configuring tempo on a subnet such as netuid 1 cannot choose a value below
+360 blocks, whereas a root-level change on the same subnet is not constrained by it. Min tempo is
+therefore a floor on owner configuration rather than a hard limit on every tempo the chain can hold.
+
+## Wall-Clock Meaning
+
+Because tempo counts blocks, the effective duration depends on block time. The chain's slotDuration
+constant is 12000 milliseconds, or twelve seconds per block
+([Subtensor API Constants: slotDuration](https://docs.learnbittensor.org/subtensor-api/constants#slotduration-u64)).
+At that rate the minimum owner tempo of 360 blocks is about seventy-two minutes. Min tempo thus sets
+the shortest, most frequent epoch cadence a subnet owner can choose for a subnet.
+
+## Distinction from Tempo
+
+Min tempo and tempo are different kinds of value. Tempo is the per-subnet hyperparameter a subnet
+carries and applies at each epoch boundary, while min tempo is a fixed network-wide runtime constant
+that only bounds the lowest value an owner may set that hyperparameter to
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[Subtensor API Constants: minTempo](https://docs.learnbittensor.org/subtensor-api/constants#mintempo-u16)).
+One is the floor; the other is the chosen value that must sit above it on the owner path.
+
+## Distinction from Max Tempo
+
+Min tempo and max tempo are the two ends of the same owner-settable band. Min tempo, valued at 360,
+is the smallest tempo an owner may set, and max tempo, valued at 50400, is the largest
+([Subtensor API Constants: minTempo](https://docs.learnbittensor.org/subtensor-api/constants#mintempo-u16),
+[Subtensor API Constants: maxTempo](https://docs.learnbittensor.org/subtensor-api/constants#maxtempo-u16)).
+A smaller tempo means shorter, more frequent epochs; a larger tempo means longer, less frequent
+epochs. The two bounds keep an owner's chosen cadence inside a documented range.
+
+## Reader Boundary
+
+Min tempo is a single network-wide constant, not a per-subnet value, and it reflects the current
+runtime configuration rather than a fixed protocol rule; the bound could change in a future runtime
+upgrade. It is not the live tempo of any subnet, and it does not by itself describe how emissions
+are distributed at the epoch boundary
+([Subtensor API Constants: minTempo](https://docs.learnbittensor.org/subtensor-api/constants#mintempo-u16)).
+
+## Further Reading
+
+- [Subtensor API Constants: minTempo](https://docs.learnbittensor.org/subtensor-api/constants#mintempo-u16)
+- [Subtensor API Constants: maxTempo](https://docs.learnbittensor.org/subtensor-api/constants#maxtempo-u16)
+- [Subtensor API Constants: slotDuration](https://docs.learnbittensor.org/subtensor-api/constants#slotduration-u64)
+- [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
