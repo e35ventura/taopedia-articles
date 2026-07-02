@@ -1,0 +1,54 @@
+---
+title: "Max Fee Rate"
+summary:
+  "How the maxFeeRate runtime constant caps the swap fee rate a subnet owner can set, checked
+  directly by the set_fee_rate extrinsic."
+category: "Tokenomics"
+tags: ["Tokenomics", "Subnets"]
+infoboxTitle: Max Fee Rate
+infoboxCaption: Runtime constant capping the swap pallet fee rate.
+infoboxRows:
+  - label: Constant
+    value: maxFeeRate
+  - label: Pallet
+    value: swap
+  - label: Value
+    value: "10,000 (about 15.26%)"
+  - label: Exceeding it raises
+    value: FeeRateTooHigh
+---
+
+# Max Fee Rate
+
+Max fee rate is a swap pallet runtime constant, listed in the chain's constants metadata as
+maxFeeRate, with the value 10000 and the summary "The maximum fee rate that can be set"
+([Subtensor API Constants: maxFeeRate](https://docs.learnbittensor.org/subtensor-api/constants#maxfeerate-u16)).
+The runtime sets this bound directly, with the source itself annotating the value as about 15.26%
+([runtime/src/lib.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/runtime/src/lib.rs#L1132)).
+
+## What It Means
+
+The swap pallet's fee rate is a normalized value rather than a plain percentage, so the constant's
+own value of 10000 is not itself "10000%"; it is a fraction of the value type's full range, which
+the runtime comment states works out to about 15.26%. The set_fee_rate extrinsic checks a submitted
+rate directly against this constant before storing it, and rejects the call with FeeRateTooHigh when
+the submitted rate is higher
+([swap/mod.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/swap/src/pallet/mod.rs#L194),
+[Subtensor API Errors: FeeRateTooHigh](https://docs.learnbittensor.org/subtensor-api/errors#feeratetoohigh)).
+
+This is the same ceiling the fee_rate_too_high error page describes only as "the runtime maximum"
+without stating the value.
+
+## Reader Boundary
+
+This page defines the constant, its value, and the check that enforces it. It does not document how
+an already-configured fee rate is applied to individual swaps, or the full mapping from the
+normalized rate to a percentage across every possible value
+([Subtensor API Constants: maxFeeRate](https://docs.learnbittensor.org/subtensor-api/constants#maxfeerate-u16)).
+
+## Further Reading
+
+- [Subtensor API Constants: maxFeeRate](https://docs.learnbittensor.org/subtensor-api/constants#maxfeerate-u16)
+- [Subtensor API Errors: FeeRateTooHigh](https://docs.learnbittensor.org/subtensor-api/errors#feeratetoohigh)
+- [Subtensor runtime: SwapMaxFeeRate](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/runtime/src/lib.rs#L1132)
+- [Subtensor pallet: set_fee_rate check](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/swap/src/pallet/mod.rs#L194)
