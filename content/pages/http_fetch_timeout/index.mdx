@@ -1,0 +1,51 @@
+---
+title: "Http Fetch Timeout"
+summary:
+  "How the httpFetchTimeout runtime constant bounds the drand pallet's offchain worker to 1 second
+  when fetching a randomness pulse from external endpoints."
+category: "Consensus"
+tags: ["Consensus"]
+infoboxTitle: Http Fetch Timeout
+infoboxCaption: Runtime constant bounding the drand offchain HTTP fetch.
+infoboxRows:
+  - label: Constant
+    value: httpFetchTimeout
+  - label: Pallet
+    value: drand
+  - label: Value
+    value: "1,000 milliseconds"
+  - label: Used by
+    value: The offchain worker's drand endpoint fetch
+---
+
+# Http Fetch Timeout
+
+Http fetch timeout is a drand pallet runtime constant, listed in the chain's constants metadata as
+httpFetchTimeout, with the value 1000 and the summary "The maximum number of milliseconds we are
+willing to wait for the HTTP request to complete"
+([Subtensor API Constants: httpFetchTimeout](https://docs.learnbittensor.org/subtensor-api/constants#httpfetchtimeout-u64)).
+The runtime sets this bound directly, at 1,000 milliseconds
+([runtime/src/lib.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/runtime/src/lib.rs#L125)).
+
+## What It Means
+
+The drand pallet's offchain worker fetches randomness pulse data from external drand endpoints
+outside the runtime's normal transaction execution. Before issuing that HTTP request, the pallet
+computes a deadline from the current offchain timestamp plus this constant, so the request cannot
+wait longer than 1 second for a response
+([drand/lib.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/drand/src/lib.rs#L527-L536)).
+
+This is a single network-wide value, not a per-subnet setting, and it bounds only the offchain fetch
+step, not any on-chain verification of the pulse once fetched.
+
+## Reader Boundary
+
+This page defines the constant, its value, and the offchain fetch step it bounds. It does not cover
+how a fetched pulse is verified once it reaches the runtime
+([Subtensor API Constants: httpFetchTimeout](https://docs.learnbittensor.org/subtensor-api/constants#httpfetchtimeout-u64)).
+
+## Further Reading
+
+- [Subtensor API Constants: httpFetchTimeout](https://docs.learnbittensor.org/subtensor-api/constants#httpfetchtimeout-u64)
+- [Subtensor runtime: HttpFetchTimeout](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/runtime/src/lib.rs#L125)
+- [Subtensor pallet: drand endpoint fetch](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/drand/src/lib.rs#L527-L536)
