@@ -1,0 +1,69 @@
+---
+title: "Burn Account ID"
+summary:
+  "How the burnAccountId runtime constant names the pallet identifier behind Bittensor's burn
+  address, where burned TAO is moved without reducing total issuance."
+category: "Tokenomics"
+tags: ["Tokenomics", "TAO"]
+infoboxTitle: Burn Account ID
+infoboxCaption: Runtime constant naming the identifier behind the burn address.
+infoboxRows:
+  - label: Constant
+    value: burnAccountId
+  - label: Pallet
+    value: subtensor
+  - label: Value
+    value: "0x6275726e746e7372 (the bytes of burntnsr)"
+  - label: Used by
+    value: The pallet's TAO burn helper
+---
+
+# Burn Account ID
+
+Burn account ID is a subtensor runtime constant, listed in the chain's constants metadata under the
+subtensorModule pallet as `burnAccountId`, with the value 0x6275726e746e7372 and the summary "Burn
+account ID"
+([Subtensor API Constants: burnAccountId](https://docs.learnbittensor.org/subtensor-api/constants#burnaccountid-u88)).
+The runtime defines it as the eight-byte pallet identifier written as burntnsr, and the chain
+derives the burn account address from that identifier
+([runtime/src/lib.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/runtime/src/lib.rs#L1041),
+[tao.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/subtensor/src/coinbase/tao.rs#L180-L186)).
+
+## What It Means
+
+The pallet's burn helper moves TAO from a paying account to the account derived from this
+identifier. The source describes the helper as permanently removing the amount from existence by
+moving it to the burn address, without affecting the issuance rate: the moved TAO stays counted in
+issuance but leaves ordinary circulation
+([tao.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/subtensor/src/coinbase/tao.rs#L180-L186)).
+
+In the current implementation this path is used when a TAO-for-alpha swap settles its fee. The fee
+portion earmarked for the block author is normally transferred from the subnet account to the block
+author's coldkey; when no block author is identified, the pallet burns that fee from the subnet
+account instead
+([stake_utils.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/subtensor/src/staking/stake_utils.rs#L895-L912)).
+
+## Distinction from Recycling
+
+Recycling is the other removal path in the same source file, and it changes different state.
+Recycling subtracts the amount from the pallet's total issuance, so it can return through future
+emission. Burning to the burn account leaves total issuance unchanged and instead parks the TAO at
+the derived address
+([tao.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/subtensor/src/coinbase/tao.rs#L180-L206),
+[Glossary: Recycling and burning](https://docs.learnbittensor.org/resources/glossary#recycling-and-burning)).
+
+- **Recycling** — reduces total issuance; the amount can be emitted again.
+- **Burning** — moves TAO to the burn account; total issuance is not reduced.
+
+## Reader Boundary
+
+This page defines the constant, the address derivation, and the burn path that uses it. It does not
+report the burn account's current balance or historical burn totals
+([Subtensor API Constants: burnAccountId](https://docs.learnbittensor.org/subtensor-api/constants#burnaccountid-u88)).
+
+## Further Reading
+
+- [Subtensor API Constants: burnAccountId](https://docs.learnbittensor.org/subtensor-api/constants#burnaccountid-u88)
+- [Subtensor runtime: BurnAccountId](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/runtime/src/lib.rs#L1041)
+- [Subtensor pallet: burn_tao and recycle_tao](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/subtensor/src/coinbase/tao.rs#L180-L206)
+- [Glossary: Recycling and burning](https://docs.learnbittensor.org/resources/glossary#recycling-and-burning)
