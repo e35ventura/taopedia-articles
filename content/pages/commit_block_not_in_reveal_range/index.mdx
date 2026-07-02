@@ -1,0 +1,113 @@
+---
+title: "Commit Block Not In Reveal Range"
+summary:
+  "How the CommitBlockNotInRevealRange custom error blocks a commit-reveal weight reveal at
+  transaction validation when the matching commit is not yet in its eligible reveal epoch."
+category: "Validation"
+tags: ["Validation", "Errors"]
+infoboxTitle: Commit Block Not In Reveal Range
+infoboxCaption: Custom error raised when a reveal arrives before its commit's eligible reveal epoch.
+infoboxRows:
+  - label: Error
+    value: CommitBlockNotInRevealRange
+  - label: Trigger
+    value: Current epoch does not match the commit's eligible reveal epoch
+  - label: Checked in
+    value: reveal and batch_reveal weight paths during transaction validation
+  - label: Check type
+    value: Commit-reveal timing guard
+---
+
+# Commit Block Not In Reveal Range
+
+`CommitBlockNotInRevealRange` is a documented Subtensor custom error raised when a commit-reveal
+weight reveal arrives before its stored commit is eligible to be revealed. The custom-errors
+reference describes it as "The referenced commit cannot be revealed in the current block range"
+([Subtensor Custom Errors](https://docs.learnbittensor.org/errors/custom)).
+
+## What It Means
+
+[Commit-reveal](https://docs.learnbittensor.org/concepts/commit-reveal) weight submission happens in
+two steps: a commitment first, then a later reveal that must match a stored commit for the same
+hotkey and subnet. `CommitBlockNotInRevealRange` means the reveal found a matching commit, but the
+current epoch is not the one eligible reveal epoch for that commit, so the submission is rejected
+([Subtensor Custom Errors](https://docs.learnbittensor.org/errors/custom),
+[Commit-Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)).
+
+This is a reveal-timing rejection on the commit-reveal path. It does not, by itself, mean no stored
+commit exists, that commit-reveal is disabled on the subnet, or that the matching commit has already
+expired.
+
+## Why It Appears
+
+`CommitBlockNotInRevealRange` appears when a reveal or batch-reveal weight extrinsic is checked
+during transaction validation and the chain finds a matching stored commit, but the current epoch
+still does not equal that commit's eligible reveal epoch. That can happen when a validator reveals
+immediately after committing, submits during the wrong epoch, or uses client timing that does not
+account for the subnet's reveal period
+([Subtensor Custom Errors](https://docs.learnbittensor.org/errors/custom),
+[Reveal Too Early](https://docs.learnbittensor.org/errors/subtensor#revealtooearly)).
+
+The pinned weight-transaction extension performs this timing check before dispatch. When the reveal
+epoch comparison fails, the pallet raises `RevealTooEarly`, which the runtime maps to the
+`CommitBlockNotInRevealRange` custom transaction error during validation
+([Subtensor source: guards/check_weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/guards/check_weights.rs),
+[Subtensor source: extensions/subtensor.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/extensions/subtensor.rs)).
+
+## Distinction from Reveal Too Early
+
+`CommitBlockNotInRevealRange` and `RevealTooEarly` describe the same timing failure, but under
+different error labels. `CommitBlockNotInRevealRange` is the custom transaction-validity code
+returned when the weight extension rejects a reveal during validation. `RevealTooEarly` is the
+standard pallet error label on the same reveal timing logic inside dispatch
+([Subtensor Custom Errors](https://docs.learnbittensor.org/errors/custom),
+[Reveal Too Early](https://docs.learnbittensor.org/errors/subtensor#revealtooearly)).
+
+- **CommitBlockNotInRevealRange** — custom validity rejection before the reveal is accepted into a
+  block.
+- **RevealTooEarly** — standard pallet error label when the reveal dispatch path fails the same
+  timing check.
+
+## Distinction from No Weights Commit Found
+
+`CommitBlockNotInRevealRange` and `NoWeightsCommitFound` both block commit-reveal reveals, but at
+different checks. `CommitBlockNotInRevealRange` means a matching stored commit exists, but the
+current epoch is not its eligible reveal epoch. `NoWeightsCommitFound` means the reveal cannot find
+a matching stored commit at all
+([No Weights Commit Found](https://docs.learnbittensor.org/errors/subtensor#noweightscommitfound),
+[Subtensor Custom Errors](https://docs.learnbittensor.org/errors/custom)).
+
+- **CommitBlockNotInRevealRange** — the commit exists, but this epoch is not its reveal epoch.
+- **NoWeightsCommitFound** — no matching stored commit exists for the reveal.
+
+## Distinction from Expired Weight Commit
+
+`CommitBlockNotInRevealRange` and `ExpiredWeightCommit` are both reveal-side failures, but they
+reject different commit states. `CommitBlockNotInRevealRange` applies while the matching commit is
+still active and simply has not reached its eligible reveal epoch yet. `ExpiredWeightCommit` applies
+once a matching commit has aged out before it was revealed
+([Subtensor Standard Errors: ExpiredWeightCommit](https://docs.learnbittensor.org/errors/subtensor#expiredweightcommit),
+[Subtensor Custom Errors](https://docs.learnbittensor.org/errors/custom)).
+
+- **CommitBlockNotInRevealRange** — the commit is still active, but its reveal epoch has not
+  arrived.
+- **ExpiredWeightCommit** — the matching commit expired before it was revealed.
+
+## Reader Boundary
+
+This page defines the meaning of the custom error label and the reveal-timing guard it represents on
+commit-reveal reveal paths. It does not describe how reveal epochs are computed, how expired commits
+are pruned, or the full commit-reveal lifecycle for a subnet
+([Commit-Reveal](https://docs.learnbittensor.org/concepts/commit-reveal),
+[Commit Reveal Period](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#commitrevealperiod)).
+
+## Further Reading
+
+- [Subtensor Custom Errors](https://docs.learnbittensor.org/errors/custom)
+- [Reveal Too Early](https://docs.learnbittensor.org/errors/subtensor#revealtooearly)
+- [No Weights Commit Found](https://docs.learnbittensor.org/errors/subtensor#noweightscommitfound)
+- [Subtensor Standard Errors: ExpiredWeightCommit](https://docs.learnbittensor.org/errors/subtensor#expiredweightcommit)
+- [Commit-Reveal](https://docs.learnbittensor.org/concepts/commit-reveal)
+- [Commit Reveal Period](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#commitrevealperiod)
+- [Subtensor source: guards/check_weights.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/guards/check_weights.rs)
+- [Subtensor source: extensions/subtensor.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/extensions/subtensor.rs)
