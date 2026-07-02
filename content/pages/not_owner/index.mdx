@@ -1,0 +1,94 @@
+---
+title: "Not Owner"
+summary:
+  "How the NotOwner error blocks a multisig cancellation or deposit update when the caller is not
+  the account that originally created the multisig operation."
+category: "Wallets"
+tags: ["Wallets", "Errors"]
+infoboxTitle: Not Owner
+infoboxCaption:
+  Error raised when a multisig cancellation or deposit update arrives from an account other than the
+  original creator.
+infoboxRows:
+  - label: Error
+    value: NotOwner
+  - label: Pallet
+    value: multisig
+  - label: Trigger
+    value:
+      Multisig cancellation or deposit update submitted by an account other than the original
+      creator
+  - label: Check type
+    value: Creator-identity guard on the cancel and deposit-update paths
+---
+
+# Not Owner
+
+`NotOwner` is a multisig pallet error raised when a multisig cancellation or deposit update arrives
+from an account other than the one that originally created the multisig operation. The API errors
+reference summarizes it as "Only the account that originally created the multisig is able to cancel
+it or update its deposits."
+([Subtensor API Errors: NotOwner](https://docs.learnbittensor.org/subtensor-api/errors#notowner)).
+
+## What It Means
+
+Subtensor supports multisig wallets through the multisig pallet. When a multisig operation is
+created, the creating account reserves a deposit for the pending operation. Only that account can
+later cancel the operation or update the deposit. `NotOwner` means the cancellation or
+deposit-update request arrived from a different account, so the runtime rejects the request before
+the pending operation is modified
+([Subtensor API Errors: NotOwner](https://docs.learnbittensor.org/subtensor-api/errors#notowner)).
+
+This is the creator-identity guard on the cancel and deposit-update paths. It does not, by itself,
+mean the pending operation did not exist, that the approval threshold had already been met, or that
+the timepoint submitted with the request was wrong.
+
+## Why It Appears
+
+This error appears when a multisig cancellation or deposit update reaches the runtime and the caller
+is not the account that originally created the operation. The pinned multisig-pallet source
+describes the guard: the runtime checks that the caller matches the account that created the pending
+operation and returns `Error::<T>::NotOwner` when they do not match
+([opentensor/polkadot-sdk: substrate/frame/multisig/src/lib.rs#L522](https://github.com/opentensor/polkadot-sdk/blob/7cc54bf2d50ae3921d718736dfeb0de9468539c7/substrate/frame/multisig/src/lib.rs#L522)).
+
+The practical meaning is narrow: only the account that created the multisig operation can cancel it
+or update its deposit. A request from any other account is rejected.
+
+## Distinction from Already Approved
+
+`NotOwner` and `AlreadyApproved` are both multisig-pallet errors that block a multisig operation,
+but they fire at different checks. `NotOwner` is the creator-identity guard on the cancel and
+deposit-update paths. `AlreadyApproved` is the duplicate-approval guard that fires when a signatory
+tries to approve a multisig operation it has already approved
+([Subtensor API Errors: NotOwner](https://docs.learnbittensor.org/subtensor-api/errors#notowner),
+[Subtensor API Errors: AlreadyApproved](https://docs.learnbittensor.org/subtensor-api/errors#alreadyapproved)).
+
+- **NotOwner** — the caller is not the account that created the operation.
+- **AlreadyApproved** — the caller has already approved this operation.
+
+## Distinction from No Approvals Needed
+
+`NotOwner` and `NoApprovalsNeeded` are both multisig-pallet errors that block a multisig operation,
+but they fire at different checks. `NotOwner` is the creator-identity guard on the cancel and
+deposit-update paths. `NoApprovalsNeeded` is the approval-state guard that fires when the approval
+threshold has already been reached and no further approvals are accepted
+([Subtensor API Errors: NotOwner](https://docs.learnbittensor.org/subtensor-api/errors#notowner),
+[Subtensor API Errors: NoApprovalsNeeded](https://docs.learnbittensor.org/subtensor-api/errors#noapprovalsneeded)).
+
+- **NotOwner** — the caller is not the account that created the operation.
+- **NoApprovalsNeeded** — the operation has already reached its approval threshold.
+
+## Reader Boundary
+
+This page defines the meaning of the error label and the creator-identity guard it represents on the
+multisig cancel and deposit-update paths. It does not report which account created a specific
+pending operation, list the extrinsic names that submit cancellations or deposit updates, or
+describe how multisig thresholds and signatory sets are configured
+([Subtensor API Errors: NotOwner](https://docs.learnbittensor.org/subtensor-api/errors#notowner)).
+
+## Further Reading
+
+- [Subtensor API Errors: NotOwner](https://docs.learnbittensor.org/subtensor-api/errors#notowner)
+- [Subtensor API Errors: AlreadyApproved](https://docs.learnbittensor.org/subtensor-api/errors#alreadyapproved)
+- [Subtensor API Errors: NoApprovalsNeeded](https://docs.learnbittensor.org/subtensor-api/errors#noapprovalsneeded)
+- [opentensor/polkadot-sdk: frame/multisig/src/lib.rs#L522](https://github.com/opentensor/polkadot-sdk/blob/7cc54bf2d50ae3921d718736dfeb0de9468539c7/substrate/frame/multisig/src/lib.rs#L522)
