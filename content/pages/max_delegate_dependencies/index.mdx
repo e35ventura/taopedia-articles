@@ -1,0 +1,58 @@
+---
+title: "Max Delegate Dependencies"
+summary:
+  "How the maxDelegateDependencies runtime constant caps each contract at 32 locked delegate
+  dependencies, the limit behind MaxDelegateDependenciesReached."
+category: "Smart Contracts"
+tags: ["Smart Contracts"]
+infoboxTitle: Max Delegate Dependencies
+infoboxCaption: Runtime constant capping a contract's locked delegate-dependency list.
+infoboxRows:
+  - label: Constant
+    value: maxDelegateDependencies
+  - label: Pallet
+    value: contracts
+  - label: Value
+    value: "32"
+  - label: Exceeding it raises
+    value: MaxDelegateDependenciesReached
+---
+
+# Max Delegate Dependencies
+
+Max delegate dependencies is a contracts pallet runtime constant, listed in the chain's constants
+metadata as maxDelegateDependencies, with the value 32 and the summary "The maximum number of
+delegate_dependencies that a contract can lock with
+`chain_extension::Ext::lock_delegate_dependency`"
+([Subtensor API Constants: maxDelegateDependencies](https://docs.learnbittensor.org/subtensor-api/constants#maxdelegatedependencies-u32)).
+The runtime sets this bound directly to 32 and wires it into the contracts configuration as
+`type MaxDelegateDependencies = ContractMaxDelegateDependencies`
+([runtime/src/lib.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/runtime/src/lib.rs#L1547-L1549),
+[runtime/src/lib.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/runtime/src/lib.rs#L1587-L1590)).
+
+## What It Means
+
+The contracts pallet stores a contract's locked delegate dependencies in a bounded map typed with
+`T::MaxDelegateDependencies`. When a contract tries to lock another dependency, insertion into that
+bounded map fails with `MaxDelegateDependenciesReached` if the list is already full
+([pallet-contracts storage](https://github.com/opentensor/polkadot-sdk/blob/8e64bb2e4d7554a813fe5a99805c9898123c1366/substrate/frame/contracts/src/storage.rs#L70-L73),
+[pallet-contracts storage](https://github.com/opentensor/polkadot-sdk/blob/8e64bb2e4d7554a813fe5a99805c9898123c1366/substrate/frame/contracts/src/storage.rs#L258-L266),
+[Subtensor API Errors: MaxDelegateDependenciesReached](https://docs.learnbittensor.org/subtensor-api/errors#maxdelegatedependenciesreached)).
+
+For Bittensor's current runtime, that means a single contract can keep at most 32 locked delegate
+dependencies at the same time. This is a single network-wide bound for the contracts pallet, not a
+per-subnet setting.
+
+## Reader Boundary
+
+This page defines the constant, its current value, and the delegate-dependency list it bounds. It
+does not report how many dependencies a live contract currently has on chain
+([Subtensor API Constants: maxDelegateDependencies](https://docs.learnbittensor.org/subtensor-api/constants#maxdelegatedependencies-u32)).
+
+## Further Reading
+
+- [Subtensor API Constants: maxDelegateDependencies](https://docs.learnbittensor.org/subtensor-api/constants#maxdelegatedependencies-u32)
+- [Subtensor runtime: ContractMaxDelegateDependencies](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/runtime/src/lib.rs#L1547-L1549)
+- [Subtensor runtime: contracts config MaxDelegateDependencies](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/runtime/src/lib.rs#L1587-L1590)
+- [pallet-contracts: bounded delegate-dependency storage and overflow check](https://github.com/opentensor/polkadot-sdk/blob/8e64bb2e4d7554a813fe5a99805c9898123c1366/substrate/frame/contracts/src/storage.rs#L70-L73)
+- [Subtensor API Errors: MaxDelegateDependenciesReached](https://docs.learnbittensor.org/subtensor-api/errors#maxdelegatedependenciesreached)
