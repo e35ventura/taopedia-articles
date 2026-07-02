@@ -1,0 +1,52 @@
+---
+title: "Max Authorities"
+summary:
+  "How the maxAuthorities runtime constant caps Bittensor's consensus authority set at 32, enforced
+  when root replaces the authority list."
+category: "Consensus"
+tags: ["Consensus"]
+infoboxTitle: Max Authorities
+infoboxCaption: Runtime constant capping the consensus authority set.
+infoboxRows:
+  - label: Constant
+    value: maxAuthorities
+  - label: Pallet
+    value: grandpa
+  - label: Value
+    value: "32"
+  - label: Set by
+    value: Root-only swap_authorities call
+---
+
+# Max Authorities
+
+Max authorities is a runtime constant, listed in the chain's constants metadata under the grandpa
+pallet as maxAuthorities, with the value 32 and the summary "Max Authorities in use"
+([Subtensor API Constants: maxAuthorities](https://docs.learnbittensor.org/subtensor-api/constants#maxauthorities-u32)).
+The runtime sets this bound directly for both the block-production (Aura) and finality (GRANDPA)
+consensus configurations
+([runtime/src/lib.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/runtime/src/lib.rs#L362-L377)).
+
+## What It Means
+
+The authority set is the list of accounts recognized for consensus. The runtime also wires a
+separate, Bittensor-specific admin pallet to the same cap: a root-only call replaces the
+block-production authority list with a submitted list, and that submitted list cannot hold more than
+32 entries. A list longer than this constant cannot be submitted in the first place, since the
+extrinsic's parameter type itself is bounded to this length
+([admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/admin-utils/src/lib.rs#L209-L222)).
+
+This is a single network-wide bound, not a per-subnet setting, and it is distinct from Bittensor's
+own subnet validator system.
+
+## Reader Boundary
+
+This page defines the constant, its value, and the root-only call it bounds. It does not report the
+current size or membership of the live authority set
+([Subtensor API Constants: maxAuthorities](https://docs.learnbittensor.org/subtensor-api/constants#maxauthorities-u32)).
+
+## Further Reading
+
+- [Subtensor API Constants: maxAuthorities](https://docs.learnbittensor.org/subtensor-api/constants#maxauthorities-u32)
+- [Subtensor runtime: Aura and GRANDPA MaxAuthorities](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/runtime/src/lib.rs#L362-L377)
+- [Subtensor pallet: swap_authorities](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/admin-utils/src/lib.rs#L209-L222)
