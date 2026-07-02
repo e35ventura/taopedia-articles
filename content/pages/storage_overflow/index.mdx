@@ -1,0 +1,67 @@
+---
+title: "Storage Overflow"
+summary:
+  "How the StorageOverflow error blocks a drand operation when incrementing a stored counter would
+  exceed the maximum u32 value."
+category: "Core Concepts"
+tags: ["Transactions", "Errors"]
+infoboxTitle: Storage Overflow
+infoboxCaption: Error raised when a drand storage counter would overflow past u32::MAX.
+infoboxRows:
+  - label: Error
+    value: StorageOverflow
+  - label: Pallet
+    value: drand
+  - label: Trigger
+    value: Drand operation attempts to increment a stored counter past the u32 maximum
+  - label: Check type
+    value: Overflow guard on the drand counter increment path
+---
+
+# Storage Overflow
+
+`StorageOverflow` is a drand pallet error raised when an operation attempts to increment a stored
+counter past the maximum value a u32 can hold
+([Subtensor API Errors: StorageOverflow](https://docs.learnbittensor.org/subtensor-api/errors#storageoverflow)).
+
+## What It Means
+
+The drand pallet maintains internal counters in storage as part of its distributed randomness
+tracking. Each counter is stored as a u32, which has a hard maximum of 4,294,967,295.
+`StorageOverflow` fires when an increment would push one of those counters past that ceiling, which
+would silently wrap around to zero if left unchecked
+([Subtensor API Errors: StorageOverflow](https://docs.learnbittensor.org/subtensor-api/errors#storageoverflow)).
+
+## Distinction from None Value
+
+`StorageOverflow` fires when a stored counter exists but cannot be incremented further. `NoneValue`
+fires when a stored value was expected but was never set
+([Subtensor API Errors: StorageOverflow](https://docs.learnbittensor.org/subtensor-api/errors#storageoverflow),
+[Subtensor API Errors: NoneValue](https://docs.learnbittensor.org/subtensor-api/errors#nonevalue)).
+
+- **StorageOverflow** — the counter exists but has hit its maximum.
+- **NoneValue** — no value was previously set.
+
+## Distinction from Unverified Pulse
+
+`StorageOverflow` is a storage-limit error on the drand counter path. `UnverifiedPulse` is a
+verification error on the drand pulse path, raised when a submitted randomness pulse fails
+validation
+([Subtensor API Errors: StorageOverflow](https://docs.learnbittensor.org/subtensor-api/errors#storageoverflow),
+[Subtensor API Errors: UnverifiedPulse](https://docs.learnbittensor.org/subtensor-api/errors#unverifiedpulse)).
+
+- **StorageOverflow** — a storage counter cannot be incremented past its maximum.
+- **UnverifiedPulse** — a randomness pulse failed verification.
+
+## Reader Boundary
+
+This page defines the error label and the overflow guard on the drand counter path. It does not
+report the current counter value, describe the drand protocol's round structure, or list the
+extrinsics that trigger counter increments
+([Subtensor API Errors: StorageOverflow](https://docs.learnbittensor.org/subtensor-api/errors#storageoverflow)).
+
+## Further Reading
+
+- [Subtensor API Errors: StorageOverflow](https://docs.learnbittensor.org/subtensor-api/errors#storageoverflow)
+- [Subtensor API Errors: NoneValue](https://docs.learnbittensor.org/subtensor-api/errors#nonevalue)
+- [Subtensor API Errors: UnverifiedPulse](https://docs.learnbittensor.org/subtensor-api/errors#unverifiedpulse)
