@@ -1,0 +1,79 @@
+---
+title: "Batched Calls Limit"
+summary:
+  "How the batchedCallsLimit runtime constant caps how many calls a single utility batch extrinsic
+  may carry, bounding the size of a batched transaction."
+category: "Subnets"
+tags: ["Subnets"]
+infoboxTitle: Batched Calls Limit
+infoboxCaption: Runtime constant capping calls in one utility batch.
+infoboxRows:
+  - label: Constant
+    value: batchedCallsLimit
+  - label: Pallet
+    value: utility
+  - label: Value
+    value: "10922"
+  - label: Used in
+    value: Maximum calls in a single batch extrinsic
+---
+
+# Batched Calls Limit
+
+Batched calls limit is a utility pallet runtime constant, listed in the chain's constants metadata
+as batchedCallsLimit, with the value 10922 and the summary "The limit on the number of batched
+calls"
+([Subtensor API Constants: batchedCallsLimit](https://docs.learnbittensor.org/subtensor-api/constants#batchedcallslimit-u32)).
+It caps how many individual calls a single utility batch extrinsic may carry.
+
+## What It Means
+
+The utility pallet lets an account bundle several calls into one extrinsic so they are submitted
+together instead of one at a time. Batched calls limit sets the ceiling on how many calls that
+bundle may contain: a batch may carry up to 10922 calls, and a batch that exceeds the limit is not
+accepted
+([Subtensor API Constants: batchedCallsLimit](https://docs.learnbittensor.org/subtensor-api/constants#batchedcallslimit-u32)).
+The cap applies to the count of calls in one batch, not to the total number of batches an account
+may submit over time.
+
+## Why the Limit Exists
+
+The limit bounds the work a single batch can demand of the runtime when it is decoded and executed.
+Without a ceiling, one extrinsic could enqueue an unbounded list of calls, so the constant keeps the
+size of any one batch within a fixed maximum
+([Subtensor API Constants: batchedCallsLimit](https://docs.learnbittensor.org/subtensor-api/constants#batchedcallslimit-u32)).
+The count cap works alongside the chain's separate per-block weight limits, which bound the total
+execution effort a block can hold regardless of how the calls are grouped.
+
+## Distinction from Rate Limits
+
+Batched calls limit and the chain's transaction rate limits address different constraints. Batched
+calls limit caps how many calls fit inside a single batch extrinsic, while the general transaction
+rate limit governs how frequently rate-limited transactions may be submitted over successive blocks
+([Subtensor API Constants: batchedCallsLimit](https://docs.learnbittensor.org/subtensor-api/constants#batchedcallslimit-u32)).
+One bounds the size of a single bundled call; the other bounds the timing of successive calls. A
+batch that fits within the call cap can still be subject to the ordinary limits on the calls it
+contains.
+
+## Distinction from Max Scheduled Per Block
+
+Batched calls limit and the scheduler's per-block cap both count calls, but for different
+mechanisms. Batched calls limit caps how many calls one batch extrinsic carries when it is submitted
+and executed together, while max scheduled per block, valued at 50, caps how many scheduled calls
+the scheduler runs from its queue in a single block
+([Subtensor API Constants: maxScheduledPerBlock](https://docs.learnbittensor.org/subtensor-api/constants#maxscheduledperblock-u32)).
+Batching bundles calls into one immediate extrinsic; scheduling defers calls to future blocks under
+a separate per-block ceiling.
+
+## Reader Boundary
+
+Batched calls limit is a single network-wide constant, not a per-subnet value, and it reflects the
+current runtime configuration rather than a fixed protocol rule; the value could change in a future
+runtime upgrade. It caps the number of calls in one batch and does not by itself describe the
+weight, fees, or success of the individual calls inside the batch
+([Subtensor API Constants: batchedCallsLimit](https://docs.learnbittensor.org/subtensor-api/constants#batchedcallslimit-u32)).
+
+## Further Reading
+
+- [Subtensor API Constants: batchedCallsLimit](https://docs.learnbittensor.org/subtensor-api/constants#batchedcallslimit-u32)
+- [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
