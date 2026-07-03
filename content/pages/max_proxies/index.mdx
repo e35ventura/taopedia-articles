@@ -1,0 +1,87 @@
+---
+title: "Max Proxies"
+summary:
+  "How the maxProxies proxy constant caps how many proxy delegates a single account may register,
+  set to 20."
+category: "Wallets"
+tags: ["Wallets"]
+infoboxTitle: Max Proxies
+infoboxCaption: Cap on how many proxies one account can register.
+infoboxRows:
+  - label: Constant
+    value: maxProxies
+  - label: Pallet
+    value: proxy
+  - label: Value
+    value: "20"
+  - label: Limits
+    value: Proxy delegates per account
+---
+
+# Max Proxies
+
+Max proxies is a proxy pallet runtime constant, listed in the Subtensor constants reference as
+maxProxies with a value of 20. The proxy pallet defines it as the maximum number of proxies allowed
+for a single account
+([Subtensor API Constants: maxProxies](https://docs.learnbittensor.org/subtensor-api/constants#maxproxies-u32)).
+The Subtensor runtime sets this constant as `MaxProxies` and wires it into the proxy pallet
+configuration
+([runtime/src/lib.rs](https://github.com/opentensor/subtensor/blob/main/runtime/src/lib.rs)).
+
+## What It Means
+
+An account can delegate authority to other accounts by registering them as proxies. Max proxies is
+the ceiling on how many such delegates one account may hold at once. The proxy list is stored as a
+bounded collection sized by this constant, so an attempt to add a proxy beyond the cap is rejected
+rather than stored
+([Subtensor API Constants: maxProxies](https://docs.learnbittensor.org/subtensor-api/constants#maxproxies-u32),
+[frame/proxy pallet](https://github.com/paritytech/polkadot-sdk/blob/master/substrate/frame/proxy/src/lib.rs)).
+
+The cap counts registered proxy delegates, not calls or announcements. It bounds the size of the
+proxy list itself, independent of how many transactions those proxies go on to make.
+
+## Why It Matters
+
+Each proxy an account registers takes up on-chain storage and adds to the reserved proxy deposit, so
+capping the count keeps a single account's proxy list bounded in both storage and reserved balance.
+The limit is what makes the proxy list a fixed-size structure the runtime can rely on rather than an
+open-ended one
+([frame/proxy pallet](https://github.com/paritytech/polkadot-sdk/blob/master/substrate/frame/proxy/src/lib.rs),
+[Subtensor API Constants: maxProxies](https://docs.learnbittensor.org/subtensor-api/constants#maxproxies-u32)).
+
+## Distinction from Proxy Deposit Factor
+
+Max proxies caps how many proxies an account may hold; proxy deposit factor is the amount reserved
+per proxy. One bounds the count, the other prices each entry, and together they bound the storage
+and the reserved balance a proxy list can consume
+([Subtensor API Constants: maxProxies](https://docs.learnbittensor.org/subtensor-api/constants#maxproxies-u32),
+[Subtensor API Constants: proxyDepositFactor](https://docs.learnbittensor.org/subtensor-api/constants#proxydepositfactor-u64)).
+
+- **Max proxies** — ceiling on the number of proxy delegates per account.
+- **Proxy deposit factor** — reserve added per proxy delegate.
+
+## Distinction from Max Pending
+
+Max proxies caps registered proxy delegates. Max pending caps the number of time-delayed proxy
+announcements that can be awaiting execution at once, which is a separate queue from the proxy list
+itself
+([Subtensor API Constants: maxProxies](https://docs.learnbittensor.org/subtensor-api/constants#maxproxies-u32),
+[Subtensor API Constants: maxPending](https://docs.learnbittensor.org/subtensor-api/constants#maxpending-u32)).
+
+- **Max proxies** — cap on registered proxy delegates.
+- **Max pending** — cap on pending time-delayed announcements.
+
+## Reader Boundary
+
+This page defines the per-account proxy count cap. It does not report how many proxies a specific
+account currently holds, price the proxy deposit, or describe the individual proxy types an account
+can assign
+([Subtensor API Constants: maxProxies](https://docs.learnbittensor.org/subtensor-api/constants#maxproxies-u32)).
+
+## Further Reading
+
+- [Subtensor API Constants: maxProxies](https://docs.learnbittensor.org/subtensor-api/constants#maxproxies-u32)
+- [Subtensor API Constants: maxPending](https://docs.learnbittensor.org/subtensor-api/constants#maxpending-u32)
+- [Subtensor API Constants: proxyDepositFactor](https://docs.learnbittensor.org/subtensor-api/constants#proxydepositfactor-u64)
+- [frame/proxy pallet](https://github.com/paritytech/polkadot-sdk/blob/master/substrate/frame/proxy/src/lib.rs)
+- [Subtensor runtime configuration](https://github.com/opentensor/subtensor/blob/main/runtime/src/lib.rs)
