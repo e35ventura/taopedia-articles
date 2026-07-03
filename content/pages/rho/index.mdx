@@ -1,0 +1,69 @@
+---
+title: "Rho"
+summary:
+  "How rho is a per-subnet hyperparameter read directly into Bittensor's epoch calculation, with a
+  genesis default of 10 that is absent from the public Subnet Hyperparameters reference table."
+category: "Consensus"
+tags: ["Consensus", "Subnets"]
+infoboxTitle: Rho
+infoboxCaption: Per-subnet hyperparameter read into the epoch calculation.
+infoboxRows:
+  - label: Constant
+    value: initialRho
+  - label: Genesis default
+    value: "10"
+  - label: Set by
+    value: Subnet owner or root
+---
+
+# Rho
+
+Rho is a per-subnet hyperparameter, listed in the chain's constants metadata as initialRho, with a
+genesis default of 10 and the summary "Rho constant"
+([Subtensor API Constants: initialRho](https://docs.learnbittensor.org/subtensor-api/constants#initialrho-u16)).
+Each subnet stores its own rho value, and it can be changed after genesis by the subnet owner or by
+root
+([admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/admin-utils/src/lib.rs#L584-L601)).
+
+## What It Means
+
+The epoch calculation reads a subnet's rho value directly during Yuma Consensus processing. Unlike
+kappa and bonds penalty, which are divided by the integer type's maximum to produce a normalized
+fraction before use, rho is cast straight to a fixed-point number without that normalization step
+([run_epoch.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/subtensor/src/epoch/run_epoch.rs#L1077-L1083)).
+
+Rho does not currently appear as its own row on the public Subnet Hyperparameters reference page,
+even though the subnet-info RPC data structure that page's own tooling reads from includes it
+alongside kappa and other listed hyperparameters
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters),
+[subnet_info.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/subtensor/src/rpc_info/subnet_info.rs#L180-L182)).
+
+## Distinction from Kappa
+
+Rho and kappa are read together in the same part of the epoch calculation, but kappa is normalized
+to a fraction of the integer type's maximum before use, while rho is not
+([run_epoch.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/subtensor/src/epoch/run_epoch.rs#L1077-L1083)).
+
+- **Rho** — read as a raw fixed-point value; genesis default 10.
+- **Kappa** — normalized to a fraction of the type maximum; genesis default 32767, about 0.5.
+
+## Reading the Live Value
+
+Rho is per-subnet chain state, so any current value is tied to a specific, individual subnet rather
+than being a single network-wide figure. The subnet-info RPC data that includes rho can be inspected
+for a given subnet with the subnet hyperparameters lookup tooling described in the official
+documentation
+([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
+
+## Reader Boundary
+
+This page defines the genesis default and the general mechanism. It does not report any subnet's
+current rho value or derive the epoch calculation's full formula
+([Subtensor API Constants: initialRho](https://docs.learnbittensor.org/subtensor-api/constants#initialrho-u16)).
+
+## Further Reading
+
+- [Subtensor API Constants: initialRho](https://docs.learnbittensor.org/subtensor-api/constants#initialrho-u16)
+- [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+- [Subtensor pallet: epoch calculation](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/subtensor/src/epoch/run_epoch.rs#L1077-L1083)
+- [Subtensor pallet: sudo_set_rho](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/admin-utils/src/lib.rs#L584-L601)
