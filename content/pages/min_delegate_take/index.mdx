@@ -1,0 +1,54 @@
+---
+title: "Min Delegate Take"
+summary:
+  "How the initialMinDelegateTake runtime constant set the delegate-take floor to 0% at genesis,
+  enforced by a root-settable value a decrease_take call cannot undercut."
+category: "Staking"
+tags: ["Staking"]
+infoboxTitle: Min Delegate Take
+infoboxCaption: Genesis value for the network-wide delegate-take floor.
+infoboxRows:
+  - label: Constant
+    value: initialMinDelegateTake
+  - label: Pallet
+    value: subtensor
+  - label: Genesis value
+    value: "0 (0% delegate take)"
+  - label: Set by
+    value: Root-only sudo_set_min_delegate_take
+---
+
+# Min Delegate Take
+
+Min delegate take is a subtensor runtime constant, listed in the chain's constants metadata as
+initialMinDelegateTake, with the value 0 and the summary "Initial minimum delegation take"
+([Subtensor API Constants: initialMinDelegateTake](https://docs.learnbittensor.org/subtensor-api/constants#initialmindelegatetake-u16)).
+The runtime sets this genesis value directly, with the source itself annotating it as allowing a 0%
+delegate take
+([runtime/src/lib.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/runtime/src/lib.rs#L992)).
+
+## What It Means
+
+This constant seeds a single network-wide storage value, not a per-subnet setting: the minimum take
+a delegate can set on their own hotkey. A decrease_take call reads this floor and rejects the
+requested take with DelegateTakeTooLow when it would fall below it
+([decrease_take.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/subtensor/src/staking/decrease_take.rs#L30-L50),
+[Subtensor API Errors: DelegateTakeTooLow](https://docs.learnbittensor.org/subtensor-api/errors#delegatetaketoolow)).
+
+Because a root-only call can change this floor after genesis, the constant here reflects only the
+value set at genesis, not necessarily the network's current live floor
+([admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/admin-utils/src/lib.rs#L1143-L1153)).
+
+## Reader Boundary
+
+This page defines the constant, its genesis value, and the check it feeds. It does not report the
+network's current live minimum, which a root-only call can change after genesis
+([Subtensor API Constants: initialMinDelegateTake](https://docs.learnbittensor.org/subtensor-api/constants#initialmindelegatetake-u16)).
+
+## Further Reading
+
+- [Subtensor API Constants: initialMinDelegateTake](https://docs.learnbittensor.org/subtensor-api/constants#initialmindelegatetake-u16)
+- [Subtensor API Errors: DelegateTakeTooLow](https://docs.learnbittensor.org/subtensor-api/errors#delegatetaketoolow)
+- [Subtensor runtime: InitialMinDelegateTake](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/runtime/src/lib.rs#L992)
+- [Subtensor pallet: decrease_take floor check](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/subtensor/src/staking/decrease_take.rs#L30-L50)
+- [Subtensor pallet: sudo_set_min_delegate_take](https://github.com/opentensor/subtensor/blob/14bc6f9f964b9cc362e9635dd110a487fa5d15a0/pallets/admin-utils/src/lib.rs#L1143-L1153)
