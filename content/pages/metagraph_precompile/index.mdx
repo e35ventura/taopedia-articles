@@ -1,0 +1,112 @@
+---
+title: "Metagraph Precompile"
+summary:
+  "How the metagraph precompile lets Ethereum-style smart contracts read Bittensor metagraph data
+  such as stake, emission, and neuron identity keys directly from the EVM."
+category: "Smart Contracts"
+tags: ["Smart Contracts", "Metagraph"]
+infoboxTitle: Metagraph Precompile
+infoboxCaption: Read-only EVM bridge to native Subtensor metagraph data.
+infoboxRows:
+  - label: Context
+    value: Bittensor EVM
+  - label: Bridges to
+    value: Native metagraph reads
+  - label: Address
+    value: "0x0000000000000000000000000000000000000802"
+  - label: Access
+    value: Read-only
+---
+
+# Metagraph Precompile
+
+The metagraph precompile lets Ethereum-style code read the [[Metagraph]] of a Subtensor subnet from
+the Bittensor EVM. Through it, an EVM smart contract can query per-neuron state such as stake,
+emission, and consensus scores without leaving the EVM layer or running a separate native query
+([Metagraph Precompile](https://docs.learnbittensor.org/evm-tutorials/metagraph-precompile),
+[Bittensor EVM: Examples and Precompiles](https://docs.learnbittensor.org/evm-tutorials/examples)).
+
+## What It Represents
+
+A precompile is a contract exposed at a fixed address on the Bittensor EVM that bridges EVM calls to
+native chain functionality. The metagraph precompile is the read side of that bridge: it exposes the
+same subnet state the native metagraph holds so a contract can consume it as ordinary EVM return
+data
+([Bittensor EVM: Examples and Precompiles](https://docs.learnbittensor.org/evm-tutorials/examples),
+[Metagraph Precompile](https://docs.learnbittensor.org/evm-tutorials/metagraph-precompile)).
+
+The conceptual point is that it connects two layers. The data it returns is native Subtensor
+metagraph state; the precompile is the doorway that lets Ethereum-style contracts read it
+([Bittensor EVM Smart Contracts](https://docs.learnbittensor.org/evm-tutorials)).
+
+## Fixed Address and Read-Only Access
+
+The metagraph precompile sits at the fixed EVM address 0x0000000000000000000000000000000000000802.
+Its methods are view-only: they read metagraph state, do not modify chain state, and consume minimal
+gas ([Metagraph Precompile](https://docs.learnbittensor.org/evm-tutorials/metagraph-precompile)).
+
+Because the interface is read-only, the precompile cannot register neurons, set weights, or move
+stake. It answers questions about the subnet rather than changing it
+([Bittensor EVM: Examples and Precompiles](https://docs.learnbittensor.org/evm-tutorials/examples)).
+
+## What It Exposes
+
+The documentation describes getter methods keyed by subnet and neuron. `getUidCount` reports how
+many neurons a subnet holds, and per-neuron getters return the scores and identity that the native
+metagraph tracks
+([Metagraph Precompile](https://docs.learnbittensor.org/evm-tutorials/metagraph-precompile)).
+
+- Per-neuron economics: stake, emission, dividends, and incentive.
+- Per-neuron consensus scores: rank, trust, consensus, and validator trust.
+- Per-neuron state: whether the neuron is active and when it was last updated.
+- Identity and connectivity: the hotkey and coldkey behind a neuron and its axon serving
+  information.
+
+These map to the same fields a native metagraph query surfaces, so the precompile lets a contract
+follow subnet participation on-chain
+([Metagraph Precompile](https://docs.learnbittensor.org/evm-tutorials/metagraph-precompile)).
+
+## Distinction from the Metagraph
+
+The [[Metagraph]] is the native snapshot of a subnet's neurons and their scores. The metagraph
+precompile is the EVM entry point that reads that snapshot, so the metagraph is the underlying state
+while the precompile is the EVM-side reader of it
+([Metagraph Precompile](https://docs.learnbittensor.org/evm-tutorials/metagraph-precompile)).
+
+- **Metagraph** — the native per-subnet state of neurons and their scores.
+- **Metagraph precompile** — the fixed-address EVM reader that returns that state to contracts.
+
+## Distinction from the Staking Precompile
+
+The [[Staking Precompile]] is a write bridge: a calling contract acts as the coldkey and changes
+stake. The metagraph precompile is a read bridge that returns state without moving funds, so one
+mutates staking while the other only reports network data
+([Staking Precompile](https://docs.learnbittensor.org/evm-tutorials/staking-precompile),
+[Metagraph Precompile](https://docs.learnbittensor.org/evm-tutorials/metagraph-precompile)).
+
+- **Staking precompile** — writes stake, with the contract standing in as the coldkey.
+- **Metagraph precompile** — reads metagraph state and changes nothing.
+
+## Distinction from H160 Address
+
+An [[H160 Address]] is the Ethereum-style account identifier used on the Bittensor EVM. The
+metagraph precompile is a fixed-address bridge to native metagraph reads, a callable entry point
+rather than an account format
+([H160 Address](https://docs.learnbittensor.org/resources/glossary#h160-address),
+[Bittensor EVM Smart Contracts](https://docs.learnbittensor.org/evm-tutorials)).
+
+- **H160 address** — an EVM account identifier.
+- **Metagraph precompile** — a fixed-address bridge that reads native metagraph data.
+
+## Reader Boundary
+
+This page defines the concept at a high level. It is not a method-by-method interface reference, a
+deployment walkthrough, or a guarantee that the precompile's address and methods never change.
+Readers building against it should confirm current details in the EVM documentation.
+
+## Further Reading
+
+- [Metagraph Precompile](https://docs.learnbittensor.org/evm-tutorials/metagraph-precompile)
+- [Bittensor EVM: Examples and Precompiles](https://docs.learnbittensor.org/evm-tutorials/examples)
+- [Bittensor EVM Smart Contracts](https://docs.learnbittensor.org/evm-tutorials)
+- [Staking Precompile](https://docs.learnbittensor.org/evm-tutorials/staking-precompile)
