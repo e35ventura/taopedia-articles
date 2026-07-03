@@ -1,0 +1,179 @@
+---
+title: "Recycle"
+summary:
+  "How recycle names the burn-based path to a Bittensor UID slot, where a registrant pays the
+  dynamic registration burn in TAO instead of solving proof-of-work."
+category: "Subnets"
+tags: ["Registration", "TAO"]
+infoboxTitle: Recycle
+infoboxCaption: Burn-based path to a subnet UID slot.
+infoboxRows:
+  - label: Mechanism
+    value: Burned registration
+  - label: Asset
+    value: TAO
+  - label: Price
+    value: Dynamic registration burn
+  - label: Contrast
+    value: Proof-of-work registration
+  - label: Related
+    value: Min Burn / Max Burn
+---
+
+# Recycle
+
+Recycle is the burn-based way to obtain a UID slot on a Bittensor subnet: a registrant pays the
+current registration burn in TAO rather than solving a proof-of-work puzzle. The glossary defines
+register as the process of purchasing a UID slot by paying the dynamic neuron registration burn in
+TAO ([Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register)). Mining
+documentation labels this path burned registration with recycled TAO
+([Mining: Miner registration](https://docs.learnbittensor.org/miners#miner-registration)).
+
+The term names the payment path, not a subnet's task or a miner's later performance. It answers how
+a hotkey buys entry into one subnet, and it is a single event: the mining docs state that once a UID
+slot is secured on the main chain, the TAO is a sunk cost and cannot be recovered
+([Mining: Miner registration](https://docs.learnbittensor.org/miners#miner-registration)).
+
+## Recycle vs Proof-of-Work Registration
+
+Bittensor exposes two neuron-registration extrinsics. `register` (call index 6) still takes
+proof-of-work arguments (`block_number`, `nonce`, `work`), while `burned_register` (call index 7)
+takes only the netuid and hotkey. In current Subtensor those proof-of-work arguments are unused
+(underscore-prefixed) and `register` calls the same `do_register` as `burned_register`, so both
+extrinsics now resolve to the same burn payment
+([Subtensor `dispatches.rs`: register / burned_register](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)).
+
+That matches the documentation, which lists `NetworkPowRegistrationAllowed` as a boolean defaulting
+to `false` and marks it not used for neuron registration, because registration is burn-based and
+always open
+([Subnet Hyperparameters: NetworkPowRegistrationAllowed](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#networkpowregistrationallowed),
+[Understanding Neurons](https://docs.learnbittensor.org/learn/neurons)). On ordinary subnets today,
+recycle is effectively the registration path, and the older proof-of-work flag is legacy vocabulary
+rather than an active control ([[Network Pow Registration Allowed]]).
+
+## Why It Is Called Recycle
+
+The name comes from supply accounting. Recycling removes TAO from ordinary circulation but, unlike
+burning, the amount is treated as re-emittable rather than permanently destroyed
+([Glossary: Recycling and burning](https://docs.learnbittensor.org/resources/glossary#recycling-and-burning)).
+That is a network-side accounting label, not a refund: from the registrant's side the payment is a
+sunk cost that cannot be recovered
+([Mining: Miner registration](https://docs.learnbittensor.org/miners#miner-registration)).
+
+- **Recycle** — the deducted TAO can re-enter future protocol distribution rather than being removed
+  for good ([[Recycling and Burning]]).
+- **Burn** — the deducted amount stays unavailable for future emission ([[Burning]]).
+
+## What Happens to the Payment
+
+In the current implementation, `do_register` computes the current burn with `get_burn(netuid)`,
+transfers it into the subnet, swaps it for alpha through `swap_tao_for_alpha`, and deducts the
+resulting alpha from the subnet's outstanding alpha (`SubnetAlphaOut`). It then records the paid
+amount per subnet through `increase_rao_recycled` and `record_tao_inflow`
+([Subtensor `registration.rs`: do_register](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)).
+This alpha-swap treatment is Dynamic TAO behavior, so the recycle payment interacts with the
+subnet's own alpha market rather than a single global pool ([[Dynamic TAO (dTAO)]]).
+
+The per-subnet tally lives in `RAORecycledForRegistration`, which records the amount of RAO recycled
+toward registration on a subnet and starts from the runtime constant
+`initialRAORecycledForRegistration`, valued at `0`
+([Subtensor Constants: initialRAORecycledForRegistration](https://docs.learnbittensor.org/subtensor-api/constants#initialraorecycledforregistration-u64)).
+The re-emittable accounting label above is a supply concept; the exact code path a specific netuid
+follows is chain state, so live behavior belongs with the source and tooling rather than a fixed
+article figure ([[Initial Rao Recycled For Registration]]).
+
+## How the Burn Amount Moves
+
+The recycle price is dynamic. The mining docs describe a burn that decays over time and increases
+each time a registration succeeds, governed by `BurnHalfLife` (the decay horizon in blocks) and
+`BurnIncreaseMult` (the per-registration step-up), with `MinBurn` and `MaxBurn` as the bounds
+([Mining: Miner registration](https://docs.learnbittensor.org/miners#miner-registration)). In code,
+`get_burn` is decayed each block in `on_initialize` and bumped immediately after each successful
+registration by `bump_registration_price_after_registration`, so back-to-back registrations in one
+block pay a rising price
+([Subtensor `registration.rs`: do_register](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)).
+
+The hyperparameters reference lists `MinBurn` (default `500000` RAO, `0.0005 τ`) and `MaxBurn`
+(default `100000000000` RAO, `100 τ`) as the lower and upper bounds of that dynamic burn
+([Subnet Hyperparameters: MinBurn](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#minburn),
+[Subnet Hyperparameters: MaxBurn](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#maxburn)).
+Those figures are documented defaults; the live band is per-subnet chain state ([[Min Burn]],
+[[Max Burn]], [[Burn Half Life]], [[Burn Increase Mult]]).
+
+## Legacy Interval-Based Adjustment
+
+An older model recalibrated a registration cost or difficulty each `AdjustmentInterval` by comparing
+realized registrations to `TargetRegistrationsPerInterval`. The documentation now marks those
+parameters, along with `Difficulty` and `MaxRegistrationsPerBlock`, as not used for neuron
+registration and removed from the canonical `get_subnet_hyperparams_v3` API
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)). Recycle
+demand response today is the continuous burn above, not interval difficulty, so those terms are
+legacy vocabulary for readers encountering older material ([[Adjustment Interval]],
+[[Target Registrations Per Interval]]).
+
+## Root Subnet Excluded
+
+Recycle applies to ordinary subnets, not the root network. `do_register` rejects the root netuid
+with `RegistrationNotPermittedOnRootSubnet`
+([Subtensor `registration.rs`: do_register](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)),
+consistent with the accounting note that Subtensor rejects burn and recycle operations on the root
+subnet
+([Glossary: Recycling and burning](https://docs.learnbittensor.org/resources/glossary#recycling-and-burning)).
+
+## Distinction from Burn Cost
+
+Recycle names the neuron registration burn that buys a UID on a subnet that already exists. Burn
+cost is a separate amount: the recycled TAO required to create a new subnet
+([Glossary: Burn Cost](https://docs.learnbittensor.org/resources/glossary#burn-cost)).
+
+- **Recycle** — dynamic TAO burn to claim a UID slot on an existing subnet.
+- **Burn cost** — recycled TAO to open a new subnet market ([[Burn Cost]]).
+
+## Distinction from Recycle or Burn
+
+Recycle names how a registrant pays to enter a subnet. The `RecycleOrBurn` hyperparameter is a
+different mechanism: it sets whether miner emission routed to a subnet's burn UIDs is recycled
+through issuance accounting or burned as removed supply
+([Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+- **Recycle** — the burn-based registration path into a UID slot.
+- **Recycle or burn** — per-subnet supply treatment of burn-UID emission ([[Recycle Or Burn]]).
+
+## Reading the Live Value
+
+The mining docs document `btcli subnet register` as running in safe mode by default: it prompts for
+a price tolerance and aborts if the burn exceeds it, and `--unsafe` bypasses that guard
+([Mining: Miner registration](https://docs.learnbittensor.org/miners#miner-registration)). The live
+burn in force on a subnet is per-subnet chain state and can be read for the documented example
+netuid with `btcli subnet hyperparameters --netuid 1 --network finney`
+([Subnet Hyperparameters: View hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters#view-hyperparameters)).
+
+## After Registration
+
+Recycle grants the UID slot; later lifecycle rules then apply to it. An immunity period protects a
+newly registered UID from deregistration for a block-counted window
+([Glossary: Immunity Period](https://docs.learnbittensor.org/resources/glossary#immunity-period)),
+and deregistration can remove it once that protection lapses
+([Mining: Miner deregistration](https://docs.learnbittensor.org/miners#miner-deregistration)). The
+recycle payment starts participation; those terms describe what happens to the slot afterward
+([[Immunity Period]], [[Deregistration]], [[Miner Registration]]).
+
+## Reader Boundary
+
+Recycle should be read as the burn-based registration path and the sunk-cost TAO payment that claims
+a UID slot. It is not a refundable deposit, not proof-of-work, not a live price quote, and not the
+subnet-creation burn cost. The live burn is per-subnet chain state that belongs with the relevant
+source or tool at the time of observation
+([Mining: Miner registration](https://docs.learnbittensor.org/miners#miner-registration),
+[Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)).
+
+## Further Reading
+
+- [Glossary: Register](https://docs.learnbittensor.org/resources/glossary#register)
+- [Glossary: Recycling and burning](https://docs.learnbittensor.org/resources/glossary#recycling-and-burning)
+- [Mining: Miner registration](https://docs.learnbittensor.org/miners#miner-registration)
+- [Subnet Hyperparameters](https://docs.learnbittensor.org/subnets/subnet-hyperparameters)
+- [Subtensor `registration.rs`](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/subnets/registration.rs)
+- [Subtensor `dispatches.rs`](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/macros/dispatches.rs)
+- [Subtensor Constants: initialRAORecycledForRegistration](https://docs.learnbittensor.org/subtensor-api/constants#initialraorecycledforregistration-u64)
+- [Understanding Neurons](https://docs.learnbittensor.org/learn/neurons)
