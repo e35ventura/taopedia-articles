@@ -1,0 +1,118 @@
+---
+title: "Subnet Precompile"
+summary:
+  "How the subnet precompile lets Ethereum-style smart contracts register subnets and set subnet
+  hyperparameters through native Subtensor calls on the Bittensor EVM."
+category: "Smart Contracts"
+tags: ["Smart Contracts", "Subnets"]
+infoboxTitle: Subnet Precompile
+infoboxCaption: Read-write EVM bridge to native subnet registration and configuration.
+infoboxRows:
+  - label: Context
+    value: Bittensor EVM
+  - label: Bridges to
+    value: Native subnet management
+  - label: Address
+    value: "0x0000000000000000000000000000000000000803"
+  - label: Access
+    value: Read-write
+---
+
+# Subnet Precompile
+
+The subnet precompile lets Ethereum-style code create and configure Subtensor subnets from the
+Bittensor EVM. Through it, a smart contract can register a new subnet and adjust that subnet's
+hyperparameters instead of those actions being available only through native Bittensor tooling
+([Subnet Precompile](https://docs.learnbittensor.org/evm-tutorials/subnet-precompile),
+[Bittensor EVM: Examples and Precompiles](https://docs.learnbittensor.org/evm-tutorials/examples)).
+
+## What It Represents
+
+A precompile is a contract exposed at a fixed address on the Bittensor EVM that bridges EVM calls to
+native chain functionality. The subnet precompile is the bridge for subnet ownership operations: it
+lets a contract run the same subnet registration and configuration the native side exposes, so a
+subnet can be created and tuned from the EVM layer
+([Bittensor EVM: Examples and Precompiles](https://docs.learnbittensor.org/evm-tutorials/examples),
+[Subnet Precompile](https://docs.learnbittensor.org/evm-tutorials/subnet-precompile)).
+
+The conceptual point is that it connects two layers. The action that ultimately runs is native
+Subtensor subnet management; the precompile is the doorway that lets Ethereum-style contracts
+request it ([Bittensor EVM Smart Contracts](https://docs.learnbittensor.org/evm-tutorials)).
+
+## Fixed Address and Read-Write Access
+
+The subnet precompile sits at the fixed EVM address 0x0000000000000000000000000000000000000803.
+Unlike a read-only precompile, it exposes both state-changing methods and matching getters, so the
+same interface can create a subnet, change a hyperparameter, and read the current value back
+([Subnet Precompile](https://docs.learnbittensor.org/evm-tutorials/subnet-precompile)).
+
+## What It Exposes
+
+The documentation describes network-creation methods such as `registerNetwork` and
+`registerNetworkWithIdentity`, a `toggleTransfers` control, and setter/getter pairs for a subnet's
+hyperparameters
+([Subnet Precompile](https://docs.learnbittensor.org/evm-tutorials/subnet-precompile)).
+
+- Registration: create a subnet, optionally with subnet identity metadata.
+- Difficulty and rate limits: registration difficulty bounds and the serving rate limit.
+- Weight controls: weights version key, maximum weight limit, and minimum allowed weights.
+- Consensus tuning: kappa, rho, adjustment alpha, and the alpha sigmoid and value parameters.
+- Activity and features: immunity period, activity cutoff, commit-reveal, liquid alpha, Yuma 3, and
+  the bonds moving average.
+
+These map to the [[Subnet Hyperparameters]] the native side already tracks, so the precompile lets a
+contract configure a subnet on-chain
+([Subnet Precompile](https://docs.learnbittensor.org/evm-tutorials/subnet-precompile)).
+
+## The Calling Contract Acts as the Subnet Owner
+
+State-changing hyperparameter methods are owner-gated on the native side, so the calling contract
+must hold subnet-owner authority for them to succeed. When a contract registers a subnet through the
+precompile, that contract is the account on record for the subnet, so it holds the owner role that
+later configuration calls require
+([Subnet Precompile](https://docs.learnbittensor.org/evm-tutorials/subnet-precompile),
+[Not Subnet Owner](https://docs.learnbittensor.org/subtensor-api/errors#notsubnetowner)).
+
+## Distinction from the Staking Precompile
+
+The [[Staking Precompile]] bridges to native staking, where the calling contract stands in as the
+coldkey. The subnet precompile bridges to subnet ownership, where the calling contract stands in as
+the subnet owner, so one drives stake while the other creates and configures subnets
+([Staking Precompile](https://docs.learnbittensor.org/evm-tutorials/staking-precompile),
+[Subnet Precompile](https://docs.learnbittensor.org/evm-tutorials/subnet-precompile)).
+
+- **Staking precompile** — reaches native staking, with the contract acting as the coldkey.
+- **Subnet precompile** — reaches native subnet management, with the contract acting as the owner.
+
+## Distinction from Subnet Registration
+
+[[Subnet Registration]] is the native action of creating a subnet and paying its lock cost. The
+subnet precompile is the EVM entry point that requests that same registration from a contract, so
+registration is the underlying action while the precompile is the EVM-side bridge to it
+([Subnet Precompile](https://docs.learnbittensor.org/evm-tutorials/subnet-precompile)).
+
+- **Subnet registration** — the native action that creates a subnet.
+- **Subnet precompile** — the EVM bridge that triggers that action from contracts.
+
+## Distinction from H160 Address
+
+An [[H160 Address]] is the Ethereum-style account identifier used on the Bittensor EVM. The subnet
+precompile is a fixed-address bridge to native subnet management, a callable entry point rather than
+an account format ([H160 Address](https://docs.learnbittensor.org/resources/glossary#h160-address),
+[Bittensor EVM Smart Contracts](https://docs.learnbittensor.org/evm-tutorials)).
+
+- **H160 address** — an EVM account identifier.
+- **Subnet precompile** — a fixed-address bridge that manages subnets.
+
+## Reader Boundary
+
+This page defines the concept at a high level. It is not a method-by-method interface reference, a
+deployment walkthrough, or a guarantee that the precompile's address and methods never change.
+Readers building against it should confirm current details in the EVM documentation.
+
+## Further Reading
+
+- [Subnet Precompile](https://docs.learnbittensor.org/evm-tutorials/subnet-precompile)
+- [Bittensor EVM: Examples and Precompiles](https://docs.learnbittensor.org/evm-tutorials/examples)
+- [Bittensor EVM Smart Contracts](https://docs.learnbittensor.org/evm-tutorials)
+- [Staking Precompile](https://docs.learnbittensor.org/evm-tutorials/staking-precompile)
