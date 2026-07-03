@@ -1,0 +1,88 @@
+---
+title: "Max Pending"
+summary:
+  "How the maxPending proxy constant caps how many time-delayed proxy announcements one account can
+  have pending at once, set to 75."
+category: "Wallets"
+tags: ["Wallets"]
+infoboxTitle: Max Pending
+infoboxCaption: Cap on concurrent pending proxy announcements per account.
+infoboxRows:
+  - label: Constant
+    value: maxPending
+  - label: Pallet
+    value: proxy
+  - label: Value
+    value: "75"
+  - label: Limits
+    value: Pending announcements per account
+---
+
+# Max Pending
+
+Max pending is a proxy pallet runtime constant, listed in the Subtensor constants reference as
+maxPending with a value of 75. The proxy pallet defines it as the maximum number of time-delayed
+announcements that may be pending at one time
+([Subtensor API Constants: maxPending](https://docs.learnbittensor.org/subtensor-api/constants#maxpending-u32)).
+The Subtensor runtime sets this constant as MaxPending and wires it into the proxy pallet
+configuration
+([runtime/src/lib.rs](https://github.com/opentensor/subtensor/blob/main/runtime/src/lib.rs)).
+
+## What It Means
+
+Some proxy types require a proxy to announce a call before executing it, so the call is published on
+chain and can only run after a delay. Each announcement sits in a pending list until it is executed
+or removed. Max pending is the ceiling on how many such announcements one account may have pending
+at the same time, and the pending list is a bounded collection sized by this constant, so an
+announce beyond the cap is rejected rather than stored
+([Subtensor API Constants: maxPending](https://docs.learnbittensor.org/subtensor-api/constants#maxpending-u32),
+[frame/proxy pallet](https://github.com/paritytech/polkadot-sdk/blob/master/substrate/frame/proxy/src/lib.rs)).
+
+The cap counts pending announcements, not registered proxies. It bounds how many
+announced-but-not-yet-executed calls can queue up for an account at once.
+
+## Why It Matters
+
+Each pending announcement occupies on-chain storage and carries a reserved announcement deposit, so
+capping the count keeps an account's pending queue bounded in both storage and reserved balance. The
+limit is what keeps the pending-announcement list a fixed-size structure the runtime can rely on
+rather than an open-ended one
+([frame/proxy pallet](https://github.com/paritytech/polkadot-sdk/blob/master/substrate/frame/proxy/src/lib.rs),
+[Subtensor API Constants: maxPending](https://docs.learnbittensor.org/subtensor-api/constants#maxpending-u32)).
+
+## Distinction from Max Proxies
+
+Max pending caps how many announcements can be queued at once; max proxies caps how many proxy
+delegates an account may register. One bounds the pending-announcement queue and the other bounds
+the proxy list, which are separate structures
+([Subtensor API Constants: maxPending](https://docs.learnbittensor.org/subtensor-api/constants#maxpending-u32),
+[Subtensor API Constants: maxProxies](https://docs.learnbittensor.org/subtensor-api/constants#maxproxies-u32)).
+
+- **Max pending**: cap on pending time-delayed announcements.
+- **Max proxies**: cap on registered proxy delegates.
+
+## Distinction from Announcement Deposit Factor
+
+Max pending caps the number of pending announcements; announcement deposit factor is the amount
+reserved per announcement. One bounds the count and the other prices each entry, and together they
+bound the storage and the reserved balance the pending queue can consume
+([Subtensor API Constants: maxPending](https://docs.learnbittensor.org/subtensor-api/constants#maxpending-u32),
+[Subtensor API Constants: announcementDepositFactor](https://docs.learnbittensor.org/subtensor-api/constants#announcementdepositfactor-u64)).
+
+- **Max pending**: ceiling on the number of pending announcements.
+- **Announcement deposit factor**: reserve added per pending announcement.
+
+## Reader Boundary
+
+This page defines the per-account pending-announcement cap. It does not report how many
+announcements an account currently has pending, price the announcement deposit, or describe the
+proxy types that require announcements
+([Subtensor API Constants: maxPending](https://docs.learnbittensor.org/subtensor-api/constants#maxpending-u32)).
+
+## Further Reading
+
+- [Subtensor API Constants: maxPending](https://docs.learnbittensor.org/subtensor-api/constants#maxpending-u32)
+- [Subtensor API Constants: maxProxies](https://docs.learnbittensor.org/subtensor-api/constants#maxproxies-u32)
+- [Subtensor API Constants: announcementDepositFactor](https://docs.learnbittensor.org/subtensor-api/constants#announcementdepositfactor-u64)
+- [frame/proxy pallet](https://github.com/paritytech/polkadot-sdk/blob/master/substrate/frame/proxy/src/lib.rs)
+- [Subtensor runtime configuration](https://github.com/opentensor/subtensor/blob/main/runtime/src/lib.rs)
