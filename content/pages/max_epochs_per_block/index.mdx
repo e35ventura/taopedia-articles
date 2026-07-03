@@ -1,0 +1,96 @@
+---
+title: "Max Epochs Per Block"
+summary:
+  "How the initialMaxEpochsPerBlock runtime constant caps at 2 how many subnet epochs may execute in
+  one block_step, deferring the rest one block forward through PendingEpochAt."
+category: "Consensus"
+tags: ["Consensus", "Emissions"]
+infoboxTitle: Max Epochs Per Block
+infoboxCaption: Per-block cap on how many subnet epochs execute in one block_step.
+infoboxRows:
+  - label: Constant
+    value: initialMaxEpochsPerBlock
+  - label: Pallet
+    value: subtensor
+  - label: Genesis value
+    value: "2 (u8)"
+  - label: Set by
+    value: Root-only sudo_set_max_epochs_per_block
+---
+
+# Max Epochs Per Block
+
+Max epochs per block is a subtensor runtime constant, listed in the chain's constants metadata as
+`initialMaxEpochsPerBlock` with the value `2` and type `u8`. The constants reference summarizes it
+as the initial default per-block cap on how many subnet epochs may execute in a single `block_step`,
+with the rest deferred one block forward via `PendingEpochAt`
+([Subtensor Constants: initialMaxEpochsPerBlock](https://docs.learnbittensor.org/subtensor-api/constants#initialmaxepochsperblock-u8),
+[Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase)).
+
+The constant seeds a single network-wide value rather than a per-subnet hyperparameter. It bounds
+the [[Coinbase]] emission-processing work performed in one [[Block]], not the reward outcome any
+subnet receives.
+
+## What It Controls
+
+Every block, the coinbase `block_step` advances emission processing and runs the [[Epoch]]
+settlement for each subnet whose [[Tempo]] boundary has arrived. When more subnets come due in the
+same block than this cap allows, only up to the cap's worth of epochs run in that block and the
+remaining ready epochs are deferred one block forward through the `PendingEpochAt` schedule
+([Subtensor Constants: initialMaxEpochsPerBlock](https://docs.learnbittensor.org/subtensor-api/constants#initialmaxepochsperblock-u8),
+[Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase),
+[Subtensor source: tempo_control.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/tempo_control.rs)).
+
+The cap therefore smooths per-block execution load. It does not skip a subnet's epoch or reduce its
+accumulated emission; a deferred epoch still settles once a later block has capacity, so the value
+governs execution timing rather than how much value a subnet ultimately distributes.
+
+## Setter and Bound
+
+The value in force is changed through the root-only `sudo_set_max_epochs_per_block` extrinsic. The
+setter requires root origin and rejects a value below one, returning [[Value Not In Bounds]],
+because the chain needs a positive cap on how many subnet epochs may execute in a single block
+([Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs),
+[Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase)).
+
+Because a root call can change this cap after genesis, the constant here reflects only the value set
+at genesis, not necessarily the network's current live cap.
+
+## Distinction from Tempo
+
+Tempo and max epochs per block set different timing axes. Tempo is the per-subnet block cadence that
+decides when a given subnet's epoch becomes due, while max epochs per block is the network-wide
+limit on how many of those due epochs may execute together in one block
+([Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo),
+[Subtensor Constants: initialMaxEpochsPerBlock](https://docs.learnbittensor.org/subtensor-api/constants#initialmaxepochsperblock-u8)).
+
+- **Tempo** — per-subnet cadence that decides when one subnet's epoch is due.
+- **Max epochs per block** — network-wide cap on how many due epochs run in the same block.
+
+## Distinction from Epoch
+
+An epoch is the consensus period whose boundary triggers one subnet's settlement and
+[[Yuma Consensus]] pass. Max epochs per block does not change what an epoch does; it caps how many
+such settlements the coinbase performs in a single block before deferring the rest
+([Glossary: Epoch](https://docs.learnbittensor.org/resources/glossary#epoch),
+[Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase)).
+
+- **Epoch** — the per-subnet consensus period that settles emission and runs Yuma Consensus.
+- **Max epochs per block** — how many of those settlements may execute in one block.
+
+## Reader Boundary
+
+This page defines the constant, its genesis value, and the per-block execution cap it feeds. It does
+not report how many epochs are pending on any live network or the current cap after root changes,
+which depend on chain state at the time of the call
+([Subtensor Constants: initialMaxEpochsPerBlock](https://docs.learnbittensor.org/subtensor-api/constants#initialmaxepochsperblock-u8),
+[Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase)).
+
+## Further Reading
+
+- [Subtensor Constants: initialMaxEpochsPerBlock](https://docs.learnbittensor.org/subtensor-api/constants#initialmaxepochsperblock-u8)
+- [Coinbase Implementation](https://docs.learnbittensor.org/navigating-subtensor/emissions-coinbase)
+- [Subtensor source: tempo_control.rs](https://github.com/opentensor/subtensor/blob/main/pallets/subtensor/src/coinbase/tempo_control.rs)
+- [Subtensor source: admin-utils/lib.rs](https://github.com/opentensor/subtensor/blob/main/pallets/admin-utils/src/lib.rs)
+- [Glossary: Epoch](https://docs.learnbittensor.org/resources/glossary#epoch)
+- [Glossary: Tempo](https://docs.learnbittensor.org/resources/glossary#tempo)
