@@ -1,0 +1,88 @@
+---
+title: "Proxy Deposit Factor"
+summary:
+  "How the proxyDepositFactor constant sets the additional deposit reserved for each proxy an
+  account adds, on top of the one-time proxy deposit base."
+category: "Wallets"
+tags: ["Wallets"]
+infoboxTitle: Proxy Deposit Factor
+infoboxCaption: Per-proxy deposit added for each delegate an account registers.
+infoboxRows:
+  - label: Constant
+    value: proxyDepositFactor
+  - label: Pallet
+    value: proxy
+  - label: Value
+    value: "33,000,000 RAO (0.033 TAO)"
+  - label: Applies per
+    value: Each proxy delegate added
+---
+
+# Proxy Deposit Factor
+
+Proxy deposit factor is a proxy pallet runtime constant, listed in the Subtensor constants reference
+as proxyDepositFactor with a value of 33,000,000. The proxy pallet defines it as the amount of
+currency needed per proxy added
+([Subtensor API Constants: proxyDepositFactor](https://docs.learnbittensor.org/subtensor-api/constants#proxydepositfactor-u64)).
+The Subtensor runtime sets this constant as `ProxyDepositFactor` and wires it into the proxy pallet
+configuration
+([runtime/src/lib.rs](https://github.com/opentensor/subtensor/blob/main/runtime/src/lib.rs)).
+
+## What It Means
+
+An account that delegates authority to proxy accounts reserves a deposit while those proxies exist.
+That reserve has two parts: a one-time base amount for keeping a proxy list at all, and a per-proxy
+factor added for each delegate in the list. Proxy deposit factor is the per-proxy part, so the total
+reserved deposit is the base plus this factor multiplied by the number of proxies the account holds
+([Subtensor API Constants: proxyDepositFactor](https://docs.learnbittensor.org/subtensor-api/constants#proxydepositfactor-u64),
+[frame/proxy deposit calculation](https://github.com/paritytech/polkadot-sdk/blob/master/substrate/frame/proxy/src/lib.rs)).
+
+Because the factor is counted once per entry, the reserved amount grows as an account adds more
+proxies and shrinks as it removes them. This reserve is held while the proxies exist and returned
+when they are removed, rather than being spent the way a fee is
+([frame/proxy deposit calculation](https://github.com/paritytech/polkadot-sdk/blob/master/substrate/frame/proxy/src/lib.rs)).
+
+## Why It Matters
+
+Reserving an amount for each proxy ties the cost of holding proxies to how many an account keeps.
+Each proxy entry takes up on-chain storage, and the per-proxy factor is what makes an account back
+that storage with reserved balance, so an account cannot accumulate an unbounded proxy list at no
+cost
+([Subtensor API Constants: proxyDepositFactor](https://docs.learnbittensor.org/subtensor-api/constants#proxydepositfactor-u64),
+[frame/proxy deposit calculation](https://github.com/paritytech/polkadot-sdk/blob/master/substrate/frame/proxy/src/lib.rs)).
+
+## Distinction from Proxy Deposit Base
+
+Proxy deposit base and proxy deposit factor are the two inputs to the same reserve, applied at
+different granularities. Proxy deposit base is the one-time amount reserved for keeping a proxy
+list; proxy deposit factor is the amount added once per proxy in that list
+([Subtensor API Constants: proxyDepositBase](https://docs.learnbittensor.org/subtensor-api/constants#proxydepositbase-u64),
+[Subtensor API Constants: proxyDepositFactor](https://docs.learnbittensor.org/subtensor-api/constants#proxydepositfactor-u64)).
+
+- **Proxy deposit base** — one-time reserve for having any proxies.
+- **Proxy deposit factor** — additional reserve added per proxy.
+
+## Distinction from a Transaction Fee
+
+The proxy deposit factor is reserved, not spent. A transaction fee is paid and gone, while the proxy
+deposit is locked while the proxies exist and returned when they are removed, so it is a refundable
+reserve rather than a cost
+([frame/proxy deposit calculation](https://github.com/paritytech/polkadot-sdk/blob/master/substrate/frame/proxy/src/lib.rs)).
+
+- **Proxy deposit factor** — refundable reserve held while a proxy exists.
+- **Transaction fee** — non-refundable amount paid to submit a call.
+
+## Reader Boundary
+
+This page defines the per-proxy proxy deposit constant. It does not compute the total deposit for a
+specific account, replace the proxy deposit base, or state whether an account has enough free
+balance to add a proxy
+([Subtensor API Constants: proxyDepositFactor](https://docs.learnbittensor.org/subtensor-api/constants#proxydepositfactor-u64),
+[Subtensor API Constants: proxyDepositBase](https://docs.learnbittensor.org/subtensor-api/constants#proxydepositbase-u64)).
+
+## Further Reading
+
+- [Subtensor API Constants: proxyDepositFactor](https://docs.learnbittensor.org/subtensor-api/constants#proxydepositfactor-u64)
+- [Subtensor API Constants: proxyDepositBase](https://docs.learnbittensor.org/subtensor-api/constants#proxydepositbase-u64)
+- [frame/proxy pallet](https://github.com/paritytech/polkadot-sdk/blob/master/substrate/frame/proxy/src/lib.rs)
+- [Subtensor runtime configuration](https://github.com/opentensor/subtensor/blob/main/runtime/src/lib.rs)
