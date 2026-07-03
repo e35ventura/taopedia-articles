@@ -1,0 +1,93 @@
+---
+title: "Announcement Deposit Factor"
+summary:
+  "How the announcementDepositFactor proxy constant sets the deposit reserved per time-delayed proxy
+  announcement, on top of the announcement deposit base."
+category: "Wallets"
+tags: ["Wallets"]
+infoboxTitle: Announcement Deposit Factor
+infoboxCaption: Per-announcement deposit added for each pending proxy announcement.
+infoboxRows:
+  - label: Constant
+    value: announcementDepositFactor
+  - label: Pallet
+    value: proxy
+  - label: Value
+    value: "68,000,000 RAO (0.068 TAO)"
+  - label: Applies per
+    value: Each pending announcement
+---
+
+# Announcement Deposit Factor
+
+Announcement deposit factor is a proxy pallet runtime constant, listed in the Subtensor constants
+reference as announcementDepositFactor with a value of 68,000,000. The proxy pallet defines it as
+the amount of currency needed per announcement made
+([Subtensor API Constants: announcementDepositFactor](https://docs.learnbittensor.org/subtensor-api/constants#announcementdepositfactor-u64)).
+The Subtensor runtime sets this constant as AnnouncementDepositFactor and wires it into the proxy
+pallet configuration
+([runtime/src/lib.rs](https://github.com/opentensor/subtensor/blob/main/runtime/src/lib.rs)).
+
+## What It Means
+
+Some proxy types require a proxy to announce a call before executing it, and each pending
+announcement reserves a deposit while it waits. That reserve has two parts: a one-time base amount
+for creating the announcement storage, and a per-announcement factor added for each announcement in
+the pending list. Announcement deposit factor is the per-announcement part, so the total reserved is
+the base plus this factor multiplied by the number of pending announcements the account holds
+([Subtensor API Constants: announcementDepositFactor](https://docs.learnbittensor.org/subtensor-api/constants#announcementdepositfactor-u64),
+[frame/proxy pallet](https://github.com/paritytech/polkadot-sdk/blob/master/substrate/frame/proxy/src/lib.rs)).
+
+The proxy pallet notes this factor covers the storage for an account id, a call hash, and a block
+number added per announcement. Because it is counted once per entry, the reserved amount grows as an
+account queues more announcements and shrinks as they are executed or removed, and it is returned
+rather than spent
+([frame/proxy pallet](https://github.com/paritytech/polkadot-sdk/blob/master/substrate/frame/proxy/src/lib.rs)).
+
+## Why It Matters
+
+Reserving an amount for each announcement ties the cost of queuing time-delayed calls to how many an
+account has pending. Each announcement takes up on-chain storage, and the per-announcement factor is
+what makes an account back that storage with reserved balance, so an account cannot queue an
+unbounded set of announcements at no cost
+([Subtensor API Constants: announcementDepositFactor](https://docs.learnbittensor.org/subtensor-api/constants#announcementdepositfactor-u64),
+[frame/proxy pallet](https://github.com/paritytech/polkadot-sdk/blob/master/substrate/frame/proxy/src/lib.rs)).
+
+## Distinction from Announcement Deposit Base
+
+Announcement deposit base and announcement deposit factor are the two inputs to the same reserve,
+applied at different granularities. Announcement deposit base is the one-time amount reserved for
+creating the announcement storage; announcement deposit factor is the amount added once per pending
+announcement
+([Subtensor API Constants: announcementDepositBase](https://docs.learnbittensor.org/subtensor-api/constants#announcementdepositbase-u64),
+[Subtensor API Constants: announcementDepositFactor](https://docs.learnbittensor.org/subtensor-api/constants#announcementdepositfactor-u64)).
+
+- **Announcement deposit base**: one-time reserve for the announcement storage.
+- **Announcement deposit factor**: additional reserve added per pending announcement.
+
+## Distinction from Proxy Deposit Factor
+
+Announcement deposit factor is the per-entry reserve for the pending-announcement queue, while proxy
+deposit factor is the per-entry reserve for the proxy list. They price entries in two separate
+structures: one holds time-delayed announcements, the other holds registered proxy delegates
+([Subtensor API Constants: announcementDepositFactor](https://docs.learnbittensor.org/subtensor-api/constants#announcementdepositfactor-u64),
+[Subtensor API Constants: proxyDepositFactor](https://docs.learnbittensor.org/subtensor-api/constants#proxydepositfactor-u64)).
+
+- **Announcement deposit factor**: per-announcement reserve in the pending queue.
+- **Proxy deposit factor**: per-proxy reserve in the proxy list.
+
+## Reader Boundary
+
+This page defines the per-announcement proxy deposit constant. It does not compute the total deposit
+for a specific account, replace the announcement deposit base, or describe which proxy types require
+announcements
+([Subtensor API Constants: announcementDepositFactor](https://docs.learnbittensor.org/subtensor-api/constants#announcementdepositfactor-u64),
+[Subtensor API Constants: announcementDepositBase](https://docs.learnbittensor.org/subtensor-api/constants#announcementdepositbase-u64)).
+
+## Further Reading
+
+- [Subtensor API Constants: announcementDepositFactor](https://docs.learnbittensor.org/subtensor-api/constants#announcementdepositfactor-u64)
+- [Subtensor API Constants: announcementDepositBase](https://docs.learnbittensor.org/subtensor-api/constants#announcementdepositbase-u64)
+- [Subtensor API Constants: proxyDepositFactor](https://docs.learnbittensor.org/subtensor-api/constants#proxydepositfactor-u64)
+- [frame/proxy pallet](https://github.com/paritytech/polkadot-sdk/blob/master/substrate/frame/proxy/src/lib.rs)
+- [Subtensor runtime configuration](https://github.com/opentensor/subtensor/blob/main/runtime/src/lib.rs)
